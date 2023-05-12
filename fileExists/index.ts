@@ -1,4 +1,4 @@
-import { statSync } from "fs";
+import { statSync } from 'fs';
 
 /**
  * A utility function to check if a file exists.

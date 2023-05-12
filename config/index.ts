@@ -1,10 +1,10 @@
-import { readFileSync } from "fs";
-import parse from "../parse";
-import assign from "../assign";
-import getFilePath from "../getFilePath";
-import fileExists from "../fileExists";
-import { logError, logMessage, logWarning } from "../log";
-import type { ConfigOptions, ConfigOutput, ParsedEnvs } from "../index";
+import { readFileSync } from 'fs';
+import parse from '../parse';
+import assign from '../assign';
+import getFilePath from '../getFilePath';
+import fileExists from '../fileExists';
+import { logError, logMessage, logWarning } from '../log';
+import type { ConfigOptions, ConfigOutput, ParsedEnvs } from '../index';
 
 /**
  * Extracts and interpolates one or multiple `.env` files into an object and assigns them to {@link https://nodejs.org/api/process.html#process_process_env | `process.env`}.
@@ -16,12 +16,12 @@ import type { ConfigOptions, ConfigOutput, ParsedEnvs } from "../index";
  */
 export function config(options?: ConfigOptions): ConfigOutput {
     // default config options
-    let dir: ConfigOptions["dir"] = process.cwd();
-    let paths: ConfigOptions["paths"] = [".env"];
-    let debug: ConfigOptions["debug"];
-    let override: ConfigOptions["override"];
-    let encoding: ConfigOptions["encoding"] = "utf8";
-    let required: ConfigOptions["required"] = [];
+    let dir: ConfigOptions['dir'] = process.cwd();
+    let paths: ConfigOptions['paths'] = ['.env'];
+    let debug: ConfigOptions['debug'];
+    let override: ConfigOptions['override'];
+    let encoding: ConfigOptions['encoding'] = 'utf8';
+    let required: ConfigOptions['required'] = [];
 
     // override default options with config options arguments
     if (options) {
@@ -34,7 +34,7 @@ export function config(options?: ConfigOptions): ConfigOutput {
     }
 
     // split paths into array of strings
-    const configs = Array.isArray(paths) ? paths : paths.split(",");
+    const configs = Array.isArray(paths) ? paths : paths.split(',');
 
     // initializes parsed Env object
     const extracted: ParsedEnvs = {};
@@ -55,8 +55,7 @@ export function config(options?: ConfigOptions): ConfigOutput {
 
             if (debug) logMessage(`Loaded env from ${envPath}`);
         } catch (err: any) {
-            if (debug)
-                logWarning(`Unable to load ${envPath}: ${err.toString()}.`);
+            if (debug) logWarning(`Unable to load ${envPath}: ${err.toString()}.`);
         }
     }
 
@@ -70,16 +69,16 @@ export function config(options?: ConfigOptions): ConfigOutput {
         if (undefinedKeyValues.length)
             logError(
                 `The following Envs are marked as required: ${undefinedKeyValues
-                    .map(v => `'${v}'`)
+                    .map((v) => `'${v}'`)
                     .join(
-                        ", "
+                        ', '
                     )}, but they are undefined after all the specified .env files were parsed.`
             );
     }
 
     return {
         parsed: assign(extracted),
-        extracted
+        extracted,
     };
 }
 

@@ -8,7 +8,7 @@ export async function importModule(module: string): Promise<any> {
     try {
         return require(module);
     } catch (err: any) {
-        if (err.code === "ERR_REQUIRE_ESM") {
+        if (err.code === 'ERR_REQUIRE_ESM') {
             const { default: defaultExport } = await import(module);
             return defaultExport;
         }

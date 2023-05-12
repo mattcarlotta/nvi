@@ -26,12 +26,12 @@
   OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { readFileSync } from "fs";
-import { execSync } from "child_process";
-import decrypt from "../decrypt";
-import { logWarning } from "../log";
-import fileExists from "../fileExists";
-import type { DecryptOptions, Option, ParsedEnvs } from "../index";
+import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
+import decrypt from '../decrypt';
+import { logWarning } from '../log';
+import fileExists from '../fileExists';
+import type { DecryptOptions, Option, ParsedEnvs } from '../index';
 
 /**
  * Parses a string or buffer of Envs into an object.
@@ -51,8 +51,7 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
     function interpolate(envValue: string): string {
         // find interpolated values with $(KEY) or with $KEY/${KEY}
         const matches =
-            envValue.match(/\$\(([^)]+)\)/g) ||
-            envValue.match(/(.?\${?(?:[a-zA-Z0-9_|]+)?}?)/g);
+            envValue.match(/\$\(([^)]+)\)/g) || envValue.match(/(.?\${?(?:[a-zA-Z0-9_|]+)?}?)/g);
 
         return !matches
             ? envValue
@@ -66,32 +65,30 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
                       command = parts![1],
                       stripped = parts![2];
 
-                  let value = "",
+                  let value = '',
                       replacePart = line.substring(command.length);
 
-                  if (command === "\\") {
+                  if (command === '\\') {
                       // removes escaped characters
                       replacePart = line;
-                      value = replacePart.replace("\\$", "$");
-                  } else if (line[1] === "(" && line[line.length - 1] === ")") {
+                      value = replacePart.replace('\\$', '$');
+                  } else if (line[1] === '(' && line[line.length - 1] === ')') {
                       // attempts to substitute commands
                       try {
                           value = execSync(stripped, {
-                              stdio: "pipe"
+                              stdio: 'pipe',
                           }).toString();
                       } catch (err: any) {
                           logWarning(`\x1b[31m${err.message}\x1b[0m`);
                       }
                   } else {
                       // split values for "|": ["key", "default"]
-                      const defaultValue = stripped.split("|");
+                      const defaultValue = stripped.split('|');
                       const key = defaultValue[0],
-                          fallbackValue = defaultValue[1] || "";
+                          fallbackValue = defaultValue[1] || '';
 
                       // interpolate value from process or extracted object or fallback value
-                      value = interpolate(
-                          env[key] || extracted[key] || fallbackValue
-                      );
+                      value = interpolate(env[key] || extracted[key] || fallbackValue);
                   }
 
                   return newEnv.replace(replacePart, value.trim());
@@ -112,7 +109,7 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
 
             // prevents the extracted value from overriding a process.env variable
             if (override || !env[key]) {
-                let value = keyValueArr[2] || "";
+                let value = keyValueArr[2] || '';
                 const end = value.length - 1;
                 const isDoubleQuoted = value[0] === '"' && value[end] === '"';
                 const isSingleQuoted = value[0] === "'" && value[end] === "'";
@@ -122,7 +119,7 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
                     value = value.substring(1, end);
 
                     // if double quoted, expand newlines
-                    if (isDoubleQuoted) value = value.replace(/\\n/g, "\n");
+                    if (isDoubleQuoted) value = value.replace(/\\n/g, '\n');
                 } else {
                     value = interpolate(value);
                 }
@@ -142,10 +139,7 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
             // if the file exists, parse it...
             // and assign any parsed Envs to extracted
             if (fileExists(keyValueArr[0]))
-                assign(
-                    extracted,
-                    parse(readFileSync(keyValueArr[0]), override)
-                );
+                assign(extracted, parse(readFileSync(keyValueArr[0]), override));
 
             // skip to next iteration
             continue;
@@ -157,13 +151,12 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
         // checks if there's a match
         if (keyValueArr) {
             // splits string by space
-            const [remoteurl, algorithm, input, encoding, secret, iv] =
-                keyValueArr[0].split(" ");
+            const [remoteurl, algorithm, input, encoding, secret, iv] = keyValueArr[0].split(' ');
 
             // fetch encrypted string from remoteurl
             const envs = interpolate(`$(curl -s ${remoteurl})`);
 
-            if (envs && typeof envs === "string") {
+            if (envs && typeof envs === 'string') {
                 // decrypt the encrypted string and convert stringified JSON to Env "KEY=value" pairs
                 const { decryptedEnvs } = decrypt({
                     algorithm,
@@ -171,7 +164,7 @@ export function parse(src: string | Buffer, override?: Option): ParsedEnvs {
                     envs,
                     input,
                     iv,
-                    secret
+                    secret,
                 } as DecryptOptions);
 
                 // assign Envs to extracted

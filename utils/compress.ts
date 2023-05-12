@@ -1,20 +1,20 @@
-import compressFiles from "@noshot/utils/compressFiles";
+import compressFiles from '@noshot/utils/compressFiles';
 
 (async (): Promise<void> => {
     try {
         const dirs = [
-            "assign",
-            "config",
-            "decrypt",
-            "encrypt",
-            "fileExists",
-            "getFilePath",
+            'assign',
+            'config',
+            'decrypt',
+            'encrypt',
+            'fileExists',
+            'getFilePath',
             // "importFile",
-            "load",
-            "log",
-            "parse",
-            ""
-        ].map(file => `${file ? `${file}/` : ""}/index.js`);
+            'load',
+            'log',
+            'parse',
+            '',
+        ].map((file) => `${file ? `${file}/` : ''}/index.js`);
 
         await compressFiles(dirs);
         process.exit(0);

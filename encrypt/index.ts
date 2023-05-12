@@ -1,5 +1,5 @@
-import { createCipheriv, randomBytes } from "crypto";
-import type { CryptOptions, EncryptResult } from "../index";
+import { createCipheriv, randomBytes } from 'crypto';
+import type { CryptOptions, EncryptResult } from '../index';
 
 /**
  * Converts a stringified JSON object into a single encrypted string using {@link https://nodejs.org/api/crypto.html#crypto_crypto_createcipheriv_algorithm_key_iv_options `crypto.createCipheriv`}.
@@ -10,14 +10,8 @@ import type { CryptOptions, EncryptResult } from "../index";
  * @returns an object with the following two properties: `encryptedEvs`: encrypted string and `iv`: a random string
  * @example encrypt({ algorithm: "aes-256-cbc", envs: JSON.stringify({ "KEY": "VALUE" }), encoding: "utf8", input: "hex", secret: "abcdefghijklmnopqrstuv1234567890" });
  */
-export function encrypt({
-    algorithm,
-    envs,
-    encoding,
-    input,
-    secret
-}: CryptOptions): EncryptResult {
-    const iv = randomBytes(16).toString("hex").slice(0, 16);
+export function encrypt({ algorithm, envs, encoding, input, secret }: CryptOptions): EncryptResult {
+    const iv = randomBytes(16).toString('hex').slice(0, 16);
 
     const encrypter = createCipheriv(algorithm, secret, iv);
 

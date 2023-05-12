@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join } from 'path';
 
 /**
  * A utility function to join a directory with a filename to a single string.

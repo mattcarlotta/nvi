@@ -1,6 +1,6 @@
-import { readFileSync } from "fs";
-import { join } from "path";
-import { logError, logWarning } from "../log";
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { logError, logWarning } from '../log';
 
 const COMMENT = 0x23;
 const LINE_DELIMITER = 0x0a;
@@ -21,10 +21,7 @@ const INTRP_CLOSE = 0x7d;
             if (fileBuf[i] === LINE_DELIMITER) {
                 // check if there is a 2 byte multi-line delimiter
                 const multiChunk = fileBuf.slice(i - 1, i + 1);
-                if (
-                    multiChunk.length > 1 &&
-                    multiChunk.readUint16BE() === MULTI_LINE_DELIMITER
-                ) {
+                if (multiChunk.length > 1 && multiChunk.readUint16BE() === MULTI_LINE_DELIMITER) {
                     continue;
                 }
 
@@ -40,9 +37,7 @@ const INTRP_CLOSE = 0x7d;
                         byteCount += firstNewLineByte + 1;
                         continue;
                     } else {
-                        throw Error(
-                            "Unable to find the end of the current line!"
-                        );
+                        throw Error('Unable to find the end of the current line!');
                     }
                 }
 
@@ -55,52 +50,28 @@ const INTRP_CLOSE = 0x7d;
                     let valByteCount = 0;
                     while (valByteCount < valBuf.length) {
                         // check if chunk contains multi-line breaks
-                        let chunk = valBuf.slice(
-                            valByteCount - 1,
-                            valByteCount + 1
-                        );
+                        let chunk = valBuf.slice(valByteCount - 1, valByteCount + 1);
 
                         // NOTE: This may be improved by checking per byte
                         // rather than per 2 bytes: chunk[0] === "$", chunk[1] === "{"
-                        if (
-                            chunk.length > 1 &&
-                            chunk.readUint16BE() === MULTI_LINE_DELIMITER
-                        ) {
-                            const prevValBuf = valBuf.slice(
-                                0,
-                                valByteCount - 1
-                            );
-                            const afterValBuf = valBuf.slice(
-                                valByteCount + 1,
-                                valBuf.length
-                            );
+                        if (chunk.length > 1 && chunk.readUint16BE() === MULTI_LINE_DELIMITER) {
+                            const prevValBuf = valBuf.slice(0, valByteCount - 1);
+                            const afterValBuf = valBuf.slice(valByteCount + 1, valBuf.length);
 
-                            valBuf = Buffer.concat(
-                                [prevValBuf, afterValBuf],
-                                valBuf.length - 2
-                            );
+                            valBuf = Buffer.concat([prevValBuf, afterValBuf], valBuf.length - 2);
                             valByteCount -= 2;
                         }
 
                         // check if chunk contains an interpolated variable
                         chunk = valBuf.slice(valByteCount, valByteCount + 2);
 
-                        if (
-                            chunk.length > 1 &&
-                            chunk.readUint16BE() === INTRP_OPEN
-                        ) {
-                            const valSliceBuf = valBuf.slice(
-                                valByteCount,
-                                valBuf.length
-                            );
+                        if (chunk.length > 1 && chunk.readUint16BE() === INTRP_OPEN) {
+                            const valSliceBuf = valBuf.slice(valByteCount, valBuf.length);
 
-                            const interpCloseIndex =
-                                valSliceBuf.indexOf(INTRP_CLOSE);
+                            const interpCloseIndex = valSliceBuf.indexOf(INTRP_CLOSE);
 
                             if (interpCloseIndex >= 0) {
-                                const keyProp = valSliceBuf
-                                    .slice(2, interpCloseIndex)
-                                    .toString();
+                                const keyProp = valSliceBuf.slice(2, interpCloseIndex).toString();
 
                                 const keyVal = envMap.get(keyProp);
 
@@ -112,7 +83,7 @@ const INTRP_CLOSE = 0x7d;
 
                                 // replace interpolated variable bytes with the keyVal value
                                 const prevBuf = valBuf.slice(0, valByteCount);
-                                const newValBuf = Buffer.from(keyVal || "");
+                                const newValBuf = Buffer.from(keyVal || '');
                                 const afterBuf = valBuf.slice(
                                     valByteCount + 1 + interpCloseIndex,
                                     valBuf.length
@@ -120,13 +91,10 @@ const INTRP_CLOSE = 0x7d;
 
                                 valBuf = Buffer.concat(
                                     [prevBuf, newValBuf, afterBuf],
-                                    prevBuf.length +
-                                    newValBuf.length +
-                                    afterBuf.length
+                                    prevBuf.length + newValBuf.length + afterBuf.length
                                 );
 
-                                valByteCount =
-                                    prevBuf.length + newValBuf.length - 1;
+                                valByteCount = prevBuf.length + newValBuf.length - 1;
                             } else {
                                 throw Error(
                                     `The key '${key}' contains an open interpolated '\${' operator but appears to be missing a closing '}' operator.`
@@ -151,4 +119,4 @@ const INTRP_CLOSE = 0x7d;
         logError(error.message);
         process.exit(1);
     }
-})(".env");
+})('.env');

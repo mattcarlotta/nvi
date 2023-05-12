@@ -23,4 +23,3 @@ We use [prettier](https://www.npmjs.com/package/prettier) and [eslint](https://w
 ```
 npm run lint
 ```
-

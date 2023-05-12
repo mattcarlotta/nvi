@@ -25,5 +25,5 @@ export function logWarning(message: string): void {
 export function logError(message: string): void {
     console.log(`\x1b[31m[env]: ${message}\x1b[0m`);
     /* istanbul ignore next */
-    if (process.env.NODE_ENV !== "test") process.exit(1);
+    if (process.env.NODE_ENV !== 'test') process.exit(1);
 }

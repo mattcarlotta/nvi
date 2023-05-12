@@ -1,5 +1,5 @@
-import { createDecipheriv } from "crypto";
-import type { DecryptOptions, DecryptResult } from "../index";
+import { createDecipheriv } from 'crypto';
+import type { DecryptOptions, DecryptResult } from '../index';
 
 /**
  * Decrypts and converts a stringified JSON object/Buffer using {@link https://nodejs.org/api/crypto.html#crypto_crypto_createdecipheriv_algorithm_key_iv_options `crypto.createDecipheriv`}.
@@ -16,7 +16,7 @@ export function decrypt({
     encoding,
     input,
     iv,
-    secret
+    secret,
 }: DecryptOptions): DecryptResult {
     // decrypt string
     const decrypter = createDecipheriv(algorithm, secret, iv);
@@ -25,28 +25,25 @@ export function decrypt({
         .concat(decrypter.final(encoding));
 
     const isJSON =
-        decryptedString[0] === "{" &&
-        decryptedString[decryptedString.length - 1] === "}";
+        decryptedString[0] === '{' && decryptedString[decryptedString.length - 1] === '}';
 
-    const decryptedResult = isJSON
-        ? JSON.parse(decryptedString)
-        : Buffer.from(decryptedString);
+    const decryptedResult = isJSON ? JSON.parse(decryptedString) : Buffer.from(decryptedString);
 
     const decryptedEnvs = isJSON
         ? decryptedString
               // remove first "{" and last "}"
-              .replace(/^\{|\}$/gm, "")
+              .replace(/^\{|\}$/gm, '')
               // replace commas with new lines
-              .replace(/,/g, "\n")
+              .replace(/,/g, '\n')
               // remove all quotes
-              .replace(/["']/g, "")
+              .replace(/["']/g, '')
               // replace first occurence of ":" to "= " for each line
-              .replace(/^([^:]*?)\s*:/gm, "$1=")
+              .replace(/^([^:]*?)\s*:/gm, '$1=')
         : decryptedResult.toString();
 
     return {
         decryptedEnvs,
-        decryptedResult
+        decryptedResult,
     };
 }
 
