@@ -1,0 +1,14 @@
+{
+    "extends": "../tsconfig.json",
+    "include": ["../*.ts"],
+    "exclude": [
+        "__tests__",
+        ".github",
+        "coverage",
+        "importFile",
+        "node_modules",
+        "tests",
+        "ts",
+        "utils"
+    ]
+}

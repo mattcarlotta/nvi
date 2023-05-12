@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "diagnostics": true,
+        "declaration": true,
+        "noEmitOnError": true,
+        "allowJs": true,
+        "alwaysStrict": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noEmit": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "es5"
+    },
+    "include": ["**/*.ts"],
+    "exclude": [".github", "coverage", "node_modules"]
+}
