@@ -1,20 +1,47 @@
+import type { ConfigOptions, ParsedEnvs } from 'index';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { env } from 'process';
-import { logError, logInfo, logWarning } from '../log';
+import { logError, logInfo, logWarning } from './log';
 
 const COMMENT = 0x23;
-const LINE_DELIMITER = 0x0a;
-const ASSIGN_OP = 0x3d;
-const MULTI_LINE_DELIMITER = 0x5c0a;
-const INTRP_OPEN = 0x247b;
-const INTRP_CLOSE = 0x7d;
+const LINE_DELIMITER = 0x0A;
+const ASSIGN_OP = 0x3D;
+const MULTI_LINE_DELIMITER = 0x5C0A;
+const INTRP_OPEN = 0x247B;
+const INTRP_CLOSE = 0x7D;
 
-((file: string, override: boolean) => {
+export type ReadEnvFileOptions = {
+    debug?: ConfigOptions["debug"],
+    dir: ConfigOptions["dir"],
+    envMap?: ParsedEnvs,
+    encoding: ConfigOptions["encoding"],
+    override: ConfigOptions["override"]
+}
+
+const defaultEnvMap: ParsedEnvs = new Map();
+
+const defaultOptions: ReadEnvFileOptions = {
+    debug: true,
+    dir: "",
+    encoding: "utf-8",
+    envMap: defaultEnvMap,
+    override: false
+}
+
+/**
+ * Reads an ".env" file and parses keys and values into a Map object
+ *
+ * @param fileName - the name of the ".env.*" file (without a path)
+ * @param options - an option object of option args: { `debug`: boolean | string, `dir`: string, `encoding`: BufferEncoding, `envMap`: Map<string, string> | undefined, `override`: boolean | string, }
+ * @returns a single Hash Map of Envs
+ * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: new Map(), override: true });
+ */
+export default function readEnvFile(fileName: string, options = defaultOptions): ParsedEnvs | void {
     try {
-        const envMap = new Map<string, string>();
-        const filePath = join(process.cwd(), file);
-        const fileBuf = readFileSync(filePath);
+        const envMap = options?.envMap || defaultEnvMap;
+        const file = join(options?.dir || process.cwd(), fileName);
+        const fileBuf = readFileSync(file);
 
         let byteCount = 0;
         let lineCount = 0;
@@ -47,11 +74,11 @@ const INTRP_CLOSE = 0x7d;
                 // check for assignment '=' to split key from value
                 const assignIndex = lineBuf.indexOf(ASSIGN_OP);
                 if (assignIndex >= 0) {
-                    const key = lineBuf.subarray(0, assignIndex).toString();
-                    if (env[key] && !override) {
+                    const key = lineBuf.subarray(0, assignIndex).toString(options.encoding);
+                    if (env[key] && !options.override) {
                         logWarning(
                             `The '${key}' key is already defined in process.env. If you wish to override this key, then you must pass an 'override' argument. Skipping.`,
-                            file,
+                            fileName,
                             lineCount
                         );
                         byteCount += lineBuf.length + 1;
@@ -82,13 +109,13 @@ const INTRP_CLOSE = 0x7d;
 
                             const interpCloseIndex = valSliceBuf.indexOf(INTRP_CLOSE);
                             if (interpCloseIndex >= 0) {
-                                const keyProp = valSliceBuf.subarray(2, interpCloseIndex).toString();
+                                const keyProp = valSliceBuf.subarray(2, interpCloseIndex).toString(options.encoding);
 
                                 const keyVal = env[keyProp] || envMap.get(keyProp);
                                 if (!keyVal) {
                                     logWarning(
                                         `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
-                                        file,
+                                        fileName,
                                         lineCount
                                     );
                                 }
@@ -110,7 +137,7 @@ const INTRP_CLOSE = 0x7d;
                             } else {
                                 logError(
                                     `The key '${key}' contains an open interpolated '\${' operator but appears to be missing a closing '}' operator.`,
-                                    file,
+                                    fileName,
                                     lineCount
                                 );
                             }
@@ -119,19 +146,20 @@ const INTRP_CLOSE = 0x7d;
                         ++valByteCount;
                     }
 
-                    if (key) envMap.set(key, valBuf.toString());
+                    if (key) envMap.set(key, valBuf.toString(options.encoding));
                 }
 
                 byteCount = i + 1;
             }
         }
 
-        logInfo(`Processed ${lineCount} lines and ${byteCount} bytes!`, file, lineCount);
-
-        logInfo(`Parsed ENVs: ${JSON.stringify(Object.fromEntries(envMap), null, 2)}`, file, lineCount);
+        if (options.debug) {
+            logInfo(`Processed ${lineCount} lines and ${byteCount} bytes!`, fileName, lineCount);
+            logInfo(`Parsed ENVs: ${JSON.stringify(Object.fromEntries(envMap), null, 2)}`, fileName, lineCount);
+        }
 
         return envMap;
     } catch (error: any) {
-        logError(error.message, file);
+        logError(error.message, fileName);
     }
-})('.env', false);
+}

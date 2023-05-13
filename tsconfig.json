@@ -3,7 +3,7 @@
         "diagnostics": true,
         "declaration": true,
         "noEmitOnError": true,
-        "allowJs": true,
+        "allowJs": false,
         "alwaysStrict": true,
         "allowSyntheticDefaultImports": true,
         "baseUrl": ".",
@@ -14,10 +14,10 @@
         "noEmit": false,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "resolveJsonModule": true,
+        "resolveJsonModule": false,
         "skipLibCheck": true,
         "strict": true,
-        "target": "es5"
+        "target": "es2015"
     },
     "include": ["**/*.ts"],
     "exclude": [".github", "coverage", "node_modules"]
