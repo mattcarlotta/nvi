@@ -1,4 +1,4 @@
-import type { ConfigOptions, ParsedEnvs } from 'index';
+import type { ConfigOptions, ParsedEnvs } from './index';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import process from 'process';
@@ -11,13 +11,9 @@ const MULTI_LINE_DELIMITER = 0x5c0a;
 const INTRP_OPEN = 0x247b;
 const INTRP_CLOSE = 0x7d;
 
-export type ReadEnvFileOptions = Pick<ConfigOptions, 'debug' | 'dir' | 'encoding' | 'override'> & {
-    envMap?: ParsedEnvs;
-};
-
 const defaultEnvMap: ParsedEnvs = new Map();
 
-const defaultOptions: ReadEnvFileOptions = {
+const defaultOptions: ConfigOptions = {
     debug: false,
     dir: '',
     encoding: 'utf-8',

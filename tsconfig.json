@@ -18,7 +18,5 @@
         "skipLibCheck": true,
         "strict": true,
         "target": "es2015"
-    },
-    "include": ["*.ts"],
-    "exclude": [".github", "coverage", "node_modules"]
+    }
 }
