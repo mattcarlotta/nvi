@@ -4,11 +4,6 @@ coverage
 .cc_token
 esm
 *.js
-types/assign
-types/config
-types/fileExists
-types/getFilePath
-types/load
-types/log
-types/parse
-types/index.d.ts
+*.d.ts
+!rollup.config.js
+!prettier.config.js

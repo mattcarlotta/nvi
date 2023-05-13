@@ -9,7 +9,7 @@
         "baseUrl": ".",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
-        "module": "commonjs",
+        "module": "es2015",
         "moduleResolution": "node",
         "noEmit": false,
         "noUnusedLocals": true,
@@ -19,6 +19,6 @@
         "strict": true,
         "target": "es2015"
     },
-    "include": ["**/*.ts"],
+    "include": ["*.ts"],
     "exclude": [".github", "coverage", "node_modules"]
 }

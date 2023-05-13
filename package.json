@@ -50,7 +50,7 @@
         "load:test": "LOAD_CONFIG=test ts-node ./index.ts",
         "build": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
-        "clean": "rimraf *.cjs && rimrif esm",
+        "clean": "rimraf *.cjs && rimraf *.d.ts && rimraf esm",
         "test": "echo \"Not setup yet\"",
         "format": "prettier -w --plugin-search-dir=. ."
     },
