@@ -22,14 +22,13 @@ export type ConfigOptions = {
 /**
  * Immediately loads an env.config.json file when the package is preloaded or imported.
  */
-(function (): void {
+(function(): void {
     const { LOAD_CONFIG } = env;
 
     // checks if LOAD_CONFIG is defined and assigns config options
     if (LOAD_CONFIG) {
         const envConfig = loadEnvConfig(LOAD_CONFIG);
 
-        console.log({ envConfig });
         if (envConfig) config(envConfig);
 
         // prevents the IFFE from reloading the config file
