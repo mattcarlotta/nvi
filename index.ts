@@ -1,3 +1,4 @@
+import { env } from 'process';
 import config from './config';
 import loadEnvConfig from './loadEnvConfig';
 import readEnvFile from './readEnvFile';
@@ -9,24 +10,26 @@ export type Option = boolean | string | undefined;
 export type Path = string | string[];
 
 export type ConfigOptions = {
-    dir?: string,
-    paths?: Path,
-    encoding?: BufferEncoding,
-    override?: Option,
-    debug?: Option,
-    required?: string[]
-}
+    dir?: string;
+    envMap?: ParsedEnvs;
+    files?: string[];
+    encoding?: BufferEncoding;
+    override?: Option;
+    debug?: Option;
+    required?: string[];
+};
 
 /**
  * Immediately loads an env.config.json file when the package is preloaded or imported.
  */
-(function(): void {
-    const { LOAD_CONFIG } = process.env;
+(function (): void {
+    const { LOAD_CONFIG } = env;
 
     // checks if LOAD_CONFIG is defined and assigns config options
     if (LOAD_CONFIG) {
         const envConfig = loadEnvConfig(LOAD_CONFIG);
 
+        console.log({ envConfig });
         if (envConfig) config(envConfig);
 
         // prevents the IFFE from reloading the config file
@@ -36,10 +39,10 @@ export type ConfigOptions = {
 
 export { config, loadEnvConfig, readEnvFile };
 
-const env = {
+const envFuncs = {
     config,
     loadEnvConfig,
-    readEnvFile
+    readEnvFile,
 };
 
-export default env;
+export default envFuncs;
