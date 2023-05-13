@@ -1,7 +1,7 @@
 {
     "name": "nvi",
     "version": "0.0.1",
-    "description": "Loading ENVs made simple.",
+    "description": "Reading and assigning ENVs made blazingly fast.",
     "author": "Matt Carlotta",
     "license": "GPL 3.0",
     "main": "index.js",
@@ -13,7 +13,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@github.com/mattcarlotta/nvi.git"
+        "url": "git@github.com:mattcarlotta/nvi.git"
     },
     "engines": {
         "node": ">=18"
@@ -45,13 +45,10 @@
         "./esm/log": "./esm/log.mjs"
     },
     "scripts": {
-        "load:dev": "LOAD_CONFIG=dev ts-node ./src/index.ts",
-        "load:error": "LOAD_CONFIG=error ts-node ./src/index.ts",
-        "load:test": "LOAD_CONFIG=test ts-node ./src/index.ts",
         "build": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
-        "clean": "rimraf config.js index.js loadEnvConfig.js log.js readEnvFile.js && rimraf *.d.ts && rimraf esm",
-        "test": "echo \"Not setup yet\"",
+        "clean": "rimraf config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
+        "test": "ts-node tests/index.ts",
         "format": "prettier -w --plugin-search-dir=. ."
     },
     "keywords": [

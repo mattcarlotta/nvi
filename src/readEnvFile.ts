@@ -7,9 +7,11 @@ import { logError, logInfo, logWarning } from './log';
 const COMMENT = 0x23;
 const LINE_DELIMITER = 0x0a;
 const ASSIGN_OP = 0x3d;
-const MULTI_LINE_DELIMITER = 0x5c0a;
-const INTRP_OPEN = 0x247b;
-const INTRP_CLOSE = 0x7d;
+const ESC = 0x5c;
+const NEW_LINE = 0x0a;
+const DOLLAR_SIGN = 0x24;
+const OPEN_BRACE = 0x7b;
+const CLOSE_BRACE = 0x7d;
 
 const defaultEnvMap: ParsedEnvs = new Map();
 
@@ -41,7 +43,7 @@ export default function readEnvFile(fileName: string, options = defaultOptions):
                 ++lineCount;
                 // check if there is a 2 byte multi-line delimiter
                 const multiChunk = fileBuf.subarray(i - 1, i + 1);
-                if (multiChunk.length > 1 && multiChunk.readUint16BE() === MULTI_LINE_DELIMITER) {
+                if (multiChunk[0] === ESC && multiChunk[1] === NEW_LINE) {
                     continue;
                 }
 
@@ -67,11 +69,6 @@ export default function readEnvFile(fileName: string, options = defaultOptions):
                 if (assignIndex >= 0) {
                     const key = lineBuf.subarray(0, assignIndex).toString(options.encoding);
                     if (process.env[key] && !options.override) {
-                        logWarning(
-                            `The '${key}' key is already defined in process.env. If you wish to override this key, then you must pass an 'override' argument. Skipping.`,
-                            fileName,
-                            lineCount
-                        );
                         byteCount += lineBuf.length + 1;
                         continue;
                     }
@@ -82,9 +79,7 @@ export default function readEnvFile(fileName: string, options = defaultOptions):
                         // check if chunk contains multi-line breaks
                         let chunk = valBuf.subarray(valByteCount - 1, valByteCount + 1);
 
-                        // NOTE: This may be improved by checking per byte
-                        // rather than per 2 bytes: chunk[0] === "$", chunk[1] === "{"
-                        if (chunk.length > 1 && chunk.readUint16BE() === MULTI_LINE_DELIMITER) {
+                        if (chunk[0] === ESC && chunk[1] === NEW_LINE) {
                             const prevValBuf = valBuf.subarray(0, valByteCount - 1);
                             const afterValBuf = valBuf.subarray(valByteCount + 1, valBuf.length);
 
@@ -94,10 +89,10 @@ export default function readEnvFile(fileName: string, options = defaultOptions):
 
                         // check if chunk contains an interpolated variable
                         chunk = valBuf.subarray(valByteCount, valByteCount + 2);
-                        if (chunk.length > 1 && chunk.readUint16BE() === INTRP_OPEN) {
+                        if (chunk[0] === DOLLAR_SIGN && chunk[1] === OPEN_BRACE) {
                             const valSliceBuf = valBuf.subarray(valByteCount, valBuf.length);
 
-                            const interpCloseIndex = valSliceBuf.indexOf(INTRP_CLOSE);
+                            const interpCloseIndex = valSliceBuf.indexOf(CLOSE_BRACE);
                             if (interpCloseIndex >= 0) {
                                 const keyProp = valSliceBuf
                                     .subarray(2, interpCloseIndex)
