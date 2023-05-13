@@ -13,16 +13,6 @@ const DOLLAR_SIGN = 0x24;
 const OPEN_BRACE = 0x7b;
 const CLOSE_BRACE = 0x7d;
 
-const defaultEnvMap: ParsedEnvs = new Map();
-
-const defaultOptions: ConfigOptions = {
-    debug: false,
-    dir: '',
-    encoding: 'utf-8',
-    envMap: defaultEnvMap,
-    override: false,
-};
-
 /**
  * Reads an ".env" file and parses keys and values into a Map object
  *
@@ -31,9 +21,10 @@ const defaultOptions: ConfigOptions = {
  * @returns a single {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map | `Map`} object of Envs
  * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: new Map(), override: true });
  */
-export default function readEnvFile(fileName: string, options = defaultOptions): ParsedEnvs | void {
+export default function readEnvFile(fileName: string, options = {} as ConfigOptions): ParsedEnvs | void {
     try {
-        options.envMap ||= defaultEnvMap;
+        options.envMap ||= new Map<string, string>();
+        options.encoding ||= 'utf-8';
         const fileBuf = readFileSync(join(options.dir || process.cwd(), fileName));
 
         let byteCount = 0;
