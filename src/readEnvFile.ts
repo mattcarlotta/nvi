@@ -23,20 +23,16 @@ const CLOSE_BRACE = 0x7d;
  */
 export default function readEnvFile(fileName: string, options = {} as ConfigOptions): ParsedEnvs | void {
     try {
-        // REMOVE THIS
-        // options.debug = false;
-
         options.envMap ||= new Map<string, string>();
         options.encoding ||= 'utf-8';
         const fileBuf = readFileSync(join(options.dir || process.cwd(), fileName));
 
         let byteCount = 0;
         let lineCount = 0;
-        let lineAnchor = 0;
         while (byteCount < fileBuf.length) {
             // skip lines that begin with comments
             const lineBuf = fileBuf.subarray(byteCount, fileBuf.length);
-            if (lineBuf[0] === COMMENT) {
+            if (lineBuf[0] === COMMENT || lineBuf[0] === LINE_DELIMITER) {
                 ++lineCount;
                 const firstNewLineByte = fileBuf
                     .subarray(byteCount, fileBuf.length)
@@ -47,41 +43,44 @@ export default function readEnvFile(fileName: string, options = {} as ConfigOpti
                     continue;
                 } else {
                     // this shouldn't ever throw, but here just in case
-                    throw Error('Unable to find the end of the current line!');
+                    throw Error('Found a comment or line delimiter, but was unable to locate the end of the current line!');
                 }
             }
 
-            const lineDelimiterIndex = lineBuf.indexOf(LINE_DELIMITER);
+            let lineDelimiterIndex = lineBuf.indexOf(LINE_DELIMITER);
             if (lineDelimiterIndex >= 0) {
                 ++lineCount;
 
+                // check if multi-line value and find the end of the line
                 if (lineBuf[lineDelimiterIndex - 1] === ESC && lineBuf[lineDelimiterIndex] === LINE_DELIMITER) {
-                    if (!lineAnchor) lineAnchor = byteCount;
-                    byteCount += lineDelimiterIndex + 1
-                    continue;
+                    while (lineBuf[lineDelimiterIndex - 1] === ESC) {
+                        ++lineCount;
+                        const nextLineDelimiterIndex = lineBuf.subarray(lineDelimiterIndex + 1, lineBuf.length).indexOf(LINE_DELIMITER);
+                        if (nextLineDelimiterIndex >= 0) {
+                            lineDelimiterIndex += nextLineDelimiterIndex + 1;
+                        } else {
+                            // this shouldn't ever throw, but here just in case
+                            throw Error('Found a multi-line value but was unable to locate the end of the current line!');
+                        }
+                    }
                 }
 
-
-                // TODO - this logic goes out of wack when there's an empty space
                 // check for assignment '=' to split key from value
                 const assignIndex = lineBuf.indexOf(ASSIGN_OP);
                 if (assignIndex >= 0) {
-                    // const key = lineBuf.subarray(lineAnchor, assignIndex).toString(options.encoding);
                     const key = lineBuf.subarray(0, assignIndex).toString(options.encoding);
+
+                    // skip reading from process.env if override wasn't set
                     if (process.env[key] && !options.override) {
-                        byteCount += lineBuf.length + 1;
+                        byteCount += lineDelimiterIndex + 1;
                         continue;
                     }
-
-                    // console.log({ key });
-                    // console.log({ line: lineBuf.subarray(assignIndex + 1, lineDelimiterIndex).toString() });
 
                     let valBuf = lineBuf.subarray(assignIndex + 1, lineDelimiterIndex);
                     let valByteCount = 0;
                     while (valByteCount < valBuf.length) {
                         // check if chunk contains multi-line breaks
                         let chunk = valBuf.subarray(valByteCount - 1, valByteCount + 1);
-
                         if (chunk[0] === ESC && chunk[1] === LINE_DELIMITER) {
                             const prevValBuf = valBuf.subarray(0, valByteCount - 1);
                             const afterValBuf = valBuf.subarray(valByteCount + 1, valBuf.length);
@@ -139,7 +138,6 @@ export default function readEnvFile(fileName: string, options = {} as ConfigOpti
                     if (key) options.envMap.set(key, valBuf.toString(options.encoding));
                 }
 
-                lineAnchor = 0;
                 byteCount += lineDelimiterIndex + 1;
             } else {
                 byteCount = fileBuf.length
