@@ -46,7 +46,7 @@
     },
     "scripts": {
         "dev": "LOAD_CONFIG=dev ts-node ./src/index.ts",
-        "build": "rollup -c",
+        "build": "npm run clean && rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
         "clean": "rimraf config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
         "test": "ts-node tests/index.ts",
