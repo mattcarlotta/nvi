@@ -21,7 +21,7 @@ export default [
         input: ["./src/index.ts"],
         output: [{ dir: '.', format: 'cjs', entryFileNames: '[name].js' }],
         external: ['fs', 'path', 'process'],
-        plugins: [typescript({ tsconfig: './tsconfig.json' }), terser(terserOptions)],
+        plugins: [typescript({ tsconfig: './tsconfig.cjs.json' }), terser(terserOptions)],
     },
     {
         preserveModules: true,

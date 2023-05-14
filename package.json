@@ -45,6 +45,7 @@
         "./esm/log": "./esm/log.mjs"
     },
     "scripts": {
+        "dev": "LOAD_CONFIG=dev ts-node ./src/index.ts",
         "build": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
         "clean": "rimraf config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
