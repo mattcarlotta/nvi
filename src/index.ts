@@ -7,8 +7,6 @@ export type ParsedEnvs = Map<string, string>;
 
 export type Option = boolean | string | undefined;
 
-export type Path = string | string[];
-
 export type ConfigOptions = {
     dir?: string;
     envMap?: ParsedEnvs;
@@ -22,7 +20,7 @@ export type ConfigOptions = {
 /**
  * Immediately loads an env.config.json file when the package is preloaded or imported.
  */
-(function (): void {
+(function(): void {
     const { LOAD_CONFIG } = env;
 
     // checks if LOAD_CONFIG is defined and assigns config options

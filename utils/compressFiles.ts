@@ -1,21 +1,21 @@
-import type { MinifyOptions } from 'terser';
-import { readFileSync, statSync, writeFileSync } from 'fs';
-import { minify } from 'terser';
-import { join } from 'path';
+import type { MinifyOptions } from "terser";
+import { readFileSync, statSync, writeFileSync } from "fs";
+import { minify } from "terser";
+import { join } from "path";
 
 const terserOptions = {
     compress: {
         warnings: false,
         comparisons: false,
-        inline: 2,
+        inline: 2
     },
     mangle: {
-        safari10: true,
+        safari10: true
     },
     output: {
         comments: false,
-        ascii_only: true,
-    },
+        ascii_only: true
+    }
 };
 
 function fileExists(file: string): boolean {
@@ -34,7 +34,10 @@ function fileExists(file: string): boolean {
  * @returns a promise
  * @example ```await compressFiles(["index.ts", "index.d.ts"], opts);```
  */
-async function compressFiles(files: Array<string>, opts?: MinifyOptions): Promise<void> {
+async function compressFiles(
+    files: string[],
+    opts?: MinifyOptions
+): Promise<void> {
     try {
         for (let i = 0; i < files.length; i += 1) {
             const file = files[i];
@@ -42,10 +45,12 @@ async function compressFiles(files: Array<string>, opts?: MinifyOptions): Promis
             const filePath = join(process.cwd(), file);
 
             if (!fileExists(filePath))
-                throw String(`Unable to locate ${file}. The file doesn't appear to exist!`);
+                throw String(
+                    `Unable to locate ${file}. The file doesn't appear to exist!`
+                );
 
             const { code } = await minify(
-                readFileSync(filePath, { encoding: 'utf-8' }),
+                readFileSync(filePath, { encoding: "utf-8" }),
                 opts || terserOptions
             );
 
@@ -54,7 +59,7 @@ async function compressFiles(files: Array<string>, opts?: MinifyOptions): Promis
                     `Unable to minify ${file}. No minified code was returned from terser!`
                 );
 
-            writeFileSync(filePath, code, { encoding: 'utf-8' });
+            writeFileSync(filePath, code, { encoding: "utf-8" });
         }
     } catch (error: any) {
         throw Error(error);
@@ -63,7 +68,13 @@ async function compressFiles(files: Array<string>, opts?: MinifyOptions): Promis
 
 (async (): Promise<void> => {
     try {
-        const files = ['config.js', 'index.js', 'log.js', 'loadEnvConfig.js', 'readEnvFile.js'];
+        const files = [
+            "config.js",
+            "index.js",
+            "log.js",
+            "loadEnvConfig.js",
+            "readEnvFile.js"
+        ];
 
         await compressFiles(files);
         process.exit(0);
