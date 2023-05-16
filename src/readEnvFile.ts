@@ -32,6 +32,7 @@ export default function readEnvFile(
         let byteCount = 0;
         let lineCount = 0;
         while (byteCount < fileBuf.length) {
+
             // skip lines that begin with comments
             const lineBuf = fileBuf.subarray(byteCount, fileBuf.length);
             let lineDelimiterIndex = lineBuf.indexOf(LINE_DELIMITER);
@@ -45,7 +46,7 @@ export default function readEnvFile(
             if (lineDelimiterIndex >= 0) {
                 ++lineCount;
 
-                // check if there's a multi-line value and locate the end, where the end is the first line with a non-delineated '\'
+                // check if there's a multi-line value and locate the end, where the end is the first line with a non-delineated backslash "\"
                 while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH) {
                     ++lineCount;
 
@@ -68,7 +69,7 @@ export default function readEnvFile(
                     }
                 }
 
-                // check for an assignment '=' to split key from value
+                // check for an assignment "=" to split key from value
                 const assignIndex = lineBuf.indexOf(ASSIGN_OP);
                 if (assignIndex >= 0) {
                     const key = lineBuf.subarray(0, assignIndex).toString(options.encoding);
@@ -82,6 +83,7 @@ export default function readEnvFile(
                     let valBuf = lineBuf.subarray(assignIndex + 1, lineDelimiterIndex);
                     let valByteCount = 0;
                     while (valByteCount < valBuf.length) {
+
                         // check if chunk contains multi-line breaks and remove them from the buffer
                         let chunk = valBuf.subarray(valByteCount - 1, valByteCount + 1);
                         if (chunk[0] === BACK_SLASH && chunk[1] === LINE_DELIMITER) {
@@ -103,8 +105,8 @@ export default function readEnvFile(
                                     .subarray(2, interpCloseIndex)
                                     .toString(options.encoding);
 
-                                const keyVal = process.env[keyProp] || options.envMap.get(keyProp);
-                                if (!keyVal) {
+                                const interpolatedValue = process.env[keyProp] || options.envMap.get(keyProp);
+                                if (!interpolatedValue) {
                                     logWarning(
                                         `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
                                         fileName,
@@ -114,7 +116,7 @@ export default function readEnvFile(
 
                                 // replace interpolated key variable with an interpolated value
                                 const prevBuf = valBuf.subarray(0, valByteCount);
-                                const newValBuf = Buffer.from(keyVal || '');
+                                const newValBuf = Buffer.from(interpolatedValue || '');
                                 const afterBuf = valBuf.subarray(
                                     valByteCount + 1 + interpCloseIndex,
                                     valBuf.length

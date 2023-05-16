@@ -21,11 +21,11 @@ A custom-built .env file reader without a regex in sight!
 
 ✔️ Supports Env interpolation
 
-✔️ Supports muli-line keys
+✔️ Supports muli-line values
 
 ✔️ Supports Env preloading
 
-✔️ Supports marking Envs as [required](#config-required)
+✔️ Supports marking Envs as required
 
 ✔️ Supports loading Envs via an `env.config.json` file
 
