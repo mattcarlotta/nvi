@@ -1,5 +1,6 @@
 *.log*
 node_modules
+benchmarks/node_modules
 coverage
 .cc_token
 esm
