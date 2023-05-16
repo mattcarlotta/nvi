@@ -5,15 +5,13 @@ import readEnvFile from './readEnvFile';
 
 export type ParsedEnvs = Map<string, string>;
 
-export type Option = boolean | string | undefined;
-
 export type ConfigOptions = {
     dir?: string;
     envMap?: ParsedEnvs;
     files?: string[];
     encoding?: BufferEncoding;
-    override?: Option;
-    debug?: Option;
+    override?: boolean | string;
+    debug?: boolean | string;
     required?: string[];
 };
 

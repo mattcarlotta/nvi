@@ -18,8 +18,7 @@ export function logInfo(message: string, file?: string, line?: number): void {
  */
 export function logWarning(message: string, file?: string, line?: number): void {
     console.log(
-        `\x1b[33m[nvi${file ? `::${file}` : ''}${line ? `::${line}` : ''
-        }] WARNING: ${message}\x1b[0m`
+        `\x1b[33m[nvi${file ? `::${file}` : ''}${line ? `::${line}` : ''}] WARNING: ${message}\x1b[0m`
     );
 }
 
