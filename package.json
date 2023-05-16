@@ -48,7 +48,8 @@
         "build:esm": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
         "clean": "rimraf *.ts.map config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
-        "test": "ts-node tests/index.ts"
+        "test": "NODE_ENV=test DISABLE_LOG=true ts-node ./tests/index.ts",
+        "test:logs": "NODE_ENV=test DISABLE_LOG=false ts-node ./tests/index.ts"
     },
     "keywords": [
         "env",

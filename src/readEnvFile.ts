@@ -16,7 +16,7 @@ const CLOSE_BRACE = 0x7d;
  * Reads an ".env" file and parses keys and values into a Map object
  *
  * @param fileName - the name of the ".env" file (without a path)
- * @param options - an option object of args: { `debug`: boolean | string, `dir`: string, `encoding`: BufferEncoding, `envMap`: Map<string, string> | undefined, `override`: boolean | string | undefined, }
+ * @param options - an option object of args: { `debug`: boolean | string | undefined, `dir`: string | undefined, `encoding`: BufferEncoding, `envMap`: Map<string, string> | undefined, `override`: boolean | string | undefined, }
  * @returns a single {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map | `Map`} object of Envs
  * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: new Map(), override: true });
  */
