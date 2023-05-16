@@ -22,7 +22,7 @@ export type ConfigOptions = {
 /**
  * Immediately loads an env.config.json file when the package is preloaded or imported.
  */
-(function(): void {
+(function (): void {
     const { LOAD_CONFIG } = env;
 
     // checks if LOAD_CONFIG is defined and assigns config options

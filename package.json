@@ -5,7 +5,7 @@
     "author": "Matt Carlotta",
     "license": "GPL 3.0",
     "main": "index.js",
-    "module": "esm/index.mjs",
+    "module": "index.mjs",
     "sideEffects": false,
     "homepage": "https://github.com/mattcarlotta/nvi#readme",
     "bugs": {
@@ -18,37 +18,36 @@
     "engines": {
         "node": ">=18"
     },
-    "files": [
-        "index.js",
-        "index.d.ts",
-        "config.js",
-        "config.d.ts",
-        "loadEnvConfig.js",
-        "loadEnvConfig.d.ts",
-        "readEnvFile.js",
-        "readEnvFile.d.ts",
-        "log.js",
-        "log.d.ts",
-        "esm"
-    ],
     "types": "./index.d.ts",
     "exports": {
-        ".": "./index.js",
-        "./config": "./config.js",
-        "./loadEnvConfig": "./loadEnvConfig.js",
-        "./readEnvFile": "./readEnvFile.js",
-        "./log": "./log.js",
-        "./esm": "./esm/index.mjs",
-        "./esm/config": "./esm/config.js",
-        "./esm/loadEnvConfig": "./esm/loadEnvConfig.mjs",
-        "./esm/readEnvFile": "./esm/readEnvFile.mjs",
-        "./esm/log": "./esm/log.mjs"
+        ".": {
+            "require": "./index.js",
+            "import": "./index.mjs"
+        },
+        "config": {
+            "require": "./config.js",
+            "import": "./config.mjs"
+        },
+        "loadEnvConfig": {
+            "require": "./loadEnvConfig.js",
+            "import": "./loadEnvConfig.mjs"
+        },
+        "log": {
+            "require": "./log.js",
+            "import": "./log.mjs"
+        },
+        "readEnvFile": {
+            "require": "./readEnvFile.js",
+            "import": "./readEnvFile.mjs"
+        }
     },
     "scripts": {
         "dev": "LOAD_CONFIG=dev ts-node ./src/index.ts",
-        "build": "npm run clean && rollup -c",
+        "build": "npm run clean && npm run build:cjs && npm run build:esm",
+        "build:cjs": "tsc --p ./tsconfig.cjs.json && ts-node ./utils/compressFiles.ts",
+        "build:esm": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
-        "clean": "rimraf config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
+        "clean": "rimraf *.ts.map config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
         "test": "ts-node tests/index.ts",
         "format": "prettier -w --plugin-search-dir=. ."
     },

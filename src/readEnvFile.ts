@@ -20,7 +20,10 @@ const CLOSE_BRACE = 0x7d;
  * @returns a single {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map | `Map`} object of Envs
  * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: new Map(), override: true });
  */
-export default function readEnvFile(fileName: string, options = {} as ConfigOptions): ParsedEnvs | void {
+export default function readEnvFile(
+    fileName: string,
+    options = {} as ConfigOptions
+): ParsedEnvs | void {
     try {
         options.envMap ||= new Map<string, string>();
         options.encoding ||= 'utf-8';
@@ -29,7 +32,6 @@ export default function readEnvFile(fileName: string, options = {} as ConfigOpti
         let byteCount = 0;
         let lineCount = 0;
         while (byteCount < fileBuf.length) {
-
             // skip lines that begin with comments
             const lineBuf = fileBuf.subarray(byteCount, fileBuf.length);
             let lineDelimiterIndex = lineBuf.indexOf(LINE_DELIMITER);
@@ -47,11 +49,22 @@ export default function readEnvFile(fileName: string, options = {} as ConfigOpti
                 while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH) {
                     ++lineCount;
 
-                    const nextLineDelimiterIndex = lineBuf.subarray(lineDelimiterIndex + 1, lineBuf.length).indexOf(LINE_DELIMITER);
+                    const nextLineDelimiterIndex = lineBuf
+                        .subarray(lineDelimiterIndex + 1, lineBuf.length)
+                        .indexOf(LINE_DELIMITER);
                     if (nextLineDelimiterIndex >= 0) {
                         lineDelimiterIndex += nextLineDelimiterIndex + 1;
                     } else {
-                        logError(`Found a multi-line value here: '${lineBuf.toString().split("\n").join("")}', but was unable to locate the end of the value.\n\nFor example, a multi-line value should end with a non-delineated ('\\') value:\nMULTI_LINE_KEY=123\\\n456\\\n789\nNEXT_KEY=abc\n`, fileName, lineCount);
+                        logError(
+                            `Found a multi-line value here: '${lineBuf
+                                .toString()
+                                .split('\n')
+                                .join(
+                                    ''
+                                )}', but was unable to locate the end of the value.\n\nFor example, a multi-line value should end with a non-delineated ('\\') value:\nMULTI_LINE_KEY=123\\\n456\\\n789\nNEXT_KEY=abc\n`,
+                            fileName,
+                            lineCount
+                        );
                     }
                 }
 
@@ -69,7 +82,6 @@ export default function readEnvFile(fileName: string, options = {} as ConfigOpti
                     let valBuf = lineBuf.subarray(assignIndex + 1, lineDelimiterIndex);
                     let valByteCount = 0;
                     while (valByteCount < valBuf.length) {
-
                         // check if chunk contains multi-line breaks and remove them from the buffer
                         let chunk = valBuf.subarray(valByteCount - 1, valByteCount + 1);
                         if (chunk[0] === BACK_SLASH && chunk[1] === LINE_DELIMITER) {
@@ -131,7 +143,7 @@ export default function readEnvFile(fileName: string, options = {} as ConfigOpti
 
                 byteCount += lineDelimiterIndex + 1;
             } else {
-                byteCount = fileBuf.length
+                byteCount = fileBuf.length;
             }
         }
 

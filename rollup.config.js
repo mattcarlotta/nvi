@@ -18,12 +18,6 @@ const terserOptions = {
 
 export default [
     {
-        input: ["./src/index.ts"],
-        output: [{ dir: '.', format: 'cjs', entryFileNames: '[name].js' }],
-        external: ['fs', 'path', 'process'],
-        plugins: [typescript({ tsconfig: './tsconfig.cjs.json' }), terser(terserOptions)],
-    },
-    {
         preserveModules: true,
         input: ["./src/index.ts"],
         output: [{ dir: '.', format: 'esm', entryFileNames: '[name].mjs' }],

@@ -1,10 +1,14 @@
+import { env } from 'process';
+
 /**
  * A utility function that logs a debug message.
  *
  * @param message
  */
 export function logInfo(message: string, file?: string, line?: number): void {
-    console.log(`\x1b[32m[nvi${file ? `::${file}` : ''}${line ? `::${line}` : ''}] INFO: ${message}\x1b[0m`);
+    console.log(
+        `\x1b[32m[nvi${file ? `::${file}` : ''}${line ? `::${line}` : ''}] INFO: ${message}\x1b[0m`
+    );
 }
 
 /**
@@ -14,7 +18,9 @@ export function logInfo(message: string, file?: string, line?: number): void {
  */
 export function logWarning(message: string, file?: string, line?: number): void {
     console.log(
-        `\x1b[33m[nvi${file ? `::${file}` : ''}${line ? `::${line}` : ''}] WARNING: ${message}\x1b[0m`
+        `\x1b[33m[nvi${file ? `::${file}` : ''}${
+            line ? `::${line}` : ''
+        }] WARNING: ${message}\x1b[0m`
     );
 }
 
@@ -28,5 +34,5 @@ export function logError(message: string, file?: string, line?: number): void {
     console.log(
         `\x1b[31m[nvi${file ? `::${file}` : ''}${line ? `::${line}` : ''}] ERROR: ${message}\x1b[0m`
     );
-    if (process.env.NODE_ENV !== 'test') process.exit(1);
+    if (env.NODE_ENV !== 'test') process.exit(1);
 }
