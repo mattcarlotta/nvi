@@ -4,11 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "bench:nvi": "node ./nvi.mjs",
+    "bench:noshot": "node ./noshot.mjs",
+    "bench:dotenv": "node ./dotenv.mjs"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Matt Carlotta",
+  "license": "GPL 3.0",
   "devDependencies": {
+    "@noshot/env": "^3.0.3",
     "dotenv": "^16.0.3",
     "dotenv-expand": "^10.0.0",
     "prettier": "^2.8.8"
