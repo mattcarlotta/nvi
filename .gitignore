@@ -9,3 +9,4 @@ esm
 *.mjs
 !rollup.config.js
 !prettier.config.js
+!benchmarks/*.mjs
