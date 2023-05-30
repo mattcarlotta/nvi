@@ -5,7 +5,7 @@ import config from '../src/config';
 describe('Config Method', () => {
     it('loads a default .env file', () => {
         const envMap = config();
-        const message = envMap.get('DEFAULT_ENV');
+        const message = envMap['DEFAULT_ENV'];
 
         assert.deepEqual(message, 'Hi from the root directory');
         assert.deepEqual(process.env.DEFAULT_ENV, message);
@@ -13,7 +13,7 @@ describe('Config Method', () => {
 
     it('accepts a dir argument as a string', () => {
         const envMap = config({ debug: true, dir: 'tests/envs', files: ['directory.env'] });
-        const customDirectory = envMap.get('CUSTOM_DIRECTORY');
+        const customDirectory = envMap['CUSTOM_DIRECTORY'];
 
         assert.deepEqual(customDirectory, 'Hi from a custom directory');
         assert.deepEqual(process.env.CUSTOM_DIRECTORY, customDirectory);
@@ -30,7 +30,7 @@ describe('Config Method', () => {
             override: true,
         });
 
-        const overridenPerson = envMap.get('PERSON');
+        const overridenPerson = envMap['PERSON'];
 
         assert.deepEqual(overridenPerson, 'SneakySnake');
         assert.deepEqual(process.env.PERSON, overridenPerson);
@@ -39,7 +39,7 @@ describe('Config Method', () => {
     it('fails if non-existent files are loaded', () => {
         const envMap = config({ files: ['.env.invalid'] });
 
-        assert.deepEqual(envMap.size, 0);
+        assert.deepEqual(Object.keys(envMap).length, 0);
     });
 
     it('accepts a required argument to check for required values from extracted Envs', () => {
@@ -50,7 +50,7 @@ describe('Config Method', () => {
             required: ['REQUIRED']
         });
 
-        assert.deepEqual(envMap.size, 1);
+        assert.deepEqual(Object.keys(envMap).length, 1);
     });
 
     it('allows Envs to reference previously parsed Envs', () => {
@@ -60,8 +60,8 @@ describe('Config Method', () => {
             files: ['base.env', 'reference.env'],
         });
 
-        assert.deepEqual(envMap.size, 2);
-        assert.deepEqual(envMap.get('BASE'), 'hello');
-        assert.deepEqual(envMap.get('REFERENCE'), 'hello');
+        assert.deepEqual(Object.keys(envMap).length, 2);
+        assert.deepEqual(envMap['BASE'], 'hello');
+        assert.deepEqual(envMap['REFERENCE'], 'hello');
     });
 });

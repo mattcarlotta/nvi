@@ -3,7 +3,7 @@ import config from './config';
 import loadEnvConfig from './loadEnvConfig';
 import readEnvFile from './readEnvFile';
 
-export type ParsedEnvs = Map<string, string>;
+export type ParsedEnvs = Record<string, string>;
 
 export type ConfigOptions = {
     dir?: string;

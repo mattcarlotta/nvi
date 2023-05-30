@@ -12,7 +12,7 @@ import { logError } from './log';
  * @example config({ dir: "example", paths: ".env" });
  */
 export default function config(options = {} as ConfigOptions): ParsedEnvs {
-    options.envMap ||= new Map();
+    options.envMap ||= {};
     options.files ||= ['.env'];
     options.encoding ||= 'utf-8';
     options.required ||= [];
