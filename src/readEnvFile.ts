@@ -25,7 +25,7 @@ export default function readEnvFile(
     options = {} as ConfigOptions
 ): ParsedEnvs | void {
     try {
-        options.envMap ||= new Map<string, string>();
+        options.envMap ||= {};
         options.encoding ||= 'utf-8';
         const fileBuf = readFileSync(join(options.dir || process.cwd(), fileName));
 
@@ -105,7 +105,7 @@ export default function readEnvFile(
                                     .subarray(2, interpCloseIndex)
                                     .toString(options.encoding);
 
-                                const interpolatedValue = process.env[keyProp] || options.envMap.get(keyProp);
+                                const interpolatedValue = process.env[keyProp];
                                 if (!interpolatedValue) {
                                     logWarning(
                                         `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
@@ -140,7 +140,11 @@ export default function readEnvFile(
                         ++valByteCount;
                     }
 
-                    if (key) options.envMap.set(key, valBuf.toString(options.encoding));
+                    if (key) {
+                        const val = valBuf.toString(options.encoding);
+                        process.env[key] = val;
+                        options.envMap[key] = val;
+                    }
                 }
 
                 byteCount += lineDelimiterIndex + 1;
@@ -152,7 +156,7 @@ export default function readEnvFile(
         if (options.debug) {
             logInfo(`Processed ${lineCount} lines and ${byteCount} bytes!`, fileName, lineCount);
             logInfo(
-                `Parsed ENVs: ${JSON.stringify(Object.fromEntries(options.envMap), null, 2)}`,
+                `Parsed ENVs: ${JSON.stringify(options.envMap, null, 2)}`,
                 fileName,
                 lineCount
             );

@@ -12,17 +12,13 @@ import { logError } from './log';
  * @example config({ dir: "example", paths: ".env" });
  */
 export default function config(options = {} as ConfigOptions): ParsedEnvs {
-    options.envMap ||= new Map();
+    options.envMap ||= {};
     options.files ||= ['.env'];
     options.encoding ||= 'utf-8';
     options.required ||= [];
 
     for (let i = 0; i < options.files.length; ++i) {
         readEnvFile(options.files[i], options);
-    }
-
-    for (const [k, v] of options.envMap) {
-        env[k] = v;
     }
 
     if (options.required.length) {

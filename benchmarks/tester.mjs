@@ -180,9 +180,6 @@ class Test {
                 encoding: "utf-8"
             });
 
-            // this.clearTerminal();
-            console.table(this.testResults);
-
             process.exit(0);
         } catch (error) {
             console.error(`\r\x1b[31m${error}\x1b[0m`);
