@@ -105,7 +105,7 @@ export default function readEnvFile(
                                     .subarray(2, interpCloseIndex)
                                     .toString(options.encoding);
 
-                                const interpolatedValue = process.env[keyProp] || options.envMap.get(keyProp);
+                                const interpolatedValue = process.env[keyProp];
                                 if (!interpolatedValue) {
                                     logWarning(
                                         `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
@@ -140,7 +140,11 @@ export default function readEnvFile(
                         ++valByteCount;
                     }
 
-                    if (key) options.envMap.set(key, valBuf.toString(options.encoding));
+                    if (key) {
+                        const val = valBuf.toString(options.encoding);
+                        process.env[key] = val;
+                        options.envMap.set(key, val);
+                    } 
                 }
 
                 byteCount += lineDelimiterIndex + 1;

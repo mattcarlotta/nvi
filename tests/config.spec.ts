@@ -5,10 +5,10 @@ import config from '../src/config';
 describe('Config Method', () => {
     it('loads a default .env file', () => {
         const envMap = config();
-        const message = envMap.get('MESSAGE');
+        const message = envMap.get('DEFAULT_ENV');
 
         assert.deepEqual(message, 'Hi from the root directory');
-        assert.deepEqual(process.env.MESSAGE, message);
+        assert.deepEqual(process.env.DEFAULT_ENV, message);
     });
 
     it('accepts a dir argument as a string', () => {

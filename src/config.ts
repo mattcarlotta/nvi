@@ -21,10 +21,6 @@ export default function config(options = {} as ConfigOptions): ParsedEnvs {
         readEnvFile(options.files[i], options);
     }
 
-    for (const [k, v] of options.envMap) {
-        env[k] = v;
-    }
-
     if (options.required.length) {
         const undefReqKeys: string[] = [];
         for (let i = 0; i < options.required.length; ++i) {
