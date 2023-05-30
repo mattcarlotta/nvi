@@ -13,12 +13,12 @@ const OPEN_BRACE = 0x7b;
 const CLOSE_BRACE = 0x7d;
 
 /**
- * Reads an ".env" file and parses keys and values into a Map object
+ * Reads an ".env" file, parses keys and values into an object and assigns each to process.env
  *
  * @param fileName - the name of the ".env" file (without a path)
- * @param options - an option object of args: { `debug`: boolean | string | undefined, `dir`: string | undefined, `encoding`: BufferEncoding, `envMap`: Map<string, string> | undefined, `override`: boolean | string | undefined, }
- * @returns a single {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map | `Map`} object of Envs
- * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: new Map(), override: true });
+ * @param options - an option object of args: { `debug`: boolean | string | undefined, `dir`: string | undefined, `encoding`: BufferEncoding, `envMap`: Record<string, string> | undefined, `override`: boolean | string | undefined, }
+ * @returns a single object of Envs
+ * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: {}, override: true });
  */
 export default function readEnvFile(
     fileName: string,
@@ -47,7 +47,7 @@ export default function readEnvFile(
                 ++lineCount;
 
                 // check if there's a multi-line value and locate the end, where the end is the first line with a non-delineated backslash "\"
-                while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH) {
+                while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH && lineDelimiterIndex < lineBuf.length) {
                     ++lineCount;
 
                     const nextLineDelimiterIndex = lineBuf

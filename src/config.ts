@@ -4,11 +4,11 @@ import readEnvFile from './readEnvFile';
 import { logError } from './log';
 
 /**
- * Extracts and interpolates one or multiple `.env` files into a Map object and assigns them to {@link https://nodejs.org/api/process.html#process_process_env | `process.env`}.
+ * Extracts and interpolates one or multiple `.env` files into an object and assigns them to {@link https://nodejs.org/api/process.html#process_process_env | `process.env`}.
  * Example: 'KEY=value' becomes { KEY: "value" }
  *
  * @param options - accepts: { `debug`: boolean | string, `dir`: string, `files`: string[], `encoding`: BufferEncoding, `override`: boolean | string | undefined }
- * @returns a single {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map | `Map`} object of Envs
+ * @returns a single object of Envs
  * @example config({ dir: "example", paths: ".env" });
  */
 export default function config(options = {} as ConfigOptions): ParsedEnvs {
