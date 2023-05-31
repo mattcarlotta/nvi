@@ -43,6 +43,8 @@
     },
     "scripts": {
         "dev": "LOAD_CONFIG=dev NODE_ENV=development ts-node ./src/index.ts",
+        "error": "LOAD_CONFIG=error ts-node ./src/index.ts",
+        "multiple": "LOAD_CONFIG=multiple ts-node ./src/index.ts",
         "bench:nvi": "pnpm --stream -r bench:nvi",
         "bench:noshot": "pnpm --stream -r bench:noshot",
         "bench:dotenv": "pnpm --stream -r bench:dotenv",

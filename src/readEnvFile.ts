@@ -24,15 +24,15 @@ export default function readEnvFile(
     fileName: string,
     options = {} as ConfigOptions
 ): ParsedEnvs | void {
+    let byteCount = 0;
+    let lineCount = 0;
+
     try {
         options.envMap ||= {};
         options.encoding ||= 'utf-8';
         const fileBuf = readFileSync(join(options.dir || process.cwd(), fileName));
 
-        let byteCount = 0;
-        let lineCount = 0;
         while (byteCount < fileBuf.length) {
-
             // skip lines that begin with comments
             const lineBuf = fileBuf.subarray(byteCount, fileBuf.length);
             let lineDelimiterIndex = lineBuf.indexOf(LINE_DELIMITER);
@@ -47,31 +47,16 @@ export default function readEnvFile(
             if (lineDelimiterIndex >= 0 && assignmentIndex >= 0) {
                 const key = lineBuf.subarray(0, assignmentIndex).toString(options.encoding);
 
-                // skip writing to process.env if override wasn't set
+                // skip writing to process.env if key exists and override wasn't set
                 if (process.env[key] && !options.override) {
-
                     // if there's a multi-line value, then locate the next new line byte that's not preceded with a multi-line "\" byte
+                    // NOTE: This will collect other keys and values if the multi-line value hasn't been properly delineated
                     while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH && lineDelimiterIndex < lineBuf.length) {
                         ++lineCount;
 
-                        const nextLineDelimiterIndex = lineBuf
+                        lineDelimiterIndex += lineBuf
                             .subarray(lineDelimiterIndex + 1, lineBuf.length)
-                            .indexOf(LINE_DELIMITER);
-
-                        if (nextLineDelimiterIndex >= 0) {
-                            lineDelimiterIndex += nextLineDelimiterIndex + 1;
-                        } else {
-                            logError(
-                                `Found a multi-line value here: '${lineBuf
-                                    .toString()
-                                    .split('\n')
-                                    .join(
-                                        ''
-                                    )}', but was unable to locate the end of the value.\n\nFor example, a multi-line value should end with a non-delineated ('\\') value:\nMULTI_LINE_KEY=123\\\n456\\\n789\nNEXT_KEY=abc\n`,
-                                fileName,
-                                lineCount
-                            );
-                        }
+                            .indexOf(LINE_DELIMITER) + 1;
                     }
 
                     ++lineCount;
@@ -111,8 +96,10 @@ export default function readEnvFile(
                             const interpolatedValue = process.env[keyProp] || '';
                             if (!interpolatedValue) {
                                 logWarning(
-                                    `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
+                                    `The key '${key}' contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
                                     fileName,
+                                    lineCount,
+                                    valByteCount + assignmentIndex
                                 );
                             }
 
@@ -124,9 +111,9 @@ export default function readEnvFile(
                             // the next byte could be an interpolated value, so skip this iteration
                             continue;
                         } else {
-                            logError(
+                            ++lineCount;
+                            throw new Error(
                                 `The key '${key}' contains an open interpolated '\${' operator but appears to be missing a closing '}' operator.`,
-                                fileName,
                             );
                         }
                     }
@@ -148,16 +135,17 @@ export default function readEnvFile(
         }
 
         if (options.debug) {
-            logInfo(`Processed ${lineCount} lines and ${byteCount} bytes!`, fileName, lineCount);
+            logInfo(`Processed ${lineCount} lines and ${byteCount} bytes!`, fileName, lineCount, byteCount);
             logInfo(
                 `Parsed ENVs: ${JSON.stringify(options.envMap, null, 2)}`,
                 fileName,
-                lineCount
+                lineCount,
+                byteCount
             );
         }
 
         return options.envMap;
     } catch (error: any) {
-        logError(error.message, fileName);
+        logError(error.message, fileName, lineCount, byteCount);
     }
 }

@@ -1,9 +1,10 @@
 # nvi
-A custom-built .env file reader without a regex in sight!
+A custom-built .env file reader!
 
 **Note**: This is a work in progress and will likely change over time. As such, this is **NOT** recommended for production environments yet.
 
 ## Why nvi?
+✔️ Doesn't use any regular expressions
 
 ✔️ Typescript source with included type declarations
 

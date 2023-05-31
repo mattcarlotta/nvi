@@ -9,7 +9,7 @@ describe('Read Env File', () => {
     }
 
     it('returns a Map of Envs', () => {
-        assert.deepEqual(Object.keys(envMap).length, 34);
+        assert.deepEqual(Object.keys(envMap).length, 35);
     });
 
     it('sets basic attributes', () => {
@@ -78,6 +78,11 @@ describe('Read Env File', () => {
     it('retains values despite an invalid interpolated value', () => {
         const emptyInterpKey = envMap['EMPTY_INTRP_KEY'];
         assert.deepEqual(emptyInterpKey, 'abc123');
+    });
+
+    it('retains valid interpolated values but ignores invalid interpolated value', () => {
+        const retainValidInterpKey = envMap['CONTAINS_INVALID_INTRP_KEY'];
+        assert.deepEqual(retainValidInterpKey, 'hello');
     });
 
     it('defaults invalid interpolated values to an empty string', () => {
