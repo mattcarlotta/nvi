@@ -62,6 +62,6 @@ describe('Config Method', () => {
 
         assert.deepEqual(Object.keys(envMap).length, 2);
         assert.deepEqual(envMap['BASE'], 'hello');
-        assert.deepEqual(envMap['REFERENCE'], 'hello');
+        assert.deepEqual(envMap['REFERENCE'], envMap['BASE']);
     });
 });

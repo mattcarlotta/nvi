@@ -42,112 +42,106 @@ export default function readEnvFile(
                 continue;
             }
 
-            // check that there's still a new line delimiter
-            if (lineDelimiterIndex >= 0) {
-                ++lineCount;
+            // split key from value by assignment "="
+            const assignmentIndex = lineBuf.indexOf(ASSIGN_OP);
+            if (lineDelimiterIndex >= 0 && assignmentIndex >= 0) {
+                const key = lineBuf.subarray(0, assignmentIndex).toString(options.encoding);
 
-                // check if there's a multi-line value and locate the end, where the end is the first line with a non-delineated backslash "\"
-                while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH && lineDelimiterIndex < lineBuf.length) {
-                    ++lineCount;
+                // skip writing to process.env if override wasn't set
+                if (process.env[key] && !options.override) {
 
-                    const nextLineDelimiterIndex = lineBuf
-                        .subarray(lineDelimiterIndex + 1, lineBuf.length)
-                        .indexOf(LINE_DELIMITER);
-                    if (nextLineDelimiterIndex >= 0) {
-                        lineDelimiterIndex += nextLineDelimiterIndex + 1;
-                    } else {
-                        logError(
-                            `Found a multi-line value here: '${lineBuf
-                                .toString()
-                                .split('\n')
-                                .join(
-                                    ''
-                                )}', but was unable to locate the end of the value.\n\nFor example, a multi-line value should end with a non-delineated ('\\') value:\nMULTI_LINE_KEY=123\\\n456\\\n789\nNEXT_KEY=abc\n`,
-                            fileName,
-                            lineCount
-                        );
+                    // if there's a multi-line value, then locate the next new line byte that's not preceded with a multi-line "\" byte
+                    while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH && lineDelimiterIndex < lineBuf.length) {
+                        ++lineCount;
+
+                        const nextLineDelimiterIndex = lineBuf
+                            .subarray(lineDelimiterIndex + 1, lineBuf.length)
+                            .indexOf(LINE_DELIMITER);
+
+                        if (nextLineDelimiterIndex >= 0) {
+                            lineDelimiterIndex += nextLineDelimiterIndex + 1;
+                        } else {
+                            logError(
+                                `Found a multi-line value here: '${lineBuf
+                                    .toString()
+                                    .split('\n')
+                                    .join(
+                                        ''
+                                    )}', but was unable to locate the end of the value.\n\nFor example, a multi-line value should end with a non-delineated ('\\') value:\nMULTI_LINE_KEY=123\\\n456\\\n789\nNEXT_KEY=abc\n`,
+                                fileName,
+                                lineCount
+                            );
+                        }
                     }
+
+                    ++lineCount;
+                    byteCount += lineDelimiterIndex + 1;
+                    continue;
                 }
 
-                // check for an assignment "=" to split key from value
-                const assignIndex = lineBuf.indexOf(ASSIGN_OP);
-                if (assignIndex >= 0) {
-                    const key = lineBuf.subarray(0, assignIndex).toString(options.encoding);
+                const valBuf = lineBuf.subarray(assignmentIndex + 1, lineBuf.length);
+                let valByteCount = 0;
+                let value = "";
+                while (valByteCount < valBuf.length) {
+                    const currentChar = valBuf[valByteCount];
+                    const nextChar = valBuf[valByteCount + 1];
 
-                    // skip writing to process.env if override wasn't set
-                    if (process.env[key] && !options.override) {
-                        byteCount += lineDelimiterIndex + 1;
+                    // stop parsing if there's a new line "\n" byte
+                    if (currentChar === LINE_DELIMITER) {
+                        break;
+                    }
+
+                    // skip parsing multi-line "\\n" bytes
+                    if (currentChar === BACK_SLASH && nextChar === LINE_DELIMITER) {
+                        ++lineCount;
+                        valByteCount += 2;
                         continue;
                     }
 
-                    let valBuf = lineBuf.subarray(assignIndex + 1, lineDelimiterIndex);
-                    let valByteCount = 0;
-                    while (valByteCount < valBuf.length) {
+                    // interpolate a value from key "${key}"
+                    if (currentChar === DOLLAR_SIGN && nextChar === OPEN_BRACE) {
+                        const valSliceBuf = valBuf.subarray(valByteCount, valBuf.length);
 
-                        // check if chunk contains multi-line breaks and remove them from the buffer
-                        let chunk = valBuf.subarray(valByteCount - 1, valByteCount + 1);
-                        if (chunk[0] === BACK_SLASH && chunk[1] === LINE_DELIMITER) {
-                            const prevValBuf = valBuf.subarray(0, valByteCount - 1);
-                            const afterValBuf = valBuf.subarray(valByteCount + 1, valBuf.length);
+                        const interpCloseIndex = valSliceBuf.indexOf(CLOSE_BRACE);
+                        if (interpCloseIndex >= 0) {
+                            const keyProp = valSliceBuf
+                                .subarray(2, interpCloseIndex)
+                                .toString(options.encoding);
 
-                            valBuf = Buffer.concat([prevValBuf, afterValBuf], valBuf.length - 2);
-                            valByteCount -= 2;
-                        }
-
-                        // check if chunk contains an interpolated key variable
-                        chunk = valBuf.subarray(valByteCount, valByteCount + 2);
-                        if (chunk[0] === DOLLAR_SIGN && chunk[1] === OPEN_BRACE) {
-                            const valSliceBuf = valBuf.subarray(valByteCount, valBuf.length);
-
-                            const interpCloseIndex = valSliceBuf.indexOf(CLOSE_BRACE);
-                            if (interpCloseIndex >= 0) {
-                                const keyProp = valSliceBuf
-                                    .subarray(2, interpCloseIndex)
-                                    .toString(options.encoding);
-
-                                const interpolatedValue = process.env[keyProp];
-                                if (!interpolatedValue) {
-                                    logWarning(
-                                        `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
-                                        fileName,
-                                        lineCount
-                                    );
-                                }
-
-                                // replace interpolated key variable with an interpolated value
-                                const prevBuf = valBuf.subarray(0, valByteCount);
-                                const newValBuf = Buffer.from(interpolatedValue || '');
-                                const afterBuf = valBuf.subarray(
-                                    valByteCount + 1 + interpCloseIndex,
-                                    valBuf.length
-                                );
-
-                                valBuf = Buffer.concat(
-                                    [prevBuf, newValBuf, afterBuf],
-                                    prevBuf.length + newValBuf.length + afterBuf.length
-                                );
-
-                                valByteCount = prevBuf.length + newValBuf.length - 1;
-                            } else {
-                                logError(
-                                    `The key '${key}' contains an open interpolated '\${' operator but appears to be missing a closing '}' operator.`,
+                            const interpolatedValue = process.env[keyProp] || '';
+                            if (!interpolatedValue) {
+                                logWarning(
+                                    `The '${key}' key contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
                                     fileName,
-                                    lineCount
                                 );
                             }
+
+                            value += interpolatedValue;
+
+                            // factor in the interpolated key length with the "$", "{" and "}" bytes
+                            valByteCount += keyProp.length + 3;
+
+                            // the next byte could be an interpolated value, so skip this iteration
+                            continue;
+                        } else {
+                            logError(
+                                `The key '${key}' contains an open interpolated '\${' operator but appears to be missing a closing '}' operator.`,
+                                fileName,
+                            );
                         }
-
-                        ++valByteCount;
                     }
 
-                    if (key) {
-                        const val = valBuf.toString(options.encoding);
-                        process.env[key] = val;
-                        options.envMap[key] = val;
-                    }
+                    value += String.fromCharCode(valBuf[valByteCount]);
+
+                    ++valByteCount;
                 }
 
-                byteCount += lineDelimiterIndex + 1;
+                if (key) {
+                    process.env[key] = value;
+                    options.envMap[key] = value;
+                }
+
+                byteCount += assignmentIndex + valByteCount + 1
             } else {
                 byteCount = fileBuf.length;
             }

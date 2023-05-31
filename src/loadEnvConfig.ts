@@ -1,7 +1,7 @@
 import type { ConfigOptions } from './index';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import process from 'process';
+import { cwd } from 'process';
 import { logError } from './log';
 
 /**
@@ -14,7 +14,7 @@ import { logError } from './log';
  */
 export default function loadEnvConfig(env: string, dir?: string): ConfigOptions | void {
     try {
-        const file = readFileSync(join(dir || process.cwd(), 'env.config.json'), {
+        const file = readFileSync(join(dir || cwd(), 'env.config.json'), {
             encoding: 'utf-8',
         });
 
