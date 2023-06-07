@@ -25,25 +25,25 @@ Run individual tests by running the following commands:
 - OS: Linuxmint 20.2 ulyssa
 - Kernel: Linux 5.13.0-23-generic x86_64
 
-**Compiled Timestamp**: Wednesday, June 7, 2023 at 2:04:35 PM
+**Compiled Timestamp**: Wednesday, June 7, 2023 at 3:20:05 PM
 
 Loading and interpolating a single [small env file](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env):
 | package | run timestamp | iterations | duration (3 fastest runs out of 6) | avg | fastest |
 | --- | --- | --- | --- | --- | --- |
-| nvi | Wednesday, June 7, 2023 at 1:56:17 PM | 500000 | 2.704s, 2.712s, 2.752s | 2.723s | 100.00% |
-| @noshot/env | Tuesday, May 30, 2023 at 7:17:04 PM | 500000 | 4.704s, 4.709s, 4.728s | 4.714s | 57.48% |
-| dotenv | Wednesday, May 17, 2023 at 8:39:08 PM | 500000 | 10.044s, 10.068s, 10.464s | 10.192s | 26.92% |
+| nvi | Wednesday, June 7, 2023 at 2:28:42 PM | 1000000 | 5.296s, 5.311s, 5.314s | 5.307s | 100.00% |
+| @noshot/env | Wednesday, June 7, 2023 at 2:37:00 PM | 1000000 | 9.172s, 9.242s, 9.268s | 9.227s | 57.74% |
+| dotenv | Wednesday, June 7, 2023 at 3:02:08 PM | 1000000 | 20.571s, 20.642s, 20.701s | 20.638s | 25.74% |
 
 Loading and interpolating a single [large env file](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.interp):
 | package | run timestamp | iterations | duration (3 fastest runs out of 6) | avg | fastest |
 | --- | --- | --- | --- | --- | --- |
-| nvi | Wednesday, June 7, 2023 at 1:56:17 PM | 5000 | 6.875s, 7.037s, 7.043s | 6.985s | 100.00% |
-| @noshot/env | Tuesday, May 30, 2023 at 7:17:04 PM | 5000 | 20.332s, 20.485s, 20.503s | 20.44s | 33.81% |
-| dotenv | Wednesday, May 17, 2023 at 8:39:08 PM | 5000 | 92.559s, 93.278s, 93.284s | 93.04s | 7.43% |
+| nvi | Wednesday, June 7, 2023 at 2:28:42 PM | 10000 | 12.634s, 12.742s, 12.808s | 12.728s | 100.00% |
+| @noshot/env | Wednesday, June 7, 2023 at 2:37:00 PM | 10000 | 43.587s, 43.601s, 43.759s | 43.649s | 28.99% |
+| dotenv | Wednesday, June 7, 2023 at 3:02:08 PM | 10000 | 183.641s, 183.809s, 185.249s | 184.233s | 6.88% |
 
 Loading and interpolating multiple small env files ([1](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env), [2](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.development), [3](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.local), [4](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.development.local)):
 | package | run timestamp | iterations | duration (3 fastest runs out of 6) | avg | fastest |
 | --- | --- | --- | --- | --- | --- |
-| nvi | Wednesday, June 7, 2023 at 1:56:17 PM | 500000 | 8.5s, 8.513s, 8.52s | 8.511s | 100.00% |
-| @noshot/env | Tuesday, May 30, 2023 at 7:17:04 PM | 500000 | 13.592s, 13.691s, 13.779s | 13.687s | 62.54% |
-| dotenv | Wednesday, May 17, 2023 at 8:39:08 PM | 500000 | 20.205s, 20.39s, 20.419s | 20.338s | 42.07% |
+| nvi | Wednesday, June 7, 2023 at 2:28:42 PM | 1000000 | 16.56s, 16.601s, 16.614s | 16.592s | 100.00% |
+| @noshot/env | Wednesday, June 7, 2023 at 2:37:00 PM | 1000000 | 27.07s, 27.084s, 27.196s | 27.117s | 61.17% |
+| dotenv | Wednesday, June 7, 2023 at 3:02:08 PM | 1000000 | 40.816s, 41.193s, 41.235s | 41.081s | 40.57% |

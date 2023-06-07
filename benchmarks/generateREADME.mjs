@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
-const iterations = [500000, 5000, 500000];
+const iterations = [1000000, 10000, 1000000];
 
 const head = compiled => `# Env Metrics
 
