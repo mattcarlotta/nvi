@@ -27,8 +27,9 @@ Run individual tests by running the following commands:
 - MOBO: Asus x570 ROG Crosshair Dark Hero
 - RAM: G.Skill Trident Z Neo 32 GB (4 x 8 GB) running @ 2100Mhz
 - Storage: Sabrent 1TB Rocket 4 Plus NVMe 4.0 Gen4
-- OS: Linuxmint 20.2 ulyssa
-- Kernel: Linux 5.13.0-23-generic x86_64
+- OS: Linuxmint 21.1 vera
+- Kernel: Linux 5.15.0-73-generic x86_64
+- Node: v18.16.0
 
 **Compiled Timestamp**: ${compiled}
 

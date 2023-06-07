@@ -2,45 +2,50 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <vector>
-// #include <string>
 
 namespace fs = std::filesystem;
 
 using std::ios_base;
 using streambuf_char_t = std::istreambuf_iterator<char>;
 
-const unsigned int DELIMITER = 0x0a;
-const char NEW_LINE = '\n';
+const char COMMENT = '#';
+const char LINE_DELIMITER = '\n';
+const char BACK_SLASH = '\\';
+const char ASSIGN_OP = '=';
+const char DOLLAR_SIGN = '$';
+const char OPEN_BRACE = '{';
+const char CLOSE_BRACE = '}';
 
-int main() {
-    fs::path bin_dir = fs::current_path();
-    // TODO: Change this from hard-coded to read from "env.config.json" or from args
-    fs::path env_path = bin_dir.parent_path().concat("/.env");
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        throw std::invalid_argument("You must include a directory to search and an .env file to read!");
+    }
 
-    std::ifstream env_file(env_path.string(), ios_base::binary);
+    const char *dir = argv[1];
+    const char *file_name = argv[2];
+
+    // TODO: Refactor this to simplify building a path string
+    const fs::path env_path = fs::current_path().parent_path().concat("/").concat(dir).concat("/").concat(file_name);
+
+    std::ifstream env_file(env_path.string(), ios_base::in);
 
     if (!env_file.good()) {
         throw ios_base::failure("File does not exist!");
-        // std::cout << "Unable to load " << env_path.string() << " because it does not exist!" << '\n';
-        // return 1;
-    } else {
-        std::vector<char> file_buf{streambuf_char_t(env_file), streambuf_char_t()};
+    }
 
-        for (int i = 0; i < file_buf.size(); ++i) {
-            // if (file_buf[i] == NEW_LINE) {
-            //     std::cout << "Found new line" << '\n';
-            // }
-            unsigned int byte = file_buf[i];
-            // std::cout << std::setbase(16) << std::setfill('0') << std::setw(2) << byte << '\n';
-            std::cout << std::setw(2) << std::setfill('0') << std::hex << byte << '\n';
-        }
+    unsigned int byteCount = 0;
+    unsigned int lineCount = 0;
+    std::string file{streambuf_char_t(env_file), streambuf_char_t()};
+
+    while (byteCount < file.length()) {
+        char current_char = file[byteCount];
+
+        std::cout << current_char;
+
+        ++byteCount;
     }
 
     env_file.close();
-
-    // auto endOfFile = envFile.tellg();
-    // envFile.seekg(0, std::ios::beg);
 
     return 0;
 }
