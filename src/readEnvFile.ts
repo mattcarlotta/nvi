@@ -4,13 +4,13 @@ import { join } from 'path';
 import process from 'process';
 import { logError, logInfo, logWarning } from './log';
 
-const COMMENT = 0x23;
-const LINE_DELIMITER = 0x0a;
-const BACK_SLASH = 0x5c;
-const ASSIGN_OP = 0x3d;
-const DOLLAR_SIGN = 0x24;
-const OPEN_BRACE = 0x7b;
-const CLOSE_BRACE = 0x7d;
+const COMMENT = '#';
+const LINE_DELIMITER = '\n';
+const BACK_SLASH = '\\';
+const ASSIGN_OP = '=';
+const DOLLAR_SIGN = '$';
+const OPEN_BRACE = '{';
+const CLOSE_BRACE = '}';
 
 /**
  * Reads an ".env" file, parses keys and values into an object and assigns each to process.env
@@ -30,32 +30,32 @@ export default function readEnvFile(
     try {
         options.envMap ||= {};
         options.encoding ||= 'utf-8';
-        const fileBuf = readFileSync(join(options.dir || process.cwd(), fileName));
+        const file = readFileSync(join(options.dir || process.cwd(), fileName), { encoding: options.encoding || 'utf-8' });
 
-        while (byteCount < fileBuf.length) {
+        while (byteCount < file.length) {
             // skip lines that begin with comments
-            const lineBuf = fileBuf.subarray(byteCount, fileBuf.length);
-            let lineDelimiterIndex = lineBuf.indexOf(LINE_DELIMITER);
-            if (lineBuf[0] === COMMENT || lineBuf[0] === LINE_DELIMITER) {
+            const line = file.substring(byteCount, file.length);
+            let lineDelimiterIndex = line.indexOf(LINE_DELIMITER);
+            if (line[0] === COMMENT || line[0] === LINE_DELIMITER) {
                 ++lineCount;
                 byteCount += lineDelimiterIndex + 1;
                 continue;
             }
 
             // split key from value by assignment "="
-            const assignmentIndex = lineBuf.indexOf(ASSIGN_OP);
+            const assignmentIndex = line.indexOf(ASSIGN_OP);
             if (lineDelimiterIndex >= 0 && assignmentIndex >= 0) {
-                const key = lineBuf.subarray(0, assignmentIndex).toString(options.encoding);
+                const key = line.substring(0, assignmentIndex);
 
                 // skip writing to process.env if key exists and override wasn't set
                 if (process.env[key] && !options.override) {
                     // if there's a multi-line value, then locate the next new line byte that's not preceded with a multi-line "\" byte
                     // NOTE: This will collect other keys and values if the multi-line value hasn't been properly delineated
-                    while (lineBuf[lineDelimiterIndex - 1] === BACK_SLASH && lineDelimiterIndex < lineBuf.length) {
+                    while (line[lineDelimiterIndex - 1] === BACK_SLASH && lineDelimiterIndex < line.length) {
                         ++lineCount;
 
-                        lineDelimiterIndex += lineBuf
-                            .subarray(lineDelimiterIndex + 1, lineBuf.length)
+                        lineDelimiterIndex += line
+                            .substring(lineDelimiterIndex + 1, line.length)
                             .indexOf(LINE_DELIMITER) + 1;
                     }
 
@@ -64,12 +64,12 @@ export default function readEnvFile(
                     continue;
                 }
 
-                const valBuf = lineBuf.subarray(assignmentIndex + 1, lineBuf.length);
+                const valSlice = line.substring(assignmentIndex + 1, line.length);
                 let valByteCount = 0;
                 let value = "";
-                while (valByteCount < valBuf.length) {
-                    const currentChar = valBuf[valByteCount];
-                    const nextChar = valBuf[valByteCount + 1];
+                while (valByteCount < valSlice.length) {
+                    const currentChar = valSlice[valByteCount];
+                    const nextChar = valSlice[valByteCount + 1];
 
                     // stop parsing if there's a new line "\n" byte
                     if (currentChar === LINE_DELIMITER) {
@@ -85,13 +85,12 @@ export default function readEnvFile(
 
                     // interpolate a value from key "${key}"
                     if (currentChar === DOLLAR_SIGN && nextChar === OPEN_BRACE) {
-                        const valSliceBuf = valBuf.subarray(valByteCount, valBuf.length);
+                        const valSliceBuf = valSlice.substring(valByteCount, valSlice.length);
 
                         const interpCloseIndex = valSliceBuf.indexOf(CLOSE_BRACE);
                         if (interpCloseIndex >= 0) {
                             const keyProp = valSliceBuf
-                                .subarray(2, interpCloseIndex)
-                                .toString(options.encoding);
+                                .substring(2, interpCloseIndex);
 
                             const interpolatedValue = process.env[keyProp] || '';
                             if (!interpolatedValue) {
@@ -118,7 +117,7 @@ export default function readEnvFile(
                         }
                     }
 
-                    value += String.fromCharCode(valBuf[valByteCount]);
+                    value += valSlice[valByteCount];
 
                     ++valByteCount;
                 }
@@ -130,7 +129,7 @@ export default function readEnvFile(
 
                 byteCount += assignmentIndex + valByteCount + 1
             } else {
-                byteCount = fileBuf.length;
+                byteCount = file.length;
             }
         }
 
