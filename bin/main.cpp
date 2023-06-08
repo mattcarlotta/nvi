@@ -29,32 +29,30 @@ class ArgParser {
     }
 
     const string get(const string &flag) {
-        string arg = this->args[flag];
-        if (!arg.length()) {
-            const string empty_str{""};
-            return empty_str;
+        try {
+            return this->args.at(flag);
+        } catch (const std::out_of_range &) {
+            return "";
         }
-
-        return arg;
     }
 };
 
 int main(int argc, char *argv[]) {
     ArgParser args(argc, argv);
 
-    const string dir = args.get("-d");
     const string file_name = args.get("-f");
     if (!file_name.length()) {
-        throw std::invalid_argument("You must assign an .env file to read!");
+        std::cerr << "You must assign an .env file to read!" << std::endl;
+        return 1;
     }
 
-    fs::path env_path = fs::current_path().parent_path();
-    env_path = env_path / dir / file_name;
+    fs::path env_path = fs::current_path().parent_path() / args.get("-d") / file_name;
 
     std::ifstream env_file(env_path.string(), ios_base::in);
 
     if (!env_file.good()) {
-        throw ios_base::failure("File does not exist!");
+        std::cerr << "Unable to locate: '" << env_path.string() << "'. The file doesn't appear to exist!" << std::endl;
+        return 1;
     }
 
     unsigned int byteCount = 0;

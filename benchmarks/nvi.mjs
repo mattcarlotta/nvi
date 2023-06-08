@@ -7,15 +7,15 @@ tester
     .add('single', () => {
         // loading a single default .env
         config();
-    }, 1000000)
+    }, 500000)
     .add('interpolated', () => {
         // large interpolated .env loading
         config({ files: [".env.interp"] });
-    }, 10000)
+    }, 5000)
     .add('multiple', () => {
         // loading multiple .env files (.env, .env.development, .env.local, .env.development.local)
         config({ files: [".env", ".env.development", ".env.local", ".env.development.local"] });
-    }, 1000000)
+    }, 500000)
     .run()
     .saveResults()
 

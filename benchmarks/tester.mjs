@@ -103,7 +103,7 @@ class Test {
             performance.mark('start-test');
 
             for (let i = 0; i < this.iterations[this.testRunNum - 1]; ++i) {
-                process.env = this.oldenvs;
+                process.env = Object.create(this.oldenvs);
                 testFn();
             }
 
