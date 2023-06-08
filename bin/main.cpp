@@ -7,6 +7,7 @@
 namespace fs = std::filesystem;
 
 using std::ios_base;
+using std::map;
 using std::string;
 using streambuf_char = std::istreambuf_iterator<char>;
 
@@ -20,7 +21,7 @@ const char CLOSE_BRACE = '}';
 
 class ArgParser {
     private:
-    std::map<string, string> args;
+    map<string, string> args;
 
     public:
     ArgParser(int &argc, char *argv[]) {
@@ -55,16 +56,92 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    unsigned int byteCount = 0;
-    unsigned int lineCount = 0;
     string file{streambuf_char(env_file), streambuf_char()};
 
-    while (byteCount < file.length()) {
-        char current_char = file[byteCount];
+    map<string, string> env_map;
+    unsigned int byte_count = 0;
+    unsigned int line_count = 0;
+    while (byte_count < file.length()) {
+        const string line = file.substr(byte_count, file.length());
+        const int line_delimiter_index = line.find(LINE_DELIMITER);
+        if (line[0] == COMMENT || line[0] == LINE_DELIMITER) {
+            ++line_count;
+            byte_count += line_delimiter_index + 1;
+            continue;
+        }
 
-        std::cout << current_char;
+        const int assignment_index = line.find(ASSIGN_OP);
+        if (line_delimiter_index >= 0 && assignment_index >= 0) {
+            const string key = line.substr(0, assignment_index);
 
-        ++byteCount;
+            const string line_slice = line.substr(assignment_index + 1, line.length());
+            int val_byte_count = 0;
+            string value = "";
+            while (val_byte_count < line_slice.length()) {
+                const char current_char = line_slice[val_byte_count];
+                const char next_char = line_slice[val_byte_count + 1];
+
+                if (current_char == LINE_DELIMITER) {
+                    break;
+                }
+
+                if (current_char == BACK_SLASH && next_char == LINE_DELIMITER) {
+                    ++line_count;
+                    val_byte_count += 2;
+                    continue;
+                }
+
+                if (current_char == DOLLAR_SIGN && next_char == OPEN_BRACE) {
+                    const string val_slice_str = line_slice.substr(val_byte_count, line_slice.length());
+
+                    const int interp_close_index = val_slice_str.find(CLOSE_BRACE);
+                    if (interp_close_index >= 0) {
+                        const string key_prop = val_slice_str.substr(2, interp_close_index - 2);
+
+                        string interpolated_value;
+                        try {
+                            interpolated_value = env_map.at(key_prop);
+                        } catch (const std::out_of_range &) {
+                            interpolated_value = "";
+                            std::cout << "The key '" << key << "' contains an invalid interpolated variable: '"
+                                      << key_prop << "'. Unable to locate a value that corresponds to this key."
+                                      << std::endl;
+                        }
+
+                        value += interpolated_value;
+
+                        val_byte_count += key_prop.length() + 3;
+
+                        continue;
+                    } else {
+                        ++line_count;
+                        std::cerr << "The key '" << key
+                                  << "' contains an interpolated variable: '${' operator but appears to be missing a "
+                                     "closing '}' operator."
+                                  << std::endl;
+                        return 1;
+                    }
+                }
+
+                value += line_slice[val_byte_count];
+
+                ++val_byte_count;
+            }
+
+            if (key.length()) {
+                env_map.insert(std::make_pair(key, value));
+            }
+
+            byte_count += assignment_index + val_byte_count + 1;
+        } else {
+            byte_count = file.length();
+        }
+    }
+
+    std::cout << "Processed " << line_count << " line(s) and " << byte_count << " bytes!" << std::endl;
+
+    for (auto const &[key, val] : env_map) {
+        std::cout << key << ": " << val << std::endl;
     }
 
     env_file.close();

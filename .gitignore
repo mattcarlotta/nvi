@@ -12,6 +12,6 @@ esm
 !prettier.config.js
 !benchmarks/*.mjs
 bin/CMakeFiles
-bin/main
+bin/nvi
 bin/CMakeCache.txt
 bin/cmake_install.cmake
