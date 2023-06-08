@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs";
 
-const ENV = new Array(20000).fill(0).reduce(
+const ENV = new Array(10000).fill(0).reduce(
     (acc, _, index) => ({
         ...acc,
         [index]: index % 5 !== 0 ? `${index}` : `\$${index + 1}`
@@ -62,7 +62,7 @@ const file = Object.keys(ENV).reduce((str, index) => {
 
     str += `${index > 0 ? "\n" : ""}${r !== 5 ? `${index}=` : ""}${val}`;
 
-    return str;
+    return str.concat("\n");
 }, "");
 
 writeFileSync(".env.interp", file, { encoding: "utf-8" });
