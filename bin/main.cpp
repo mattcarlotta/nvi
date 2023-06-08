@@ -2,11 +2,13 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <map>
 
 namespace fs = std::filesystem;
 
 using std::ios_base;
-using streambuf_char_t = std::istreambuf_iterator<char>;
+using std::string;
+using streambuf_char = std::istreambuf_iterator<char>;
 
 const char COMMENT = '#';
 const char LINE_DELIMITER = '\n';
@@ -16,16 +18,38 @@ const char DOLLAR_SIGN = '$';
 const char OPEN_BRACE = '{';
 const char CLOSE_BRACE = '}';
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        throw std::invalid_argument("You must include a directory to search and an .env file to read!");
+class ArgParser {
+    private:
+    std::map<string, string> args;
+
+    public:
+    ArgParser(int &argc, char *argv[]) {
+        for (int i = 1; i < argc; i += 2)
+            this->args.insert(std::make_pair(argv[i], argv[i + 1]));
     }
 
-    const char *dir = argv[1];
-    const char *file_name = argv[2];
+    const string get(const string &flag) {
+        string arg = this->args[flag];
+        if (!arg.length()) {
+            const string empty_str{""};
+            return empty_str;
+        }
 
-    // TODO: Refactor this to simplify building a path string
-    const fs::path env_path = fs::current_path().parent_path().concat("/").concat(dir).concat("/").concat(file_name);
+        return arg;
+    }
+};
+
+int main(int argc, char *argv[]) {
+    ArgParser args(argc, argv);
+
+    const string dir = args.get("-d");
+    const string file_name = args.get("-f");
+    if (!file_name.length()) {
+        throw std::invalid_argument("You must assign an .env file to read!");
+    }
+
+    fs::path env_path = fs::current_path().parent_path();
+    env_path = env_path / dir / file_name;
 
     std::ifstream env_file(env_path.string(), ios_base::in);
 
@@ -35,7 +59,7 @@ int main(int argc, char *argv[]) {
 
     unsigned int byteCount = 0;
     unsigned int lineCount = 0;
-    std::string file{streambuf_char_t(env_file), streambuf_char_t()};
+    string file{streambuf_char(env_file), streambuf_char()};
 
     while (byteCount < file.length()) {
         char current_char = file[byteCount];
