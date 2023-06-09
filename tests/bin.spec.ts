@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
 describe('Binary Parser', () => {
-    it('parses an .env file and returns a parsable JSON string', async () => {
+    it('parses an .env file and returns a parseable JSON string', async () => {
         let data = '';
         for await (const chunk of process.stdin) data += chunk;
         assert.ok(data);

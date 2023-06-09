@@ -29,12 +29,12 @@ class ArgParser {
     public:
     ArgParser(int &argc, char *argv[]) {
         for (int i = 1; i < argc; i += 2)
-            this->args.insert(std::make_pair(argv[i], argv[i + 1]));
+            args.insert(std::make_pair(argv[i], argv[i + 1]));
     }
 
     const string get(const string &flag) {
         try {
-            return this->args.at(flag);
+            return args.at(flag);
         } catch (const std::out_of_range &) {
             return "";
         }
@@ -45,36 +45,29 @@ class EnvFileParser {
     private:
     ifstream env_file;
     string file;
-    fs::path file_path;
+    const fs::path *file_path;
     unsigned int byte_count = 0;
     unsigned int line_count = 0;
-    json env_map;
 
     public:
-    EnvFileParser(fs::path &env_path, json &env_map) {
-        this->file_path = env_path;
-        this->env_file = ifstream(this->file_path.string(), ios_base::in);
-        this->file = string{streambuf_char(this->env_file), streambuf_char()};
-        this->env_map = env_map;
-    }
-
-    const bool exists() {
-        if (this->env_file.good()) {
-            return true;
-        } else {
-            std::cerr << "Unable to locate: '" << this->file_path.string() << "'. The file doesn't appear to exist!"
+    EnvFileParser(const fs::path &env_path) {
+        file_path = &env_path;
+        env_file = ifstream(file_path->string(), ios_base::in);
+        if (!env_file.good()) {
+            std::cerr << "Unable to locate: '" << file_path->string() << "'. The file doesn't appear to exist!"
                       << std::endl;
             exit(1);
         }
+        file = string{streambuf_char(env_file), streambuf_char()};
     }
 
-    json parse() {
-        while (this->byte_count < this->file.length()) {
-            const string line = file.substr(this->byte_count, this->file.length());
+    json parse(json env_map) {
+        while (byte_count < file.length()) {
+            const string line = file.substr(byte_count, file.length());
             const int line_delimiter_index = line.find(LINE_DELIMITER);
             if (line[0] == COMMENT || line[0] == LINE_DELIMITER) {
-                ++this->line_count;
-                this->byte_count += line_delimiter_index + 1;
+                ++line_count;
+                byte_count += line_delimiter_index + 1;
                 continue;
             }
 
@@ -94,7 +87,7 @@ class EnvFileParser {
                     }
 
                     if (current_char == BACK_SLASH && next_char == LINE_DELIMITER) {
-                        ++this->line_count;
+                        ++line_count;
                         val_byte_count += 2;
                         continue;
                     }
@@ -122,7 +115,7 @@ class EnvFileParser {
 
                             continue;
                         } else {
-                            ++this->line_count;
+                            ++line_count;
                             std::cerr
                                 << "The key '" << key
                                 << "' contains an interpolated variable: '${' operator but appears to be missing a "
@@ -138,16 +131,16 @@ class EnvFileParser {
                 }
 
                 if (key.length()) {
-                    this->env_map[key] = value;
+                    env_map[key] = value;
                 }
 
-                this->byte_count += assignment_index + val_byte_count + 1;
+                byte_count += assignment_index + val_byte_count + 1;
             } else {
-                this->byte_count = file.length();
+                byte_count = file.length();
             }
         }
 
-        this->env_file.close();
+        env_file.close();
 
         return env_map;
     }
@@ -164,13 +157,9 @@ int main(int argc, char *argv[]) {
 
     json env_map;
 
-    fs::path env_path = fs::current_path() / args.get("-d") / file_name;
+    EnvFileParser file(fs::current_path() / args.get("-d") / file_name);
 
-    EnvFileParser file(env_path, env_map);
-
-    if (file.exists()) {
-        env_map = file.parse();
-    }
+    env_map = file.parse(env_map);
 
     std::cout << env_map << std::endl;
 
