@@ -27,7 +27,7 @@ const file = Object.keys(ENV).reduce((str, index) => {
             break;
         }
         case 3: {
-            val = `{"foo": $${index - 1}, $${[index - 1]}: "bar"}`;
+            val = `{"foo": $\{${index - 1}\}, $\{${[index - 1]}\}: "bar"}`;
             break;
         }
         case 4: {
@@ -62,7 +62,7 @@ const file = Object.keys(ENV).reduce((str, index) => {
 
     str += `${index > 0 ? "\n" : ""}${r !== 5 ? `${index}=` : ""}${val}`;
 
-    return str.concat("\n");
+    return str;
 }, "");
 
-writeFileSync(".env.interp", file, { encoding: "utf-8" });
+writeFileSync(".env.interp", file.concat("\n"), { encoding: "utf-8" });
