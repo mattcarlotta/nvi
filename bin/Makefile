@@ -129,6 +129,54 @@ nvi/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/build
 .PHONY : nvi/fast
 
+arg.o: arg.cpp.o
+.PHONY : arg.o
+
+# target to build an object file
+arg.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/arg.cpp.o
+.PHONY : arg.cpp.o
+
+arg.i: arg.cpp.i
+.PHONY : arg.i
+
+# target to preprocess a source file
+arg.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/arg.cpp.i
+.PHONY : arg.cpp.i
+
+arg.s: arg.cpp.s
+.PHONY : arg.s
+
+# target to generate assembly for a file
+arg.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/arg.cpp.s
+.PHONY : arg.cpp.s
+
+env.o: env.cpp.o
+.PHONY : env.o
+
+# target to build an object file
+env.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/env.cpp.o
+.PHONY : env.cpp.o
+
+env.i: env.cpp.i
+.PHONY : env.i
+
+# target to preprocess a source file
+env.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/env.cpp.i
+.PHONY : env.cpp.i
+
+env.s: env.cpp.s
+.PHONY : env.s
+
+# target to generate assembly for a file
+env.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/env.cpp.s
+.PHONY : env.cpp.s
+
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -162,6 +210,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... nvi"
+	@echo "... arg.o"
+	@echo "... arg.i"
+	@echo "... arg.s"
+	@echo "... env.o"
+	@echo "... env.i"
+	@echo "... env.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

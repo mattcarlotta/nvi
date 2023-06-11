@@ -1,24 +1,16 @@
+#ifndef ARG_H
+#define ARG_H
+
 #include <map>
-#include <stdexcept>
 #include <string>
 
-namespace Args {
-class Parser {
+class argparser {
     private:
     std::map<std::string, std::string> args;
 
     public:
-    Parser(int &argc, char *argv[]) {
-        for (int i = 1; i < argc; i += 2)
-            args.insert(std::make_pair(argv[i], argv[i + 1]));
-    }
+    argparser(int &argc, char *argv[]);
 
-    const std::string get(const std::string &flag) {
-        try {
-            return args.at(flag);
-        } catch (const std::out_of_range &) {
-            return "";
-        }
-    }
+    const std::string get(const std::string &flag);
 };
-} // namespace Args
+#endif

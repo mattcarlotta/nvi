@@ -4,7 +4,7 @@
 #include <filesystem>
 
 int main(int argc, char *argv[]) {
-    Args::Parser args(argc, argv);
+    argparser args(argc, argv);
 
     const std::string env_file_name = args.get("-f");
     if (!env_file_name.length()) {
@@ -14,9 +14,9 @@ int main(int argc, char *argv[]) {
 
     nlohmann::json env_map;
 
-    Env::FileParser file(std::filesystem::current_path() / args.get("-d") / env_file_name);
+    envfile env(std::filesystem::current_path() / args.get("-d") / env_file_name);
 
-    env_map = file.parse(env_map);
+    env_map = env.parse(env_map);
 
     std::cout << env_map << std::endl;
 

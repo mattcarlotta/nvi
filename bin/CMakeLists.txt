@@ -5,4 +5,4 @@ set(EXECUTABLE_OUTPUT_PATH  "../")
 project(nvi)
 
 project(${PROJECT_NAME} VERSION 1.0)
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.cpp arg.cpp env.cpp)
