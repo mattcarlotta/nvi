@@ -10,7 +10,7 @@ A custom-built .env file reader!
 
 ✔️ Logs warnings with `[nvi] (file_name:line:byte)` if an interpolation fails
 
-✔️ Zero dependencies and is up to [30% to 80% faster at parsing](benchmarks/README.md#metrics) than the industry standard
+✔️ Zero dependencies and is up to [75% faster at parsing](benchmarks/README.md#metrics) than the industry standard
 
 ✔️ Contains CJS and ESM compiled sources
 
