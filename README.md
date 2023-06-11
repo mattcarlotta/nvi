@@ -8,9 +8,13 @@ A custom-built .env file reader!
 
 ✔️ Typescript source with included type declarations
 
-✔️ Zero dependencies
+✔️ Logs warnings with `[nvi] (file_name:line:byte)` if an interpolation fails
+
+✔️ Zero dependencies and is up to [30% to 80% faster at parsing](benchmarks/README.md#metrics) than the industry standard
 
 ✔️ Contains CJS and ESM compiled sources
+
+✔️ Contains a stand-alone executable to parse `.env` files to stringified JSON
 
 ✔️ Unopinionated about `.env` naming
 
