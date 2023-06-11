@@ -97,8 +97,8 @@ export default function readEnvFile(
                                 logWarning(
                                     `The key '${key}' contains an invalid interpolated variable: '\${${keyProp}}'. Unable to locate a value that corresponds to this key.`,
                                     fileName,
-                                    lineCount,
-                                    valByteCount + assignmentIndex
+                                    lineCount + 1,
+                                    valByteCount + assignmentIndex + 2
                                 );
                             }
 

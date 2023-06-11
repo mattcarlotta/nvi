@@ -1,27 +1,17 @@
-#ifndef ENV_H
-#define ENV_H
-
 #include "env.hpp"
 #include "json/single_include/nlohmann/json.hpp"
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
 using std::string;
 
-const char COMMENT = '#';
-const char LINE_DELIMITER = '\n';
-const char BACK_SLASH = '\\';
-const char ASSIGN_OP = '=';
-const char DOLLAR_SIGN = '$';
-const char OPEN_BRACE = '{';
-const char CLOSE_BRACE = '}';
-
-envfile::envfile(const std::filesystem::path &env_path) {
-    file_path = &env_path;
-    env_file = std::ifstream(file_path->string(), std::ios_base::in);
+envfile::envfile(const string &dir, const string &env_file_name) {
+    file_path = std::filesystem::current_path() / dir / env_file_name;
+    file_name = env_file_name;
+    env_file = std::ifstream(file_path.string(), std::ios_base::in);
     if (!env_file.good()) {
-        std::cerr << "Unable to locate: '" << file_path->string() << "'. The file doesn't appear to exist!"
-                  << std::endl;
+        std::cerr << "Unable to locate: '" << file_path.string() << "'. The file doesn't appear to exist!" << std::endl;
         exit(1);
     }
     file = string{std::istreambuf_iterator<char>(env_file), std::istreambuf_iterator<char>()};
@@ -69,7 +59,10 @@ nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
                         if (env_map.contains(key_prop)) {
                             interpolated_value = env_map.at(key_prop);
                         } else {
-                            std::cerr << "The key '" << key << "' contains an invalid interpolated variable: '"
+                            std::cerr << "[nvi]"
+                                      << " (" << file_name << ":" << line_count + 1 << ":"
+                                      << assignment_index + val_byte_count + 2 << ") "
+                                      << "The key '" << key << "' contains an invalid interpolated variable: '"
                                       << key_prop << "'. Unable to locate a value that corresponds to this key."
                                       << std::endl;
                         }
@@ -80,8 +73,10 @@ nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
 
                         continue;
                     } else {
-                        ++line_count;
-                        std::cerr << "The key '" << key
+                        std::cerr << "[nvi]"
+                                  << " (" << file_name << ":" << line_count + 2 << ":"
+                                  << assignment_index + val_byte_count + 2 << ") "
+                                  << "The key '" << key
                                   << "' contains an interpolated variable: '${' operator but appears to be missing a "
                                      "closing '}' operator."
                                   << std::endl;
@@ -108,4 +103,3 @@ nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
 
     return env_map;
 }
-#endif

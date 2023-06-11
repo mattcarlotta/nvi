@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     nlohmann::json env_map;
 
-    envfile env(std::filesystem::current_path() / args.get("-d") / env_file_name);
+    envfile env(args.get("-d"), env_file_name);
 
     env_map = env.parse(env_map);
 
