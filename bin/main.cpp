@@ -1,22 +1,21 @@
-#include "arg.hpp"
-#include "env.hpp"
+#include "arg.h"
+#include "env.h"
 #include "json/single_include/nlohmann/json.hpp"
 #include <filesystem>
 
 int main(int argc, char *argv[]) {
-    argparser args(argc, argv);
+    nvi::arg_parser args(argc, argv);
 
-    const std::string env_file_name = args.get("-f");
+    std::string env_file_name = args.get("-f");
     if (!env_file_name.length()) {
-        std::cerr << "You must assign an .env file to read!" << std::endl;
-        exit(1);
+        env_file_name = ".env";
     }
 
     nlohmann::json env_map;
 
-    envfile env(args.get("-d"), env_file_name);
+    nvi::file env_file(args.get("-d"), env_file_name);
 
-    env_map = env.parse(env_map);
+    env_map = env_file.parse(env_map);
 
     std::cout << env_map << std::endl;
 

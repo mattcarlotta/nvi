@@ -1,4 +1,5 @@
-#include "env.hpp"
+#include "env.h"
+#include "constants.h"
 #include "json/single_include/nlohmann/json.hpp"
 #include <filesystem>
 #include <fstream>
@@ -6,7 +7,8 @@
 
 using std::string;
 
-envfile::envfile(const string &dir, const string &env_file_name) {
+namespace nvi {
+file::file(const string &dir, const string &env_file_name) {
     file_path = std::filesystem::current_path() / dir / env_file_name;
     file_name = env_file_name;
     env_file = std::ifstream(file_path.string(), std::ios_base::in);
@@ -14,20 +16,20 @@ envfile::envfile(const string &dir, const string &env_file_name) {
         std::cerr << "Unable to locate: '" << file_path.string() << "'. The file doesn't appear to exist!" << std::endl;
         exit(1);
     }
-    file = string{std::istreambuf_iterator<char>(env_file), std::istreambuf_iterator<char>()};
+    loaded_file = string{std::istreambuf_iterator<char>(env_file), std::istreambuf_iterator<char>()};
 }
 
-nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
-    while (byte_count < file.length()) {
-        const string line = file.substr(byte_count, file.length());
-        const int line_delimiter_index = line.find(LINE_DELIMITER);
-        if (line[0] == COMMENT || line[0] == LINE_DELIMITER) {
+nlohmann::json file::parse(nlohmann::json env_map) {
+    while (byte_count < loaded_file.length()) {
+        const string line = loaded_file.substr(byte_count, loaded_file.length());
+        const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
+        if (line[0] == constants::COMMENT || line[0] == constants::LINE_DELIMITER) {
             ++line_count;
             byte_count += line_delimiter_index + 1;
             continue;
         }
 
-        const int assignment_index = line.find(ASSIGN_OP);
+        const int assignment_index = line.find(constants::ASSIGN_OP);
         if (line_delimiter_index >= 0 && assignment_index >= 0) {
             const string key = line.substr(0, assignment_index);
 
@@ -38,20 +40,20 @@ nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
                 const char current_char = line_slice[val_byte_count];
                 const char next_char = line_slice[val_byte_count + 1];
 
-                if (current_char == LINE_DELIMITER) {
+                if (current_char == constants::LINE_DELIMITER) {
                     break;
                 }
 
-                if (current_char == BACK_SLASH && next_char == LINE_DELIMITER) {
+                if (current_char == constants::BACK_SLASH && next_char == constants::LINE_DELIMITER) {
                     ++line_count;
                     val_byte_count += 2;
                     continue;
                 }
 
-                if (current_char == DOLLAR_SIGN && next_char == OPEN_BRACE) {
+                if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
                     const string val_slice_str = line_slice.substr(val_byte_count, line_slice.length());
 
-                    const int interp_close_index = val_slice_str.find(CLOSE_BRACE);
+                    const int interp_close_index = val_slice_str.find(constants::CLOSE_BRACE);
                     if (interp_close_index >= 0) {
                         const string key_prop = val_slice_str.substr(2, interp_close_index - 2);
 
@@ -95,7 +97,7 @@ nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
 
             byte_count += assignment_index + val_byte_count + 1;
         } else {
-            byte_count = file.length();
+            byte_count = loaded_file.length();
         }
     }
 
@@ -103,3 +105,4 @@ nlohmann::json envfile::envfile::parse(nlohmann::json env_map) {
 
     return env_map;
 }
+}; // namespace nvi
