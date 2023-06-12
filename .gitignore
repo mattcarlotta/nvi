@@ -16,3 +16,4 @@ nvi
 **/CMakeCache.txt
 *.a
 *.cmake
+Makefile
