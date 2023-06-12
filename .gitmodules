@@ -1,6 +1,3 @@
-[submodule "bin/json"]
-	path = bin/json
-	url = git@github.com:nlohmann/json.git
 [submodule "bin/src/json"]
 	path = bin/src/json
 	url = git@github.com:nlohmann/json.git
