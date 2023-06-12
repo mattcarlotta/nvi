@@ -3,8 +3,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(nvi)
 
+include(CTest)
 project(${PROJECT_NAME} VERSION 1.0)
 add_subdirectory(src)
-# add_executable(${PROJECT_NAME} main.cpp arg.cpp env.cpp)
+
 enable_testing()
 add_subdirectory(test)

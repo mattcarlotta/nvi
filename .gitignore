@@ -19,5 +19,6 @@ nvi
 **/Testing
 *.a
 *.cmake
+*.tcl
 Makefile
 
