@@ -12,7 +12,7 @@ esm
 !prettier.config.js
 !benchmarks/*.mjs
 nvi
-bin/CMakeFiles
-bin/nvi
-bin/CMakeCache.txt
-bin/cmake_install.cmake
+**/CMakeFiles/*
+**/CMakeCache.txt
+*.a
+*.cmake

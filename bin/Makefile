@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /home/m6d/Documents/nvi/bin
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
@@ -117,6 +127,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named lib
+
+# Build rule for target.
+lib: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lib
+.PHONY : lib
+
+# fast build rule for target.
+lib/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/lib.dir/build.make src/CMakeFiles/lib.dir/build
+.PHONY : lib/fast
+
+#=============================================================================
 # Target rules for targets named nvi
 
 # Build rule for target.
@@ -126,80 +149,34 @@ nvi: cmake_check_build_system
 
 # fast build rule for target.
 nvi/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/build
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/nvi.dir/build.make src/CMakeFiles/nvi.dir/build
 .PHONY : nvi/fast
 
-arg.o: arg.cpp.o
-.PHONY : arg.o
+#=============================================================================
+# Target rules for targets named test_args
 
-# target to build an object file
-arg.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/arg.cpp.o
-.PHONY : arg.cpp.o
+# Build rule for target.
+test_args: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_args
+.PHONY : test_args
 
-arg.i: arg.cpp.i
-.PHONY : arg.i
+# fast build rule for target.
+test_args/fast:
+	$(MAKE) $(MAKESILENT) -f test/CMakeFiles/test_args.dir/build.make test/CMakeFiles/test_args.dir/build
+.PHONY : test_args/fast
 
-# target to preprocess a source file
-arg.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/arg.cpp.i
-.PHONY : arg.cpp.i
+#=============================================================================
+# Target rules for targets named test_env
 
-arg.s: arg.cpp.s
-.PHONY : arg.s
+# Build rule for target.
+test_env: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_env
+.PHONY : test_env
 
-# target to generate assembly for a file
-arg.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/arg.cpp.s
-.PHONY : arg.cpp.s
-
-env.o: env.cpp.o
-.PHONY : env.o
-
-# target to build an object file
-env.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/env.cpp.o
-.PHONY : env.cpp.o
-
-env.i: env.cpp.i
-.PHONY : env.i
-
-# target to preprocess a source file
-env.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/env.cpp.i
-.PHONY : env.cpp.i
-
-env.s: env.cpp.s
-.PHONY : env.s
-
-# target to generate assembly for a file
-env.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/env.cpp.s
-.PHONY : env.cpp.s
-
-main.o: main.cpp.o
-.PHONY : main.o
-
-# target to build an object file
-main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/main.cpp.o
-.PHONY : main.cpp.o
-
-main.i: main.cpp.i
-.PHONY : main.i
-
-# target to preprocess a source file
-main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/main.cpp.i
-.PHONY : main.cpp.i
-
-main.s: main.cpp.s
-.PHONY : main.s
-
-# target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/nvi.dir/build.make CMakeFiles/nvi.dir/main.cpp.s
-.PHONY : main.cpp.s
+# fast build rule for target.
+test_env/fast:
+	$(MAKE) $(MAKESILENT) -f test/CMakeFiles/test_env.dir/build.make test/CMakeFiles/test_env.dir/build
+.PHONY : test_env/fast
 
 # Help Target
 help:
@@ -209,16 +186,11 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
+	@echo "... lib"
 	@echo "... nvi"
-	@echo "... arg.o"
-	@echo "... arg.i"
-	@echo "... arg.s"
-	@echo "... env.o"
-	@echo "... env.i"
-	@echo "... env.s"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
+	@echo "... test_args"
+	@echo "... test_env"
 .PHONY : help
 
 
