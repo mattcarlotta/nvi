@@ -39,7 +39,13 @@ const string config::get_dir() {
     }
 };
 
-const bool config::get_debug() { return env_config.contains("debug"); };
+const bool config::get_debug() {
+    if (env_config.contains("debug")) {
+        return env_config.at("debug");
+    } else {
+        return false;
+    }
+};
 
 const vector<string> config::get_files() {
     if (env_config.contains("files")) {

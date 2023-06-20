@@ -53,7 +53,7 @@
         "build:cjs": "tsc --p ./tsconfig.cjs.json && ts-node ./utils/compressFiles.ts",
         "build:esm": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
-        "clean": "rimraf nvi test_args test_env *.ts.map config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
+        "clean": "rimraf nvi bin/**/test_arg bin/**/test_env bin/**/test_load_config *.ts.map config.js index.js loadEnvConfig.js log.js readEnvFile.js *.d.ts *.mjs",
         "test": "NODE_ENV=test DISABLE_LOG=true ts-node ./tests/index.ts",
         "test:logs": "NODE_ENV=test DISABLE_LOG=false ts-node ./tests/index.ts",
         "test:bin": "./nvi -file bin.env -dir tests/envs | ts-node ./tests/bin.spec.ts",
