@@ -1,5 +1,5 @@
-#include "../src/env.h"
-#include "../src/json/single_include/nlohmann/json.hpp"
+#include "env.h"
+#include "json/single_include/nlohmann/json.hpp"
 #include <cassert>
 
 int main() {

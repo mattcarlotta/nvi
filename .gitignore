@@ -20,5 +20,7 @@ nvi
 *.a
 *.cmake
 *.tcl
+*.cache
+compile_commands.json
 Makefile
 
