@@ -2,6 +2,7 @@ add_library(
     ${PROJECT_NAME}_test 
     ${CMAKE_SOURCE_DIR}/src/arg.cpp 
     ${CMAKE_SOURCE_DIR}/src/env.cpp
+    ${CMAKE_SOURCE_DIR}/src/json.cpp
 )
 
 add_executable(test_arg test-arg.cpp)

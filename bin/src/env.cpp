@@ -1,6 +1,6 @@
 #include "env.h"
 #include "constants.h"
-#include "json/single_include/nlohmann/json.hpp"
+#include "json.cpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>

@@ -12,7 +12,7 @@ esm
 !prettier.config.js
 !benchmarks/*.mjs
 nvi
-**/test_args
+**/test_arg
 **/test_env
 **/CMakeFiles/*
 **/CMakeCache.txt

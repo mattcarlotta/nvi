@@ -1,6 +1,6 @@
 #include "arg.h"
 #include "env.h"
-#include "json/single_include/nlohmann/json.hpp"
+#include "json.cpp"
 #include <filesystem>
 
 int main(int argc, char *argv[]) {
