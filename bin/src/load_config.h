@@ -3,7 +3,6 @@
 
 #include "json.cpp"
 #include <fstream>
-#include <optional>
 #include <string>
 #include <vector>
 

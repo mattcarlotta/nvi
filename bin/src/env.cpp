@@ -95,13 +95,14 @@ nlohmann::json file::parse(nlohmann::json env_map) {
 
             if (key.length()) {
                 env_map[key] = value;
+                if (show_log) {
+                    std::clog << "[nvi] (" << file_name << ":" << line_count + 1 << ":"
+                              << byte_count + assignment_index + val_byte_count + 1 << ") Set key '" << key
+                              << "' to equal value '" << value << "'." << std::endl;
+                }
             }
 
             byte_count += assignment_index + val_byte_count + 1;
-            if (show_log && key.length()) {
-                std::clog << "[nvi] (" << file_name << ":" << line_count << ":" << byte_count << ") Parsed key '" << key
-                          << "' to equal value '" << value << "'." << std::endl;
-            }
         } else {
             byte_count = loaded_file.length();
         }
