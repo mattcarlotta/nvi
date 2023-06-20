@@ -5,7 +5,7 @@
 int main() {
     nlohmann::json env_map;
 
-    nvi::file env_file("../../tests/envs", ".env");
+    nvi::file env_file("../../tests/envs", ".env", false);
     env_map = env_file.parse(env_map);
 
     const auto env_size = env_map.size();

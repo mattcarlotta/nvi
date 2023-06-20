@@ -4,13 +4,13 @@
 #include "json.cpp"
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 using std::string;
 
 namespace nvi {
 class file {
     private:
+    bool show_log;
     std::ifstream env_file;
     string loaded_file;
     string file_name;
@@ -19,7 +19,7 @@ class file {
     unsigned int line_count = 0;
 
     public:
-    file(const string &dir, const string &env_file_name);
+    file(const string &dir, const string &env_file_name, const bool &debug);
 
     nlohmann::json parse(nlohmann::json env_map);
 };

@@ -8,12 +8,14 @@
 using std::string;
 
 namespace nvi {
-file::file(const string &dir, const string &env_file_name) {
+file::file(const string &dir, const string &env_file_name, const bool &debug) {
+    show_log = debug;
     file_path = std::filesystem::current_path() / dir / env_file_name;
     file_name = env_file_name;
     env_file = std::ifstream(file_path.string(), std::ios_base::in);
     if (!env_file.good()) {
-        std::cerr << "Unable to locate: '" << file_path.string() << "'. The file doesn't appear to exist!" << std::endl;
+        std::cerr << "[nvi] ERROR: Unable to locate '" << file_path.string() << "'. The file doesn't appear to exist!"
+                  << std::endl;
         exit(1);
     }
     loaded_file = string{std::istreambuf_iterator<char>(env_file), std::istreambuf_iterator<char>()};
@@ -61,7 +63,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                         if (env_map.contains(key_prop)) {
                             interpolated_value = env_map.at(key_prop);
                         } else {
-                            std::cerr << "[nvi]"
+                            std::clog << "[nvi]"
                                       << " (" << file_name << ":" << line_count + 1 << ":"
                                       << assignment_index + val_byte_count + 2 << ") "
                                       << "The key '" << key << "' contains an invalid interpolated variable: '"
@@ -78,7 +80,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                         std::cerr << "[nvi]"
                                   << " (" << file_name << ":" << line_count + 2 << ":"
                                   << assignment_index + val_byte_count + 2 << ") "
-                                  << "The key '" << key
+                                  << "ERROR: The key '" << key
                                   << "' contains an interpolated variable: '${' operator but appears to be missing a "
                                      "closing '}' operator."
                                   << std::endl;
@@ -99,6 +101,11 @@ nlohmann::json file::parse(nlohmann::json env_map) {
         } else {
             byte_count = loaded_file.length();
         }
+    }
+
+    if (show_log) {
+        std::clog << "[nvi] (" << file_name << ") Processed " << line_count << " lines and " << byte_count << " bytes!"
+                  << std::endl;
     }
 
     env_file.close();
