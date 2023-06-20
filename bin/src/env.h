@@ -2,6 +2,7 @@
 #define NVI_ENV_H
 
 #include "json/single_include/nlohmann/json.hpp"
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 

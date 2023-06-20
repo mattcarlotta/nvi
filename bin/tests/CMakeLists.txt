@@ -1,4 +1,8 @@
-add_library(${PROJECT_NAME}_test ${CMAKE_SOURCE_DIR}/src/arg.cpp ${CMAKE_SOURCE_DIR}/src/env.cpp)
+add_library(
+    ${PROJECT_NAME}_test 
+    ${CMAKE_SOURCE_DIR}/src/arg.cpp 
+    ${CMAKE_SOURCE_DIR}/src/env.cpp
+)
 
 add_executable(test_arg test-arg.cpp)
 add_executable(test_env test-env.cpp)
