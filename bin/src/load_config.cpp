@@ -11,7 +11,7 @@ using std::string;
 using std::vector;
 
 namespace nvi {
-config::config(const std::string &environment, std::string dir) {
+config::config(const string &environment, const string dir) {
     env = environment;
     file_path = std::filesystem::current_path() / dir / "env.config.json";
     std::ifstream env_config_file(file_path.string());
