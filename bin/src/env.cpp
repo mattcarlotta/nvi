@@ -65,8 +65,8 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                         } else {
                             std::clog << "[nvi]"
                                       << " (" << file_name << ":" << line_count + 1 << ":"
-                                      << byte_count + assignment_index + val_byte_count + 2 << ") "
-                                      << "The key '" << key << "' contains an invalid interpolated variable: '"
+                                      << assignment_index + val_byte_count + 2 << ") "
+                                      << "WARNING: The key '" << key << "' contains an invalid interpolated variable: '"
                                       << key_prop << "'. Unable to locate a value that corresponds to this key."
                                       << std::endl;
                         }
@@ -97,7 +97,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                 env_map[key] = value;
                 if (show_log) {
                     std::clog << "[nvi] (" << file_name << ":" << line_count + 1 << ":"
-                              << byte_count + assignment_index + val_byte_count + 1 << ") Set key '" << key
+                              << assignment_index + val_byte_count + 1 << ") DEBUG: Set key '" << key
                               << "' to equal value '" << value << "'." << std::endl;
                 }
             }
@@ -109,8 +109,8 @@ nlohmann::json file::parse(nlohmann::json env_map) {
     }
 
     if (show_log) {
-        std::clog << "[nvi] (" << file_name << ") Processed " << line_count << " lines and " << byte_count << " bytes!"
-                  << std::endl;
+        std::clog << "[nvi] (" << file_name << ") DEBUG: Processed " << line_count << " lines and " << byte_count
+                  << " bytes!" << std::endl;
     }
 
     env_file.close();

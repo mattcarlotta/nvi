@@ -20,14 +20,14 @@ config::config(const string &environment, const string dir) {
         exit(1);
     }
 
-    try {
-        nlohmann::json data = nlohmann::json::parse(env_config_file);
-        env_config = data.at(env);
-    } catch (const std::out_of_range &) {
+    nlohmann::json config = nlohmann::json::parse(env_config_file);
+    if (!config.contains(env)) {
         std::cerr << "[nvi] ERROR: Unable to locate a '" << env << "' configuration within the env.config.json!"
                   << std::endl;
         exit(1);
     }
+
+    env_config = config.at(env);
 };
 
 const string config::get_dir() {
