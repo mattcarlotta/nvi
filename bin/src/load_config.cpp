@@ -50,10 +50,9 @@ const vector<string> config::get_files() {
     if (env_config.contains("files")) {
         return env_config.at("files");
     } else {
-        std::cerr << "[nvi] ERROR: Unable to locate a 'files' property within the env.config.json. You must specify at "
-                     "least 1 env "
-                     "file to load!"
-                  << std::endl;
+        std::cerr << "[nvi] ERROR: Unable to locate a 'files' property within the '" << env
+                  << "' environment configuration (" << file_path.string()
+                  << "). You must specify at least 1 env file to load!" << std::endl;
         exit(1);
     }
 };
