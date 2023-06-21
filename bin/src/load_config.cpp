@@ -22,8 +22,9 @@ config::config(const string &environment, const string dir) {
 
     nlohmann::json config = nlohmann::json::parse(env_config_file);
     if (!config.contains(env)) {
-        std::cerr << "[nvi] ERROR: Unable to locate a '" << env << "' configuration within the env.config.json!"
-                  << std::endl;
+        std::cerr << "[nvi] ERROR: Unable to load the '" << env
+                  << "' environment within the env.config.json configuration file (" << file_path.string()
+                  << "). The specified environment doesn't appear to exist!" << std::endl;
         exit(1);
     }
 
@@ -52,7 +53,7 @@ const vector<string> config::get_files() {
     } else {
         std::cerr << "[nvi] ERROR: Unable to locate a 'files' property within the '" << env
                   << "' environment configuration (" << file_path.string()
-                  << "). You must specify at least 1 env file to load!" << std::endl;
+                  << "). You must specify at least 1 .env file to load!" << std::endl;
         exit(1);
     }
 };
