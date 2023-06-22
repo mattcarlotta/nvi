@@ -10,7 +10,7 @@
 
 ## Testing
 
-We use [Jest with Enzyme](https://jestjs.io/docs/en/getting-started) to write tests. Run our test suite with this command:
+We use [Node Assert](https://nodejs.org/docs/latest-v18.x/api/assert.html) to write tests. Run our test suite with this command:
 
 ```
 npm run test
@@ -18,7 +18,7 @@ npm run test
 
 ## Code Style
 
-We use [prettier](https://www.npmjs.com/package/prettier) and [eslint](https://www.npmjs.com/package/eslint) to maintain code style and best practices. Please make sure your PR adheres to the guides by running:
+We use [eslint](https://www.npmjs.com/package/eslint) to maintain code style and best practices. Please make sure your PR adheres to the guides by running:
 
 ```
 npm run lint
