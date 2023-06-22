@@ -14,7 +14,7 @@ A custom-built .env file reader!
 
 ✔️ Contains CJS and ESM compiled sources
 
-✔️ Contains a stand-alone executable to parse `.env` files to stringified JSON
+✔️ Contains a stand-alone [executable](bin/README.md) to parse `.env` files to stringified JSON
 
 ✔️ Unopinionated about `.env` naming
 
