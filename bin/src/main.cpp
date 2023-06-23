@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     nlohmann::json env_map;
     nvi::arg_parser args(argc, argv);
 
-    string env = args.get("-env");
+    string env = args.get("-config");
     if (env.length()) {
         nvi::config config(env);
         const bool debug = config.get_debug();

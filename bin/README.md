@@ -16,16 +16,16 @@ Example parsing a single `.env` file from a custom directory with debug logging:
 
 Example parsing one or many `.env` files from a `env.config.json` configuration file:
 ```DOSINI
-./nvi -env development
+./nvi -config development
 ```
 
 All flags below are optional. If no flags are passed, then a single `.env` file located at the root directory will be parsed (if present).
 
-| flag   | description                                                                                                        |
-| ------ | ------------------------------------------------------------------------------------------------------------------ |
-| -debug | Specifies whether or not to log file parsing details. (ex: -debug on|off)                                          |
-| -dir   | Specifies which directory the env file is located within. (ex: -dir path/to/env)                                   |
-| -env   | Specifies which environment configuration you'd like to load from the env.config.json file. (ex: -env development) |
-| -file  | Specifies which env file you'd like to load. (ex: -file test.env)                                                  |
-| -help  | Displays this help information                                                                                     |
+| flag    | description                                                                                                   |
+| ------- | ------------------------------------------------------------------------------------------------------------- |
+| -config | Specifies which environment configuration you'd like to load from the env.config.json file. (ex: -config dev) |
+| -debug  | Specifies whether or not to log file parsing details. (ex: -debug on/off)                                     |
+| -dir    | Specifies which directory the env file is located within. (ex: -dir path/to/env)                              |
+| -file   | Specifies which env file you'd like to load. (ex: -file test.env)                                             |
+| -help   | Displays this help information                                                                                |
 

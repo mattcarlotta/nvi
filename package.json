@@ -57,7 +57,7 @@
         "test": "NODE_ENV=test DISABLE_LOG=true ts-node ./tests/index.ts",
         "test:logs": "NODE_ENV=test DISABLE_LOG=false ts-node ./tests/index.ts",
         "test:bin": "./nvi -file bin.env -dir tests/envs | ts-node ./tests/bin.spec.ts",
-        "test:bin:config": "./nvi -env bin | ts-node ./tests/bin.spec.ts"
+        "test:bin:config": "./nvi -config bin | ts-node ./tests/bin.spec.ts"
     },
     "keywords": [
         "env",
