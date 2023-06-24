@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (required_envs.size()) {
-            vector<string> undefined_keys = {};
+            vector<string> undefined_keys;
             for (string key : required_envs) {
                 if (!env_map.contains(key)) {
                     undefined_keys.push_back(key);

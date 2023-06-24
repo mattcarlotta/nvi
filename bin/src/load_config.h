@@ -6,26 +6,24 @@
 #include <string>
 #include <vector>
 
-using std::string;
-
 namespace nvi {
 class config {
     private:
-    string env;
+    std::string env;
     std::ifstream env_config_file;
-    std::filesystem::path file_path;
+    std::string file_path;
     nlohmann::json env_config;
 
     public:
-    config(const string &environment, const string dir = "");
+    config(const std::string &environment, const std::string dir = "");
 
     const bool get_debug();
 
-    const string get_dir();
+    const std::string get_dir();
 
-    const std::vector<string> get_files();
+    const std::vector<std::string> get_files();
 
-    const std::vector<string> get_required_envs();
+    const std::vector<std::string> get_required_envs();
 };
 }; // namespace nvi
 

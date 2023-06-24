@@ -9,25 +9,25 @@ using std::string;
 
 namespace nvi {
 file::file(const string &dir, const string &env_file_name, const bool &debug) {
-    show_log = debug;
-    file_path = std::filesystem::current_path() / dir / env_file_name;
-    file_name = env_file_name;
-    env_file = std::ifstream(file_path.string(), std::ios_base::in);
-    if (!env_file.good()) {
-        std::cerr << "[nvi] ERROR: Unable to locate '" << file_path.string() << "'. The file doesn't appear to exist!"
-                  << std::endl;
+    this->show_log = debug;
+    this->file_path = std::filesystem::current_path() / dir / env_file_name;
+    this->file_name = env_file_name;
+    this->env_file = std::ifstream(this->file_path.string(), std::ios_base::in);
+    if (!this->env_file.good()) {
+        std::cerr << "[nvi] ERROR: Unable to locate '" << this->file_path.string()
+                  << "'. The file doesn't appear to exist!" << std::endl;
         exit(1);
     }
-    loaded_file = string{std::istreambuf_iterator<char>(env_file), std::istreambuf_iterator<char>()};
+    this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
 }
 
 nlohmann::json file::parse(nlohmann::json env_map) {
-    while (byte_count < loaded_file.length()) {
-        const string line = loaded_file.substr(byte_count, loaded_file.length());
+    while (this->byte_count < this->loaded_file.length()) {
+        const string line = this->loaded_file.substr(this->byte_count, this->loaded_file.length());
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
         if (line[0] == constants::COMMENT || line[0] == constants::LINE_DELIMITER) {
-            ++line_count;
-            byte_count += line_delimiter_index + 1;
+            ++this->line_count;
+            this->byte_count += line_delimiter_index + 1;
             continue;
         }
 
@@ -47,7 +47,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                 }
 
                 if (current_char == constants::BACK_SLASH && next_char == constants::LINE_DELIMITER) {
-                    ++line_count;
+                    ++this->line_count;
                     val_byte_count += 2;
                     continue;
                 }
@@ -64,7 +64,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                             interpolated_value = env_map.at(key_prop);
                         } else {
                             std::clog << "[nvi]"
-                                      << " (" << file_name << ":" << line_count + 1 << ":"
+                                      << " (" << this->file_name << ":" << this->line_count + 1 << ":"
                                       << assignment_index + val_byte_count + 2 << ") "
                                       << "WARNING: The key '" << key << "' contains an invalid interpolated variable: '"
                                       << key_prop << "'. Unable to locate a value that corresponds to this key."
@@ -78,7 +78,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                         continue;
                     } else {
                         std::cerr << "[nvi]"
-                                  << " (" << file_name << ":" << line_count + 2 << ":"
+                                  << " (" << this->file_name << ":" << this->line_count + 2 << ":"
                                   << assignment_index + val_byte_count + 2 << ") "
                                   << "ERROR: The key '" << key
                                   << "' contains an interpolated variable: '${' operator but appears to be missing a "
@@ -95,25 +95,25 @@ nlohmann::json file::parse(nlohmann::json env_map) {
 
             if (key.length()) {
                 env_map[key] = value;
-                if (show_log) {
-                    std::clog << "[nvi] (" << file_name << ":" << line_count + 1 << ":"
+                if (this->show_log) {
+                    std::clog << "[nvi] (" << this->file_name << ":" << this->line_count + 1 << ":"
                               << assignment_index + val_byte_count + 1 << ") DEBUG: Set key '" << key
                               << "' to equal value '" << value << "'." << std::endl;
                 }
             }
 
-            byte_count += assignment_index + val_byte_count + 1;
+            this->byte_count += assignment_index + val_byte_count + 1;
         } else {
-            byte_count = loaded_file.length();
+            this->byte_count = loaded_file.length();
         }
     }
 
-    if (show_log) {
-        std::clog << "[nvi] (" << file_name << ") DEBUG: Processed " << line_count << " lines and " << byte_count
-                  << " bytes!" << std::endl;
+    if (this->show_log) {
+        std::clog << "[nvi] (" << this->file_name << ") DEBUG: Processed " << this->line_count << " lines and "
+                  << this->byte_count << " bytes!" << std::endl;
     }
 
-    env_file.close();
+    this->env_file.close();
 
     return env_map;
 }
