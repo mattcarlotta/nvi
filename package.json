@@ -47,7 +47,6 @@
         "multiple": "LOAD_CONFIG=multiple ts-node ./src/index.ts",
         "large": "LOAD_CONFIG=large ts-node ./src/index.ts",
         "bench:nvi": "pnpm --stream -r bench:nvi",
-        "bench:noshot": "pnpm --stream -r bench:noshot",
         "bench:dotenv": "pnpm --stream -r bench:dotenv",
         "build": "npm run clean && npm run build:cjs && npm run build:esm",
         "build:cjs": "tsc --p ./tsconfig.cjs.json && ts-node ./utils/compressFiles.ts",

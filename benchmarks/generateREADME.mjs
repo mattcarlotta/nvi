@@ -12,7 +12,6 @@ Run individual tests by running the following commands:
 | \`yarn <command>\` | Description                                                                                     |
 | ---------------- | ----------------------------------------------------------------------------------------------- |
 | \`dotenv\`         | Runs tests for \`dotenv\` + \`dotenv-expand\` (outputs results to \`results.json\` file as \`dotenv\`). |
-| \`noshot\`         | Runs tests for \`noshot\` (outputs results to \`results.json\` file as \`@noshot/env\`).                |
 | \`nvi\`            | Runs tests for \`nvi\` (outputs results to \`results.json\` file as \`nvi\`).                       |
 | \`generate:readme\`| Generates a \`README.md\` from the \`results.json\` file.                                           |
 
@@ -123,7 +122,6 @@ const date = new Intl.DateTimeFormat(
             if (i === 2) file = file.concat(multiEnvs);
 
             addResultsToTable("nvi", runs[i], i);
-            addResultsToTable("@noshot/env", runs[i], i);
             addResultsToTable("dotenv", runs[i], i);
         }
 

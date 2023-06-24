@@ -1,9 +1,6 @@
 lockfileVersion: '6.0'
 
 devDependencies:
-  '@noshot/env':
-    specifier: ^3.0.3
-    version: 3.0.3
   dotenv:
     specifier: ^16.0.3
     version: 16.0.3
@@ -18,11 +15,6 @@ devDependencies:
     version: 2.8.8
 
 packages:
-
-  /@noshot/env@3.0.3:
-    resolution: {integrity: sha512-MwIp8UgS5WE8LBk0PfKzPNR0qVo00Cixnhs0mUocyeFfb4wjq8Lp8WWZ5DZHphBHXaNzK86SgzvHzcEZxSQZGg==}
-    engines: {node: '>=14'}
-    dev: true
 
   /dotenv-expand@10.0.0:
     resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
