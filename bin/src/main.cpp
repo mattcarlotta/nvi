@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     nlohmann::json env_map;
     nvi::arg_parser args(argc, argv);
 
-    string env = args.get("-config");
+    string env = args.get("--config");
     if (env.length()) {
         nvi::config config(env);
         const bool debug = config.get_debug();
@@ -46,12 +46,12 @@ int main(int argc, char *argv[]) {
             }
         }
     } else {
-        string env_file_name = args.get("-file");
+        string env_file_name = args.get("--file");
         if (!env_file_name.length()) {
             env_file_name = ".env";
         }
 
-        nvi::file env_file(args.get("-dir"), env_file_name, args.get("-debug") == "on");
+        nvi::file env_file(args.get("--dir"), env_file_name, args.get("--debug") == "on");
 
         env_map = env_file.parse(env_map);
     }

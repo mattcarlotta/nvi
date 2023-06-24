@@ -16,6 +16,6 @@ target_include_directories(test_arg PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(test_env PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(test_load_config PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
-add_test(NAME test_arg COMMAND test_arg -file test.env)
+add_test(NAME test_arg COMMAND test_arg --file test.env)
 add_test(NAME test_env COMMAND test_env)
 add_test(NAME test_load_config COMMAND test_load_config)

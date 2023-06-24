@@ -1,5 +1,5 @@
 # nvi
-A custom-built .env file reader!
+A custom-built .env file parser!
 
 **Note**: This is a work in progress and will likely change over time. As such, this is **NOT** recommended for production environments yet.
 
