@@ -4,8 +4,10 @@
 #include <iostream>
 
 class parse_env_file : public testing::Test {
-    public:
+    protected:
     static nlohmann::json env_map;
+
+    public:
     static void SetUpTestSuite() {
         nvi::file env_file("../../tests/envs", "bin.env", false);
         env_map = env_file.parse(env_map);
