@@ -18,6 +18,7 @@ nvi
 **/CMakeFiles/*
 **/CMakeCache.txt
 **/Testing
+**/lib
 *.a
 *.cmake
 *.tcl

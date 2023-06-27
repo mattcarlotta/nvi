@@ -1,11 +1,12 @@
 #include "arg.h"
-#include <cassert>
-#include <iostream>
+#include "gtest/gtest.h"
 
-int main(int argc, char *argv[]) {
+TEST(args, are_parseable) {
+    int argc = 3;
+    char *argv[] = {(char *)"", (char *)"--file", (char *)"test.env"};
+
     nvi::arg_parser args(argc, argv);
-    std::string file = args.get("--file");
-    assert(file == "test.env");
+    const std::string file = args.get("--file");
 
-    return 0;
+    EXPECT_EQ(file, "test.env");
 }

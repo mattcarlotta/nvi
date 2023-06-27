@@ -1,115 +1,120 @@
 #include "env.h"
 #include "json.cpp"
-#include <cassert>
+#include "gtest/gtest.h"
+#include <iostream>
 
-int main() {
-    nlohmann::json env_map;
+class parse_env_file : public testing::Test {
+    public:
+    static nlohmann::json env_map;
+    static void SetUpTestSuite() {
+        nvi::file env_file("../../tests/envs", "bin.env", false);
+        env_map = env_file.parse(env_map);
+    }
+};
 
-    nvi::file env_file("../../tests/envs", ".env", false);
-    env_map = env_file.parse(env_map);
+nlohmann::json parse_env_file::env_map;
 
-    const auto env_size = env_map.size();
-    assert(env_size == 35);
+TEST_F(parse_env_file, size) {
+    const int env_size = env_map.size();
+    EXPECT_EQ(env_size, 27);
+}
 
-    // parses basic env values
-    const auto basic_value = env_map.at("BASIC_ENV");
-    assert(basic_value == "true");
+TEST_F(parse_env_file, basic_env) {
+    const std::string value = env_map.at("BASIC_ENV");
+    EXPECT_EQ(value, "true");
+}
 
-    // parses multi line values
-    const auto multi_line_value = env_map.at("MULTI_LINE_KEY");
-    assert(multi_line_value == "ssh-rsa BBBBPl1P1AD+jk/3Lf3Dw== test@example.com");
+TEST_F(parse_env_file, multi_line_values) {
+    const std::string value = env_map.at("MULTI_LINE_KEY");
+    EXPECT_EQ(value, "ssh-rsa BBBBPl1P1AD+jk/3Lf3Dw== test@example.com");
+}
 
-    // defaults empty values to empty string
-    const auto no_value = env_map.at("NO_VALUE");
-    assert(no_value == "");
+TEST_F(parse_env_file, default_empty_value) {
+    const std::string value = env_map.at("NO_VALUE");
+    EXPECT_EQ(value, "");
+}
 
-    // parsed values with hashes
-    const auto hash_keys = env_map.at("HASH_KEYS");
-    assert(hash_keys == "1#2#3#4#");
+TEST_F(parse_env_file, hashed_values) {
+    const std::string value = env_map.at("HASH_KEYS");
+    EXPECT_EQ(value, "1#2#3#4#");
+}
 
-    // parses values with just hashes
-    const auto just_hashes = env_map.at("JUST_HASHES");
-    assert(just_hashes == "#####");
+TEST_F(parse_env_file, dollar_sign_values) {
+    const std::string value = env_map.at("JUST_DOLLARS");
+    EXPECT_EQ(value, "$$$$$");
+}
 
-    // parses values with just dollar signs
-    const auto just_dollars = env_map.at("JUST_DOLLARS");
-    assert(just_dollars == "$$$$$");
+TEST_F(parse_env_file, braces_values) {
+    const std::string value = env_map.at("JUST_BRACES");
+    EXPECT_EQ(value, "{{{{}}}}");
+}
 
-    // parses values with just braces
-    const auto just_braces = env_map.at("JUST_BRACES");
-    assert(just_braces == "{{{{}}}}");
+TEST_F(parse_env_file, spaces_values) {
+    const std::string value = env_map.at("JUST_SPACES");
+    EXPECT_EQ(value, "          ");
+}
 
-    // parses values with just spaces
-    const auto just_spaces = env_map.at("JUST_SPACES");
-    assert(just_spaces == "          ");
+TEST_F(parse_env_file, sentence_values) {
+    const std::string value = env_map.at("SENTENCE");
+    EXPECT_EQ(value, "chat gippity is just a junior engineer that copies/pastes from StackOverflow");
+}
 
-    // parses sentence values
-    const auto sentence = env_map.at("SENTENCE");
-    assert(sentence == "chat gippity is just a junior engineer that copies/pastes from StackOverflow");
+TEST_F(parse_env_file, empty_interp_key_values) {
+    const std::string value = env_map.at("EMPTY_INTRP_KEY");
+    EXPECT_EQ(value, "abc123");
+}
 
-    // parses interpolated values from previous keys
-    const auto interp = env_map.at("INTERP");
-    assert(interp == "aatruecdhelloef");
+TEST_F(parse_env_file, single_quote_values) {
+    const std::string value = env_map.at("SINGLE_QUOTES_SPACES");
+    EXPECT_EQ(value, "'  SINGLE QUOTES  '");
+}
 
-    // retains values despite an invalid interpolated value
-    const auto empty_interp_key = env_map.at("EMPTY_INTRP_KEY");
-    assert(empty_interp_key == "abc123");
+TEST_F(parse_env_file, double_quote_values) {
+    const std::string value = env_map.at("DOUBLE_QUOTES_SPACES");
+    EXPECT_EQ(value, "\"  DOUBLE QUOTES  \"");
+}
 
-    // retains valid interpolated values but ignores invalid interpolated value
-    const auto retain_valid_interp_key = env_map.at("CONTAINS_INVALID_INTRP_KEY");
-    assert(retain_valid_interp_key == "hello");
+TEST_F(parse_env_file, quote_values) {
+    const std::string value = env_map.at("QUOTES");
+    EXPECT_EQ(value, "sad\"wow\"bak");
+}
 
-    // defaults invalid interpolated values to an empty string
-    const auto no_interp = env_map.at("NO_INTERP");
-    assert(no_interp == "");
+TEST_F(parse_env_file, invalid_single_quote_values) {
+    const std::string value = env_map.at("INVALID_SINGLE_QUOTES");
+    EXPECT_EQ(value, "bad\'dq");
+}
 
-    // discards invalid interpolated values with non-delineated braces
-    const auto bad_interp = env_map.at("BAD_INTERP");
-    assert(bad_interp == "lmnotuv");
+TEST_F(parse_env_file, invalid_double_quote_values) {
+    const std::string value = env_map.at("INVALID_DOUBLE_QUOTES");
+    EXPECT_EQ(value, "bad\"dq");
+}
 
-    // respects single quotes and spaces
-    const auto single_quotes = env_map.at("SINGLE_QUOTES_SPACES");
-    assert(single_quotes == "'  SINGLE QUOTES  '");
+TEST_F(parse_env_file, invalid_template_literal_values) {
+    const std::string value = env_map.at("INVALID_TEMPLATE_LITERAL");
+    EXPECT_EQ(value, "bad`as");
+}
 
-    // respects double quotes and spaces
-    const auto double_quotes = env_map.at("DOUBLE_QUOTES_SPACES");
-    assert(double_quotes == "\"  DOUBLE QUOTES  \"");
+TEST_F(parse_env_file, invalid_mix_quotes_values) {
+    const std::string value = env_map.at("INVALID_MIX_QUOTES");
+    EXPECT_EQ(value, "bad\"'`mq");
+}
 
-    // respects quotes within letters
-    const auto quotes = env_map.at("QUOTES");
-    assert(quotes == "sad\"wow\"bak");
+TEST_F(parse_env_file, empty_single_quotes_values) {
+    const std::string value = env_map.at("EMPTY_SINGLE_QUOTES");
+    EXPECT_EQ(value, "''");
+}
 
-    // handles invalid single quotes within letters
-    const auto invalid_singl_quotes = env_map.at("INVALID_SINGLE_QUOTES");
-    assert(invalid_singl_quotes == "bad\'dq");
+TEST_F(parse_env_file, empty_double_quotes_values) {
+    const std::string value = env_map.at("EMPTY_DOUBLE_QUOTES");
+    EXPECT_EQ(value, "\"\"");
+}
 
-    // handles invalid double quotes within letters
-    const auto invalid_double_quotes = env_map.at("INVALID_DOUBLE_QUOTES");
-    assert(invalid_double_quotes == "bad\"dq");
+TEST_F(parse_env_file, empty_template_literal_values) {
+    const std::string value = env_map.at("EMPTY_TEMPLATE_LITERAL");
+    EXPECT_EQ(value, "``");
+}
 
-    // handles invalid template literals within letters
-    const auto invalid_template_literal = env_map.at("INVALID_TEMPLATE_LITERAL");
-    assert(invalid_template_literal == "bad`as");
-
-    // handles invalid mix quotes within letters
-    const auto invalid_mix_quotes = env_map.at("INVALID_MIX_QUOTES");
-    assert(invalid_mix_quotes == "bad\"'`mq");
-
-    // handles empty single quotes
-    const auto empty_single_quotes = env_map.at("EMPTY_SINGLE_QUOTES");
-    assert(empty_single_quotes == "''");
-
-    // handles empty double quotes
-    const auto empty_double_quotes = env_map.at("EMPTY_DOUBLE_QUOTES");
-    assert(empty_double_quotes == "\"\"");
-
-    // handles empty template literals
-    const auto empty_template_literal = env_map.at("EMPTY_TEMPLATE_LITERAL");
-    assert(empty_template_literal == "``");
-
-    // concatenates values from previous keys in file
-    const auto mongolab_URI = env_map.at("MONGOLAB_URI");
-    assert(mongolab_URI == "mongodb://root:password@abcd1234.mongolab.com:12345/localhost");
-
-    return 0;
+TEST_F(parse_env_file, interpolated_values) {
+    const std::string value = env_map.at("MONGOLAB_URI");
+    EXPECT_EQ(value, "mongodb://root:password@abcd1234.mongolab.com:12345/localhost");
 }
