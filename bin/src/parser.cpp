@@ -107,8 +107,9 @@ parser *parser::parse() {
     }
 
     if (this->debug) {
-        std::clog << "[nvi] (" << this->file_name << ") DEBUG: Processed " << this->line_count << " lines and "
-                  << this->byte_count << " bytes!\n"
+        const char conditional_plural_letter = this->line_count > 1 ? 's' : '\0';
+        std::clog << "[nvi] (" << this->file_name << ") DEBUG: Processed " << this->line_count << " line"
+                  << conditional_plural_letter << " and " << this->byte_count << " bytes!\n"
                   << std::endl;
     }
 
