@@ -3,6 +3,7 @@
 
 #include "json.cpp"
 #include <fstream>
+#include <optional>
 
 namespace nvi {
 class config {
@@ -14,10 +15,10 @@ class config {
 
     public:
     config(const std::string &environment, const std::string dir = "");
-    const bool get_debug();
-    const std::string get_dir();
+    const std::optional<bool> get_debug() noexcept;
+    const std::optional<std::string> get_dir() noexcept;
     const std::vector<std::string> get_files();
-    const std::vector<std::string> get_required_envs();
+    const std::vector<std::string> get_required_envs() noexcept;
 };
 }; // namespace nvi
 

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 
 using std::string;
 using std::vector;
@@ -29,19 +30,19 @@ config::config(const string &environment, const string dir) {
     this->env_config = config.at(this->env);
 };
 
-const string config::get_dir() {
-    if (this->env_config.count("dir")) {
-        return this->env_config.at("dir");
-    } else {
-        return "";
-    }
-};
-
-const bool config::get_debug() {
+const std::optional<bool> config::get_debug() noexcept {
     if (this->env_config.count("debug")) {
         return this->env_config.at("debug");
     } else {
-        return false;
+        return std::nullopt;
+    }
+};
+
+const std::optional<string> config::get_dir() noexcept {
+    if (this->env_config.count("dir")) {
+        return this->env_config.at("dir");
+    } else {
+        return std::nullopt;
     }
 };
 
@@ -56,11 +57,11 @@ const vector<string> config::get_files() {
     }
 };
 
-const vector<string> config::get_required_envs() {
+const vector<string> config::get_required_envs() noexcept {
     if (this->env_config.count("required")) {
         return this->env_config.at("required");
     } else {
-        return {};
+        return vector<string>();
     }
 };
 } // namespace nvi

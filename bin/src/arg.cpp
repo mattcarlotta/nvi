@@ -58,7 +58,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
     }
 };
 
-const std::optional<std::string> arg_parser::get(const std::string &flag) {
+const std::optional<std::string> arg_parser::get(const std::string &flag) noexcept {
     try {
         return this->args.at(flag);
     } catch (const std::out_of_range &) {

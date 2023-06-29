@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     const auto env_config = args.get("--config");
     if (env_config.has_value()) {
         nvi::config config(env_config.value());
-        nvi::file file(config.get_dir(), config.get_debug());
+        nvi::file file(config.get_dir(), config.get_debug().value());
 
         for (const auto env : config.get_files()) {
             file.read(env)->parse();

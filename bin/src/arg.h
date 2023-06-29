@@ -14,7 +14,7 @@ class arg_parser {
 
     public:
     arg_parser(int &argc, char *argv[]);
-    const std::optional<string> get(const string &flag);
+    const std::optional<string> get(const string &flag) noexcept;
 };
 } // namespace nvi
 

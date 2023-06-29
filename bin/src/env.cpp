@@ -12,7 +12,7 @@ using std::string;
 using std::vector;
 
 namespace nvi {
-file::file(const std::optional<string> &dir, const bool debug) {
+file::file(const std::optional<string> &dir, const bool debug) noexcept {
     this->dir = dir.value_or("");
     this->debug = debug;
     this->env_map = nlohmann::json::object();

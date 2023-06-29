@@ -1,6 +1,7 @@
 #include "json.cpp"
 #include "load_config.h"
 #include "gtest/gtest.h"
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -10,13 +11,13 @@ using std::vector;
 nvi::config config("bin_test_only", "../../");
 
 TEST(parse_config_file, debug) {
-    const bool debug = config.get_debug();
-    EXPECT_EQ(debug, true);
+    const std::optional<bool> debug = config.get_debug();
+    EXPECT_EQ(debug.value(), true);
 }
 
 TEST(parse_config_file, directory) {
-    const string dir = config.get_dir();
-    EXPECT_EQ(dir, "custom/directory");
+    const std::optional<string> dir = config.get_dir();
+    EXPECT_EQ(dir.value(), "custom/directory");
 }
 
 TEST(parse_config_file, files) {

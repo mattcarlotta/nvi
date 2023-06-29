@@ -22,7 +22,7 @@ class file {
 
     public:
     nlohmann::json::object_t env_map;
-    file(const std::optional<string> &dir, const bool debug = false);
+    file(const std::optional<string> &dir, const bool debug = false) noexcept;
     file *read(const string &env_file_name);
     file *parse();
     file *check_required(const std::vector<string> &required_envs);
