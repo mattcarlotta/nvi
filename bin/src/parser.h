@@ -17,8 +17,8 @@ class parser {
     string file_name;
     string dir;
     std::filesystem::path file_path;
-    unsigned int byte_count = 0;
-    unsigned int line_count = 0;
+    unsigned int byte_count;
+    unsigned int line_count;
 
     public:
     nlohmann::json::object_t env_map;

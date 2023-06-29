@@ -128,6 +128,8 @@ parser *parser::read(const string &env_file_name) {
         exit(1);
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
+    this->byte_count = 0;
+    this->line_count = 0;
 
     return this;
 }
