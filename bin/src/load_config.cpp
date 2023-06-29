@@ -18,8 +18,8 @@ config::config(const string &environment, const string dir) {
         exit(1);
     }
 
-    nlohmann::json config = nlohmann::json::parse(env_config_file);
-    if (!config.contains(this->env)) {
+    nlohmann::json::object_t config = nlohmann::json::parse(env_config_file);
+    if (!config.count(this->env)) {
         std::cerr << "[nvi] ERROR: Unable to load the '" << this->env
                   << "' environment within the env.config.json configuration file (" << this->file_path
                   << "). The specified environment doesn't appear to exist!" << std::endl;
