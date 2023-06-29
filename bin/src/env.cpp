@@ -15,7 +15,7 @@ namespace nvi {
 file::file(const std::optional<string> &dir, const bool debug) {
     this->dir = dir.value_or("");
     this->debug = debug;
-    this->env_map = nlohmann::json();
+    this->env_map = nlohmann::json::object();
 }
 
 file *file::parse() {
