@@ -108,7 +108,8 @@ parser *parser::parse() {
 
     if (this->debug) {
         std::clog << "[nvi] (" << this->file_name << ") DEBUG: Processed " << this->line_count << " lines and "
-                  << this->byte_count << " bytes!" << std::endl;
+                  << this->byte_count << " bytes!\n"
+                  << std::endl;
     }
 
     this->env_file.close();
