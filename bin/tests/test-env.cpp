@@ -9,8 +9,9 @@ class parse_env_file : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::file env_file("../../tests/envs", "bin.env", false);
-        env_map = env_file.parse(env_map);
+        nvi::file env_file("../../tests/envs", false);
+        env_file.read("bin.env")->parse();
+        env_map = env_file.env_map;
     }
 };
 

@@ -13,7 +13,6 @@ class arg_parser {
 
     public:
     arg_parser(int &argc, char *argv[]);
-
     const string get(const string &flag);
 };
 } // namespace nvi

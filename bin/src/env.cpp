@@ -4,24 +4,20 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <sstream>
 
 using std::string;
+using std::vector;
 
 namespace nvi {
-file::file(const string &dir, const string &env_file_name, const bool &debug) {
+file::file(const string &dir, const bool &debug) {
+    this->dir = dir;
     this->show_log = debug;
-    this->file_path = std::filesystem::current_path() / dir / env_file_name;
-    this->file_name = env_file_name;
-    this->env_file = std::ifstream(this->file_path.string(), std::ios_base::in);
-    if (!this->env_file.good()) {
-        std::cerr << "[nvi] ERROR: Unable to locate '" << this->file_path.string()
-                  << "'. The file doesn't appear to exist!" << std::endl;
-        exit(1);
-    }
-    this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
+    this->env_map = nlohmann::json();
 }
 
-nlohmann::json file::parse(nlohmann::json env_map) {
+file *file::parse() {
     while (this->byte_count < this->loaded_file.length()) {
         const string line = this->loaded_file.substr(this->byte_count, this->loaded_file.length());
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
@@ -60,8 +56,8 @@ nlohmann::json file::parse(nlohmann::json env_map) {
                         const string key_prop = val_slice_str.substr(2, interp_close_index - 2);
 
                         string interpolated_value = "";
-                        if (env_map.contains(key_prop)) {
-                            interpolated_value = env_map.at(key_prop);
+                        if (this->env_map.contains(key_prop)) {
+                            interpolated_value = this->env_map.at(key_prop);
                         } else {
                             std::clog << "[nvi]"
                                       << " (" << this->file_name << ":" << this->line_count + 1 << ":"
@@ -94,7 +90,7 @@ nlohmann::json file::parse(nlohmann::json env_map) {
             }
 
             if (key.length()) {
-                env_map[key] = value;
+                this->env_map[key] = value;
                 if (this->show_log) {
                     std::clog << "[nvi] (" << this->file_name << ":" << this->line_count + 1 << ":"
                               << assignment_index + val_byte_count + 1 << ") DEBUG: Set key '" << key
@@ -115,6 +111,43 @@ nlohmann::json file::parse(nlohmann::json env_map) {
 
     this->env_file.close();
 
-    return env_map;
+    return this;
+}
+
+void file::print() { std::cout << std::setw(4) << this->env_map << std::endl; }
+
+file *file::read(const string &env_file_name) {
+    this->file_path = std::filesystem::current_path() / this->dir / env_file_name;
+    this->file_name = env_file_name;
+    this->env_file = std::ifstream(this->file_path.string(), std::ios_base::in);
+    if (!this->env_file.good()) {
+        std::cerr << "[nvi] ERROR: Unable to locate '" << this->file_path.string()
+                  << "'. The file doesn't appear to exist!" << std::endl;
+        exit(1);
+    }
+    this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
+
+    return this;
+}
+
+file *file::check_required(const vector<string> &required_envs) {
+    if (required_envs.size()) {
+        vector<string> undefined_keys;
+        for (string key : required_envs) {
+            if (!this->env_map.contains(key)) {
+                undefined_keys.push_back(key);
+            }
+        }
+
+        if (undefined_keys.size()) {
+            std::stringstream envs;
+            std::copy(undefined_keys.begin(), undefined_keys.end(), std::ostream_iterator<string>(envs, ", "));
+            std::cerr << "[nvi] ERROR: The following Envs are marked as required: " << envs.str()
+                      << "but they are undefined after all of the .env files were parsed." << std::endl;
+            exit(1);
+        }
+    }
+
+    return this;
 }
 }; // namespace nvi

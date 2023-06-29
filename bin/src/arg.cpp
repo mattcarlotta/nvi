@@ -1,6 +1,5 @@
 #include "arg.h"
 #include <iostream>
-#include <string>
 
 namespace nvi {
 arg_parser::arg_parser(int &argc, char *argv[]) {

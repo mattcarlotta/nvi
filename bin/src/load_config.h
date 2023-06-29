@@ -3,8 +3,6 @@
 
 #include "json.cpp"
 #include <fstream>
-#include <string>
-#include <vector>
 
 namespace nvi {
 class config {
@@ -16,13 +14,9 @@ class config {
 
     public:
     config(const std::string &environment, const std::string dir = "");
-
     const bool get_debug();
-
     const std::string get_dir();
-
     const std::vector<std::string> get_files();
-
     const std::vector<std::string> get_required_envs();
 };
 }; // namespace nvi
