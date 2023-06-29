@@ -21,7 +21,7 @@ class file {
     unsigned int line_count = 0;
 
     public:
-    nlohmann::json env_map;
+    nlohmann::json::object_t env_map;
     file(const std::optional<string> &dir, const bool debug = false);
     file *read(const string &env_file_name);
     file *parse();

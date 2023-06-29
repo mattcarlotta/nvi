@@ -58,7 +58,7 @@ file *file::parse() {
                         const string key_prop = val_slice_str.substr(2, interp_close_index - 2);
 
                         string interpolated_value = "";
-                        if (this->env_map.contains(key_prop)) {
+                        if (this->env_map.count(key_prop)) {
                             interpolated_value = this->env_map.at(key_prop);
                         } else {
                             std::clog << "[nvi]"
@@ -137,7 +137,7 @@ file *file::check_required(const vector<string> &required_envs) {
         vector<string> undefined_keys;
 
         for (const string key : required_envs) {
-            if (!this->env_map.contains(key)) {
+            if (!this->env_map.count(key)) {
                 undefined_keys.push_back(key);
             }
         }

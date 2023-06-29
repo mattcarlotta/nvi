@@ -10,7 +10,7 @@ class config {
     std::string env;
     std::ifstream env_config_file;
     std::string file_path;
-    nlohmann::json env_config;
+    nlohmann::json::object_t env_config;
 
     public:
     config(const std::string &environment, const std::string dir = "");

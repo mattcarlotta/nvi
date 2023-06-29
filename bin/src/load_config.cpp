@@ -30,7 +30,7 @@ config::config(const string &environment, const string dir) {
 };
 
 const string config::get_dir() {
-    if (this->env_config.contains("dir")) {
+    if (this->env_config.count("dir")) {
         return this->env_config.at("dir");
     } else {
         return "";
@@ -38,7 +38,7 @@ const string config::get_dir() {
 };
 
 const bool config::get_debug() {
-    if (this->env_config.contains("debug")) {
+    if (this->env_config.count("debug")) {
         return this->env_config.at("debug");
     } else {
         return false;
@@ -46,7 +46,7 @@ const bool config::get_debug() {
 };
 
 const vector<string> config::get_files() {
-    if (this->env_config.contains("files")) {
+    if (this->env_config.count("files")) {
         return this->env_config.at("files");
     } else {
         std::cerr << "[nvi] ERROR: Unable to locate a 'files' property within the '" << this->env
@@ -57,7 +57,7 @@ const vector<string> config::get_files() {
 };
 
 const vector<string> config::get_required_envs() {
-    if (this->env_config.contains("required")) {
+    if (this->env_config.count("required")) {
         return this->env_config.at("required");
     } else {
         return {};
