@@ -1,5 +1,5 @@
-#ifndef NVI_ENV_H
-#define NVI_ENV_H
+#ifndef NVI_PARSER_H
+#define NVI_PARSER_H
 
 #include "json.cpp"
 #include <filesystem>
@@ -9,7 +9,7 @@
 using std::string;
 
 namespace nvi {
-class file {
+class parser {
     private:
     bool debug;
     std::ifstream env_file;
@@ -22,10 +22,10 @@ class file {
 
     public:
     nlohmann::json::object_t env_map;
-    file(const std::optional<string> &dir, const bool debug = false) noexcept;
-    file *read(const string &env_file_name);
-    file *parse();
-    file *check_required(const std::vector<string> &required_envs);
+    parser(const std::optional<string> &dir, const bool debug = false) noexcept;
+    parser *read(const string &env_file_name);
+    parser *parse();
+    parser *check_required(const std::vector<string> &required_envs);
     void print();
 };
 }; // namespace nvi

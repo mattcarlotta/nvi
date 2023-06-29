@@ -1,4 +1,4 @@
-#include "env.h"
+#include "parser.h"
 #include "constants.h"
 #include "json.cpp"
 #include <filesystem>
@@ -12,13 +12,13 @@ using std::string;
 using std::vector;
 
 namespace nvi {
-file::file(const std::optional<string> &dir, const bool debug) noexcept {
+parser::parser(const std::optional<string> &dir, const bool debug) noexcept {
     this->dir = dir.value_or("");
     this->debug = debug;
     this->env_map = nlohmann::json::object();
 }
 
-file *file::parse() {
+parser *parser::parse() {
     const unsigned int file_length = this->loaded_file.length();
     while (this->byte_count < file_length) {
         const string line = this->loaded_file.substr(this->byte_count, file_length);
@@ -116,9 +116,9 @@ file *file::parse() {
     return this;
 }
 
-void file::print() { std::cout << std::setw(4) << this->env_map << std::endl; }
+void parser::print() { std::cout << std::setw(4) << this->env_map << std::endl; }
 
-file *file::read(const string &env_file_name) {
+parser *parser::read(const string &env_file_name) {
     this->file_path = std::filesystem::current_path() / this->dir / env_file_name;
     this->file_name = env_file_name;
     this->env_file = std::ifstream(this->file_path.string(), std::ios_base::in);
@@ -132,7 +132,7 @@ file *file::read(const string &env_file_name) {
     return this;
 }
 
-file *file::check_required(const vector<string> &required_envs) {
+parser *parser::check_required(const vector<string> &required_envs) {
     if (required_envs.size()) {
         vector<string> undefined_keys;
 

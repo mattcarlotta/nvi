@@ -1,5 +1,5 @@
-#include "env.h"
 #include "json.cpp"
+#include "parser.h"
 #include "gtest/gtest.h"
 #include <iostream>
 #include <optional>
@@ -10,9 +10,9 @@ class parse_env_file : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::file env_file("../../tests/envs");
-        env_file.read("bin.env")->parse();
-        env_map = env_file.env_map;
+        nvi::parser parser("../../tests/envs");
+        parser.read("bin.env")->parse();
+        env_map = parser.env_map;
     }
 };
 
