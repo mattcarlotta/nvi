@@ -2,6 +2,7 @@
 #define NVI_ARG_H
 
 #include <map>
+#include <optional>
 #include <string>
 
 using std::string;
@@ -13,7 +14,7 @@ class arg_parser {
 
     public:
     arg_parser(int &argc, char *argv[]);
-    const string get(const string &flag);
+    const std::optional<string> get(const string &flag);
 };
 } // namespace nvi
 

@@ -2,6 +2,7 @@
 #include "json.cpp"
 #include "gtest/gtest.h"
 #include <iostream>
+#include <optional>
 
 class parse_env_file : public testing::Test {
     protected:
@@ -9,7 +10,7 @@ class parse_env_file : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::file env_file("../../tests/envs", false);
+        nvi::file env_file("../../tests/envs");
         env_file.read("bin.env")->parse();
         env_map = env_file.env_map;
     }
@@ -17,7 +18,7 @@ class parse_env_file : public testing::Test {
 
 nlohmann::json parse_env_file::env_map;
 
-TEST_F(parse_env_file, size) {
+TEST_F(parse_env_file, consistent_parse_size) {
     const int env_size = env_map.size();
     EXPECT_EQ(env_size, 27);
 }

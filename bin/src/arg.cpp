@@ -1,5 +1,6 @@
 #include "arg.h"
 #include <iostream>
+#include <optional>
 
 namespace nvi {
 arg_parser::arg_parser(int &argc, char *argv[]) {
@@ -36,7 +37,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                    "                                 │"
                 << std::endl;
             std::clog
-                << "│ --file   │ Specifies which env file you'd like to load. (ex: --file test.env)                 "
+                << "│ --file   │ Specifies which .env file to load. (ex: --file test.env)                           "
                    "                                 │"
                 << std::endl;
             std::clog
@@ -57,11 +58,11 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
     }
 };
 
-const std::string arg_parser::get(const std::string &flag) {
+const std::optional<std::string> arg_parser::get(const std::string &flag) {
     try {
         return this->args.at(flag);
     } catch (const std::out_of_range &) {
-        return "";
+        return std::nullopt;
     }
 };
 } // namespace nvi

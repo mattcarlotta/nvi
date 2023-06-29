@@ -5,21 +5,23 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <optional>
 #include <sstream>
 
 using std::string;
 using std::vector;
 
 namespace nvi {
-file::file(const string &dir, const bool &debug) {
-    this->dir = dir;
-    this->show_log = debug;
+file::file(const std::optional<string> &dir, const bool debug) {
+    this->dir = dir.value_or("");
+    this->debug = debug;
     this->env_map = nlohmann::json();
 }
 
 file *file::parse() {
-    while (this->byte_count < this->loaded_file.length()) {
-        const string line = this->loaded_file.substr(this->byte_count, this->loaded_file.length());
+    const unsigned int file_length = this->loaded_file.length();
+    while (this->byte_count < file_length) {
+        const string line = this->loaded_file.substr(this->byte_count, file_length);
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
         if (line[0] == constants::COMMENT || line[0] == constants::LINE_DELIMITER) {
             ++this->line_count;
@@ -32,7 +34,7 @@ file *file::parse() {
             const string key = line.substr(0, assignment_index);
 
             const string line_slice = line.substr(assignment_index + 1, line.length());
-            int val_byte_count = 0;
+            unsigned int val_byte_count = 0;
             string value = "";
             while (val_byte_count < line_slice.length()) {
                 const char current_char = line_slice[val_byte_count];
@@ -91,7 +93,7 @@ file *file::parse() {
 
             if (key.length()) {
                 this->env_map[key] = value;
-                if (this->show_log) {
+                if (this->debug) {
                     std::clog << "[nvi] (" << this->file_name << ":" << this->line_count + 1 << ":"
                               << assignment_index + val_byte_count + 1 << ") DEBUG: Set key '" << key
                               << "' to equal value '" << value << "'." << std::endl;
@@ -100,11 +102,11 @@ file *file::parse() {
 
             this->byte_count += assignment_index + val_byte_count + 1;
         } else {
-            this->byte_count = loaded_file.length();
+            this->byte_count = file_length;
         }
     }
 
-    if (this->show_log) {
+    if (this->debug) {
         std::clog << "[nvi] (" << this->file_name << ") DEBUG: Processed " << this->line_count << " lines and "
                   << this->byte_count << " bytes!" << std::endl;
     }
@@ -133,7 +135,8 @@ file *file::read(const string &env_file_name) {
 file *file::check_required(const vector<string> &required_envs) {
     if (required_envs.size()) {
         vector<string> undefined_keys;
-        for (string key : required_envs) {
+
+        for (const string key : required_envs) {
             if (!this->env_map.contains(key)) {
                 undefined_keys.push_back(key);
             }

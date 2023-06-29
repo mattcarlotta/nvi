@@ -26,6 +26,6 @@ All flags below are optional. If no flags are passed, then a single `.env` file 
 | --config | Specifies which environment configuration you'd like to load from the env.config.json file. (ex: --config dev) |
 | --debug  | Specifies whether or not to log file parsing details. (ex: --debug on/off)                                     |
 | --dir    | Specifies which directory the env file is located within. (ex: --dir path/to/env)                              |
-| --file   | Specifies which env file you'd like to load. (ex: --file test.env)                                             |
+| --file   | Specifies which .env file to load. (ex: --file test.env)                                                       |
 | --help   | Displays this help information                                                                                 |
 

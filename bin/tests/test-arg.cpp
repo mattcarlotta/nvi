@@ -6,7 +6,7 @@ TEST(args, are_parseable) {
     char *argv[] = {(char *)"", (char *)"--file", (char *)"test.env"};
 
     nvi::arg_parser args(argc, argv);
-    const std::string file = args.get("--file");
+    const std::string file = args.get("--file").value_or("");
 
     EXPECT_EQ(file, "test.env");
 }
