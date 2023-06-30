@@ -5,10 +5,10 @@ namespace nvi {
 namespace constants {
 
 // arg
-const int ARG_CONFIG_ERROR = 0;
-const int ARG_DIR_ERROR = 1;
-const int ARG_FILES_ERROR = 2;
-const int ARG_REQUIRED_ERROR = 3;
+const int ARG_CONFIG_FLAG_ERROR = 0;
+const int ARG_DIR_FLAG_ERROR = 1;
+const int ARG_FILES_FLAG_ERROR = 2;
+const int ARG_REQUIRED_FLAG_ERROR = 3;
 const int ARG_HELP_DOC = 4;
 
 // parser

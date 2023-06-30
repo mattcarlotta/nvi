@@ -17,11 +17,11 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
             const string arg = string(argv[i]);
             if (arg == "-c" || arg == "--config") {
                 if (argv[i + 1] == nullptr)
-                    this->log(constants::ARG_CONFIG_ERROR);
+                    this->log(constants::ARG_CONFIG_FLAG_ERROR);
 
                 const string next_arg = string(argv[i + 1]);
                 if (next_arg.find("-") != string::npos)
-                    this->log(constants::ARG_CONFIG_ERROR);
+                    this->log(constants::ARG_CONFIG_FLAG_ERROR);
 
                 this->config = next_arg;
                 ++i;
@@ -29,11 +29,11 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 this->debug = true;
             } else if (arg == "-d" || arg == "--dir") {
                 if (argv[i + 1] == nullptr)
-                    this->log(constants::ARG_DIR_ERROR);
+                    this->log(constants::ARG_DIR_FLAG_ERROR);
 
                 const string next_arg = string(argv[i + 1]);
                 if (next_arg.find("-") != string::npos)
-                    this->log(constants::ARG_DIR_ERROR);
+                    this->log(constants::ARG_DIR_FLAG_ERROR);
 
                 this->dir = next_arg;
                 i++;
@@ -53,7 +53,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 }
 
                 if (!files.size()) {
-                    this->log(constants::ARG_FILES_ERROR);
+                    this->log(constants::ARG_FILES_FLAG_ERROR);
                 } else {
                     this->files = files;
                 }
@@ -74,7 +74,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 }
 
                 if (!this->required_envs.size())
-                    this->log(constants::ARG_REQUIRED_ERROR);
+                    this->log(constants::ARG_REQUIRED_FLAG_ERROR);
             }
         } catch (std::out_of_range &e) {
             std::cout << "[nvi] ERROR: Failed to parse arguments. See below for more information." << std::endl;
@@ -86,20 +86,21 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
 
 void arg_parser::log(int code) const {
     switch (code) {
-    case constants::ARG_CONFIG_ERROR: {
-        std::clog << "[nvi] ERROR(ARG_CONFIG_ERROR): The '-c' or '--config' flag must contain an envionment name.";
+    case constants::ARG_CONFIG_FLAG_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_CONFIG_FLAG_ERROR): The '-c' or '--config' flag must contain an envionment name.";
         break;
     }
-    case constants::ARG_DIR_ERROR: {
-        std::clog << "[nvi] ERROR(ARG_DIR_ERROR): The '-di' or '--dir' flag must contain an envionment name.";
+    case constants::ARG_DIR_FLAG_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_DIR_FLAG_ERROR): The '-di' or '--dir' flag must contain an envionment name.";
         break;
     }
-    case constants::ARG_FILES_ERROR: {
-        std::clog << "[nvi] ERROR(ARG_FILES_ERROR): The '-f' or '--files' flag must contain at least 1 .env file.";
+    case constants::ARG_FILES_FLAG_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_FILES_FLAG_ERROR): The '-f' or '--files' flag must contain at least 1 .env file.";
         break;
     }
-    case constants::ARG_REQUIRED_ERROR: {
-        std::clog << "[nvi] ERROR(ARG_REQUIRED_ERROR): The '-r' or '--required' flag must contain at least 1 ENV key.";
+    case constants::ARG_REQUIRED_FLAG_ERROR: {
+        std::clog
+            << "[nvi] ERROR(ARG_REQUIRED_FLAG_ERROR): The '-r' or '--required' flag must contain at least 1 ENV key.";
         break;
     }
     case constants::ARG_HELP_DOC: {
