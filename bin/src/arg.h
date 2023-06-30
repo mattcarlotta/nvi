@@ -2,20 +2,20 @@
 #define NVI_ARG_H
 
 #include <map>
-#include <optional>
 #include <string>
 #include <vector>
 
 using std::string;
+using std::vector;
 
 namespace nvi {
 class arg_parser {
     public:
     string config;
-    std::vector<string> files = std::vector<string>{".env"};
     bool debug = false;
     string dir;
-    std::vector<string> required_envs;
+    vector<string> files = vector<string>{".env"};
+    vector<string> required_envs;
     arg_parser(int &argc, char *argv[]);
 
     private:

@@ -1,7 +1,6 @@
 #include "arg.h"
 #include "constants.h"
 #include <iostream>
-#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
