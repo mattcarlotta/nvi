@@ -121,12 +121,12 @@ parser *parser::parse() {
 void parser::print() { std::cout << std::setw(4) << this->env_map << std::endl; }
 
 parser *parser::read(const string &env_file_name) {
-    this->file_path = std::filesystem::current_path() / this->dir / env_file_name;
+    this->file_path = string(std::filesystem::current_path() / this->dir / env_file_name);
     this->file_name = env_file_name;
-    this->env_file = std::ifstream(this->file_path.string(), std::ios_base::in);
+    this->env_file = std::ifstream(this->file_path, std::ios_base::in);
     if (!this->env_file.good()) {
-        std::cerr << "[nvi] ERROR: Unable to locate '" << this->file_path.string()
-                  << "'. The file doesn't appear to exist!" << std::endl;
+        std::cerr << "[nvi] ERROR: Unable to locate '" << this->file_path << "'. The file doesn't appear to exist!"
+                  << std::endl;
         exit(1);
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};

@@ -16,7 +16,7 @@ class parser {
     string loaded_file;
     string file_name;
     string dir;
-    std::filesystem::path file_path;
+    string file_path;
     unsigned int byte_count;
     unsigned int line_count;
 
