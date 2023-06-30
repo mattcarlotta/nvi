@@ -91,7 +91,7 @@ void arg_parser::log(int code) const {
         break;
     }
     case constants::ARG_DIR_FLAG_ERROR: {
-        std::clog << "[nvi] ERROR(ARG_DIR_FLAG_ERROR): The '-di' or '--dir' flag must contain an envionment name.";
+        std::clog << "[nvi] ERROR(ARG_DIR_FLAG_ERROR): The '-d' or '--dir' flag must contain an envionment name.";
         break;
     }
     case constants::ARG_FILES_FLAG_ERROR: {
@@ -104,44 +104,24 @@ void arg_parser::log(int code) const {
         break;
     }
     case constants::ARG_HELP_DOC: {
-        std::clog << "┌─────────────────────────────────────────────────────────────────────────────────────────────"
-                     "───────────────────────────┐"
+        // clang-format off
+        std::clog << "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
+                     "│ NVI CLI Documentation                                                                                                  │\n"
+                     "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
+                     "│ flag            │ description                                                                                          │\n"
+                     "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
+                     "│ -c, --config    │ Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)  │\n"
+                     "│ -dg, --debug    │ Specifies whether or not to log file parsing details. (ex: --debug)                                  │\n"
+                     "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
+                     "│ -f, --files     │ Specifies which .env file to load. (ex: --files test.env test2.env)                                  │\n"
+                     "│ -r, --required  │ Specifies which ENV keys are required. (ex: --required KEY1 KEY2)                                    │\n"
+                     "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘"
                   << std::endl;
-        std::clog << "│ NVI CLI Documentation                                                                 "
-                     "                                 │"
-                  << std::endl;
-        std::clog << "├─────────────────┬────────────────────────────────────────────────────────────────────────"
-                     "──────────────────────────────┤"
-                  << std::endl;
-        std::clog << "│ flag            │ description                                                            "
-                     "                              │"
-                  << std::endl;
-        std::clog << "├─────────────────┼───────────────────────────────────────────────────────────────────────────"
-                     "───────────────────────────┤"
-                  << std::endl;
-        std::clog << "│ -c, --config    │ Specifies which environment configuration to load from the "
-                     "env.config.json file. (ex: --config dev)  │"
-                  << std::endl;
-        std::clog << "│ -dg, --debug    │ Specifies whether or not to log file parsing details. (ex: --debug)  "
-                     "                                │"
-                  << std::endl;
-        std::clog << "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir "
-                     "path/to/env)                    │"
-                  << std::endl;
-        std::clog << "│ -f, --files     │ Specifies which .env file to load. (ex: --files test.env test2.env)  "
-                     "                                │"
-                  << std::endl;
-        std::clog << "│ -r, --required  │ Specifies which ENV keys are required. (ex: --required KEY1 KEY2)    "
-                     "                                │"
-                  << std::endl;
-        std::clog << "└─────────────────┴──────────────────────────────────────────────────────────────────────────"
-                     "────────────────────────────┘"
-                  << std::endl;
+        // clang-format on
         exit(0);
     }
-    default: {
+    default:
         break;
-    }
     }
 
     std::cout << " Use flag '-h' or '--help' for more information." << std::endl;
