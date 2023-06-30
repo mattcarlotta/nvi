@@ -24,7 +24,7 @@ All flags below are optional. If no flags are passed, then a single `.env` file 
 | flag            | description                                                                                           |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
 | -c, --config    | Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)   |
-| -dg, --debug    | Specifies whether or not to log file parsing details. (ex: --debug)                                   |
+| -de, --debug    | Specifies whether or not to log file parsing details. (ex: --debug)                                   |
 | -d, --dir       | Specifies which directory the env file is located within. (ex: --dir path/to/env)                     |
 | -f, --files     | Specifies which .env file to load. (ex: --files test.env test2.env)                                   |
 | -r, --required  | Specifies which ENV keys are required. (ex: --required KEY1 KEY2)                                     |

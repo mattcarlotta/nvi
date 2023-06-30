@@ -30,7 +30,7 @@ export default function config(options = {} as ConfigOptions): ParsedEnvs {
 
         if (undefReqKeys.length) {
             logError(
-                `The following Envs are marked as required: ${undefReqKeys
+                `The following ENV keys are marked as required: ${undefReqKeys
                     .map((v) => `'${v}'`)
                     .join(', ')}, but they are undefined after all of the .env files were parsed.`
             );

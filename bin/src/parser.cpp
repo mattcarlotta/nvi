@@ -148,7 +148,7 @@ parser *parser::check_required(const vector<string> &required_envs) {
             std::stringstream envs;
             std::copy(this->undefined_keys.begin(), this->undefined_keys.end(),
                       std::ostream_iterator<string>(envs, ", "));
-            std::cerr << "[nvi] ERROR: The following Envs are marked as required: " << envs.str()
+            std::cerr << "[nvi] ERROR: The following ENV keys are marked as required: " << envs.str()
                       << "but they are undefined after all of the .env files were parsed." << std::endl;
             exit(1);
         }
