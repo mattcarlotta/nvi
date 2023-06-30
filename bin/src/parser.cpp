@@ -19,9 +19,8 @@ parser::parser(const std::optional<string> &dir, const bool debug) noexcept {
 }
 
 parser *parser::parse() {
-    const unsigned int file_length = this->loaded_file.length();
-    while (this->byte_count < file_length) {
-        const string line = this->loaded_file.substr(this->byte_count, file_length);
+    while (this->byte_count < this->file_length) {
+        const string line = this->loaded_file.substr(this->byte_count, this->file_length);
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
         if (line[0] == constants::COMMENT || line[0] == constants::LINE_DELIMITER) {
             ++this->line_count;
@@ -102,7 +101,7 @@ parser *parser::parse() {
 
             this->byte_count += assignment_index + val_byte_count + 1;
         } else {
-            this->byte_count = file_length;
+            this->byte_count = this->file_length;
         }
     }
 
@@ -130,6 +129,7 @@ parser *parser::read(const string &env_file_name) {
         exit(1);
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
+    this->file_length = this->loaded_file.length();
     this->byte_count = 0;
     this->line_count = 0;
 

@@ -17,6 +17,7 @@ class parser {
     string file_name;
     string dir;
     string file_path;
+    unsigned int file_length;
     unsigned int byte_count;
     unsigned int line_count;
 
