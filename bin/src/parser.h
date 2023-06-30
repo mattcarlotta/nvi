@@ -5,8 +5,11 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <string>
+#include <vector>
 
 using std::string;
+using std::vector;
 
 namespace nvi {
 class parser {
@@ -20,13 +23,14 @@ class parser {
     unsigned int file_length;
     unsigned int byte_count;
     unsigned int line_count;
+    vector<string> undefined_keys;
 
     public:
     nlohmann::json::object_t env_map;
     parser(const std::optional<string> &dir, const bool debug = false) noexcept;
     parser *read(const string &env_file_name);
     parser *parse();
-    parser *check_required(const std::vector<string> &required_envs);
+    parser *check_required(const vector<string> &required_envs);
     void print();
 };
 }; // namespace nvi

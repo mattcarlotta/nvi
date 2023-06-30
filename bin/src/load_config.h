@@ -4,21 +4,24 @@
 #include "json.cpp"
 #include <fstream>
 #include <optional>
+#include <string>
+
+using std::string;
 
 namespace nvi {
 class config {
     private:
-    std::string env;
+    string env;
     std::ifstream env_config_file;
-    std::string file_path;
+    string file_path;
     nlohmann::json::object_t env_config;
 
     public:
-    config(const std::string &environment, const std::string dir = "");
+    config(const string &environment, const string dir = "");
     const std::optional<bool> get_debug() noexcept;
-    const std::optional<std::string> get_dir() noexcept;
-    const std::vector<std::string> get_files();
-    const std::vector<std::string> get_required_envs() noexcept;
+    const std::optional<string> get_dir() noexcept;
+    const std::vector<string> get_files();
+    const std::vector<string> get_required_envs() noexcept;
 };
 }; // namespace nvi
 

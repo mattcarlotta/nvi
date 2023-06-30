@@ -138,17 +138,16 @@ parser *parser::read(const string &env_file_name) {
 
 parser *parser::check_required(const vector<string> &required_envs) {
     if (required_envs.size()) {
-        vector<string> undefined_keys;
-
         for (const string key : required_envs) {
             if (!this->env_map.count(key)) {
-                undefined_keys.push_back(key);
+                this->undefined_keys.push_back(key);
             }
         }
 
         if (undefined_keys.size()) {
             std::stringstream envs;
-            std::copy(undefined_keys.begin(), undefined_keys.end(), std::ostream_iterator<string>(envs, ", "));
+            std::copy(this->undefined_keys.begin(), this->undefined_keys.end(),
+                      std::ostream_iterator<string>(envs, ", "));
             std::cerr << "[nvi] ERROR: The following Envs are marked as required: " << envs.str()
                       << "but they are undefined after all of the .env files were parsed." << std::endl;
             exit(1);
