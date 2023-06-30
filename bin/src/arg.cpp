@@ -1,68 +1,152 @@
 #include "arg.h"
+#include "constants.h"
 #include <iostream>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+using std::string;
 
 namespace nvi {
 arg_parser::arg_parser(int &argc, char *argv[]) {
-    if (argc % 2 == 0) {
-        if (std::string(argv[1]) == "--help") {
-            std::clog
-                << "┌─────────────────────────────────────────────────────────────────────────────────────────────"
-                   "───────────────────────────────────┐"
-                << std::endl;
-            std::clog << "│ NVI CLI Documentation                                                                      "
-                         "                                    │"
-                      << std::endl;
-            std::clog
-                << "├──────────┬──────────────────────────────────────────────────────────────────────────────────"
-                   "───────────────────────────────────┤"
-                << std::endl;
-            std::clog
-                << "│ flag     │ description                                                                       "
-                   "                                  │"
-                << std::endl;
-            std::clog
-                << "├──────────┼──────────────────────────────────────────────────────────────────────────────────"
-                   "───────────────────────────────────┤"
-                << std::endl;
-            std::clog << "│ --config │ Specifies which environment configuration you'd like to load from the "
-                         "env.config.json file. (ex: --config dev)      │"
-                      << std::endl;
-            std::clog
-                << "│ --debug  │ Specifies whether or not to log file parsing details. (ex: --debug on|off)         "
-                   "                                 │"
-                << std::endl;
-            std::clog
-                << "│ --dir    │ Specifies which directory the env file is located within. (ex: --dir path/to/env)  "
-                   "                                 │"
-                << std::endl;
-            std::clog
-                << "│ --file   │ Specifies which .env file to load. (ex: --file test.env)                           "
-                   "                                 │"
-                << std::endl;
-            std::clog
-                << "└──────────┴──────────────────────────────────────────────────────────────────────────────────"
-                   "───────────────────────────────────┘"
-                << std::endl;
-            exit(0);
-        } else {
-            std::cerr
-                << "[nvi] You must pass valid arguments with '--flag arg'. Use flag '--help' for more information."
-                << std::endl;
+    for (int i = 1; i < argc; ++i) {
+        if (argv == nullptr)
+            break;
+
+        try {
+            const string arg = string(argv[i]);
+            if (arg == "-c" || arg == "--config") {
+                if (argv[i + 1] == nullptr)
+                    this->log(constants::ARG_CONFIG_ERROR);
+
+                const string next_arg = string(argv[i + 1]);
+                if (next_arg.find("-") != string::npos)
+                    this->log(constants::ARG_CONFIG_ERROR);
+
+                this->config = next_arg;
+                ++i;
+            } else if (arg == "-dg" || arg == "--debug") {
+                this->debug = true;
+            } else if (arg == "-d" || arg == "--dir") {
+                if (argv[i + 1] == nullptr)
+                    this->log(constants::ARG_DIR_ERROR);
+
+                const string next_arg = string(argv[i + 1]);
+                if (next_arg.find("-") != string::npos)
+                    this->log(constants::ARG_DIR_ERROR);
+
+                this->dir = next_arg;
+                i++;
+            } else if (arg == "-f" || arg == "--files") {
+                std::vector<string> files;
+                for (int j = i + 1; j < argc; ++j) {
+                    if (argv[j] == nullptr) {
+                        i += j;
+                        break;
+                    }
+
+                    const string next_arg = string(argv[j]);
+                    if (next_arg.find("-") != string::npos)
+                        break;
+
+                    files.push_back(next_arg);
+                }
+
+                if (!files.size()) {
+                    this->log(constants::ARG_FILES_ERROR);
+                } else {
+                    this->files = files;
+                }
+            } else if (arg == "-h" || arg == "--help") {
+                this->log(constants::ARG_HELP_DOC);
+            } else if (arg == "-r" || arg == "--required") {
+                for (int j = i + 1; j < argc; ++j) {
+                    if (argv[j] == nullptr) {
+                        i += j;
+                        break;
+                    }
+
+                    const string next_arg = string(argv[j]);
+                    if (next_arg.find("-") != string::npos)
+                        break;
+
+                    this->required_envs.push_back(next_arg);
+                }
+
+                if (!this->required_envs.size())
+                    this->log(constants::ARG_REQUIRED_ERROR);
+            }
+        } catch (std::out_of_range &e) {
+            std::cout << "[nvi] ERROR: Failed to parse arguments. See below for more information." << std::endl;
+            std::cout << e.what() << std::endl;
             exit(1);
         }
     }
-
-    for (int i = 1; i < argc; i += 2) {
-        this->args.insert(std::make_pair(argv[i], argv[i + 1]));
-    }
 };
 
-const std::optional<std::string> arg_parser::get(const std::string &flag) noexcept {
-    try {
-        return this->args.at(flag);
-    } catch (const std::out_of_range &) {
-        return std::nullopt;
+void arg_parser::log(int code) const {
+    switch (code) {
+    case constants::ARG_CONFIG_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_CONFIG_ERROR): The '-c' or '--config' flag must contain an envionment name.";
+        break;
     }
-};
+    case constants::ARG_DIR_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_DIR_ERROR): The '-di' or '--dir' flag must contain an envionment name.";
+        break;
+    }
+    case constants::ARG_FILES_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_FILES_ERROR): The '-f' or '--files' flag must contain at least 1 .env file.";
+        break;
+    }
+    case constants::ARG_REQUIRED_ERROR: {
+        std::clog << "[nvi] ERROR(ARG_REQUIRED_ERROR): The '-r' or '--required' flag must contain at least 1 ENV key.";
+        break;
+    }
+    case constants::ARG_HELP_DOC: {
+        std::clog << "┌─────────────────────────────────────────────────────────────────────────────────────────────"
+                     "───────────────────────────┐"
+                  << std::endl;
+        std::clog << "│ NVI CLI Documentation                                                                 "
+                     "                                 │"
+                  << std::endl;
+        std::clog << "├─────────────────┬────────────────────────────────────────────────────────────────────────"
+                     "──────────────────────────────┤"
+                  << std::endl;
+        std::clog << "│ flag            │ description                                                            "
+                     "                              │"
+                  << std::endl;
+        std::clog << "├─────────────────┼───────────────────────────────────────────────────────────────────────────"
+                     "───────────────────────────┤"
+                  << std::endl;
+        std::clog << "│ -c, --config    │ Specifies which environment configuration to load from the "
+                     "env.config.json file. (ex: --config dev)  │"
+                  << std::endl;
+        std::clog << "│ -dg, --debug    │ Specifies whether or not to log file parsing details. (ex: --debug)  "
+                     "                                │"
+                  << std::endl;
+        std::clog << "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir "
+                     "path/to/env)                    │"
+                  << std::endl;
+        std::clog << "│ -f, --files     │ Specifies which .env file to load. (ex: --files test.env test2.env)  "
+                     "                                │"
+                  << std::endl;
+        std::clog << "│ -r, --required  │ Specifies which ENV keys are required. (ex: --required KEY1 KEY2)    "
+                     "                                │"
+                  << std::endl;
+        std::clog << "└─────────────────┴──────────────────────────────────────────────────────────────────────────"
+                     "────────────────────────────┘"
+                  << std::endl;
+        exit(0);
+    }
+    default: {
+        break;
+    }
+    }
+
+    std::cout << " Use flag '-h' or '--help' for more information." << std::endl;
+
+    exit(1);
+}
+
 } // namespace nvi

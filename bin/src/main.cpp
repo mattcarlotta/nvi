@@ -4,11 +4,11 @@
 #include "parser.h"
 
 int main(int argc, char *argv[]) {
-    nvi::arg_parser args(argc, argv);
+    nvi::arg_parser arg(argc, argv);
 
-    const auto env_config = args.get("--config");
-    if (env_config.has_value()) {
-        nvi::config config(env_config.value());
+    const auto env_config = arg.config;
+    if (env_config.length()) {
+        nvi::config config(env_config);
         nvi::parser parser(config.get_dir(), config.get_debug().value());
 
         for (const auto env : config.get_files()) {
@@ -17,9 +17,13 @@ int main(int argc, char *argv[]) {
 
         parser.check_required(config.get_required_envs())->print();
     } else {
-        nvi::parser parser(args.get("--dir"), args.get("--debug") == "on");
+        nvi::parser parser(arg.dir, arg.debug);
 
-        parser.read(args.get("--file").value_or(".env"))->parse()->print();
+        for (const auto env : arg.files) {
+            parser.read(env)->parse();
+        }
+
+        parser.check_required(arg.required_envs)->print();
     }
 
     return 0;

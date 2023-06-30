@@ -11,7 +11,7 @@ A custom-built executable .env file parser!
 
 Example parsing a single `.env` file from a custom directory with debug logging:
 ```DOSINI
-./nvi --file .env --dir dist/client --debug on
+./nvi --files .env --dir dist/client --debug
 ```
 
 Example parsing one or many `.env` files from a `env.config.json` configuration file:
@@ -21,11 +21,12 @@ Example parsing one or many `.env` files from a `env.config.json` configuration 
 
 All flags below are optional. If no flags are passed, then a single `.env` file located at the root directory will be parsed (if present).
 
-| flag     | description                                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------------------------- |
-| --config | Specifies which environment configuration you'd like to load from the env.config.json file. (ex: --config dev) |
-| --debug  | Specifies whether or not to log file parsing details. (ex: --debug on/off)                                     |
-| --dir    | Specifies which directory the env file is located within. (ex: --dir path/to/env)                              |
-| --file   | Specifies which .env file to load. (ex: --file test.env)                                                       |
-| --help   | Displays this help information                                                                                 |
+| flag            | description                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| -c, --config    | Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)   |
+| -dg, --debug    | Specifies whether or not to log file parsing details. (ex: --debug)                                   |
+| -d, --dir       | Specifies which directory the env file is located within. (ex: --dir path/to/env)                     |
+| -f, --files     | Specifies which .env file to load. (ex: --files test.env test2.env)                                   |
+| -r, --required  | Specifies which ENV keys are required. (ex: --required KEY1 KEY2)                                     |
+| -h, --help      | Displays this help information.                                                                       |
 

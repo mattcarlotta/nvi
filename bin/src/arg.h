@@ -4,17 +4,22 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <vector>
 
 using std::string;
 
 namespace nvi {
 class arg_parser {
-    private:
-    std::map<string, string> args;
-
     public:
+    string config;
+    std::vector<string> files = std::vector<string>{".env"};
+    bool debug = false;
+    string dir;
+    std::vector<string> required_envs;
     arg_parser(int &argc, char *argv[]);
-    const std::optional<string> get(const string &flag) noexcept;
+
+    private:
+    void log(int code) const;
 };
 } // namespace nvi
 
