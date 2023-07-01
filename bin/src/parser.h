@@ -23,14 +23,22 @@ class parser {
     unsigned int file_length;
     unsigned int byte_count;
     unsigned int line_count;
+    unsigned int val_byte_count;
+    int assignment_index;
+    string key;
+    string key_prop;
+    string value;
+
     vector<string> undefined_keys;
+    vector<string> required_envs;
+    void log(unsigned int code) const;
 
     public:
     nlohmann::json::object_t env_map;
-    parser(const std::optional<string> &dir, const bool debug = false) noexcept;
+    parser(const std::optional<string> &dir, const bool debug = false,
+           const vector<string> required_envs = vector<string>()) noexcept;
     parser *read(const string &env_file_name);
     parser *parse();
-    parser *check_required(const vector<string> &required_envs);
     void print();
 };
 }; // namespace nvi

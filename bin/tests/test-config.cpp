@@ -1,5 +1,5 @@
+#include "config.h"
 #include "json.cpp"
-#include "load_config.h"
 #include "gtest/gtest.h"
 #include <optional>
 #include <string>
@@ -21,7 +21,7 @@ TEST(parse_config_file, directory) {
 }
 
 TEST(parse_config_file, files) {
-    const vector<string> env_files = config.get_files();
+    const vector<string> env_files = config.get_files().value();
     const vector<string> files = {"test1.env", "test2.env", "test3.env"};
     EXPECT_EQ(env_files, files);
 }

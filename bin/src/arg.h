@@ -17,7 +17,7 @@ class arg_parser {
     vector<string> files = vector<string>{".env"};
     vector<string> required_envs;
     string invalid_arg;
-    string invalid_args_message;
+    string invalid_args;
     arg_parser(int &argc, char *argv[]);
 
     private:

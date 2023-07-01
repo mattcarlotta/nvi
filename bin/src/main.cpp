@@ -1,6 +1,6 @@
 #include "arg.h"
+#include "config.h"
 #include "json.cpp"
-#include "load_config.h"
 #include "parser.h"
 #include <optional>
 #include <string>
@@ -20,17 +20,17 @@ int main(int argc, char *argv[]) {
         nvi::config config(arg.config);
         dir = config.get_dir();
         debug = config.get_debug().value();
-        files = config.get_files();
+        files = config.get_files().value();
         required_envs = config.get_required_envs();
     }
 
-    nvi::parser parser(dir, debug);
+    nvi::parser parser(dir, debug, required_envs);
 
-    for (const auto env : files) {
+    for (const string env : files) {
         parser.read(env)->parse();
     }
 
-    parser.check_required(required_envs)->print();
+    parser.print();
 
     return 0;
 }
