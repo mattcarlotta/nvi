@@ -16,10 +16,12 @@ class arg_parser {
     string dir;
     vector<string> files = vector<string>{".env"};
     vector<string> required_envs;
+    string invalid_arg;
+    string invalid_args_message;
     arg_parser(int &argc, char *argv[]);
 
     private:
-    void log(int code) const;
+    void log(unsigned int code) const;
 };
 } // namespace nvi
 

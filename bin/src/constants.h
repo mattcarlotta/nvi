@@ -10,6 +10,8 @@ const int ARG_DIR_FLAG_ERROR = 1;
 const int ARG_FILES_FLAG_ERROR = 2;
 const int ARG_REQUIRED_FLAG_ERROR = 3;
 const int ARG_HELP_DOC = 4;
+const int ARG_DEBUG = 5;
+const int ARG_INVALID_ARG_WARNING = 6;
 
 // parser
 const char COMMENT = '#';         // 0x23

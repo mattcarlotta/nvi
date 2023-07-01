@@ -60,10 +60,9 @@ parser *parser::parse() {
                         if (this->env_map.count(key_prop)) {
                             interpolated_value = this->env_map.at(key_prop);
                         } else {
-                            std::clog << "[nvi]"
-                                      << " (" << this->file_name << ":" << this->line_count + 1 << ":"
-                                      << assignment_index + val_byte_count + 2 << ") "
-                                      << "WARNING: The key '" << key << "' contains an invalid interpolated variable: '"
+                            std::clog << "[nvi] (parser::INTERPOLATION_WARNING::" << this->file_name << ":"
+                                      << this->line_count + 1 << ":" << assignment_index + val_byte_count + 2 << ") "
+                                      << "The key '" << key << "' contains an invalid interpolated variable: '"
                                       << key_prop << "'. Unable to locate a value that corresponds to this key."
                                       << std::endl;
                         }
@@ -74,10 +73,9 @@ parser *parser::parse() {
 
                         continue;
                     } else {
-                        std::cerr << "[nvi]"
-                                  << " (" << this->file_name << ":" << this->line_count + 2 << ":"
-                                  << assignment_index + val_byte_count + 2 << ") "
-                                  << "ERROR: The key '" << key
+                        std::cerr << "[nvi] (parser::INTERPOLATION_ERROR::" << this->file_name << ":"
+                                  << this->line_count + 2 << ":" << assignment_index + val_byte_count + 2 << ") "
+                                  << "The key '" << key
                                   << "' contains an interpolated variable: '${' operator but appears to be missing a "
                                      "closing '}' operator."
                                   << std::endl;
@@ -93,9 +91,9 @@ parser *parser::parse() {
             if (key.length()) {
                 this->env_map[key] = value;
                 if (this->debug) {
-                    std::clog << "[nvi] (" << this->file_name << ":" << this->line_count + 1 << ":"
-                              << assignment_index + val_byte_count + 1 << ") DEBUG: Set key '" << key
-                              << "' to equal value '" << value << "'." << std::endl;
+                    std::clog << "[nvi] (parser::DEBUG::" << this->file_name << ":" << this->line_count + 1 << ":"
+                              << assignment_index + val_byte_count + 1 << ") Set key '" << key << "' to equal value '"
+                              << value << "'." << std::endl;
                 }
             }
 
@@ -107,7 +105,7 @@ parser *parser::parse() {
 
     if (this->debug) {
         const char conditional_plural_letter = this->line_count > 1 ? 's' : '\0';
-        std::clog << "[nvi] (" << this->file_name << ") DEBUG: Processed " << this->line_count << " line"
+        std::clog << "[nvi] (parser::DEBUG::" << this->file_name << ") Processed " << this->line_count << " line"
                   << conditional_plural_letter << " and " << this->byte_count << " bytes!\n"
                   << std::endl;
     }
@@ -124,8 +122,8 @@ parser *parser::read(const string &env_file_name) {
     this->file_name = env_file_name;
     this->env_file = std::ifstream(this->file_path, std::ios_base::in);
     if (!this->env_file.good()) {
-        std::cerr << "[nvi] ERROR: Unable to locate '" << this->file_path << "'. The file doesn't appear to exist!"
-                  << std::endl;
+        std::cerr << "[nvi] (parser::FILE_ERROR) Unable to locate '" << this->file_path
+                  << "'. The file doesn't appear to exist!" << std::endl;
         exit(1);
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
@@ -148,7 +146,7 @@ parser *parser::check_required(const vector<string> &required_envs) {
             std::stringstream envs;
             std::copy(this->undefined_keys.begin(), this->undefined_keys.end(),
                       std::ostream_iterator<string>(envs, ", "));
-            std::cerr << "[nvi] ERROR: The following ENV keys are marked as required: " << envs.str()
+            std::cerr << "[nvi] (parser::REQUIRED_ERROR) The following ENV keys are marked as required: " << envs.str()
                       << "but they are undefined after all of the .env files were parsed." << std::endl;
             exit(1);
         }
