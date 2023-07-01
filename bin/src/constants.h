@@ -10,14 +10,15 @@ const unsigned int ARG_DIR_FLAG_ERROR = 1;
 const unsigned int ARG_FILES_FLAG_ERROR = 2;
 const unsigned int ARG_REQUIRED_FLAG_ERROR = 3;
 const unsigned int ARG_HELP_DOC = 4;
-const unsigned int ARG_DEBUG = 5;
-const unsigned int ARG_INVALID_ARG_WARNING = 6;
-const unsigned int ARG_EXCEPTION = 7;
+const unsigned int ARG_INVALID_ARG_WARNING = 5;
+const unsigned int ARG_EXCEPTION = 6;
+const unsigned int ARG_DEBUG = 7;
 
 // config
 const unsigned int CONFIG_FILE_ERROR = 0;
 const unsigned int CONFIG_FILE_PARSE_ERROR = 1;
-const unsigned int CONFIG_MISSING_FILES_ARG_ERROR = 2;
+const unsigned int CONFIG_DEBUG = 3;
+const unsigned int CONFIG_MISSING_FILES_ARG_ERROR = 4;
 
 // parser
 const unsigned int PARSER_INTERPOLATION_WARNING = 0;

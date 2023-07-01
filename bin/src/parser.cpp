@@ -71,6 +71,7 @@ parser *parser::parse() {
                         continue;
                     } else {
                         this->log(constants::PARSER_INTERPOLATION_ERROR);
+                        exit(1);
                     }
                 }
 
@@ -101,7 +102,7 @@ parser *parser::parse() {
     return this;
 }
 
-void parser::print() {
+void parser::print_envs() {
     if (this->required_envs.size()) {
         for (const string key : this->required_envs) {
             if (!this->env_map.count(key)) {
@@ -111,6 +112,7 @@ void parser::print() {
 
         if (this->undefined_keys.size()) {
             this->log(constants::PARSER_REQUIRED_ENV_ERROR);
+            exit(1);
         }
     }
 
@@ -123,6 +125,7 @@ parser *parser::read(const string &env_file_name) {
     this->env_file = std::ifstream(this->file_path, std::ios_base::in);
     if (!this->env_file.good()) {
         this->log(constants::PARSER_FILE_ERROR);
+        exit(1);
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
     this->file_length = this->loaded_file.length();
@@ -148,7 +151,7 @@ void parser::log(unsigned int code) const {
                   << "' contains an interpolated variable: '${' operator but appears to be missing a "
                      "closing '}' operator."
                   << std::endl;
-        exit(1);
+        break;
     }
     case constants::PARSER_DEBUG: {
         std::clog << "[nvi] (parser::DEBUG::" << this->file_name << ":" << this->line_count + 1 << ":"
@@ -168,12 +171,12 @@ void parser::log(unsigned int code) const {
         std::copy(this->undefined_keys.begin(), this->undefined_keys.end(), std::ostream_iterator<string>(envs, ","));
         std::cerr << "[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: '" << envs.str()
                   << "' but they are undefined after all of the .env files were parsed." << std::endl;
-        exit(1);
+        break;
     }
     case constants::PARSER_FILE_ERROR: {
         std::cerr << "[nvi] (parser::FILE_ERROR) Unable to locate '" << this->file_path
                   << "'. The .env file doesn't appear to exist!" << std::endl;
-        exit(1);
+        break;
     }
     default:
         break;

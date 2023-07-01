@@ -4,10 +4,9 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <optional>
+#include <string>
 
 using std::string;
-using std::vector;
 
 namespace nvi {
 config::config(const string &environment, const string dir) {
@@ -16,48 +15,38 @@ config::config(const string &environment, const string dir) {
     std::ifstream env_config_file(this->file_path);
     if (!env_config_file.good()) {
         this->log(constants::CONFIG_FILE_ERROR);
+        exit(1);
     }
 
-    nlohmann::json::object_t config = nlohmann::json::parse(env_config_file);
-    if (!config.count(this->env)) {
+    this->parsed_config = nlohmann::json::parse(env_config_file);
+    if (!this->parsed_config.count(this->env)) {
         this->log(constants::CONFIG_FILE_PARSE_ERROR);
+        exit(1);
     }
 
-    this->env_config = config.at(this->env);
-};
+    this->env_config = this->parsed_config.at(this->env);
 
-const std::optional<bool> config::get_debug() noexcept {
-    if (this->env_config.count("debug")) {
-        return this->env_config.at("debug");
-    } else {
-        return std::nullopt;
-    }
-};
-
-const std::optional<string> config::get_dir() noexcept {
-    if (this->env_config.count("dir")) {
-        return this->env_config.at("dir");
-    } else {
-        return std::nullopt;
-    }
-};
-
-const std::optional<vector<string>> config::get_files() {
     if (this->env_config.count("files")) {
-        return this->env_config.at("files");
+        this->files = this->env_config.at("files");
     } else {
         this->log(constants::CONFIG_MISSING_FILES_ARG_ERROR);
-        //@@@ this is not needed because the above exits the process,
-        // it's just here to ignore a non-void return warning
-        return std::nullopt;
+        exit(1);
     }
-};
 
-const vector<string> config::get_required_envs() noexcept {
+    if (this->env_config.count("debug")) {
+        this->debug = this->env_config.at("debug");
+    }
+
+    if (this->env_config.count("dir")) {
+        this->dir = this->env_config.at("dir");
+    }
+
     if (this->env_config.count("required")) {
-        return this->env_config.at("required");
-    } else {
-        return vector<string>();
+        this->required_envs = this->env_config.at("required");
+    }
+
+    if (this->debug) {
+        this->log(constants::CONFIG_DEBUG);
     }
 };
 
@@ -74,6 +63,23 @@ void config::log(unsigned int code) const {
                   << "). The specified environment doesn't appear to exist!" << std::endl;
         break;
     }
+    case constants::CONFIG_DEBUG: {
+        std::clog << "[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration file: '";
+        for (auto &el : this->parsed_config.items()) {
+            std::clog << el.key() << ",";
+        }
+        std::clog << "' and selected the '" << this->env << "' configuration." << std::endl;
+        std::clog << "[nvi] (config::DEBUG) The following '" << this->env << "' configuration settings were set: ";
+        std::clog << "debug='true', ";
+        std::clog << "dir='" << this->dir << "', ";
+        std::stringstream files;
+        std::copy(this->files.begin(), this->files.end(), std::ostream_iterator<string>(files, ","));
+        std::clog << "files='" << files.str() << "', ";
+        std::stringstream envs;
+        std::copy(this->required_envs.begin(), this->required_envs.end(), std::ostream_iterator<string>(envs, ","));
+        std::clog << "required='" << envs.str() << "'.\n" << std::endl;
+        break;
+    }
     case constants::CONFIG_MISSING_FILES_ARG_ERROR: {
         std::cerr << "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '"
                   << this->env << "' environment configuration (" << this->file_path
@@ -83,7 +89,5 @@ void config::log(unsigned int code) const {
     default:
         break;
     }
-
-    exit(1);
 }
 } // namespace nvi

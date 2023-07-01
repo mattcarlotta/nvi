@@ -16,15 +16,16 @@ class config {
     string env;
     std::ifstream env_config_file;
     string file_path;
+    nlohmann::json parsed_config;
     nlohmann::json::object_t env_config;
     void log(unsigned int code) const;
 
     public:
+    bool debug = false;
+    string dir;
+    vector<string> files;
+    vector<string> required_envs = vector<string>();
     config(const string &environment, const string dir = "");
-    const std::optional<bool> get_debug() noexcept;
-    const std::optional<string> get_dir() noexcept;
-    const std::optional<vector<string>> get_files();
-    const vector<string> get_required_envs() noexcept;
 };
 }; // namespace nvi
 

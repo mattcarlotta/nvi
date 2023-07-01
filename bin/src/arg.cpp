@@ -12,10 +12,6 @@ using std::string;
 
 namespace nvi {
 arg_parser::arg_parser(int &argc, char *argv[]) {
-    if (argv == nullptr) {
-        return;
-    }
-
     for (unsigned int i = 1; i < argc; ++i) {
         try {
             const string arg = string(argv[i]);
@@ -23,11 +19,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 ++i;
                 if (argv[i] == nullptr) {
                     this->log(constants::ARG_CONFIG_FLAG_ERROR);
+                    exit(1);
                 }
 
                 const string next_arg = string(argv[i]);
                 if (next_arg.find("-") != string::npos) {
                     this->log(constants::ARG_CONFIG_FLAG_ERROR);
+                    exit(1);
                 }
 
                 this->config = next_arg;
@@ -37,11 +35,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 i++;
                 if (argv[i] == nullptr) {
                     this->log(constants::ARG_DIR_FLAG_ERROR);
+                    exit(1);
                 }
 
                 const string next_arg = string(argv[i]);
                 if (next_arg.find("-") != string::npos) {
                     this->log(constants::ARG_DIR_FLAG_ERROR);
+                    exit(1);
                 }
 
                 this->dir = next_arg;
@@ -65,11 +65,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
 
                 if (!files.size()) {
                     this->log(constants::ARG_FILES_FLAG_ERROR);
+                    exit(1);
                 }
 
                 this->files = files;
             } else if (arg == "-h" || arg == "--help") {
                 this->log(constants::ARG_HELP_DOC);
+                exit(0);
             } else if (arg == "-r" || arg == "--required") {
                 ++i;
                 while (i < argc) {
@@ -89,6 +91,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
 
                 if (!this->required_envs.size()) {
                     this->log(constants::ARG_REQUIRED_FLAG_ERROR);
+                    exit(1);
                 }
             } else {
                 this->invalid_arg = string(argv[i]);
@@ -128,25 +131,25 @@ void arg_parser::log(unsigned int code) const {
         std::cerr << "[nvi] (arg::ARG_CONFIG_FLAG_ERROR) The '-c' or '--config' flag must contain an "
                      "environment name from the env.config.json configuration file.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
-        exit(1);
+        break;
     }
     case constants::ARG_DIR_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::ARG_DIR_FLAG_ERROR) The '-d' or '--dir' flag must contain a "
                      "valid directory path.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
-        exit(1);
+        break;
     }
     case constants::ARG_FILES_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::ARG_FILES_FLAG_ERROR) The '-f' or '--files' flag must contain at least "
                      "1 .env file.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
-        exit(1);
+        break;
     }
     case constants::ARG_REQUIRED_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::ARG_REQUIRED_FLAG_ERROR) The '-r' or '--required' flag must contain at "
                      "least 1 ENV key.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
-        exit(1);
+        break;
     }
     case constants::ARG_HELP_DOC: {
         // clang-format off
@@ -163,7 +166,17 @@ void arg_parser::log(unsigned int code) const {
                      "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘"
                   << std::endl;
         // clang-format on
-        exit(0);
+        break;
+    }
+    case constants::ARG_INVALID_ARG_WARNING: {
+        string args = this->invalid_args.length() ? " '" + this->invalid_args + "'" : "out";
+        std::clog << "[nvi] (arg::ARG_INVALID_FLAG_WARNING) The flag '" << this->invalid_arg << "' with" << args
+                  << " arguments is not recognized. Skipping." << std::endl;
+        break;
+    }
+    case constants::ARG_EXCEPTION: {
+        std::cerr << "[nvi] (arg::EXCEPTION) Failed to parse arguments. See below for more information." << std::endl;
+        break;
     }
     case constants::ARG_DEBUG: {
         std::clog << "[nvi] (arg::DEBUG) The following arguments were set: ";
@@ -176,16 +189,6 @@ void arg_parser::log(unsigned int code) const {
         std::stringstream envs;
         std::copy(this->required_envs.begin(), this->required_envs.end(), std::ostream_iterator<string>(envs, ","));
         std::clog << "required='" << envs.str() << "'.\n" << std::endl;
-        break;
-    }
-    case constants::ARG_INVALID_ARG_WARNING: {
-        string args = this->invalid_args.length() ? " '" + this->invalid_args + "'" : "out";
-        std::clog << "[nvi] (arg::ARG_INVALID_FLAG_WARNING) The flag '" << this->invalid_arg << "' with" << args
-                  << " arguments is not recognized. Skipping." << std::endl;
-        break;
-    }
-    case constants::ARG_EXCEPTION: {
-        std::cerr << "[nvi] (arg::EXCEPTION) Failed to parse arguments. See below for more information." << std::endl;
         break;
     }
     default:

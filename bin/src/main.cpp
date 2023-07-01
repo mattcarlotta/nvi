@@ -18,10 +18,10 @@ int main(int argc, char *argv[]) {
 
     if (arg.config.length()) {
         nvi::config config(arg.config);
-        dir = config.get_dir();
-        debug = config.get_debug().value();
-        files = config.get_files().value();
-        required_envs = config.get_required_envs();
+        dir = config.dir;
+        debug = config.debug;
+        files = config.files;
+        required_envs = config.required_envs;
     }
 
     nvi::parser parser(dir, debug, required_envs);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
         parser.read(env)->parse();
     }
 
-    parser.print();
+    parser.print_envs();
 
     return 0;
 }
