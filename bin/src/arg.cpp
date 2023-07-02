@@ -128,25 +128,25 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
 void arg_parser::log(unsigned int code) const {
     switch (code) {
     case constants::ARG_CONFIG_FLAG_ERROR: {
-        std::cerr << "[nvi] (arg::ARG_CONFIG_FLAG_ERROR) The '-c' or '--config' flag must contain an "
+        std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The '-c' or '--config' flag must contain an "
                      "environment name from the env.config.json configuration file.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
         break;
     }
     case constants::ARG_DIR_FLAG_ERROR: {
-        std::cerr << "[nvi] (arg::ARG_DIR_FLAG_ERROR) The '-d' or '--dir' flag must contain a "
+        std::cerr << "[nvi] (arg::DIR_FLAG_ERROR) The '-d' or '--dir' flag must contain a "
                      "valid directory path.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
         break;
     }
     case constants::ARG_FILES_FLAG_ERROR: {
-        std::cerr << "[nvi] (arg::ARG_FILES_FLAG_ERROR) The '-f' or '--files' flag must contain at least "
+        std::cerr << "[nvi] (arg::FILES_FLAG_ERROR) The '-f' or '--files' flag must contain at least "
                      "1 .env file.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
         break;
     }
     case constants::ARG_REQUIRED_FLAG_ERROR: {
-        std::cerr << "[nvi] (arg::ARG_REQUIRED_FLAG_ERROR) The '-r' or '--required' flag must contain at "
+        std::cerr << "[nvi] (arg::REQUIRED_FLAG_ERROR) The '-r' or '--required' flag must contain at "
                      "least 1 ENV key.";
         std::cerr << " Use flag '-h' or '--help' for more information." << std::endl;
         break;
@@ -170,7 +170,7 @@ void arg_parser::log(unsigned int code) const {
     }
     case constants::ARG_INVALID_ARG_WARNING: {
         string args = this->invalid_args.length() ? " '" + this->invalid_args + "'" : "out";
-        std::clog << "[nvi] (arg::ARG_INVALID_FLAG_WARNING) The flag '" << this->invalid_arg << "' with" << args
+        std::clog << "[nvi] (arg::INVALID_FLAG_WARNING) The flag '" << this->invalid_arg << "' with" << args
                   << " arguments is not recognized. Skipping." << std::endl;
         break;
     }
