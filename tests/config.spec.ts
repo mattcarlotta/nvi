@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { describe, it } from 'node:test';
 import config from '../src/config';
 
-describe('Config Method', () => {
+describe('Config', () => {
     it('loads a default .env file', () => {
         const envMap = config();
         const message = envMap['DEFAULT_ENV'];
@@ -19,9 +19,8 @@ describe('Config Method', () => {
         assert.deepEqual(process.env.CUSTOM_DIRECTORY, customDirectory);
     });
 
-
     it('accepts an override argument to write over an env within process.env', () => {
-        process.env.PERSON = "Bob";
+        process.env.PERSON = 'Bob';
 
         const envMap = config({
             debug: true,
@@ -47,7 +46,7 @@ describe('Config Method', () => {
             debug: true,
             dir: 'tests/envs',
             files: ['required.env'],
-            required: ['REQUIRED']
+            required: ['REQUIRED'],
         });
 
         assert.deepEqual(Object.keys(envMap).length, 1);

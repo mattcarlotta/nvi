@@ -25,22 +25,22 @@ Run individual tests by running the following commands:
 - Kernel: Linux 5.15.0-73-generic x86_64
 - Node: v18.16.0
 
-**Compiled Timestamp**: Saturday, June 24, 2023 at 9:10:48 AM
+**Compiled Timestamp**: Monday, July 3, 2023 at 12:21:32 PM
 
 Loading and interpolating a single [small env file](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env):
 | package | run timestamp | iterations | duration (3 fastest runs out of 6) | avg | fastest |
 | --- | --- | --- | --- | --- | --- |
-| nvi | Sunday, June 11, 2023 at 3:15:39 PM | 500000 | 8.685s, 8.773s, 8.792s | 8.75s | 100.00% |
-| dotenv | Sunday, June 11, 2023 at 3:40:57 PM | 500000 | 14.54s, 14.585s, 14.638s | 14.588s | 59.73% |
+| nvi | Monday, July 3, 2023 at 12:21:13 PM | 500000 | 8.78s, 8.824s, 8.914s | 8.839s | 100.00% |
+| dotenv | Sunday, June 11, 2023 at 3:40:57 PM | 500000 | 14.54s, 14.585s, 14.638s | 14.588s | 60.39% |
 
 Loading and interpolating a single [large env file](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.interp):
 | package | run timestamp | iterations | duration (3 fastest runs out of 6) | avg | fastest |
 | --- | --- | --- | --- | --- | --- |
-| nvi | Sunday, June 11, 2023 at 3:15:39 PM | 5000 | 16.312s, 16.595s, 16.601s | 16.503s | 100.00% |
-| dotenv | Sunday, June 11, 2023 at 3:40:57 PM | 5000 | 74.317s, 74.373s, 74.414s | 74.368s | 21.95% |
+| nvi | Monday, July 3, 2023 at 12:21:13 PM | 5000 | 17.576s, 17.609s, 17.792s | 17.659s | 100.00% |
+| dotenv | Sunday, June 11, 2023 at 3:40:57 PM | 5000 | 74.317s, 74.373s, 74.414s | 74.368s | 23.65% |
 
 Loading and interpolating multiple small env files ([1](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env), [2](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.development), [3](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.local), [4](https://github.com/mattcarlotta/nvi/blob/main/benchmarks/.env.development.local)):
 | package | run timestamp | iterations | duration (3 fastest runs out of 6) | avg | fastest |
 | --- | --- | --- | --- | --- | --- |
-| nvi | Sunday, June 11, 2023 at 3:15:39 PM | 500000 | 16.91s, 17.156s, 17.184s | 17.083s | 100.00% |
-| dotenv | Sunday, June 11, 2023 at 3:40:57 PM | 500000 | 26.254s, 26.281s, 26.284s | 26.273s | 64.41% |
+| nvi | Monday, July 3, 2023 at 12:21:13 PM | 500000 | 16.513s, 16.616s, 16.62s | 16.583s | 100.00% |
+| dotenv | Sunday, June 11, 2023 at 3:40:57 PM | 500000 | 26.254s, 26.281s, 26.284s | 26.273s | 62.90% |

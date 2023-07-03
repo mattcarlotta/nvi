@@ -17,8 +17,8 @@ const unsigned int ARG_DEBUG = 7;
 // config
 const unsigned int CONFIG_FILE_ERROR = 0;
 const unsigned int CONFIG_FILE_PARSE_ERROR = 1;
-const unsigned int CONFIG_DEBUG = 3;
-const unsigned int CONFIG_MISSING_FILES_ARG_ERROR = 4;
+const unsigned int CONFIG_DEBUG = 2;
+const unsigned int CONFIG_MISSING_FILES_ARG_ERROR = 3;
 
 // parser
 const unsigned int PARSER_INTERPOLATION_WARNING = 0;

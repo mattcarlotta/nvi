@@ -10,7 +10,13 @@ describe('Binary Parser', () => {
         const ENVS = JSON.parse(data);
 
         assert.deepEqual(ENVS['BASIC_ENV'], 'true');
-        assert.deepEqual(ENVS['MULTI_LINE_KEY'], 'ssh-rsa BBBBPl1P1AD+jk/3Lf3Dw== test@example.com');
-        assert.deepEqual(ENVS['MONGOLAB_URI'], 'mongodb://root:password@abcd1234.mongolab.com:12345/localhost');
+        assert.deepEqual(
+            ENVS['MULTI_LINE_KEY'],
+            'ssh-rsa BBBBPl1P1AD+jk/3Lf3Dw== test@example.com'
+        );
+        assert.deepEqual(
+            ENVS['MONGOLAB_URI'],
+            'mongodb://root:password@abcd1234.mongolab.com:12345/localhost'
+        );
     });
 });
