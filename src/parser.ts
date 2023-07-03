@@ -152,7 +152,7 @@ export default class EnvParser {
                             continue;
                         } else {
                             this.log(PARSER_INTERPOLATION_ERROR);
-                            process.exit(1);
+                            this.exitProcess();
                         }
                     }
 
@@ -233,9 +233,10 @@ export default class EnvParser {
                 break;
             }
             case PARSER_DEBUG_FILE_PROCESSED: {
-                const conditionalPluralLetter = this.lineCount > 1 ? 's' : '';
                 console.log(
-                    `[nvi] (parser::DEBUG_FILE_PROCESSED::${this.fileName}) Processed ${this.lineCount} line${conditionalPluralLetter} and ${this.byteCount} bytes!`
+                    `[nvi] (parser::DEBUG_FILE_PROCESSED::${this.fileName}) Processed ${
+                        this.lineCount
+                    } line${this.lineCount > 1 ? 's' : ''} and ${this.byteCount} bytes!`
                 );
                 console.log(`${JSON.stringify(this.envMap, null, 4)}\n`);
                 break;
