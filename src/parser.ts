@@ -185,10 +185,9 @@ export default class EnvParser {
 
     public getEnvs(): ParsedEnvs {
         if (this.requiredEnvs.length) {
-            for (const key in this.requiredEnvs) {
-                if (!this.envMap[key]) {
-                    this.undefinedKeys.push(key);
-                }
+            for (let i = 0; i < this.requiredEnvs.length; ++i) {
+                const key = this.requiredEnvs[i];
+                if (!this.envMap[key]) this.undefinedKeys.push(key);
             }
 
             if (this.undefinedKeys.length) {
