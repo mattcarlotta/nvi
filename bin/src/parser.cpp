@@ -102,7 +102,7 @@ parser *parser::parse() {
     return this;
 }
 
-void parser::print_envs() {
+int parser::print_envs() {
     if (this->required_envs.size()) {
         for (const string key : this->required_envs) {
             if (!this->env_map.count(key)) {
@@ -117,6 +117,8 @@ void parser::print_envs() {
     }
 
     std::cout << std::setw(4) << this->env_map << std::endl;
+
+    return 0;
 }
 
 parser *parser::read(const string &env_file_name) {

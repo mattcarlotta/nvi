@@ -39,7 +39,7 @@ class parser {
            const vector<string> required_envs = vector<string>()) noexcept;
     parser *read(const string &env_file_name);
     parser *parse();
-    void print_envs();
+    int print_envs();
 };
 }; // namespace nvi
 

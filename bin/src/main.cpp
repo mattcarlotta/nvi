@@ -30,7 +30,5 @@ int main(int argc, char *argv[]) {
         parser.read(env)->parse();
     }
 
-    parser.print_envs();
-
-    return 0;
+    return parser.print_envs();
 }
