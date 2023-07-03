@@ -14,7 +14,6 @@ import { logError } from './log';
 export default function config(options = {} as ConfigOptions): ParsedEnvs {
     options.envMap ||= {};
     options.files ||= ['.env'];
-    options.encoding ||= 'utf-8';
     options.required ||= [];
 
     for (let i = 0; i < options.files.length; ++i) {

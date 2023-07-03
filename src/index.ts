@@ -9,7 +9,6 @@ export type ConfigOptions = {
     dir?: string;
     envMap?: ParsedEnvs;
     files?: string[];
-    encoding?: BufferEncoding;
     override?: boolean | string;
     debug?: boolean | string;
     required?: string[];

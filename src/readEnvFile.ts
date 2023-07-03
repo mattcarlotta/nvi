@@ -16,9 +16,9 @@ const CLOSE_BRACE = '}';
  * Reads an ".env" file, parses keys and values into an object and assigns each to process.env
  *
  * @param fileName - the name of the ".env" file (without a path)
- * @param options - an option object of args: { `debug`: boolean | string | undefined, `dir`: string | undefined, `encoding`: BufferEncoding, `envMap`: Record<string, string> | undefined, `override`: boolean | string | undefined, }
+ * @param options - an option object of args: { `debug`: boolean | string | undefined, `dir`: string | undefined, `envMap`: Record<string, string> | undefined, `override`: boolean | string | undefined, }
  * @returns a single object of Envs
- * @example readEnvFile(".env", { dir: "example", debug: false, encoding: "utf-8", envMap: {}, override: true });
+ * @example readEnvFile(".env", { dir: "example", debug: false, envMap: {}, override: true });
  */
 export default function readEnvFile(
     fileName: string,
@@ -29,8 +29,7 @@ export default function readEnvFile(
 
     try {
         options.envMap ||= {};
-        options.encoding ||= 'utf-8';
-        const file = readFileSync(join(options.dir || process.cwd(), fileName), { encoding: options.encoding || 'utf-8' });
+        const file = readFileSync(join(options.dir || process.cwd(), fileName), { encoding: 'utf-8' });
 
         while (byteCount < file.length) {
             // skip lines that begin with comments
