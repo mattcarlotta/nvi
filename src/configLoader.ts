@@ -20,6 +20,17 @@ export default class EnvConfigLoader {
     private requiredEnvs: string[];
     private override: boolean;
 
+    /**
+     * Reads an env.config.json configuration file from the project root directory or a specified directory.
+     *
+     * @param env - name of an env configuration within env.config.json
+     * @param dir - optional absolute or relative string path for where the env.config.json file is located
+     *
+     * @example Reading an env config from within env.config.json
+     * ```ts
+     * const config = new EnvConfigLoader("dev");
+     * ```
+     */
     constructor(env?: string, dir?: string) {
         this.env = env || '';
         this.configFile = '';
@@ -68,6 +79,15 @@ export default class EnvConfigLoader {
         }
     }
 
+    /**
+     * Returns `ConfigOptions` object with `debug`, `dir`, `files`, `override`, and `required`.
+     *
+     * @example Reading and retrieving env config options from env.config.json
+     * ```ts
+     * const config = new EnvConfigLoader("dev");
+     * const options = config.getOptions(); // { debug, dir, files, override, required }
+     * ```
+     */
     public getOptions(): ConfigOptions {
         return {
             debug: this.debug,

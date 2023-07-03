@@ -7,7 +7,6 @@ export type ParsedEnvs = Record<string, string>;
 
 export type ConfigOptions = {
     dir?: string;
-    envMap?: ParsedEnvs;
     files?: string[];
     override?: boolean;
     debug?: boolean;
@@ -15,16 +14,15 @@ export type ConfigOptions = {
 };
 
 /**
- * Immediately loads an env.config.json file when the package is preloaded or imported.
+ * Immediately loads an env configuration from an env.config.json cofiguration file when the package is preloaded or imported.
  */
-(function (): void {
-    // checks if LOAD_CONFIG is defined and assigns config options
+(function(): void {
     if (env.LOAD_CONFIG) {
-        const envConfig = new EnvConfigLoader(env.LOAD_CONFIG).getOptions();
+        const options = new EnvConfigLoader(env.LOAD_CONFIG).getOptions();
 
-        if (envConfig) config(envConfig);
+        if (options) config(options);
 
-        // prevents the IFFE from reloading the config file
+        // prevents the IFFE from reloading the config file on subsequent imports
         delete process.env.LOAD_CONFIG;
     }
 })();
