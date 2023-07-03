@@ -70,10 +70,7 @@ export default class EnvParser {
             return this;
         } catch (error) {
             this.log(PARSER_FILE_ERROR);
-
-            if (process.env.NODE_ENV !== 'test') {
-                process.exit(1);
-            }
+            this.exitProcess();
         }
     }
 
@@ -192,11 +189,17 @@ export default class EnvParser {
 
             if (this.undefinedKeys.length) {
                 this.log(PARSER_REQUIRED_ENV_ERROR);
-                process.exit(1);
+                this.exitProcess();
             }
         }
 
         return this.envMap;
+    }
+
+    private exitProcess(): void {
+        if (process.env.NODE_ENV !== 'test') {
+            process.exit(1);
+        }
     }
 
     private log(code: number): void {
