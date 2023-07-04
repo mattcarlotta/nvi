@@ -14,7 +14,6 @@ namespace nvi {
 class config {
     private:
     string env;
-    std::ifstream env_config_file;
     string file_path;
     nlohmann::json parsed_config;
     nlohmann::json::object_t env_config;
