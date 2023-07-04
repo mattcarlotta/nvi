@@ -33,8 +33,8 @@ export default class EnvConfigLoader {
      */
     constructor(env?: string, dir?: string) {
         this.env = env || '';
-        this.configFile = '';
         this.filePath = join(dir || cwd(), 'env.config.json');
+        this.configFile = '';
         this.parsedConfig = {};
 
         try {
@@ -124,6 +124,12 @@ export default class EnvConfigLoader {
                 );
                 break;
             }
+            case CONFIG_MISSING_FILES_ARG_ERROR: {
+                console.log(
+                    `[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '${this.env}' environment configuration (${this.filePath})). You must specify at least 1 .env file to load!`
+                );
+                break;
+            }
             case CONFIG_DEBUG: {
                 console.log(
                     `[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration file: '${Object.keys(
@@ -138,12 +144,6 @@ export default class EnvConfigLoader {
                     .join(', ');
                 console.log(
                     `[nvi] (config::DEBUG) The following '${this.env}' configuration settings were set: ${options}.\n`
-                );
-                break;
-            }
-            case CONFIG_MISSING_FILES_ARG_ERROR: {
-                console.log(
-                    `[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '${this.env}' environment configuration (${this.filePath})). You must specify at least 1 .env file to load!`
                 );
                 break;
             }

@@ -24,11 +24,7 @@ int main(int argc, char *argv[]) {
         required_envs = config.required_envs;
     }
 
-    nvi::parser parser(dir, debug, required_envs);
+    nvi::parser parser(files, dir, debug, required_envs);
 
-    for (const string env : files) {
-        parser.read(env)->parse();
-    }
-
-    return parser.print_envs();
+    return parser.read_envs()->print_envs();
 }

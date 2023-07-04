@@ -12,7 +12,9 @@ using std::string;
 using std::vector;
 
 namespace nvi {
-parser::parser(const std::optional<string> &dir, const bool debug, const vector<string> required_envs) noexcept {
+parser::parser(const vector<string> &files, const std::optional<string> &dir, const bool debug,
+               const vector<string> required_envs) noexcept {
+    this->files = files;
     this->dir = dir.value_or("");
     this->debug = debug;
     this->env_map = nlohmann::json::object();
@@ -133,6 +135,14 @@ parser *parser::read(const string &env_file_name) {
     this->file_length = this->loaded_file.length();
     this->byte_count = 0;
     this->line_count = 0;
+
+    return this;
+}
+
+parser *parser::read_envs() noexcept {
+    for (const string env : this->files) {
+        this->read(env)->parse();
+    }
 
     return this;
 }

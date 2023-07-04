@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include <iostream>
 #include <string>
+#include <vector>
 
 class parse_env_file : public testing::Test {
     protected:
@@ -10,8 +11,9 @@ class parse_env_file : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::parser parser("../../tests/envs");
-        parser.read("bin.env")->parse();
+        const std::vector<string> files = {"bin.env"};
+        nvi::parser parser(files, "../../tests/envs");
+        parser.read_envs();
         env_map = parser.env_map;
     }
 };

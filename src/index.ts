@@ -16,7 +16,7 @@ export type ConfigOptions = {
 /**
  * Immediately loads an env configuration from an env.config.json cofiguration file when the package is preloaded or imported.
  */
-(function(): void {
+(function (): void {
     if (env.LOAD_CONFIG) {
         const options = new EnvConfigLoader(env.LOAD_CONFIG).getOptions();
 

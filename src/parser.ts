@@ -21,9 +21,10 @@ const CLOSE_BRACE = '}';
 export default class EnvParser {
     private debug: boolean;
     private dir: string;
+    private override: boolean;
+    private requiredEnvs: string[];
     private envFile: string;
     private fileName: string;
-    private override: boolean;
     private filePath: string;
     private fileLength: number;
     private byteCount: number;
@@ -34,7 +35,6 @@ export default class EnvParser {
     private keyProp: string;
     private value: string;
     private undefinedKeys: string[];
-    private requiredEnvs: string[];
     private envMap: ParsedEnvs;
 
     /**
@@ -50,9 +50,9 @@ export default class EnvParser {
     constructor(options = {} as ConfigOptions) {
         this.debug = options?.debug || false;
         this.dir = options?.dir || '';
-        this.envFile = '';
         this.override = options?.override || false;
         this.requiredEnvs = options?.required || [];
+        this.envFile = '';
         this.filePath = '';
         this.fileName = '';
         this.fileLength = 0;
