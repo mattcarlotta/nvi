@@ -3,11 +3,11 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { cwd } from 'process';
 
-const CONFIG_FILE_ERROR = 0;
-const CONFIG_FILE_PARSE_ERROR = 1;
-const CONFIG_FILE_ENV_NOT_FOUND_ERROR = 2;
-const CONFIG_DEBUG = 3;
-const CONFIG_MISSING_FILES_ARG_ERROR = 4;
+const CONFIG_LOADER_FILE_ERROR = 0;
+const CONFIG_LOADER_FILE_PARSE_ERROR = 1;
+const CONFIG_LOADER_FILE_ENV_NOT_FOUND_ERROR = 2;
+const CONFIG_LOADER_DEBUG = 3;
+const CONFIG_LOADER_MISSING_FILES_ARG_ERROR = 4;
 
 export default class EnvConfigLoader {
     private env: string;
@@ -45,16 +45,16 @@ export default class EnvConfigLoader {
             this.parsedConfig = JSON.parse(this.configFile);
         } catch (error: any) {
             if (error?.message?.includes('ENOENT')) {
-                this.log(CONFIG_FILE_ERROR);
+                this.log(CONFIG_LOADER_FILE_ERROR);
             } else {
-                this.log(CONFIG_FILE_PARSE_ERROR);
+                this.log(CONFIG_LOADER_FILE_PARSE_ERROR);
             }
 
             this.exitProcess();
         }
 
         if (!this.parsedConfig?.[this.env]) {
-            this.log(CONFIG_FILE_ENV_NOT_FOUND_ERROR);
+            this.log(CONFIG_LOADER_FILE_ENV_NOT_FOUND_ERROR);
             this.exitProcess();
         }
 
@@ -62,7 +62,7 @@ export default class EnvConfigLoader {
         if (config?.files?.length) {
             this.files = config.files;
         } else {
-            this.log(CONFIG_MISSING_FILES_ARG_ERROR);
+            this.log(CONFIG_LOADER_MISSING_FILES_ARG_ERROR);
             this.exitProcess();
         }
 
@@ -75,7 +75,7 @@ export default class EnvConfigLoader {
         this.requiredEnvs = config?.required || [];
 
         if (this.debug) {
-            this.log(CONFIG_DEBUG);
+            this.log(CONFIG_LOADER_DEBUG);
         }
     }
 
@@ -106,33 +106,33 @@ export default class EnvConfigLoader {
 
     private log(code: number): void {
         switch (code) {
-            case CONFIG_FILE_ERROR: {
+            case CONFIG_LOADER_FILE_ERROR: {
                 console.log(
-                    `[nvi] (config::FILE_ERROR) Unable to locate '${this.filePath}'. The configuration file doesn't appear to exist!`
+                    `[nvi] (config_loader::FILE_ERROR) Unable to locate '${this.filePath}'. The configuration file doesn't appear to exist!`
                 );
                 break;
             }
-            case CONFIG_FILE_PARSE_ERROR: {
+            case CONFIG_LOADER_FILE_PARSE_ERROR: {
                 console.log(
-                    `[nvi] (config::FILE_PARSE_ERROR) Unable to parse the env.config.json configuration file (${this.filePath}). Ensure the configuration file is valid JSON!`
+                    `[nvi] (config_loader::FILE_PARSE_ERROR) Unable to parse the env.config.json configuration file (${this.filePath}). Ensure the configuration file is valid JSON!`
                 );
                 break;
             }
-            case CONFIG_FILE_ENV_NOT_FOUND_ERROR: {
+            case CONFIG_LOADER_FILE_ENV_NOT_FOUND_ERROR: {
                 console.log(
-                    `[nvi] (config::FILE_ENV_NOT_FOUND_ERROR) Unable to load a '${this.env}' environment from the env.config.json configuration file (${this.filePath}). The specified environment doesn't appear to exist!`
+                    `[nvi] (config_loader::FILE_ENV_NOT_FOUND_ERROR) Unable to load a '${this.env}' environment from the env.config.json configuration file (${this.filePath}). The specified environment doesn't appear to exist!`
                 );
                 break;
             }
-            case CONFIG_MISSING_FILES_ARG_ERROR: {
+            case CONFIG_LOADER_MISSING_FILES_ARG_ERROR: {
                 console.log(
-                    `[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '${this.env}' environment configuration (${this.filePath})). You must specify at least 1 .env file to load!`
+                    `[nvi] (config_loader::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '${this.env}' environment configuration (${this.filePath})). You must specify at least 1 .env file to load!`
                 );
                 break;
             }
-            case CONFIG_DEBUG: {
+            case CONFIG_LOADER_DEBUG: {
                 console.log(
-                    `[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration file: '${Object.keys(
+                    `[nvi] (config_loader::DEBUG) Parsed the following keys from the env.config.json configuration file: '${Object.keys(
                         this.parsedConfig
                     ).join(',')}' and selected the '${this.env}' configuration.`
                 );
@@ -143,7 +143,7 @@ export default class EnvConfigLoader {
                     )
                     .join(', ');
                 console.log(
-                    `[nvi] (config::DEBUG) The following '${this.env}' configuration settings were set: ${options}.\n`
+                    `[nvi] (config_loader::DEBUG) The following '${this.env}' configuration settings were set: ${options}.\n`
                 );
                 break;
             }
