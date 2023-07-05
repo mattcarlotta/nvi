@@ -26,5 +26,5 @@ int main(int argc, char *argv[]) {
 
     nvi::parser parser(files, dir, debug, required_envs);
 
-    return parser.read_envs()->print_envs();
+    return parser.parse_envs()->print_envs();
 }

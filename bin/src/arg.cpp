@@ -192,9 +192,10 @@ void arg_parser::log(unsigned int code) const {
         const bool conflicting_flags =
             this->config.length() && (this->dir.length() || this->files.size() > 1 || this->required_envs.size());
         if (conflicting_flags) {
-            std::clog << "[nvi] (arg::DEBUG) Found conflicting arguments. When a 'config' argument has been set, then "
-                         "'dir', 'files', and 'required' are ignored."
-                      << std::endl;
+            std::clog
+                << "[nvi] (arg::DEBUG) Found conflicting arguments. When the 'config' argument has been set, then "
+                   "'dir', 'files', and 'required' are ignored."
+                << std::endl;
         }
         std::clog << std::endl;
 

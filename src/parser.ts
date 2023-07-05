@@ -21,6 +21,7 @@ const CLOSE_BRACE = '}';
 export default class EnvParser {
     private debug: boolean;
     private dir: string;
+    private files: string[];
     private override: boolean;
     private requiredEnvs: string[];
     private envFile: string;
@@ -50,6 +51,7 @@ export default class EnvParser {
     constructor(options = {} as ConfigOptions) {
         this.debug = options?.debug || false;
         this.dir = options?.dir || '';
+        this.files = options?.files || ['.env'];
         this.override = options?.override || false;
         this.requiredEnvs = options?.required || [];
         this.envFile = '';
@@ -73,15 +75,9 @@ export default class EnvParser {
      *
      * @param envFileName the name of the .env file to read using any initialized `ConfigOptions`
      *
-     * @example Reading a single .env file
-     * ```ts
-     * const parser = new EnvParser();
-     * parser.read("example.env");
-     * ```
-     *
      * @returns an instance of an initialized EnvParser
      */
-    public read(envFileName: string): EnvParser | void {
+    private read(envFileName: string): EnvParser | void {
         try {
             this.envFile = readFileSync(join(this.dir || process.cwd(), envFileName), {
                 encoding: 'utf-8',
@@ -99,6 +95,25 @@ export default class EnvParser {
     }
 
     /**
+     * Reads one or many .env files.
+     *
+     * @example Reading multiple .env file
+     * ```ts
+     * const parser = new EnvParser({ files: ["example1.env", "example2.env"]});
+     * parser.parseEnvs();
+     * ```
+     *
+     * @returns an instance of an initialized EnvParser
+     */
+    public parseEnvs(): EnvParser {
+        for (let i = 0; i < this.files.length; ++i) {
+            this.read(this.files[i])?.parse();
+        }
+
+        return this;
+    }
+
+    /**
      * Parses and interpolates an .env file and saves results to a private `envMap` field for cross-referencing with other .env files.
      *
      * @example Reading and parsing a single .env file
@@ -108,7 +123,7 @@ export default class EnvParser {
      * ```
      *
      */
-    public parse(): void {
+    private parse(): void {
         while (this.byteCount < this.fileLength) {
             // skip lines that begin with comments
             const line = this.envFile.substring(this.byteCount, this.fileLength);

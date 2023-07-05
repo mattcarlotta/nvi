@@ -139,7 +139,7 @@ parser *parser::read(const string &env_file_name) {
     return this;
 }
 
-parser *parser::read_envs() noexcept {
+parser *parser::parse_envs() noexcept {
     for (const string env : this->files) {
         this->read(env)->parse();
     }

@@ -63,7 +63,7 @@ async function compressFiles(files: string[], opts?: MinifyOptions): Promise<voi
 
 (async (): Promise<void> => {
     try {
-        const files = ['config.js', 'index.js', 'configLoader.js', 'parser.js'];
+        const files = ['config.js', 'index.js', 'parser.js'];
 
         await compressFiles(files);
         process.exit(0);

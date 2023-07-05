@@ -1,66 +1,53 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
-import config from '../src/config';
+import EnvConfigLoader from '../src/config';
 
-describe('Config', () => {
-    it('loads a default .env file', () => {
-        const envMap = config();
-        const message = envMap['DEFAULT_ENV'];
+describe('Env Config Loader', () => {
+    it('fails to load a config file from an invalid directory', () => {
+        const envConfig = new EnvConfigLoader('dev', 'invalid-directory').getOptions();
 
-        assert.deepEqual(message, 'Hi from the root directory');
-        assert.deepEqual(process.env.DEFAULT_ENV, message);
+        assert.deepEqual(envConfig, {
+            debug: false,
+            dir: '',
+            files: [],
+            override: false,
+            required: [],
+        });
     });
 
-    it('accepts a dir argument as a string', () => {
-        const envMap = config({ debug: true, dir: 'tests/envs', files: ['directory.env'] });
-        const customDirectory = envMap['CUSTOM_DIRECTORY'];
+    it('fails to load a config file from an undefined environment', () => {
+        const envConfig = new EnvConfigLoader('dev', 'tests').getOptions();
 
-        assert.deepEqual(customDirectory, 'Hi from a custom directory');
-        assert.deepEqual(process.env.CUSTOM_DIRECTORY, customDirectory);
+        assert.deepEqual(envConfig, {
+            debug: false,
+            dir: '',
+            files: [],
+            override: false,
+            required: [],
+        });
     });
 
-    it('accepts an override argument to write over an env within process.env', () => {
-        process.env.PERSON = 'Bob';
+    it('loads the config file at the root and returns an environment of config arguments', () => {
+        const envConfig = new EnvConfigLoader('test').getOptions();
 
-        const envMap = config({
+        assert.deepEqual(envConfig, {
             debug: true,
             dir: 'tests/envs',
-            files: ['override.env'],
-            override: true,
+            files: ['.env.base'],
+            override: false,
+            required: [],
         });
-
-        const overridenPerson = envMap['PERSON'];
-
-        assert.deepEqual(overridenPerson, 'SneakySnake');
-        assert.deepEqual(process.env.PERSON, overridenPerson);
     });
 
-    it('fails if non-existent files are loaded', () => {
-        const envMap = config({ files: ['.env.invalid'] });
+    it('loads a config file at a specified directory and returns an environment of config arguments', () => {
+        const envConfig = new EnvConfigLoader('test', 'tests').getOptions();
 
-        assert.deepEqual(Object.keys(envMap).length, 0);
-    });
-
-    it('accepts a required argument to check for required values from extracted Envs', () => {
-        const envMap = config({
+        assert.deepEqual(envConfig, {
             debug: true,
             dir: 'tests/envs',
-            files: ['required.env'],
-            required: ['REQUIRED'],
+            files: ['.env.base'],
+            override: false,
+            required: [],
         });
-
-        assert.deepEqual(Object.keys(envMap).length, 1);
-    });
-
-    it('allows Envs to reference previously parsed Envs', () => {
-        const envMap = config({
-            debug: true,
-            dir: 'tests/envs',
-            files: ['base.env', 'reference.env'],
-        });
-
-        assert.deepEqual(Object.keys(envMap).length, 2);
-        assert.deepEqual(envMap['BASE'], 'hello');
-        assert.deepEqual(envMap['REFERENCE'], envMap['BASE']);
     });
 });

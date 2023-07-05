@@ -3,15 +3,19 @@ import { describe, it } from 'node:test';
 import EnvParser from '../src/parser';
 
 describe('Env Parser', () => {
-    const parser = new EnvParser({ debug: true, dir: 'tests/envs', override: true });
-    parser.read('.env')?.parse();
-    const envMap = parser.getEnvs();
+    const parser = new EnvParser({
+        debug: true,
+        dir: 'tests/envs',
+        files: ['.env'],
+        override: true,
+    });
+    const envMap = parser.parseEnvs().getEnvs();
 
     if (!envMap) {
         assert.fail('Unable to locate the .env file within tests/envs.');
     }
 
-    it('returns a Map of Envs', () => {
+    it('returns an Object of ENVs', () => {
         assert.deepEqual(Object.keys(envMap).length, 35);
     });
 

@@ -1,6 +1,5 @@
 import { env } from 'process';
-import config from './config';
-import EnvConfigLoader from './configLoader';
+import EnvConfigLoader from './config';
 import EnvParser from './parser';
 
 export type ParsedEnvs = Record<string, string>;
@@ -20,19 +19,18 @@ export type ConfigOptions = {
     if (env.LOAD_CONFIG) {
         const options = new EnvConfigLoader(env.LOAD_CONFIG).getOptions();
 
-        if (options) config(options);
+        new EnvParser(options).parseEnvs();
 
         // prevents the IFFE from reloading the config file on subsequent imports
         delete process.env.LOAD_CONFIG;
     }
 })();
 
-export { config, EnvConfigLoader, EnvParser };
+export { EnvConfigLoader, EnvParser };
 
-const envFuncs = {
-    config,
+const nvi = {
     EnvConfigLoader,
     EnvParser,
 };
 
-export default envFuncs;
+export default nvi;
