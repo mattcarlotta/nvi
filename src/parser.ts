@@ -41,11 +41,11 @@ export default class EnvParser {
     /**
      * Parses and interpolates an .env file to a single object of key:value pairs.
      *
-     * @param options initialize parser with the following optional `ConfigOptions`: `debug`, `dir`, `override`, and `required`.
+     * @param options initialize parser with the following optional `ConfigOptions`: `debug`, `dir`, `files`, `override`, and `required`.
      *
      * @example Initializing a parser
      * ```ts
-     * const parser = new EnvParser({ debug: true, dir: "optional/path/to/.env", override: false, required: ["KEY1", "KEY2"]});
+     * const parser = new EnvParser({ debug: true, dir: "optional/path/to/.env", files: ["example1.env", "example2.env"], override: false, required: ["KEY1", "KEY2"]});
      * ```
      */
     constructor(options = {} as ConfigOptions) {
@@ -74,7 +74,6 @@ export default class EnvParser {
      * Reads an .env file and/or resets the loaded file.
      *
      * @param envFileName the name of the .env file to read using any initialized `ConfigOptions`
-     *
      * @returns an instance of an initialized EnvParser
      */
     private read(envFileName: string): EnvParser | void {
@@ -97,13 +96,13 @@ export default class EnvParser {
     /**
      * Reads one or many .env files.
      *
+     * @returns an instance of an initialized EnvParser
+     *
      * @example Reading multiple .env file
      * ```ts
      * const parser = new EnvParser({ files: ["example1.env", "example2.env"]});
      * parser.parseEnvs();
      * ```
-     *
-     * @returns an instance of an initialized EnvParser
      */
     public parseEnvs(): EnvParser {
         for (let i = 0; i < this.files.length; ++i) {
@@ -115,13 +114,6 @@ export default class EnvParser {
 
     /**
      * Parses and interpolates an .env file and saves results to a private `envMap` field for cross-referencing with other .env files.
-     *
-     * @example Reading and parsing a single .env file
-     * ```ts
-     * const parser = new EnvParser();
-     * parser.read("example.env").parse();
-     * ```
-     *
      */
     private parse(): void {
         while (this.byteCount < this.fileLength) {
@@ -232,13 +224,14 @@ export default class EnvParser {
     /**
      * Returns the results of parsing one or many .env files as a single object of `"KEY":"value"` pairs.
      *
+     * @returns a single object of `"KEY":"value"` pairs
+     *
      * @example Reading, parsing a single .env file, and retrieving the results
      * ```ts
      * const parser = new EnvParser();
      * parser.read("example.env").parse();
      * const parsedEnvs = parser.getEnvs(); // { "KEY1": "value", "KEY2", "value", ...etc }
      * ```
-     *
      */
     public getEnvs(): ParsedEnvs {
         if (this.requiredEnvs.length) {
