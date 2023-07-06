@@ -14,12 +14,13 @@ using std::vector;
 namespace nvi {
 class parser {
     private:
-    vector<string> files;
+    const vector<string> *files;
+    string dir;
     bool debug;
+    const vector<string> *required_envs;
     std::ifstream env_file;
     string loaded_file;
     string file_name;
-    string dir;
     string file_path;
     unsigned int file_length;
     unsigned int byte_count;
@@ -30,15 +31,14 @@ class parser {
     string key_prop;
     string value;
     vector<string> undefined_keys;
-    vector<string> required_envs;
     void log(unsigned int code) const;
     parser *read(const string &env_file_name);
     parser *parse();
 
     public:
     nlohmann::json::object_t env_map;
-    parser(const vector<string> &files, const std::optional<string> &dir, const bool debug = false,
-           const vector<string> required_envs = vector<string>()) noexcept;
+    parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs = nullptr,
+           const bool &debug = false);
     parser *parse_envs() noexcept;
     int print_envs();
 };

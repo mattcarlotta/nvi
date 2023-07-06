@@ -12,13 +12,12 @@ using std::string;
 using std::vector;
 
 namespace nvi {
-parser::parser(const vector<string> &files, const std::optional<string> &dir, const bool debug,
-               const vector<string> required_envs) noexcept {
-    this->files = files;
+parser::parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs,
+               const bool &debug)
+    : files(files), required_envs(required_envs) {
     this->dir = dir.value_or("");
     this->debug = debug;
     this->env_map = nlohmann::json::object();
-    this->required_envs = required_envs;
 }
 
 parser *parser::parse() {
@@ -62,7 +61,7 @@ parser *parser::parse() {
                         string interpolated_value = "";
                         if (this->env_map.count(this->key_prop)) {
                             interpolated_value = this->env_map.at(this->key_prop);
-                        } else {
+                        } else if (this->debug) {
                             this->log(constants::PARSER_INTERPOLATION_WARNING);
                         }
 
@@ -105,8 +104,8 @@ parser *parser::parse() {
 }
 
 int parser::print_envs() {
-    if (this->required_envs.size()) {
-        for (const string key : this->required_envs) {
+    if (this->required_envs != nullptr && this->required_envs->size()) {
+        for (const string key : *this->required_envs) {
             if (!this->env_map.count(key)) {
                 this->undefined_keys.push_back(key);
             }
@@ -140,7 +139,7 @@ parser *parser::read(const string &env_file_name) {
 }
 
 parser *parser::parse_envs() noexcept {
-    for (const string env : this->files) {
+    for (const string env : *this->files) {
         this->read(env)->parse();
     }
 

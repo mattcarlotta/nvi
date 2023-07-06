@@ -10,9 +10,9 @@
 using std::string;
 
 namespace nvi {
-config::config(const string &environment, const string dir) {
+config::config(const string *environment, const string env_dir) {
     this->env = environment;
-    this->file_path = string(std::filesystem::current_path() / dir / "env.config.json");
+    this->file_path = string(std::filesystem::current_path() / env_dir / "env.config.json");
     std::ifstream env_config_file(this->file_path);
     if (!env_config_file.good()) {
         this->log(constants::CONFIG_FILE_ERROR);
@@ -20,12 +20,12 @@ config::config(const string &environment, const string dir) {
     }
 
     this->parsed_config = nlohmann::json::parse(env_config_file);
-    if (!this->parsed_config.count(this->env)) {
+    if (!this->parsed_config.count(*this->env)) {
         this->log(constants::CONFIG_FILE_PARSE_ERROR);
         exit(1);
     }
 
-    this->env_config = this->parsed_config.at(this->env);
+    this->env_config = this->parsed_config.at(*this->env);
 
     if (this->env_config.count("files")) {
         this->files = this->env_config.at("files");
@@ -59,7 +59,7 @@ void config::log(unsigned int code) const {
         break;
     }
     case constants::CONFIG_FILE_PARSE_ERROR: {
-        std::cerr << "[nvi] (config::FILE_PARSE_ERROR) Unable to load a '" << this->env
+        std::cerr << "[nvi] (config::FILE_PARSE_ERROR) Unable to load a '" << *this->env
                   << "' environment from the env.config.json configuration file (" << this->file_path
                   << "). The specified environment doesn't appear to exist!" << std::endl;
         break;
@@ -69,8 +69,8 @@ void config::log(unsigned int code) const {
         for (auto &el : this->parsed_config.items()) {
             std::clog << el.key() << ",";
         }
-        std::clog << "' and selected the '" << this->env << "' configuration." << std::endl;
-        std::clog << "[nvi] (config::DEBUG) The following '" << this->env << "' configuration settings were set: ";
+        std::clog << "' and selected the '" << *this->env << "' configuration." << std::endl;
+        std::clog << "[nvi] (config::DEBUG) The following '" << *this->env << "' configuration settings were set: ";
         std::clog << "debug='true', ";
         std::clog << "dir='" << this->dir << "', ";
         std::stringstream files;
@@ -83,7 +83,7 @@ void config::log(unsigned int code) const {
     }
     case constants::CONFIG_MISSING_FILES_ARG_ERROR: {
         std::cerr << "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '"
-                  << this->env << "' environment configuration (" << this->file_path
+                  << *this->env << "' environment configuration (" << this->file_path
                   << "). You must specify at least 1 .env file to load!" << std::endl;
         break;
     }

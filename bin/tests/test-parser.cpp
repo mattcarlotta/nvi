@@ -12,7 +12,9 @@ class parse_env_file : public testing::Test {
     public:
     static void SetUpTestSuite() {
         const std::vector<string> files = {"bin.env"};
-        nvi::parser parser(files, "../../tests/envs");
+        const string dir = "../../tests/envs";
+        const std::vector<string> required = {"BASIC_ENV"};
+        nvi::parser parser(&files, dir, &required);
         parser.parse_envs();
         env_map = parser.env_map;
     }

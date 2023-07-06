@@ -3,7 +3,6 @@
 
 #include "json.cpp"
 #include <fstream>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -13,7 +12,7 @@ using std::vector;
 namespace nvi {
 class config {
     private:
-    string env;
+    const string *env;
     string file_path;
     nlohmann::json parsed_config;
     nlohmann::json::object_t env_config;
@@ -24,7 +23,7 @@ class config {
     string dir;
     vector<string> files;
     vector<string> required_envs = vector<string>();
-    config(const string &environment, const string dir = "");
+    config(const string *environment, const string env_dir = "");
 };
 }; // namespace nvi
 

@@ -17,14 +17,14 @@ int main(int argc, char *argv[]) {
     vector<string> required_envs = arg.required_envs;
 
     if (arg.config.length()) {
-        nvi::config config(arg.config);
+        nvi::config config(&arg.config);
         dir = config.dir;
         debug = config.debug;
         files = config.files;
         required_envs = config.required_envs;
     }
 
-    nvi::parser parser(files, dir, debug, required_envs);
+    nvi::parser parser(&files, dir, &required_envs, debug);
 
     return parser.parse_envs()->print_envs();
 }

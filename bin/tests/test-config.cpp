@@ -7,7 +7,8 @@
 using std::string;
 using std::vector;
 
-nvi::config config("bin_test_only", "../../");
+const string env = "bin_test_only";
+nvi::config config(&env, "../../");
 
 TEST(parse_config_file, debug) { EXPECT_EQ(config.debug, true); }
 

@@ -180,7 +180,7 @@ export default class EnvParser {
                             this.keyProp = valSliceBuf.substring(2, interpCloseIndex);
 
                             const interpolatedValue = process.env[this.keyProp] || '';
-                            if (!interpolatedValue) {
+                            if (!interpolatedValue && this.debug) {
                                 this.log(PARSER_INTERPOLATION_WARNING);
                             }
 
