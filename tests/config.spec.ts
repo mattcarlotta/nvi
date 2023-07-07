@@ -4,9 +4,9 @@ import EnvConfigLoader from '../src/config';
 
 describe('Env Config Loader', () => {
     it('fails to load a config file from an invalid directory', () => {
-        const envConfig = new EnvConfigLoader('dev', 'invalid-directory').getOptions();
+        const envOptions = new EnvConfigLoader('dev', 'invalid-directory').getOptions();
 
-        assert.deepEqual(envConfig, {
+        assert.deepEqual(envOptions, {
             debug: false,
             dir: '',
             files: [],
@@ -16,9 +16,9 @@ describe('Env Config Loader', () => {
     });
 
     it('fails to load a config file from an undefined environment', () => {
-        const envConfig = new EnvConfigLoader('dev', 'tests').getOptions();
+        const envOptions = new EnvConfigLoader('dev', 'tests').getOptions();
 
-        assert.deepEqual(envConfig, {
+        assert.deepEqual(envOptions, {
             debug: false,
             dir: '',
             files: [],
@@ -28,9 +28,9 @@ describe('Env Config Loader', () => {
     });
 
     it('loads the config file at the root and returns an environment of config arguments', () => {
-        const envConfig = new EnvConfigLoader('test').getOptions();
+        const envOptions = new EnvConfigLoader('test').getOptions();
 
-        assert.deepEqual(envConfig, {
+        assert.deepEqual(envOptions, {
             debug: true,
             dir: 'tests/envs',
             files: ['.env.base'],
@@ -40,9 +40,9 @@ describe('Env Config Loader', () => {
     });
 
     it('loads a config file at a specified directory and returns an environment of config arguments', () => {
-        const envConfig = new EnvConfigLoader('test', 'tests').getOptions();
+        const envOptions = new EnvConfigLoader('test', 'tests').getOptions();
 
-        assert.deepEqual(envConfig, {
+        assert.deepEqual(envOptions, {
             debug: true,
             dir: 'tests/envs',
             files: ['.env.base'],

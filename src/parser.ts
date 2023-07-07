@@ -78,10 +78,10 @@ export default class EnvParser {
      */
     private read(envFileName: string): EnvParser | void {
         try {
-            this.envFile = readFileSync(join(this.dir || process.cwd(), envFileName), {
+            this.fileName = envFileName;
+            this.envFile = readFileSync(join(this.dir || process.cwd(), this.fileName), {
                 encoding: 'utf-8',
             });
-            this.fileName = envFileName;
             this.fileLength = this.envFile.length;
             this.byteCount = 0;
             this.lineCount = 0;
@@ -98,7 +98,7 @@ export default class EnvParser {
      *
      * @returns an instance of an initialized EnvParser
      *
-     * @example Reading multiple .env file
+     * @example Reading multiple .env files
      * ```ts
      * const parser = new EnvParser({ files: ["example1.env", "example2.env"]});
      * parser.parseEnvs();
@@ -229,8 +229,7 @@ export default class EnvParser {
      * @example Reading, parsing a single .env file, and retrieving the results
      * ```ts
      * const parser = new EnvParser();
-     * parser.read("example.env").parse();
-     * const parsedEnvs = parser.getEnvs(); // { "KEY1": "value", "KEY2", "value", ...etc }
+     * const parsedEnvs = parser.parseEnvs().getEnvs(); // { "KEY1": "value", "KEY2", "value", ...etc }
      * ```
      */
     public getEnvs(): ParsedEnvs {
