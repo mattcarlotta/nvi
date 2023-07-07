@@ -18,6 +18,8 @@ nvi
 **/lib
 **/bin/bin
 **/tests/tests
+**/json
+**/googletest
 *.a
 *.cmake
 *.tcl
