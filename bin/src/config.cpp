@@ -16,13 +16,13 @@ config::config(const string *environment, const string env_dir) {
     std::ifstream env_config_file(this->file_path);
     if (!env_config_file.good()) {
         this->log(constants::CONFIG_FILE_ERROR);
-        exit(1);
+        std::exit(1);
     }
 
     this->parsed_config = nlohmann::json::parse(env_config_file);
     if (!this->parsed_config.count(*this->env)) {
         this->log(constants::CONFIG_FILE_PARSE_ERROR);
-        exit(1);
+        std::exit(1);
     }
 
     this->env_config = this->parsed_config.at(*this->env);
@@ -31,7 +31,7 @@ config::config(const string *environment, const string env_dir) {
         this->files = this->env_config.at("files");
     } else {
         this->log(constants::CONFIG_MISSING_FILES_ARG_ERROR);
-        exit(1);
+        std::exit(1);
     }
 
     if (this->env_config.count("debug")) {

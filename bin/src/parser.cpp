@@ -72,7 +72,7 @@ parser *parser::parse() {
                         continue;
                     } else {
                         this->log(constants::PARSER_INTERPOLATION_ERROR);
-                        exit(1);
+                        std::exit(1);
                     }
                 }
 
@@ -113,7 +113,7 @@ int parser::print_envs() {
 
         if (this->undefined_keys.size()) {
             this->log(constants::PARSER_REQUIRED_ENV_ERROR);
-            exit(1);
+            std::exit(1);
         }
     }
 
@@ -128,7 +128,7 @@ parser *parser::read(const string &env_file_name) {
     this->env_file = std::ifstream(this->file_path, std::ios_base::in);
     if (!this->env_file.good()) {
         this->log(constants::PARSER_FILE_ERROR);
-        exit(1);
+        std::exit(1);
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
     this->file_length = this->loaded_file.length();

@@ -19,13 +19,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 ++i;
                 if (argv[i] == nullptr) {
                     this->log(constants::ARG_CONFIG_FLAG_ERROR);
-                    exit(1);
+                    std::exit(1);
                 }
 
                 const string next_arg = string(argv[i]);
                 if (next_arg.find("-") != string::npos) {
                     this->log(constants::ARG_CONFIG_FLAG_ERROR);
-                    exit(1);
+                    std::exit(1);
                 }
 
                 this->config = next_arg;
@@ -35,13 +35,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
                 i++;
                 if (argv[i] == nullptr) {
                     this->log(constants::ARG_DIR_FLAG_ERROR);
-                    exit(1);
+                    std::exit(1);
                 }
 
                 const string next_arg = string(argv[i]);
                 if (next_arg.find("-") != string::npos) {
                     this->log(constants::ARG_DIR_FLAG_ERROR);
-                    exit(1);
+                    std::exit(1);
                 }
 
                 this->dir = next_arg;
@@ -65,13 +65,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
 
                 if (!files.size()) {
                     this->log(constants::ARG_FILES_FLAG_ERROR);
-                    exit(1);
+                    std::exit(1);
                 }
 
                 this->files = files;
             } else if (arg == "-h" || arg == "--help") {
                 this->log(constants::ARG_HELP_DOC);
-                exit(0);
+                std::exit(0);
             } else if (arg == "-r" || arg == "--required") {
                 ++i;
                 while (i < argc) {
@@ -91,7 +91,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
 
                 if (!this->required_envs.size()) {
                     this->log(constants::ARG_REQUIRED_FLAG_ERROR);
-                    exit(1);
+                    std::exit(1);
                 }
             } else {
                 this->invalid_arg = string(argv[i]);
@@ -116,7 +116,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) {
         } catch (std::exception &e) {
             this->log(constants::ARG_EXCEPTION);
             std::cerr << e.what() << std::endl;
-            exit(1);
+            std::exit(1);
         }
     }
 
