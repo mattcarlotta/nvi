@@ -10,8 +10,7 @@
 using std::string;
 
 namespace nvi {
-config::config(const string *environment, const string env_dir) {
-    this->env = environment;
+config::config(const string *environment, const string env_dir) : env(environment) {
     this->file_path = string(std::filesystem::current_path() / env_dir / "env.config.json");
     std::ifstream env_config_file(this->file_path);
     if (!env_config_file.good()) {

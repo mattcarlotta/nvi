@@ -14,11 +14,8 @@ using std::vector;
 namespace nvi {
 parser::parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs,
                const bool &debug)
-    : files(files), required_envs(required_envs) {
-    this->dir = dir.value_or("");
-    this->debug = debug;
-    this->env_map = nlohmann::json::object();
-}
+    : files(files), required_envs(required_envs), debug(debug), dir(dir.value_or("")),
+      env_map(nlohmann::json::object()) {}
 
 parser *parser::parse() {
     while (this->byte_count < this->file_length) {
