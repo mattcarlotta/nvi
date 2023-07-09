@@ -10,7 +10,7 @@ constexpr unsigned int ARG_DIR_FLAG_ERROR = 1;
 constexpr unsigned int ARG_FILES_FLAG_ERROR = 2;
 constexpr unsigned int ARG_REQUIRED_FLAG_ERROR = 3;
 constexpr unsigned int ARG_HELP_DOC = 4;
-constexpr unsigned int ARG_INVALID_ARG_WARNING = 5;
+constexpr unsigned int ARG_INVALID_FLAG_WARNING = 5;
 constexpr unsigned int ARG_EXCEPTION = 6;
 constexpr unsigned int ARG_DEBUG = 7;
 

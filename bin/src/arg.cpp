@@ -1,129 +1,102 @@
 #include "arg.h"
 #include "constants.h"
-#include <exception>
 #include <iostream>
 #include <iterator>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
 using std::string;
+using std::vector;
 
 namespace nvi {
-arg_parser::arg_parser(int &argc, char *argv[]) {
-    for (unsigned int i = 1; i < argc; ++i) {
-        try {
-            const string arg = string(argv[i]);
-            if (arg == "-c" || arg == "--config") {
-                ++i;
-                if (argv[i] == nullptr) {
-                    this->log(constants::ARG_CONFIG_FLAG_ERROR);
-                    std::exit(1);
+arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
+    this->key = 1;
+    while (this->key < this->argc) {
+        const string arg = string(this->argv[this->key]);
+        if (arg == "-c" || arg == "--config") {
+            this->config = this->parse_single_arg(constants::ARG_CONFIG_FLAG_ERROR);
+        } else if (arg == "-de" || arg == "--debug") {
+            this->debug = true;
+        } else if (arg == "-d" || arg == "--dir") {
+            this->dir = this->parse_single_arg(constants::ARG_DIR_FLAG_ERROR);
+        } else if (arg == "-f" || arg == "--files") {
+            this->files = this->parse_multi_arg(constants::ARG_FILES_FLAG_ERROR);
+        } else if (arg == "-h" || arg == "--help") {
+            this->log(constants::ARG_HELP_DOC);
+            std::exit(0);
+        } else if (arg == "-r" || arg == "--required") {
+            this->required_envs = this->parse_multi_arg(constants::ARG_REQUIRED_FLAG_ERROR);
+        } else {
+            this->invalid_arg = string(this->argv[this->key]);
+            while (this->key < this->argc) {
+                ++this->key;
+
+                if (this->argv[this->key] == nullptr) {
+                    break;
                 }
 
-                const string next_arg = string(argv[i]);
-                if (next_arg.find("-") != string::npos) {
-                    this->log(constants::ARG_CONFIG_FLAG_ERROR);
-                    std::exit(1);
+                const string arg = string(this->argv[this->key]);
+                if (arg.find("-") != string::npos) {
+                    this->key -= 1;
+                    break;
                 }
 
-                this->config = next_arg;
-            } else if (arg == "-de" || arg == "--debug") {
-                this->debug = true;
-            } else if (arg == "-d" || arg == "--dir") {
-                i++;
-                if (argv[i] == nullptr) {
-                    this->log(constants::ARG_DIR_FLAG_ERROR);
-                    std::exit(1);
-                }
-
-                const string next_arg = string(argv[i]);
-                if (next_arg.find("-") != string::npos) {
-                    this->log(constants::ARG_DIR_FLAG_ERROR);
-                    std::exit(1);
-                }
-
-                this->dir = next_arg;
-            } else if (arg == "-f" || arg == "--files") {
-                ++i;
-                std::vector<string> files;
-                while (i < argc) {
-                    if (argv[i] == nullptr) {
-                        break;
-                    }
-
-                    const string next_arg = string(argv[i]);
-                    if (next_arg.find("-") != string::npos) {
-                        i -= 1;
-                        break;
-                    }
-
-                    files.push_back(next_arg);
-                    ++i;
-                }
-
-                if (!files.size()) {
-                    this->log(constants::ARG_FILES_FLAG_ERROR);
-                    std::exit(1);
-                }
-
-                this->files = files;
-            } else if (arg == "-h" || arg == "--help") {
-                this->log(constants::ARG_HELP_DOC);
-                std::exit(0);
-            } else if (arg == "-r" || arg == "--required") {
-                ++i;
-                while (i < argc) {
-                    if (argv[i] == nullptr) {
-                        break;
-                    }
-
-                    const string next_arg = string(argv[i]);
-                    if (next_arg.find("-") != string::npos) {
-                        i -= 1;
-                        break;
-                    }
-
-                    this->required_envs.push_back(next_arg);
-                    ++i;
-                }
-
-                if (!this->required_envs.size()) {
-                    this->log(constants::ARG_REQUIRED_FLAG_ERROR);
-                    std::exit(1);
-                }
-            } else {
-                this->invalid_arg = string(argv[i]);
-                while (i < argc) {
-                    ++i;
-
-                    if (argv[i] == nullptr) {
-                        break;
-                    }
-
-                    const string next_arg = string(argv[i]);
-                    if (next_arg.find("-") != string::npos) {
-                        i -= 1;
-                        break;
-                    }
-
-                    this->invalid_args += this->invalid_args.length() ? " " + next_arg : next_arg;
-                }
-
-                this->log(constants::ARG_INVALID_ARG_WARNING);
+                this->invalid_args += this->invalid_args.length() ? " " + arg : arg;
             }
-        } catch (std::exception &e) {
-            this->log(constants::ARG_EXCEPTION);
-            std::cerr << e.what() << std::endl;
-            std::exit(1);
+
+            this->log(constants::ARG_INVALID_FLAG_WARNING);
         }
+
+        ++this->key;
     }
 
     if (this->debug) {
         this->log(constants::ARG_DEBUG);
     }
 };
+
+string arg_parser::parse_single_arg(unsigned int code) {
+    ++this->key;
+    if (this->argv[this->key] == nullptr) {
+        this->log(code);
+        std::exit(1);
+    }
+
+    const string arg = string(this->argv[this->key]);
+    if (arg.find("-") != string::npos) {
+        this->log(code);
+        std::exit(1);
+    }
+
+    return arg;
+}
+
+vector<string> arg_parser::parse_multi_arg(unsigned int code) {
+    vector<string> arg;
+    ++this->key;
+    while (this->key < this->argc) {
+        if (this->argv[this->key] == nullptr) {
+            break;
+        }
+
+        const string next_arg = string(this->argv[this->key]);
+        if (next_arg.find("-") != string::npos) {
+            this->key -= 1;
+            break;
+        }
+
+        arg.push_back(next_arg);
+        ++this->key;
+    }
+
+    if (!arg.size()) {
+        this->log(code);
+        std::exit(1);
+    }
+
+    return arg;
+}
 
 void arg_parser::log(unsigned int code) const {
     switch (code) {
@@ -161,14 +134,14 @@ void arg_parser::log(unsigned int code) const {
                      "│ -c, --config    │ Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)  │\n"
                      "│ -de, --debug    │ Specifies whether or not to log file parsing details. (ex: --debug)                                  │\n"
                      "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
-                     "│ -f, --files     │ Specifies which .env file to parse separated by a space. (ex: --files test.env test2.env)            │\n"
+                     "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
                      "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
                      "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘"
                   << std::endl;
         // clang-format on
         break;
     }
-    case constants::ARG_INVALID_ARG_WARNING: {
+    case constants::ARG_INVALID_FLAG_WARNING: {
         string args = this->invalid_args.length() ? " '" + this->invalid_args + "'" : "out";
         std::clog << "[nvi] (arg::INVALID_FLAG_WARNING) The flag '" << this->invalid_arg << "' with" << args
                   << " arguments is not recognized. Skipping." << std::endl;
@@ -198,7 +171,6 @@ void arg_parser::log(unsigned int code) const {
                 << std::endl;
         }
         std::clog << std::endl;
-
         break;
     }
     default:
