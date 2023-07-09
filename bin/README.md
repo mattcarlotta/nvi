@@ -128,4 +128,4 @@ If no flags are passed, then if present, an `.env` (that is named ".env") locate
 | -r, --required  | Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                |
 | -h, --help      | Displays this help information.                                                                       |
 
-‡ When a '-c' or '--config' flag is present, then 'debug', 'dir', 'files', and 'required' flags are ignored as they should be defined within the "env.config.json" file.
+‡ When a "-c" or "--config" flag is present, then "debug", "dir", "files", and "required" flags are ignored as they should be defined within the "env.config.json" file.
