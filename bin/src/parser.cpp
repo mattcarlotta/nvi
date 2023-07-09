@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "constants.h"
+#include "format.h"
 #include "json.cpp"
 #include <filesystem>
 #include <fstream>
@@ -165,49 +166,58 @@ parser *parser::parse_envs() noexcept {
 void parser::log(unsigned int code) const {
     switch (code) {
     case constants::PARSER_INTERPOLATION_WARNING: {
-        std::clog << "[nvi] (parser::INTERPOLATION_WARNING::" << this->file_name << ":" << this->line_count + 1 << ":"
-                  << this->assignment_index + this->val_byte_count + 2 << ") "
-                  << "The key \"" << this->key << "\" contains an invalid interpolated variable: \"" << this->key_prop
-                  << "\". Unable to locate a value that corresponds to this key." << std::endl;
+        std::clog << format("[nvi] (parser::INTERPOLATION_WARNING::%s:%d:%d) The key \"%s\" contains an invalid "
+                            "interpolated variable: \"%s\". Unable to locate a value that corresponds to this key.",
+                            this->file_name.c_str(), this->line_count + 1,
+                            this->assignment_index + this->val_byte_count + 2, this->key.c_str(),
+                            this->key_prop.c_str())
+                  << std::endl;
         break;
     }
     case constants::PARSER_INTERPOLATION_ERROR: {
-        std::cerr << "[nvi] (parser::INTERPOLATION_ERROR::" << this->file_name << ":" << this->line_count + 2 << ":"
-                  << this->assignment_index + this->val_byte_count + 2 << ") "
-                  << "The key \"" << this->key
-                  << "\" contains an interpolated variable: \"${\" operator but appears to be missing a "
-                     "closing \"}\" operator."
+        std::cerr << format("[nvi] (parser::INTERPOLATION_ERROR::%s:%d:%d) The key \"%s\" contains an "
+                            "interpolated \"{\" operator, but appears to be missing a closing \"}\" operator.",
+                            this->file_name.c_str(), this->line_count + 1,
+                            this->assignment_index + this->val_byte_count + 2, this->key.c_str())
                   << std::endl;
         break;
     }
     case constants::PARSER_DEBUG: {
-        std::clog << "[nvi] (parser::DEBUG::" << this->file_name << ":" << this->line_count + 1 << ":"
-                  << this->assignment_index + this->val_byte_count + 1 << ") Set key \"" << this->key
-                  << "\" to equal value \"" << this->value << "\"." << std::endl;
+        std::clog << format("[nvi] (parser::DEBUG::%s:%d:%d) Set key \"%s\" to equal value \"%s\".",
+                            this->file_name.c_str(), this->line_count + 1,
+                            this->assignment_index + this->val_byte_count + 2, this->key.c_str(), this->value.c_str())
+                  << std::endl;
         break;
     }
     case constants::PARSER_DEBUG_FILE_PROCESSED: {
-        const char conditional_plural_letter = this->line_count == 1 ? 's' : '\0';
-        std::clog << "[nvi] (parser::DEBUG_FILE_PROCESSED::" << this->file_name << ") Processed " << this->line_count
-                  << " line" << conditional_plural_letter << " and " << this->byte_count << " bytes!\n"
+        const string line_letter = this->line_count != 1 ? "s" : "";
+        std::clog << format("[nvi] (parser::DEBUG_FILE_PROCESSED::%s) Processed %d line%s and %d bytes!\n",
+                            this->file_name.c_str(), this->line_count, line_letter.c_str(), this->byte_count)
                   << std::endl;
         break;
     }
     case constants::PARSER_REQUIRED_ENV_ERROR: {
         std::stringstream envs;
         std::copy(this->undefined_keys.begin(), this->undefined_keys.end(), std::ostream_iterator<string>(envs, ","));
-        std::cerr << "[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \""
-                  << envs.str() << "\" but they are undefined after all of the .env files were parsed." << std::endl;
+
+        std::cerr << format("[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \"%s\""
+                            " but they are undefined after all of the .env files were parsed.",
+                            envs.str().c_str())
+                  << std::endl;
         break;
     }
     case constants::PARSER_FILE_ERROR: {
-        std::cerr << "[nvi] (parser::FILE_ERROR) Unable to locate \"" << this->file_path
-                  << "\". The .env file doesn't appear to exist!" << std::endl;
+        std::cerr << format(
+                         "[nvi] (parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear to exist!",
+                         this->file_path.c_str())
+                  << std::endl;
         break;
     }
     case constants::PARSER_EMPTY_ENVS: {
-        std::cerr << "[nvi] (parser::PARSER_EMPTY_ENVS) Unable to parse any ENVs! Please ensure the \""
-                  << this->file_name << "\" file is not empty." << std::endl;
+        std::cerr << format("[nvi] (parser::PARSER_EMPTY_ENVS) Unable to parse any ENVS! Please ensure the \"%s\" file "
+                            "is not empty.",
+                            this->file_name.c_str())
+                  << std::endl;
         break;
     }
     default:

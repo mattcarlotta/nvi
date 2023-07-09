@@ -1,5 +1,6 @@
 #include "arg.h"
 #include "constants.h"
+#include "format.h"
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -102,26 +103,27 @@ void arg_parser::log(unsigned int code) const {
     switch (code) {
     case constants::ARG_CONFIG_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "
-                     "environment name from the env.config.json configuration file.";
-        std::cerr << " Use flag \"-h\" or \"--help\" for more information." << std::endl;
+                     "environment name from the env.config.json configuration file. Use flag \"-h\" or \"--help\" for "
+                     "more information."
+                  << std::endl;
         break;
     }
     case constants::ARG_DIR_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::DIR_FLAG_ERROR) The \"-d\" or \"--dir\" flag must contain a "
-                     "valid directory path.";
-        std::cerr << " Use flag \"-h\" or \"--help\" for more information." << std::endl;
+                     "valid directory path. Use flag \"-h\" or \"--help\" for more information."
+                  << std::endl;
         break;
     }
     case constants::ARG_FILES_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::FILES_FLAG_ERROR) The \"-f\" or \"--files\" flag must contain at least "
-                     "1 .env file.";
-        std::cerr << " Use flag \"-h\" or \"--help\" for more information." << std::endl;
+                     "1 .env file. Use flag \"-h\" or \"--help\" for more information."
+                  << std::endl;
         break;
     }
     case constants::ARG_REQUIRED_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::REQUIRED_FLAG_ERROR) The \"-r\" or \"--required\" flag must contain at "
-                     "least 1 ENV key.";
-        std::cerr << " Use flag \"-h\" or \"--help\" for more information." << std::endl;
+                     "least 1 ENV key. Use flag \"-h\" or \"--help\" for more information."
+                  << std::endl;
         break;
     }
     case constants::ARG_HELP_DOC: {
@@ -142,9 +144,12 @@ void arg_parser::log(unsigned int code) const {
         break;
     }
     case constants::ARG_INVALID_FLAG_WARNING: {
-        string args = this->invalid_args.length() ? " \"" + this->invalid_args + "\"" : "out";
-        std::clog << "[nvi] (arg::INVALID_FLAG_WARNING) The flag \"" << this->invalid_arg << "\" with" << args
-                  << " arguments is not recognized. Skipping." << std::endl;
+        const string args = this->invalid_args.length() ? " \"" + this->invalid_args + "\"" : "out";
+        std::clog
+            << format(
+                   "[nvi] (arg::INVALID_FLAG_WARNING) The flag \"%s\" with\%s arguments is not recognized. Skipping.",
+                   this->invalid_arg.c_str(), args.c_str())
+            << std::endl;
         break;
     }
     case constants::ARG_EXCEPTION: {
@@ -152,23 +157,21 @@ void arg_parser::log(unsigned int code) const {
         break;
     }
     case constants::ARG_DEBUG: {
-        std::clog << "[nvi] (arg::DEBUG) The following arguments were set: ";
-        std::clog << "config=\"" << this->config << "\", ";
-        std::clog << "debug=\"true\", ";
-        std::clog << "dir=\"" << this->dir << "\", ";
         std::stringstream files;
         std::copy(this->files.begin(), this->files.end(), std::ostream_iterator<string>(files, ","));
-        std::clog << "files=\"" << files.str() << "\", ";
+
         std::stringstream envs;
         std::copy(this->required_envs.begin(), this->required_envs.end(), std::ostream_iterator<string>(envs, ","));
-        std::clog << "required=\"" << envs.str() << "\"." << std::endl;
-        const bool conflicting_flags =
-            this->config.length() && (this->dir.length() || this->files.size() > 1 || this->required_envs.size());
-        if (conflicting_flags) {
-            std::clog
-                << "[nvi] (arg::DEBUG) Found conflicting arguments. When the \"config\" argument has been set, then "
-                   "\"dir\", \"files\", and \"required\" are ignored."
-                << std::endl;
+
+        std::clog << format("[nvi] (arg::DEBUG) The following arguments were set: config=\"%s\", "
+                            "debug=\"true\", dir=\"%s\", files=\"%s\", required=\"%s\".",
+                            this->config.c_str(), this->dir.c_str(), files.str().c_str(), envs.str().c_str())
+                  << std::endl;
+
+        if (this->config.length() && (this->dir.length() || this->files.size() > 1 || this->required_envs.size())) {
+            std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" argument has been set, then "
+                         "\"dir,\" \"files,\" and \"required\" are ignored."
+                      << std::endl;
         }
         std::clog << std::endl;
         break;
