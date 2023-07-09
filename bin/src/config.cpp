@@ -53,36 +53,36 @@ config::config(const string *environment, const string env_dir) : env(environmen
 void config::log(unsigned int code) const {
     switch (code) {
     case constants::CONFIG_FILE_ERROR: {
-        std::cerr << "[nvi] (config::FILE_ERROR) Unable to locate '" << this->file_path
-                  << "'. The configuration file doesn't appear to exist!" << std::endl;
+        std::cerr << "[nvi] (config::FILE_ERROR) Unable to locate \"" << this->file_path
+                  << "\". The configuration file doesn't appear to exist!" << std::endl;
         break;
     }
     case constants::CONFIG_FILE_PARSE_ERROR: {
-        std::cerr << "[nvi] (config::FILE_PARSE_ERROR) Unable to load a '" << *this->env
-                  << "' environment from the env.config.json configuration file (" << this->file_path
+        std::cerr << "[nvi] (config::FILE_PARSE_ERROR) Unable to load a \"" << *this->env
+                  << "\" environment from the env.config.json configuration file (" << this->file_path
                   << "). The specified environment doesn't appear to exist!" << std::endl;
         break;
     }
     case constants::CONFIG_DEBUG: {
-        std::clog << "[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration file: '";
+        std::clog << "[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration file: \"";
         for (auto &el : this->parsed_config.items()) {
             std::clog << el.key() << ",";
         }
-        std::clog << "' and selected the '" << *this->env << "' configuration." << std::endl;
-        std::clog << "[nvi] (config::DEBUG) The following '" << *this->env << "' configuration settings were set: ";
-        std::clog << "debug='true', ";
-        std::clog << "dir='" << this->dir << "', ";
+        std::clog << "\" and selected the \"" << *this->env << "\" configuration." << std::endl;
+        std::clog << "[nvi] (config::DEBUG) The following \"" << *this->env << "\" configuration settings were set: ";
+        std::clog << "debug=\"true\", ";
+        std::clog << "dir=\"" << this->dir << "\", ";
         std::stringstream files;
         std::copy(this->files.begin(), this->files.end(), std::ostream_iterator<string>(files, ","));
-        std::clog << "files='" << files.str() << "', ";
+        std::clog << "files=\"" << files.str() << "\", ";
         std::stringstream envs;
         std::copy(this->required_envs.begin(), this->required_envs.end(), std::ostream_iterator<string>(envs, ","));
-        std::clog << "required='" << envs.str() << "'.\n" << std::endl;
+        std::clog << "required=\"" << envs.str() << "\"." << std::endl;
         break;
     }
     case constants::CONFIG_MISSING_FILES_ARG_ERROR: {
-        std::cerr << "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a 'files' property within the '"
-                  << *this->env << "' environment configuration (" << this->file_path
+        std::cerr << "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a \"files\" property within the \""
+                  << *this->env << "\" environment configuration (" << this->file_path
                   << "). You must specify at least 1 .env file to load!" << std::endl;
         break;
     }

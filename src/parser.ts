@@ -1,7 +1,7 @@
-import type { ConfigOptions, ParsedEnvs } from './index';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import process from 'process';
+import type { ConfigOptions, ParsedEnvs } from "./index";
+import { readFileSync } from "fs";
+import { join } from "path";
+import process from "process";
 
 const PARSER_INTERPOLATION_WARNING = 0;
 const PARSER_INTERPOLATION_ERROR = 1;
@@ -10,13 +10,13 @@ const PARSER_DEBUG_FILE_PROCESSED = 3;
 const PARSER_REQUIRED_ENV_ERROR = 4;
 const PARSER_FILE_ERROR = 5;
 
-const COMMENT = '#';
-const LINE_DELIMITER = '\n';
-const BACK_SLASH = '\\';
-const ASSIGN_OP = '=';
-const DOLLAR_SIGN = '$';
-const OPEN_BRACE = '{';
-const CLOSE_BRACE = '}';
+const COMMENT = "#";
+const LINE_DELIMITER = "\n";
+const BACK_SLASH = "\\";
+const ASSIGN_OP = "=";
+const DOLLAR_SIGN = "$";
+const OPEN_BRACE = "{";
+const CLOSE_BRACE = "}";
 
 export default class EnvParser {
     private debug: boolean;
@@ -50,21 +50,21 @@ export default class EnvParser {
      */
     constructor(options = {} as ConfigOptions) {
         this.debug = options?.debug || false;
-        this.dir = options?.dir || '';
-        this.files = options?.files || ['.env'];
+        this.dir = options?.dir || "";
+        this.files = options?.files || [".env"];
         this.override = options?.override || false;
         this.requiredEnvs = options?.required || [];
-        this.envFile = '';
-        this.filePath = '';
-        this.fileName = '';
+        this.envFile = "";
+        this.filePath = "";
+        this.fileName = "";
         this.fileLength = 0;
         this.byteCount = 0;
         this.lineCount = 0;
         this.valByteCount = 0;
         this.assignmentIndex = -1;
-        this.key = '';
-        this.keyProp = '';
-        this.value = '';
+        this.key = "";
+        this.keyProp = "";
+        this.value = "";
         this.undefinedKeys = [];
         this.requiredEnvs = [];
         this.envMap = {};
@@ -80,7 +80,7 @@ export default class EnvParser {
         try {
             this.fileName = envFileName;
             this.envFile = readFileSync(join(this.dir || process.cwd(), this.fileName), {
-                encoding: 'utf-8',
+                encoding: "utf-8",
             });
             this.fileLength = this.envFile.length;
             this.byteCount = 0;
@@ -154,7 +154,7 @@ export default class EnvParser {
 
                 const valSlice = line.substring(this.assignmentIndex + 1, line.length);
                 this.valByteCount = 0;
-                this.value = '';
+                this.value = "";
                 while (this.valByteCount < valSlice.length) {
                     const currentChar = valSlice[this.valByteCount];
                     const nextChar = valSlice[this.valByteCount + 1];
@@ -179,7 +179,7 @@ export default class EnvParser {
                         if (interpCloseIndex >= 0) {
                             this.keyProp = valSliceBuf.substring(2, interpCloseIndex);
 
-                            const interpolatedValue = process.env[this.keyProp] || '';
+                            const interpolatedValue = process.env[this.keyProp] || "";
                             if (!interpolatedValue && this.debug) {
                                 this.log(PARSER_INTERPOLATION_WARNING);
                             }
@@ -249,7 +249,7 @@ export default class EnvParser {
     }
 
     private exitProcess(): void {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.NODE_ENV !== "test") {
             process.exit(1);
         }
     }
@@ -260,9 +260,9 @@ export default class EnvParser {
                 console.log(
                     `[nvi] (parser::INTERPOLATION_WARNING::${this.fileName}:${this.lineCount + 1}:${
                         this.assignmentIndex + this.valByteCount + 2
-                    }) The key '${this.key}' contains an invalid interpolated variable: '${
+                    }) The key "${this.key}" contains an invalid interpolated variable: "${
                         this.keyProp
-                    }'. Unable to locate a value that corresponds to this key.`
+                    }". Unable to locate a value that corresponds to this key.`
                 );
                 break;
             }
@@ -270,9 +270,9 @@ export default class EnvParser {
                 console.log(
                     `[nvi] (parser::INTERPOLATION_ERROR::${this.fileName}:${this.lineCount + 2}:${
                         this.assignmentIndex + this.valByteCount + 2
-                    }) The key '${
+                    }) The key "${
                         this.key
-                    }' contains an interpolated variable: '${' operator but appears to be missing a closing '}' operator.`
+                    }" contains an interpolated variable: "${" operator but appears to be missing a closing "}" operator.`
                 );
                 break;
             }
@@ -280,7 +280,7 @@ export default class EnvParser {
                 console.log(
                     `[nvi] (parser::DEBUG::${this.fileName}:${this.lineCount + 1}:${
                         this.assignmentIndex + this.valByteCount + 1
-                    }) Set key '${this.key}' to equal value '${this.value}'.`
+                    }) Set key "${this.key}\" to equal value "${this.value}\".`
                 );
                 break;
             }
@@ -288,22 +288,22 @@ export default class EnvParser {
                 console.log(
                     `[nvi] (parser::DEBUG_FILE_PROCESSED::${this.fileName}) Processed ${
                         this.lineCount
-                    } line${this.lineCount > 1 ? 's' : ''} and ${this.byteCount} bytes!`
+                    } line${this.lineCount > 1 ? "s" : ""} and ${this.byteCount} bytes!`
                 );
                 console.log(`${JSON.stringify(this.envMap, null, 4)}\n`);
                 break;
             }
             case PARSER_REQUIRED_ENV_ERROR: {
                 console.log(
-                    `[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: '${this.requiredEnvs.join(
-                        ','
-                    )}' but they are undefined after all of the .env files were parsed.`
+                    `[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: "${this.requiredEnvs.join(
+                        ","
+                    )}" but they are undefined after all of the .env files were parsed.`
                 );
                 break;
             }
             case PARSER_FILE_ERROR: {
                 console.log(
-                    `[nvi] (parser::FILE_ERROR) Unable to locate '${this.filePath}'. The .env file doesn't appear to exist!`
+                    `[nvi] (parser::FILE_ERROR) Unable to locate "${this.filePath}". The .env file doesn't appear to exist!`
                 );
                 break;
             }

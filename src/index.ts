@@ -1,6 +1,6 @@
-import { env } from 'process';
-import EnvConfigLoader from './config';
-import EnvParser from './parser';
+import { env } from "process";
+import EnvConfigLoader from "./config";
+import EnvParser from "./parser";
 
 export type ParsedEnvs = Record<string, string>;
 

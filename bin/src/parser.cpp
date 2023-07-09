@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <optional>
 #include <sstream>
 
@@ -15,7 +14,7 @@ namespace nvi {
 parser::parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs,
                const bool &debug)
     : files(files), required_envs(required_envs), debug(debug), dir(dir.value_or("")),
-      env_map(nlohmann::json::object()) {}
+      env_map(std::map<string, string>()) {}
 
 parser *parser::parse() {
     while (this->byte_count < this->file_length) {
@@ -46,6 +45,10 @@ parser *parser::parse() {
                     ++this->line_count;
                     this->val_byte_count += 2;
                     continue;
+                }
+
+                if (current_char == constants::DOUBLE_QUOTE) {
+                    this->value += constants::BACK_SLASH;
                 }
 
                 if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
@@ -114,7 +117,19 @@ int parser::print_envs() {
         }
     }
 
-    std::cout << std::setw(4) << this->env_map << std::endl;
+    if (!this->env_map.size()) {
+        this->log(constants::PARSER_EMPTY_ENVS);
+        std::exit(1);
+    }
+
+    const string last_key = std::prev(this->env_map.end())->first;
+    std::cout << "{" << std::endl;
+    for (auto const &[key, value] : this->env_map) {
+        const string comma = key != last_key ? "," : "";
+        std::cout << std::setw(4) << "\"" << key << "\""
+                  << ": \"" << value << "\"" << comma << std::endl;
+    }
+    std::cout << "}" << std::endl;
 
     return 0;
 }
@@ -129,6 +144,10 @@ parser *parser::read(const string &env_file_name) {
     }
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
     this->file_length = this->loaded_file.length();
+    if (!this->file_length) {
+        this->log(constants::PARSER_EMPTY_ENVS);
+        std::exit(1);
+    }
     this->byte_count = 0;
     this->line_count = 0;
 
@@ -148,27 +167,27 @@ void parser::log(unsigned int code) const {
     case constants::PARSER_INTERPOLATION_WARNING: {
         std::clog << "[nvi] (parser::INTERPOLATION_WARNING::" << this->file_name << ":" << this->line_count + 1 << ":"
                   << this->assignment_index + this->val_byte_count + 2 << ") "
-                  << "The key '" << this->key << "' contains an invalid interpolated variable: '" << this->key_prop
-                  << "'. Unable to locate a value that corresponds to this key." << std::endl;
+                  << "The key \"" << this->key << "\" contains an invalid interpolated variable: \"" << this->key_prop
+                  << "\". Unable to locate a value that corresponds to this key." << std::endl;
         break;
     }
     case constants::PARSER_INTERPOLATION_ERROR: {
         std::cerr << "[nvi] (parser::INTERPOLATION_ERROR::" << this->file_name << ":" << this->line_count + 2 << ":"
                   << this->assignment_index + this->val_byte_count + 2 << ") "
-                  << "The key '" << this->key
-                  << "' contains an interpolated variable: '${' operator but appears to be missing a "
-                     "closing '}' operator."
+                  << "The key \"" << this->key
+                  << "\" contains an interpolated variable: \"${\" operator but appears to be missing a "
+                     "closing \"}\" operator."
                   << std::endl;
         break;
     }
     case constants::PARSER_DEBUG: {
         std::clog << "[nvi] (parser::DEBUG::" << this->file_name << ":" << this->line_count + 1 << ":"
-                  << this->assignment_index + this->val_byte_count + 1 << ") Set key '" << this->key
-                  << "' to equal value '" << this->value << "'." << std::endl;
+                  << this->assignment_index + this->val_byte_count + 1 << ") Set key \"" << this->key
+                  << "\" to equal value \"" << this->value << "\"." << std::endl;
         break;
     }
     case constants::PARSER_DEBUG_FILE_PROCESSED: {
-        const char conditional_plural_letter = this->line_count > 1 ? 's' : '\0';
+        const char conditional_plural_letter = this->line_count == 1 ? 's' : '\0';
         std::clog << "[nvi] (parser::DEBUG_FILE_PROCESSED::" << this->file_name << ") Processed " << this->line_count
                   << " line" << conditional_plural_letter << " and " << this->byte_count << " bytes!\n"
                   << std::endl;
@@ -177,13 +196,18 @@ void parser::log(unsigned int code) const {
     case constants::PARSER_REQUIRED_ENV_ERROR: {
         std::stringstream envs;
         std::copy(this->undefined_keys.begin(), this->undefined_keys.end(), std::ostream_iterator<string>(envs, ","));
-        std::cerr << "[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: '" << envs.str()
-                  << "' but they are undefined after all of the .env files were parsed." << std::endl;
+        std::cerr << "[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \""
+                  << envs.str() << "\" but they are undefined after all of the .env files were parsed." << std::endl;
         break;
     }
     case constants::PARSER_FILE_ERROR: {
-        std::cerr << "[nvi] (parser::FILE_ERROR) Unable to locate '" << this->file_path
-                  << "'. The .env file doesn't appear to exist!" << std::endl;
+        std::cerr << "[nvi] (parser::FILE_ERROR) Unable to locate \"" << this->file_path
+                  << "\". The .env file doesn't appear to exist!" << std::endl;
+        break;
+    }
+    case constants::PARSER_EMPTY_ENVS: {
+        std::cerr << "[nvi] (parser::PARSER_EMPTY_ENVS) Unable to parse any ENVs! Please ensure the \""
+                  << this->file_name << "\" file is not empty." << std::endl;
         break;
     }
     default:

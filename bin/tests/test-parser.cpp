@@ -1,26 +1,28 @@
-#include "json.cpp"
 #include "parser.h"
 #include "gtest/gtest.h"
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
+using std::string;
+using std::vector;
+
 class parse_env_file : public testing::Test {
     protected:
-    static nlohmann::json env_map;
+    static std::map<string, string> env_map;
 
     public:
     static void SetUpTestSuite() {
-        const std::vector<string> files = {"bin.env"};
-        const string dir = "../../tests/envs";
-        const std::vector<string> required = {"BASIC_ENV"};
-        nvi::parser parser(&files, dir, &required);
+        const vector<string> files = {"bin.env"};
+        const vector<string> required = {"BASIC_ENV"};
+        nvi::parser parser(&files, "../../tests/envs", &required);
         parser.parse_envs();
         env_map = parser.env_map;
     }
 };
 
-nlohmann::json parse_env_file::env_map;
+std::map<string, string> parse_env_file::env_map;
 
 TEST_F(parse_env_file, consistent_parse_size) { EXPECT_EQ(env_map.size(), 27); }
 
@@ -48,21 +50,23 @@ TEST_F(parse_env_file, empty_interp_key_values) { EXPECT_EQ(env_map.at("EMPTY_IN
 
 TEST_F(parse_env_file, single_quote_values) { EXPECT_EQ(env_map.at("SINGLE_QUOTES_SPACES"), "'  SINGLE QUOTES  '"); }
 
-TEST_F(parse_env_file, double_quote_values) { EXPECT_EQ(env_map.at("DOUBLE_QUOTES_SPACES"), "\"  DOUBLE QUOTES  \""); }
+TEST_F(parse_env_file, double_quote_values) {
+    EXPECT_EQ(env_map.at("DOUBLE_QUOTES_SPACES"), "\\\"  DOUBLE QUOTES  \\\"");
+}
 
-TEST_F(parse_env_file, quote_values) { EXPECT_EQ(env_map.at("QUOTES"), "sad\"wow\"bak"); }
+TEST_F(parse_env_file, quote_values) { EXPECT_EQ(env_map.at("QUOTES"), "sad\\\"wow\\\"bak"); }
 
 TEST_F(parse_env_file, invalid_single_quote_values) { EXPECT_EQ(env_map.at("INVALID_SINGLE_QUOTES"), "bad\'dq"); }
 
-TEST_F(parse_env_file, invalid_double_quote_values) { EXPECT_EQ(env_map.at("INVALID_DOUBLE_QUOTES"), "bad\"dq"); }
+TEST_F(parse_env_file, invalid_double_quote_values) { EXPECT_EQ(env_map.at("INVALID_DOUBLE_QUOTES"), "bad\\\"dq"); }
 
 TEST_F(parse_env_file, invalid_template_literal_values) { EXPECT_EQ(env_map.at("INVALID_TEMPLATE_LITERAL"), "bad`as"); }
 
-TEST_F(parse_env_file, invalid_mix_quotes_values) { EXPECT_EQ(env_map.at("INVALID_MIX_QUOTES"), "bad\"'`mq"); }
+TEST_F(parse_env_file, invalid_mix_quotes_values) { EXPECT_EQ(env_map.at("INVALID_MIX_QUOTES"), "bad\\\"'`mq"); }
 
 TEST_F(parse_env_file, empty_single_quotes_values) { EXPECT_EQ(env_map.at("EMPTY_SINGLE_QUOTES"), "''"); }
 
-TEST_F(parse_env_file, empty_double_quotes_values) { EXPECT_EQ(env_map.at("EMPTY_DOUBLE_QUOTES"), "\"\""); }
+TEST_F(parse_env_file, empty_double_quotes_values) { EXPECT_EQ(env_map.at("EMPTY_DOUBLE_QUOTES"), "\\\"\\\""); }
 
 TEST_F(parse_env_file, empty_template_literal_values) { EXPECT_EQ(env_map.at("EMPTY_TEMPLATE_LITERAL"), "``"); }
 

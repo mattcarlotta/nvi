@@ -1,7 +1,7 @@
-import type { MinifyOptions } from 'terser';
-import { readFileSync, statSync, writeFileSync } from 'fs';
-import { minify } from 'terser';
-import { join } from 'path';
+import type { MinifyOptions } from "terser";
+import { readFileSync, statSync, writeFileSync } from "fs";
+import { minify } from "terser";
+import { join } from "path";
 
 const terserOptions = {
     compress: {
@@ -45,7 +45,7 @@ async function compressFiles(files: string[], opts?: MinifyOptions): Promise<voi
                 throw String(`Unable to locate ${file}. The file doesn't appear to exist!`);
 
             const { code } = await minify(
-                readFileSync(filePath, { encoding: 'utf-8' }),
+                readFileSync(filePath, { encoding: "utf-8" }),
                 opts || terserOptions
             );
 
@@ -54,7 +54,7 @@ async function compressFiles(files: string[], opts?: MinifyOptions): Promise<voi
                     `Unable to minify ${file}. No minified code was returned from terser!`
                 );
 
-            writeFileSync(filePath, code, { encoding: 'utf-8' });
+            writeFileSync(filePath, code, { encoding: "utf-8" });
         }
     } catch (error: any) {
         throw Error(error);
@@ -63,7 +63,7 @@ async function compressFiles(files: string[], opts?: MinifyOptions): Promise<voi
 
 (async (): Promise<void> => {
     try {
-        const files = ['config.js', 'index.js', 'parser.js'];
+        const files = ["config.js", "index.js", "parser.js"];
 
         await compressFiles(files);
         process.exit(0);

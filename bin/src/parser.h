@@ -4,6 +4,7 @@
 #include "json.cpp"
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -36,7 +37,7 @@ class parser {
     parser *parse();
 
     public:
-    nlohmann::json::object_t env_map;
+    std::map<string, string> env_map;
     parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs = nullptr,
            const bool &debug = false);
     parser *parse_envs() noexcept;

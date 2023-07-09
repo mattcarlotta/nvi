@@ -1,7 +1,7 @@
-import type { ConfigOptions } from './index';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { cwd } from 'process';
+import type { ConfigOptions } from "./index";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { cwd } from "process";
 
 const CONFIG_FILE_ERROR = 0;
 const CONFIG_FILE_PARSE_ERROR = 1;
@@ -32,19 +32,19 @@ export default class EnvConfigLoader {
      * ```
      */
     constructor(env?: string, dir?: string) {
-        this.env = env || '';
-        this.filePath = join(dir || cwd(), 'env.config.json');
-        this.configFile = '';
+        this.env = env || "";
+        this.filePath = join(dir || cwd(), "env.config.json");
+        this.configFile = "";
         this.parsedConfig = {};
 
         try {
-            this.configFile = readFileSync(join(dir || cwd(), 'env.config.json'), {
-                encoding: 'utf-8',
+            this.configFile = readFileSync(join(dir || cwd(), "env.config.json"), {
+                encoding: "utf-8",
             });
 
             this.parsedConfig = JSON.parse(this.configFile);
         } catch (error: any) {
-            if (error?.message?.includes('ENOENT')) {
+            if (error?.message?.includes("ENOENT")) {
                 this.log(CONFIG_FILE_ERROR);
             } else {
                 this.log(CONFIG_FILE_PARSE_ERROR);
@@ -68,7 +68,7 @@ export default class EnvConfigLoader {
 
         this.debug = config?.debug || false;
 
-        this.dir = config?.dir || '';
+        this.dir = config?.dir || "";
 
         this.override = config?.override || false;
 
@@ -99,7 +99,7 @@ export default class EnvConfigLoader {
     }
 
     private exitProcess(): void {
-        if (process.env.NODE_ENV !== 'test') {
+        if (process.env.NODE_ENV !== "test") {
             process.exit(1);
         }
     }
@@ -134,14 +134,14 @@ export default class EnvConfigLoader {
                 console.log(
                     `[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration file: '${Object.keys(
                         this.parsedConfig
-                    ).join(',')}' and selected the '${this.env}' configuration.`
+                    ).join(",")}' and selected the '${this.env}' configuration.`
                 );
                 const options = Object.entries(this.getOptions())
                     .map(
                         ([key, value]) =>
-                            `${key}='${Array.isArray(value) ? value.join(', ') : value}'`
+                            `${key}='${Array.isArray(value) ? value.join(", ") : value}'`
                     )
-                    .join(', ');
+                    .join(", ");
                 console.log(
                     `[nvi] (config::DEBUG) The following '${this.env}' configuration settings were set: ${options}.\n`
                 );
