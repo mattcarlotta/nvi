@@ -107,7 +107,7 @@ parser *parser::parse() {
 int parser::print_envs() {
     if (this->required_envs != nullptr && this->required_envs->size()) {
         for (const string key : *this->required_envs) {
-            if (!this->env_map.count(key)) {
+            if (!this->env_map.count(key) || !this->env_map.at(key).length()) {
                 this->undefined_keys.push_back(key);
             }
         }

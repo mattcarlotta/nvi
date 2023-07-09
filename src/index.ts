@@ -19,7 +19,7 @@ export type ConfigOptions = {
     if (env.LOAD_CONFIG) {
         const options = new EnvConfigLoader(env.LOAD_CONFIG).getOptions();
 
-        new EnvParser(options).parseEnvs();
+        new EnvParser(options).parseEnvs().getEnvs();
 
         // prevents the IFFE from reloading the config file on subsequent imports
         delete process.env.LOAD_CONFIG;

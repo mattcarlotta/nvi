@@ -66,7 +66,6 @@ export default class EnvParser {
         this.keyProp = "";
         this.value = "";
         this.undefinedKeys = [];
-        this.requiredEnvs = [];
         this.envMap = {};
     }
 
