@@ -79,6 +79,10 @@ source ~/.bash_profile
 ```
 or
 ```DOSINI
+source ~/.bashrc
+```
+or
+```DOSINI
 source ~/.zshrc
 ```
 </details>
