@@ -221,17 +221,15 @@ export default class EnvParser {
     }
 
     /**
-     * Returns the results of parsing one or many .env files as a single object of `"KEY":"value"` pairs.
+     * Checks the results of parsing one or many .env files to any `required` ENVs.
      *
-     * @returns a single object of `"KEY":"value"` pairs
-     *
-     * @example Reading, parsing a single .env file, and retrieving the results
+     * @example Reading, parsing an .env file, and checking the results
      * ```ts
-     * const parser = new EnvParser();
-     * const parsedEnvs = parser.parseEnvs().getEnvs(); // { "KEY1": "value", "KEY2", "value", ...etc }
+     * const parser = new EnvParser({ required: ["KEY1", "KEY2"]});
+     * const parsedEnvs = parser.parseEnvs().checkRequiredEnvs(); // throws error if any required keys don't have length
      * ```
      */
-    public getEnvs(): ParsedEnvs {
+    public checkRequiredEnvs(): void {
         if (this.requiredEnvs.length) {
             for (let i = 0; i < this.requiredEnvs.length; ++i) {
                 const key = this.requiredEnvs[i];
@@ -243,6 +241,20 @@ export default class EnvParser {
                 this.exitProcess();
             }
         }
+    }
+    /**
+     * Returns the results of parsing one or many .env files as a single object of `"KEY":"value"` pairs.
+     *
+     * @returns a single object of `"KEY":"value"` pairs
+     *
+     * @example Reading, parsing an .env file, checking for required ENVs and retrieving the results
+     * ```ts
+     * const parser = new EnvParser();
+     * const parsedEnvs = parser.parseEnvs().getEnvs(); // { "KEY1": "value", "KEY2", "value", ...etc }
+     * ```
+     */
+    public getEnvs(): ParsedEnvs {
+        this.checkRequiredEnvs();
 
         return this.envMap;
     }
