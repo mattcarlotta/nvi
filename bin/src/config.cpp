@@ -3,9 +3,7 @@
 #include "format.h"
 #include "json.cpp"
 #include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 
 using std::string;
@@ -69,9 +67,11 @@ void config::log(unsigned int code) const {
         break;
     }
     case constants::CONFIG_DEBUG: {
+        const string last_key = std::prev(this->parsed_config.end()).key();
         string keys;
         for (auto &el : this->parsed_config.items()) {
-            keys += el.key() + ",";
+            const string comma = el.key() != last_key ? ", " : "";
+            keys += el.key() + comma;
         }
 
         std::clog
@@ -80,15 +80,9 @@ void config::log(unsigned int code) const {
                       keys.c_str(), &*this->env->c_str())
             << std::endl;
 
-        std::stringstream files;
-        std::copy(this->files.begin(), this->files.end(), std::ostream_iterator<string>(files, ","));
-
-        std::stringstream envs;
-        std::copy(this->required_envs.begin(), this->required_envs.end(), std::ostream_iterator<string>(envs, ","));
-
-        std::clog << format("[nvi] (config::DEBUG) The following arguments were set: "
+        std::clog << format("[nvi] (config::DEBUG) The following flags were set: "
                             "debug=\"true\", dir=\"%s\", files=\"%s\", required=\"%s\".\n",
-                            this->dir.c_str(), files.str().c_str(), envs.str().c_str())
+                            this->dir.c_str(), join(this->files, ", ").c_str(), join(this->required_envs, ", ").c_str())
                   << std::endl;
         break;
     }

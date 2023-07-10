@@ -3,10 +3,8 @@
 #include "format.h"
 #include "json.cpp"
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <optional>
-#include <sstream>
 
 using std::string;
 using std::vector;
@@ -190,19 +188,16 @@ void parser::log(unsigned int code) const {
         break;
     }
     case constants::PARSER_DEBUG_FILE_PROCESSED: {
-        const string line_letter = this->line_count != 1 ? "s" : "";
         std::clog << format("[nvi] (parser::DEBUG_FILE_PROCESSED::%s) Processed %d line%s and %d bytes!\n",
-                            this->file_name.c_str(), this->line_count, line_letter.c_str(), this->byte_count)
+                            this->file_name.c_str(), this->line_count, (this->line_count != 1 ? "s" : ""),
+                            this->byte_count)
                   << std::endl;
         break;
     }
     case constants::PARSER_REQUIRED_ENV_ERROR: {
-        std::stringstream envs;
-        std::copy(this->undefined_keys.begin(), this->undefined_keys.end(), std::ostream_iterator<string>(envs, ","));
-
         std::cerr << format("[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \"%s\""
-                            " but they are undefined after all of the .env files were parsed.",
-                            envs.str().c_str())
+                            ", but they are undefined after all of the .env files were parsed.",
+                            join(this->undefined_keys, ", ").c_str())
                   << std::endl;
         break;
     }

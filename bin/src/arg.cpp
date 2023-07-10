@@ -2,8 +2,6 @@
 #include "constants.h"
 #include "format.h"
 #include <iostream>
-#include <iterator>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -30,6 +28,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
             this->required_envs = this->parse_multi_arg(constants::ARG_REQUIRED_FLAG_ERROR);
         } else {
             this->invalid_arg = string(this->argv[this->key]);
+            this->invalid_args = "";
             while (this->key < this->argc) {
                 ++this->key;
 
@@ -144,11 +143,11 @@ void arg_parser::log(unsigned int code) const {
         break;
     }
     case constants::ARG_INVALID_FLAG_WARNING: {
-        const string args = this->invalid_args.length() ? " \"" + this->invalid_args + "\"" : "out";
         std::clog
             << format(
                    "[nvi] (arg::INVALID_FLAG_WARNING) The flag \"%s\" with\%s arguments is not recognized. Skipping.",
-                   this->invalid_arg.c_str(), args.c_str())
+                   this->invalid_arg.c_str(),
+                   (this->invalid_args.length() ? " \"" + this->invalid_args + "\"" : "out").c_str())
             << std::endl;
         break;
     }
@@ -157,20 +156,15 @@ void arg_parser::log(unsigned int code) const {
         break;
     }
     case constants::ARG_DEBUG: {
-        std::stringstream files;
-        std::copy(this->files.begin(), this->files.end(), std::ostream_iterator<string>(files, ","));
-
-        std::stringstream envs;
-        std::copy(this->required_envs.begin(), this->required_envs.end(), std::ostream_iterator<string>(envs, ","));
-
-        std::clog << format("[nvi] (arg::DEBUG) The following arguments were set: config=\"%s\", "
+        std::clog << format("[nvi] (arg::DEBUG) The following flags were set: config=\"%s\", "
                             "debug=\"true\", dir=\"%s\", files=\"%s\", required=\"%s\".",
-                            this->config.c_str(), this->dir.c_str(), files.str().c_str(), envs.str().c_str())
+                            this->config.c_str(), this->dir.c_str(), join(this->files, ", ").c_str(),
+                            join(this->required_envs, ", ").c_str())
                   << std::endl;
 
         if (this->config.length() && (this->dir.length() || this->files.size() > 1 || this->required_envs.size())) {
-            std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" argument has been set, then "
-                         "\"dir,\" \"files,\" and \"required\" are ignored."
+            std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" flags has been set, then "
+                         "\"dir,\" \"files,\" and \"required\" flags are ignored."
                       << std::endl;
         }
         std::clog << std::endl;
