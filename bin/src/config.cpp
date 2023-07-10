@@ -11,12 +11,12 @@ using std::string;
 namespace nvi {
 config::config(const string *environment, const string env_dir) : env(environment) {
     this->file_path = string(std::filesystem::current_path() / env_dir / "env.config.json");
-    std::ifstream env_config_file(this->file_path);
-    if (!env_config_file.good()) {
+    if (!std::filesystem::exists(this->file_path)) {
         this->log(constants::CONFIG_FILE_ERROR);
         std::exit(1);
     }
 
+    std::ifstream env_config_file(this->file_path, std::ios_base::in);
     this->parsed_config = nlohmann::json::parse(env_config_file);
     if (!this->parsed_config.count(*this->env)) {
         this->log(constants::CONFIG_FILE_PARSE_ERROR);

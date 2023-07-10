@@ -134,19 +134,21 @@ int parser::print_envs() {
 }
 
 parser *parser::read(const string &env_file_name) {
-    this->file_path = string(std::filesystem::current_path() / this->dir / env_file_name);
     this->file_name = env_file_name;
-    this->env_file = std::ifstream(this->file_path, std::ios_base::in);
-    if (!this->env_file.good()) {
+    this->file_path = string(std::filesystem::current_path() / this->dir / this->file_name);
+    if (!std::filesystem::exists(this->file_path)) {
         this->log(constants::PARSER_FILE_ERROR);
         std::exit(1);
     }
+
+    this->env_file = std::ifstream(this->file_path, std::ios_base::in);
     this->loaded_file = string{std::istreambuf_iterator<char>(this->env_file), std::istreambuf_iterator<char>()};
     this->file_length = this->loaded_file.length();
     if (!this->file_length) {
         this->log(constants::PARSER_EMPTY_ENVS);
         std::exit(1);
     }
+
     this->byte_count = 0;
     this->line_count = 0;
 
