@@ -20,8 +20,6 @@ A custom-built .env file parser!
 
 - Supports loading multiple `.env` files at once
 
-- Supports manually importing `.env` files
-
 - Supports overriding Envs in [`process.env`](https://nodejs.org/docs/latest/api/process.html#process_process_env)
 
 - Supports Env interpolation
