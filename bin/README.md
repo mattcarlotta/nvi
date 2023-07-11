@@ -12,7 +12,7 @@ The following requirements must be present in order to build from source:
 - make v3.8.x+
 - clangd v14.0.x (optional for formatting/linting)
 
-### Build Source and Install Binary
+## Build Source and Install Binary
 ```DOSINI
 git clone git@github.com:mattcarlotta/nvi.git
 
@@ -31,9 +31,9 @@ sudo make install
 The following custom compile flags can be set for `cmake`:
 - `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `bin/src` to a `nvi` binary (default: ON)
 - `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `bin/tests` to a `tests` binary (default: OFF)
-- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: "/usr/local/bin")
+- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 
-The following custom flags represent the default `cmake` settings:
+The following represents the default `cmake` settings:
 ```DOSINI
 cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin .
 ```
@@ -58,7 +58,7 @@ nvi -c bin_test_only
 ## Binary Flags
 All flags below are optional. Short form (`-`) and long form (`--`) flags are supported and can be mixed if desired.
 
-If no flags are assigned, then if present, an `.env` (that is named ".env") located at the root directory will be parsed.
+If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
 
 | flag            | description                                                                                           |
 | --------------- | ----------------------------------------------------------------------------------------------------- |
@@ -77,9 +77,7 @@ If no flags are assigned, then if present, an `.env` (that is named ".env") loca
 ### How do I uninstall the binary?
 If you'd like to remove (uninstall) the binary, simply type:
 ```DOSINI
-which nvi
-# outputs file path: /usr/local/bin/nvi
-sudo rm <file_path>
+sudo rm $(which nvi)
 ```
 
 ### How do I read the debug details?
@@ -94,7 +92,7 @@ To read the debug details, let's examine the following debug message:
 - Which byte within the current line is being processed: `25`
 - Lastly, the debug message: `The key "..." contains an invalid interpolated variable...etc`
 
-In layman's terms, this debug message is stating that a key's value contains an interpolated key "${...}" that doesn't match any parsed keys.
+In layman's terms, this debug message is stating that a key's value contains an interpolated key `"${KEY}"` that doesn't match any parsed keys.
 
 Not all debug logs will have all the details above, but will generally follow the same pattern.
 
@@ -102,28 +100,19 @@ Not all debug logs will have all the details above, but will generally follow th
 
 ⚠️ Please note that some operating systems (like Mac OS) may not have a "/usr/local/bin" directory nor use it as a search `PATH` for binaries.
 
-To fix this, create the directory (you may want to use `/opt/bin` instead):
+To fix this, create the directory (if you're wary of touching `/usr/`, then you may want to use `/opt` or `/opt/bin` instead):
 ```DOSINI
 sudo mkdir -p /usr/local/bin
 ```
 
-Then, edit your which ever your shell profile uses:
+Then, add this directory path to the shell's `PATH` (swap in whichever profile your shell uses, eg. `.bash_profile`, `.bashrc` or `.zsh`):
 ```DOSINI
-vi ~/.bash_profile
-vi ~/.bashrc
-vi ~/.zshrc
+echo 'export PATH="$PATH:/usr/local/bin"' >> ~/.bash_profile
 ```
 
-and add the directory to the `PATH` variable and save:
-```DOSINI
-export PATH=$PATH:/usr/local/bin
-```
-
-Then, source the change:
+Then, source the change for your shell profile:
 ```DOSINI
 source ~/.bash_profile
-source ~/.bashrc
-source ~/.zshrc
 ```
 
 To ensure the binary is found, type the command below and you should see the nvi binary path: 
