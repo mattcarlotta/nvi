@@ -1,1 +1,7 @@
 add_executable(${PROJECT_NAME} main.cpp ${SRC_FILES})
+if(INSTALL_BIN_DIR MATCHES OFF) 
+    set(INSTALL_DIR "/usr/local/bin")
+else()
+    set(INSTALL_DIR ${INSTALL_BIN_DIR})
+endif()
+install(TARGETS ${PROJECT_NAME} DESTINATION ${INSTALL_DIR})

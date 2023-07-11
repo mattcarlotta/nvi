@@ -133,7 +133,7 @@ void arg_parser::log(unsigned int code) const {
                      "│ flag            │ description                                                                                          │\n"
                      "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
                      "│ -c, --config    │ Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)  │\n"
-                     "│ -de, --debug    │ Specifies whether or not to log file parsing details. (ex: --debug)                                  │\n"
+                     "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
                      "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
                      "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
                      "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"

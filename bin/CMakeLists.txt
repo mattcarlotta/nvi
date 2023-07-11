@@ -5,6 +5,7 @@ project(nvi)
 
 option(COMPILE_SRC "Compile source" ON)
 option(COMPILE_TESTS "Compile tests" OFF)
+option(INSTALL_BIN_DIR "Binary installation directory" OFF)
 set(SRC_FOLDER ${CMAKE_SOURCE_DIR}/src)
 file(GLOB SRC_FILES ${SRC_FOLDER}/*.cpp)
 list(REMOVE_ITEM SRC_FILES ${SRC_FOLDER}/main.cpp)
