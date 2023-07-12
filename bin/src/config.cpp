@@ -44,6 +44,28 @@ config::config(const string *environment, const string env_dir) : env(environmen
         this->required_envs = this->env_config.at("required");
     }
 
+    // TODO: Parse string command to vector<char *>
+    // if (this->env_config.count("command")) {
+    // size_t start = 0;
+    // size_t end = input.find('\0');
+
+    // while (end != std::string::npos) {
+    //     token = input.substr(start, end - start);
+    //     char* cstr = new char[token.length() + 1];
+    //     std::strcpy(cstr, token.c_str());
+    //     tokens.push_back(cstr);
+
+    //     start = end + 1;
+    //     end = input.find(delimiter, start);
+    // }
+
+    // token = input.substr(start, end);
+    // char* cstr = new char[token.length() + 1];
+    // std::strcpy(cstr, token.c_str());
+    // tokens.push_back(cstr);
+    //     this->required_envs = this->env_config.at("required");
+    // }
+
     if (this->debug) {
         this->log(constants::CONFIG_DEBUG);
     }

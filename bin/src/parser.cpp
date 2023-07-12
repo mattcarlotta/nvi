@@ -102,7 +102,7 @@ parser *parser::parse() {
     return this;
 }
 
-int parser::print_envs() {
+void parser::check_envs() {
     if (this->required_envs != nullptr && this->required_envs->size()) {
         for (const string key : *this->required_envs) {
             if (!this->env_map.count(key) || !this->env_map.at(key).length()) {
@@ -120,7 +120,26 @@ int parser::print_envs() {
         this->log(constants::PARSER_EMPTY_ENVS);
         std::exit(1);
     }
+}
 
+char **parser::get_envs() {
+    this->env_array = new char *[this->env_map.size() + 1];
+
+    size_t index = 0;
+    for (const auto &[key, value] : this->env_map) {
+        const std::string entry = key + "=" + value;
+        this->env_array[index] = new char[entry.size() + 1];
+        std::strcpy(this->env_array[index], entry.c_str());
+
+        ++index;
+    }
+
+    this->env_array[this->env_map.size()] = nullptr;
+
+    return this->env_array;
+}
+
+void parser::print_envs() {
     const string last_key = std::prev(this->env_map.end())->first;
     std::cout << "{" << std::endl;
     for (auto const &[key, value] : this->env_map) {
@@ -129,8 +148,6 @@ int parser::print_envs() {
                   << ": \"" << value << "\"" << comma << std::endl;
     }
     std::cout << "}" << std::endl;
-
-    return 0;
 }
 
 parser *parser::read(const string &env_file_name) {

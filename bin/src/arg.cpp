@@ -19,6 +19,14 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
             this->debug = true;
         } else if (arg == "-d" || arg == "--dir") {
             this->dir = this->parse_single_arg(constants::ARG_DIR_FLAG_ERROR);
+        } else if (arg == "-e" || arg == "--exec") {
+            this->command = this->parse_multi_arg(constants::ARG_COMMAND_FLAG_ERROR, 2);
+            // TODO: Parse commands directly to vector<char*>
+            this->commands.reserve(command.size() + 1);
+            for (const std::string &arg : this->command) {
+                this->commands.push_back(const_cast<char *>(arg.c_str()));
+            }
+            this->commands.push_back(nullptr);
         } else if (arg == "-f" || arg == "--files") {
             this->files = this->parse_multi_arg(constants::ARG_FILES_FLAG_ERROR);
         } else if (arg == "-h" || arg == "--help") {
@@ -72,7 +80,7 @@ string arg_parser::parse_single_arg(unsigned int code) {
     return arg;
 }
 
-vector<string> arg_parser::parse_multi_arg(unsigned int code) {
+vector<string> arg_parser::parse_multi_arg(unsigned int code, unsigned int expected_arg_length) {
     vector<string> arg;
     ++this->key;
     while (this->key < this->argc) {
@@ -90,7 +98,7 @@ vector<string> arg_parser::parse_multi_arg(unsigned int code) {
         ++this->key;
     }
 
-    if (!arg.size()) {
+    if (!arg.size() || arg.size() < expected_arg_length) {
         this->log(code);
         std::exit(1);
     }
@@ -110,6 +118,12 @@ void arg_parser::log(unsigned int code) const {
     case constants::ARG_DIR_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::DIR_FLAG_ERROR) The \"-d\" or \"--dir\" flag must contain a "
                      "valid directory path. Use flag \"-h\" or \"--help\" for more information."
+                  << std::endl;
+        break;
+    }
+    case constants::ARG_COMMAND_FLAG_ERROR: {
+        std::cerr << "[nvi] (arg::COMMAND_FLAG_ERROR) The \"-e\" or \"--exec\" flag must contain at least "
+                     "2 commands. Use flag \"-h\" or \"--help\" for more information."
                   << std::endl;
         break;
     }
@@ -135,6 +149,7 @@ void arg_parser::log(unsigned int code) const {
                      "│ -c, --config    │ Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)  │\n"
                      "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
                      "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
+                     "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
                      "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
                      "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
                      "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘"

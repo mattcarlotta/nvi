@@ -7,13 +7,14 @@ namespace constants {
 // arg
 constexpr unsigned int ARG_CONFIG_FLAG_ERROR = 0;
 constexpr unsigned int ARG_DIR_FLAG_ERROR = 1;
-constexpr unsigned int ARG_FILES_FLAG_ERROR = 2;
-constexpr unsigned int ARG_REQUIRED_FLAG_ERROR = 3;
-constexpr unsigned int ARG_HELP_DOC = 4;
-constexpr unsigned int ARG_INVALID_FLAG_WARNING = 5;
-constexpr unsigned int ARG_EXCEPTION = 6;
-constexpr unsigned int ARG_DEBUG = 7;
-constexpr unsigned int ARG_NO_PARSEABLE_ENVS = 8;
+constexpr unsigned int ARG_COMMAND_FLAG_ERROR = 2;
+constexpr unsigned int ARG_FILES_FLAG_ERROR = 3;
+constexpr unsigned int ARG_REQUIRED_FLAG_ERROR = 4;
+constexpr unsigned int ARG_HELP_DOC = 5;
+constexpr unsigned int ARG_INVALID_FLAG_WARNING = 6;
+constexpr unsigned int ARG_EXCEPTION = 7;
+constexpr unsigned int ARG_DEBUG = 8;
+constexpr unsigned int ARG_NO_PARSEABLE_ENVS = 9;
 
 // config
 constexpr unsigned int CONFIG_FILE_ERROR = 0;
