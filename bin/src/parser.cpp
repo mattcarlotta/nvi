@@ -46,9 +46,9 @@ parser *parser::parse() {
                     continue;
                 }
 
-                if (current_char == constants::DOUBLE_QUOTE) {
-                    this->value += constants::BACK_SLASH;
-                }
+                // if (current_char == constants::DOUBLE_QUOTE) {
+                //     this->value += constants::BACK_SLASH;
+                // }
 
                 if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
                     const string val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
