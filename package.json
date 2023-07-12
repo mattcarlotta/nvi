@@ -53,7 +53,7 @@
         "build:esm": "rollup -c",
         "lint": "eslint ./ --ext .ts,.js",
         "format": "prettier -w --plugin-search-dir=. ./src ./tests ./utils",
-        "clean": "rimraf bin/**/nvi bin/CMakeFiles bin/**/CMakeFiles bin/CMakeCache.txt bin/**/CMakeCache.txt bin/cmake_install.cmake bin/**/cmake_install.cmake bin/install_manifest.txt bin/**/install_manifest.txt bin/MakeFile bin/**/Makefile *.ts.map config.js index.js parser.js *.d.ts *.mjs",
+        "clean": "rimraf **/nvi bin/tests/tests **/lib **/Testing **/*/Testing **/DartConfiguration.tcl **/CMakeFiles **/*/CMakeFiles **/CMakeCache.txt **/*/CMakeCache.txt **/cmake_install.cmake **/*/cmake_install.cmake **/install_manifest.txt **/*/install_manifest.txt **/MakeFile **/*/Makefile *.ts.map config.js index.js parser.js *.d.ts *.mjs",
         "test": "NODE_ENV=test DISABLE_LOG=true ts-node ./tests/index.ts",
         "test:logs": "NODE_ENV=test DISABLE_LOG=false ts-node ./tests/index.ts",
         "test:bin": "./bin/src/nvi --files bin.env --dir tests/envs | ts-node ./tests/bin.spec.ts",
