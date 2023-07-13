@@ -5,7 +5,6 @@
 #include <iostream>
 #include <optional>
 #include <string>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
@@ -36,7 +35,7 @@ int main(int argc, char *argv[]) {
         pid_t pid = fork();
 
         if (pid == 0) {
-            execvpe(arg.commands[0], &arg.commands[0], parser.get_envs());
+            execve(arg.commands[0], &arg.commands[0], parser.get_envs());
         } else if (pid > 0) {
             int status;
             wait(&status);

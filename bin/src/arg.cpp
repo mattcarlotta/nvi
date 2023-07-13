@@ -20,13 +20,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
         } else if (arg == "-d" || arg == "--dir") {
             this->dir = this->parse_single_arg(constants::ARG_DIR_FLAG_ERROR);
         } else if (arg == "-e" || arg == "--exec") {
-            this->command = this->parse_multi_arg(constants::ARG_COMMAND_FLAG_ERROR, 2);
-            // TODO: Parse commands directly to vector<char*>
-            this->commands.reserve(command.size() + 1);
-            for (const std::string &arg : this->command) {
-                this->commands.push_back(const_cast<char *>(arg.c_str()));
-            }
-            this->commands.push_back(nullptr);
+            this->parse_command_args();
         } else if (arg == "-f" || arg == "--files") {
             this->files = this->parse_multi_arg(constants::ARG_FILES_FLAG_ERROR);
         } else if (arg == "-h" || arg == "--help") {
@@ -106,6 +100,65 @@ vector<string> arg_parser::parse_multi_arg(unsigned int code, unsigned int expec
     return arg;
 }
 
+void arg_parser::parse_command_args() {
+    ++this->key;
+    while (this->key < this->argc) {
+        if (this->argv[this->key] == nullptr) {
+            break;
+        }
+
+        string next_arg = string(this->argv[this->key]);
+        if (next_arg.find("-") != string::npos) {
+            this->key -= 1;
+            break;
+        } else if (!this->commands.size()) {
+            this->bin_name = next_arg;
+            next_arg = this->find_binary_path(next_arg);
+        }
+
+        char *arg_str = new char[next_arg.size() + 1];
+        std::strcpy(arg_str, next_arg.c_str());
+
+        this->commands.push_back(arg_str);
+        ++this->key;
+    }
+
+    if (!this->commands.size() || this->commands.size() < 2) {
+        this->log(constants::ARG_COMMAND_FLAG_ERROR);
+        std::exit(1);
+    }
+
+    this->commands.push_back(nullptr);
+}
+
+string arg_parser::find_binary_path(const string &bin) {
+    FILE *pipe = popen(("which " + bin).c_str(), "r");
+    if (!pipe) {
+        this->log(constants::ARG_COMMAND_WHICH_NOT_FOUND_ERROR);
+        std::exit(1);
+    }
+
+    char buffer[256];
+    string result = "";
+
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        result += buffer;
+    }
+
+    pclose(pipe);
+
+    if (result.empty()) {
+        this->log(constants::ARG_COMMAND_BIN_NOT_FOUND_ERROR);
+        std::exit(1);
+    }
+
+    if (result[result.length() - 1] == constants::LINE_DELIMITER) {
+        result.erase(result.length() - 1);
+    }
+
+    return result;
+}
+
 void arg_parser::log(unsigned int code) const {
     switch (code) {
     case constants::ARG_CONFIG_FLAG_ERROR: {
@@ -183,6 +236,20 @@ void arg_parser::log(unsigned int code) const {
                       << std::endl;
         }
         std::clog << std::endl;
+        break;
+    }
+    case constants::ARG_COMMAND_WHICH_NOT_FOUND_ERROR: {
+        std::cerr << "[nvi] (arg::COMMAND_WHICH_NOT_FOUND_ERROR) Unable to execute \"which\" on the provided first "
+                     "command. Make sure \"which\" is an available command on the system."
+                  << std::endl;
+        break;
+    }
+    case constants::ARG_COMMAND_BIN_NOT_FOUND_ERROR: {
+        std::cerr
+            << format("[nvi] (arg::COMMAND_BIN_NOT_FOUND_ERROR) Unable to locate a binary named \"%s\" on the target "
+                      "system. That binary doesn't appear to be installed.",
+                      this->bin_name.c_str())
+            << std::endl;
         break;
     }
     default:

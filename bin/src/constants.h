@@ -15,6 +15,8 @@ constexpr unsigned int ARG_INVALID_FLAG_WARNING = 6;
 constexpr unsigned int ARG_EXCEPTION = 7;
 constexpr unsigned int ARG_DEBUG = 8;
 constexpr unsigned int ARG_NO_PARSEABLE_ENVS = 9;
+constexpr unsigned int ARG_COMMAND_WHICH_NOT_FOUND_ERROR = 10;
+constexpr unsigned int ARG_COMMAND_BIN_NOT_FOUND_ERROR = 11;
 
 // config
 constexpr unsigned int CONFIG_FILE_ERROR = 0;
