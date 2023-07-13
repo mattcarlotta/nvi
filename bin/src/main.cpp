@@ -35,6 +35,10 @@ int main(int argc, char *argv[]) {
         pid_t pid = fork();
 
         if (pid == 0) {
+            // NOTE: Unfortunately, have to set ENVs to the parent process because
+            // "execvpe" doesn't exist on POSIX and "execle" doesn't allow binaries
+            // that were called to locate other binaries found within shell "PATH"
+            // for example: "npm run dev" won't work because "npm" can't find "node"
             parser.set_envs();
 
             execvp(arg.commands[0], arg.commands.data());
