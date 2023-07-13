@@ -25,13 +25,17 @@ class arg_parser {
     string config;
     bool debug = false;
     vector<char *> commands;
-    string bin_path;
     string dir;
     vector<string> files = vector<string>{".env"};
     vector<string> required_envs;
     string invalid_arg;
     string invalid_args;
     arg_parser(int &argc, char *argv[]);
+    ~arg_parser() {
+        for (char *cstr : this->commands) {
+            delete[] cstr;
+        }
+    }
 };
 } // namespace nvi
 

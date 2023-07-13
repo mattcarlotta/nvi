@@ -1,6 +1,7 @@
 #include "arg.h"
 #include "constants.h"
 #include "format.h"
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -224,10 +225,18 @@ void arg_parser::log(unsigned int code) const {
         break;
     }
     case constants::ARG_DEBUG: {
+        std::vector<std::string> _commands;
+        _commands.reserve(this->commands.size());
+
+        for (const char *cstr : this->commands) {
+            if (cstr != nullptr) {
+                _commands.emplace_back(cstr);
+            }
+        }
         std::clog << format("[nvi] (arg::DEBUG) The following flags were set: config=\"%s\", "
-                            "debug=\"true\", dir=\"%s\", files=\"%s\", required=\"%s\".",
-                            this->config.c_str(), this->dir.c_str(), join(this->files, ", ").c_str(),
-                            join(this->required_envs, ", ").c_str())
+                            "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
+                            this->config.c_str(), this->dir.c_str(), join(_commands, " ").c_str(),
+                            join(this->files, ", ").c_str(), join(this->required_envs, ", ").c_str())
                   << std::endl;
 
         if (this->config.length() && (this->dir.length() || this->files.size() > 1 || this->required_envs.size())) {
