@@ -31,11 +31,6 @@ class arg_parser {
     string invalid_arg;
     string invalid_args;
     arg_parser(int &argc, char *argv[]);
-    ~arg_parser() {
-        for (char *cstr : this->commands) {
-            delete[] cstr;
-        }
-    }
 };
 } // namespace nvi
 
