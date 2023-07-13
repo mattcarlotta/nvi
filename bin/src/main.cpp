@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
     nvi::parser parser(&files, dir, &required_envs, debug);
 
-    parser.parse_envs();
+    parser.parse_envs()->check_envs();
 
     if (arg.commands.size()) {
         pid_t pid = fork();
