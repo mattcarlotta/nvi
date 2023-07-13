@@ -122,21 +122,10 @@ void parser::check_envs() {
     }
 }
 
-char **parser::get_envs() {
-    this->env_array = new char *[this->env_map.size() + 1];
-
-    size_t index = 0;
+void parser::set_envs() {
     for (const auto &[key, value] : this->env_map) {
-        const std::string entry = key + "=" + value;
-        this->env_array[index] = new char[entry.size() + 1];
-        std::strcpy(this->env_array[index], entry.c_str());
-
-        ++index;
+        setenv(key.c_str(), value.c_str(), 0);
     }
-
-    this->env_array[this->env_map.size()] = nullptr;
-
-    return this->env_array;
 }
 
 void parser::print_envs() {

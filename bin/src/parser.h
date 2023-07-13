@@ -32,7 +32,6 @@ class parser {
     string key_prop;
     string value;
     vector<string> undefined_keys;
-    char **env_array = nullptr;
     void log(unsigned int code) const;
     parser *read(const string &env_file_name);
     parser *parse();
@@ -41,17 +40,9 @@ class parser {
     std::map<string, string> env_map;
     parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs = nullptr,
            const bool &debug = false);
-    ~parser() {
-        if (this->env_array != nullptr) {
-            for (size_t i = 0; i < this->env_map.size(); ++i) {
-                delete[] this->env_array[i];
-            }
-            delete[] this->env_array;
-        }
-    }
     void check_envs();
     parser *parse_envs() noexcept;
-    char **get_envs();
+    void set_envs();
     void print_envs();
 };
 }; // namespace nvi

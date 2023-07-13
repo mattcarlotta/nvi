@@ -35,7 +35,9 @@ int main(int argc, char *argv[]) {
         pid_t pid = fork();
 
         if (pid == 0) {
-            execve(arg.commands[0], &arg.commands[0], parser.get_envs());
+            parser.set_envs();
+
+            execvp(arg.commands[0], arg.commands.data());
         } else if (pid > 0) {
             int status;
             wait(&status);

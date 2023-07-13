@@ -114,7 +114,7 @@ void arg_parser::parse_command_args() {
             break;
         } else if (!this->commands.size()) {
             this->bin_name = next_arg;
-            next_arg = this->find_binary_path(next_arg);
+            // next_arg = this->find_binary_path(next_arg);
         }
 
         char *arg_str = new char[next_arg.size() + 1];
@@ -132,33 +132,33 @@ void arg_parser::parse_command_args() {
     this->commands.push_back(nullptr);
 }
 
-string arg_parser::find_binary_path(const string &bin) {
-    FILE *pipe = popen(("which " + bin).c_str(), "r");
-    if (!pipe) {
-        this->log(constants::ARG_COMMAND_WHICH_NOT_FOUND_ERROR);
-        std::exit(1);
-    }
+// string arg_parser::find_binary_path(const string &bin) {
+//     FILE *pipe = popen(("which " + bin).c_str(), "r");
+//     if (!pipe) {
+//         this->log(constants::ARG_COMMAND_WHICH_NOT_FOUND_ERROR);
+//         std::exit(1);
+//     }
 
-    char buffer[256];
-    string result = "";
+//     char buffer[256];
+//     string result = "";
 
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        result += buffer;
-    }
+//     while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+//         result += buffer;
+//     }
 
-    pclose(pipe);
+//     pclose(pipe);
 
-    if (result.empty()) {
-        this->log(constants::ARG_COMMAND_BIN_NOT_FOUND_ERROR);
-        std::exit(1);
-    }
+//     if (result.empty()) {
+//         this->log(constants::ARG_COMMAND_BIN_NOT_FOUND_ERROR);
+//         std::exit(1);
+//     }
 
-    if (result[result.length() - 1] == constants::LINE_DELIMITER) {
-        result.erase(result.length() - 1);
-    }
+//     if (result[result.length() - 1] == constants::LINE_DELIMITER) {
+//         result.erase(result.length() - 1);
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
 void arg_parser::log(unsigned int code) const {
     switch (code) {
