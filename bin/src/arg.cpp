@@ -75,7 +75,7 @@ string arg_parser::parse_single_arg(unsigned int code) {
     return arg;
 }
 
-vector<string> arg_parser::parse_multi_arg(unsigned int code, unsigned int expected_arg_length) {
+vector<string> arg_parser::parse_multi_arg(unsigned int code) {
     vector<string> arg;
     ++this->key;
     while (this->key < this->argc) {
@@ -93,7 +93,7 @@ vector<string> arg_parser::parse_multi_arg(unsigned int code, unsigned int expec
         ++this->key;
     }
 
-    if (!arg.size() || arg.size() < expected_arg_length) {
+    if (!arg.size()) {
         this->log(code);
         std::exit(1);
     }
