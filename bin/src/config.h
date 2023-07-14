@@ -23,15 +23,9 @@ class config {
     string dir;
     vector<string> files;
     vector<string> required_envs = vector<string>();
+    string command;
     vector<char *> commands;
     config(const string *environment, const string env_dir = "");
-    ~config() {
-        // if (this->commands.size()) {
-        for (char *cstr : this->commands) {
-            delete[] cstr;
-        }
-        // }
-    }
 };
 }; // namespace nvi
 

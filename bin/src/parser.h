@@ -23,10 +23,10 @@ class parser {
     string loaded_file;
     string file_name;
     string file_path;
-    unsigned int file_length;
-    unsigned int byte_count;
-    unsigned int line_count;
-    unsigned int val_byte_count;
+    size_t file_length;
+    size_t byte_count;
+    size_t line_count;
+    size_t val_byte_count;
     int assignment_index;
     string key;
     string key_prop;

@@ -24,6 +24,7 @@ class arg_parser {
     public:
     string config;
     bool debug = false;
+    string command;
     vector<char *> commands;
     string dir;
     vector<string> files = vector<string>{".env"};

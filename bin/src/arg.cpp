@@ -114,51 +114,23 @@ void arg_parser::parse_command_args() {
             break;
         } else if (!this->commands.size()) {
             this->bin_name = next_arg;
-            // next_arg = this->find_binary_path(next_arg);
         }
 
         char *arg_str = new char[next_arg.size() + 1];
         std::strcpy(arg_str, next_arg.c_str());
 
+        this->command += this->command.size() > 0 ? " " + next_arg : next_arg;
         this->commands.push_back(arg_str);
         ++this->key;
     }
 
-    if (!this->commands.size() || this->commands.size() < 2) {
+    if (!this->commands.size()) {
         this->log(constants::ARG_COMMAND_FLAG_ERROR);
         std::exit(1);
     }
 
     this->commands.push_back(nullptr);
 }
-
-// string arg_parser::find_binary_path(const string &bin) {
-//     FILE *pipe = popen(("which " + bin).c_str(), "r");
-//     if (!pipe) {
-//         this->log(constants::ARG_COMMAND_WHICH_NOT_FOUND_ERROR);
-//         std::exit(1);
-//     }
-
-//     char buffer[256];
-//     string result = "";
-
-//     while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-//         result += buffer;
-//     }
-
-//     pclose(pipe);
-
-//     if (result.empty()) {
-//         this->log(constants::ARG_COMMAND_BIN_NOT_FOUND_ERROR);
-//         std::exit(1);
-//     }
-
-//     if (result[result.length() - 1] == constants::LINE_DELIMITER) {
-//         result.erase(result.length() - 1);
-//     }
-
-//     return result;
-// }
 
 void arg_parser::log(unsigned int code) const {
     switch (code) {
@@ -177,7 +149,7 @@ void arg_parser::log(unsigned int code) const {
     }
     case constants::ARG_COMMAND_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::COMMAND_FLAG_ERROR) The \"-e\" or \"--exec\" flag must contain at least "
-                     "2 commands. Use flag \"-h\" or \"--help\" for more information."
+                     "1 command. Use flag \"-h\" or \"--help\" for more information."
                   << std::endl;
         break;
     }
@@ -225,40 +197,19 @@ void arg_parser::log(unsigned int code) const {
         break;
     }
     case constants::ARG_DEBUG: {
-        std::vector<std::string> _commands;
-        _commands.reserve(this->commands.size());
-
-        for (const char *cstr : this->commands) {
-            if (cstr != nullptr) {
-                _commands.emplace_back(cstr);
-            }
-        }
         std::clog << format("[nvi] (arg::DEBUG) The following flags were set: config=\"%s\", "
                             "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
-                            this->config.c_str(), this->dir.c_str(), join(_commands, " ").c_str(),
+                            this->config.c_str(), this->dir.c_str(), this->command.c_str(),
                             join(this->files, ", ").c_str(), join(this->required_envs, ", ").c_str())
                   << std::endl;
 
-        if (this->config.length() && (this->dir.length() || this->files.size() > 1 || this->required_envs.size())) {
-            std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" flags has been set, then "
-                         "\"dir,\" \"files,\" and \"required\" flags are ignored."
+        if (this->config.length() &&
+            (this->dir.length() || this->commands.size() || this->files.size() > 1 || this->required_envs.size())) {
+            std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" flag has been set, then "
+                         "\"dir\", \"exec\", \"files\", and \"required\" flags are ignored."
                       << std::endl;
         }
         std::clog << std::endl;
-        break;
-    }
-    case constants::ARG_COMMAND_WHICH_NOT_FOUND_ERROR: {
-        std::cerr << "[nvi] (arg::COMMAND_WHICH_NOT_FOUND_ERROR) Unable to execute \"which\" on the provided first "
-                     "command. Make sure \"which\" is an available command on the system."
-                  << std::endl;
-        break;
-    }
-    case constants::ARG_COMMAND_BIN_NOT_FOUND_ERROR: {
-        std::cerr
-            << format("[nvi] (arg::COMMAND_BIN_NOT_FOUND_ERROR) Unable to locate a binary named \"%s\" on the target "
-                      "system. That binary doesn't appear to be installed.",
-                      this->bin_name.c_str())
-            << std::endl;
         break;
     }
     default:
