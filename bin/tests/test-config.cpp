@@ -14,6 +14,8 @@ TEST(parse_config_file, debug) { EXPECT_EQ(config.debug, true); }
 
 TEST(parse_config_file, directory) { EXPECT_EQ(config.dir, "custom/directory"); }
 
+TEST(parse_config_file, execute) { EXPECT_EQ(config.commands.size(), 3); }
+
 TEST(parse_config_file, files) {
     const vector<string> files = {"test1.env", "test2.env", "test3.env"};
     EXPECT_EQ(config.files, files);

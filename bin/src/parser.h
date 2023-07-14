@@ -23,10 +23,10 @@ class parser {
     string loaded_file;
     string file_name;
     string file_path;
-    unsigned int file_length;
-    unsigned int byte_count;
-    unsigned int line_count;
-    unsigned int val_byte_count;
+    size_t file_length;
+    size_t byte_count;
+    size_t line_count;
+    size_t val_byte_count;
     int assignment_index;
     string key;
     string key_prop;
@@ -40,8 +40,10 @@ class parser {
     std::map<string, string> env_map;
     parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs = nullptr,
            const bool &debug = false);
+    void check_envs();
     parser *parse_envs() noexcept;
-    int print_envs();
+    void set_envs();
+    void print_envs();
 };
 }; // namespace nvi
 

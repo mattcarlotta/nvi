@@ -2,8 +2,10 @@
 #include "constants.h"
 #include "format.h"
 #include "json.cpp"
+#include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 using std::string;
@@ -44,6 +46,20 @@ config::config(const string *environment, const string env_dir) : env(environmen
         this->required_envs = this->env_config.at("required");
     }
 
+    if (this->env_config.count("execute")) {
+        this->command = this->env_config.at("execute");
+        std::istringstream command_iss(this->command);
+        std::string arg;
+
+        while (command_iss >> arg) {
+            char *arg_cstr = new char[arg.length() + 1];
+            std::strcpy(arg_cstr, arg.c_str());
+            this->commands.push_back(arg_cstr);
+        }
+
+        this->commands.push_back(nullptr);
+    }
+
     if (this->debug) {
         this->log(constants::CONFIG_DEBUG);
     }
@@ -74,15 +90,15 @@ void config::log(unsigned int code) const {
             keys += el.key() + comma;
         }
 
-        std::clog
-            << format("[nvi] (config::DEBUG) Parsed the following keys \"%s\" from the env.config.json configuration "
-                      "file and selected the \"%s\" configuration.",
-                      keys.c_str(), &*this->env->c_str())
-            << std::endl;
+        std::clog << format("[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration "
+                            "file: \"%s\" and selected the \"%s\" configuration.",
+                            keys.c_str(), &*this->env->c_str())
+                  << std::endl;
 
         std::clog << format("[nvi] (config::DEBUG) The following flags were set: "
-                            "debug=\"true\", dir=\"%s\", files=\"%s\", required=\"%s\".\n",
-                            this->dir.c_str(), join(this->files, ", ").c_str(), join(this->required_envs, ", ").c_str())
+                            "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".\n",
+                            this->dir.c_str(), this->command.c_str(), join(this->files, ", ").c_str(),
+                            join(this->required_envs, ", ").c_str())
                   << std::endl;
         break;
     }

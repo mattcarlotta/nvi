@@ -46,10 +46,6 @@ parser *parser::parse() {
                     continue;
                 }
 
-                if (current_char == constants::DOUBLE_QUOTE) {
-                    this->value += constants::BACK_SLASH;
-                }
-
                 if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
                     const string val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
 
@@ -102,7 +98,7 @@ parser *parser::parse() {
     return this;
 }
 
-int parser::print_envs() {
+void parser::check_envs() {
     if (this->required_envs != nullptr && this->required_envs->size()) {
         for (const string key : *this->required_envs) {
             if (!this->env_map.count(key) || !this->env_map.at(key).length()) {
@@ -120,17 +116,33 @@ int parser::print_envs() {
         this->log(constants::PARSER_EMPTY_ENVS);
         std::exit(1);
     }
+}
 
+void parser::set_envs() {
+    for (const auto &[key, value] : this->env_map) {
+        setenv(key.c_str(), value.c_str(), 0);
+    }
+}
+
+void parser::print_envs() {
     const string last_key = std::prev(this->env_map.end())->first;
     std::cout << "{" << std::endl;
     for (auto const &[key, value] : this->env_map) {
+        string esc_value;
+        size_t i = 0;
+        while (i < value.size()) {
+            char current_char = value[i];
+            if (current_char == constants::DOUBLE_QUOTE) {
+                esc_value += constants::BACK_SLASH;
+            }
+            esc_value += current_char;
+            ++i;
+        }
         const string comma = key != last_key ? "," : "";
         std::cout << std::setw(4) << "\"" << key << "\""
-                  << ": \"" << value << "\"" << comma << std::endl;
+                  << ": \"" << esc_value << "\"" << comma << std::endl;
     }
     std::cout << "}" << std::endl;
-
-    return 0;
 }
 
 parser *parser::read(const string &env_file_name) {

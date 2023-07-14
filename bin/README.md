@@ -45,15 +45,6 @@ Navigate to a project that contains one or many `.env` files, then type:
 nvi <flag> <arg>
 ```
 
-Example of parsing an `example.env` file from a custom directory with debug logging:
-```DOSINI
-nvi --files example.env --dir dist/client --debug
-```
-
-Example parsing one or many `.env` files from a [env.config.json](https://github.com/mattcarlotta/nvi/blob/main/env.config.json#L6-L11) configuration file located at a project's root directory:
-```DOSINI
-nvi -c bin_test_only
-```
 
 ## Binary Flags
 All flags below are optional. Short form (`-`) and long form (`--`) flags are supported and can be mixed if desired.
@@ -65,11 +56,29 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 | -c, --config    | Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)‡  |
 | -de, --debug    | Specifies whether or not to log debug details. (ex: --debug)                                          |
 | -d, --dir       | Specifies which directory the env file is located within. (ex: --dir path/to/env)                     |
+| -e, --exec      | Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)     |
 | -f, --files     | Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            |
 | -r, --required  | Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                |
 | -h, --help      | Displays this help information.                                                                       |
 
-‡ When a "-c" or "--config" flag is present, then "debug", "dir", "files", and "required" flags are ignored as they should be defined within the "env.config.json" file.
+‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within the "env.config.json" file.
+
+### Examples
+
+Example of parsing an `example.env` file from a custom directory with debug logging:
+```DOSINI
+nvi --files example.env --dir dist/client --debug
+```
+
+Example parsing one or many `.env` files from a [env.config.json](https://github.com/mattcarlotta/nvi/blob/main/env.config.json#L6-L11) configuration file located at a project's root directory:
+```DOSINI
+nvi --config bin_test_only
+```
+
+Example parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
+```DOSINI
+nvi --files .env --exec npm run dev --required KEY1 KEY2
+```
 
 
 ## FAQS

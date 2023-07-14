@@ -1,7 +1,7 @@
 {
     "name": "nvi",
     "version": "0.0.1",
-    "description": "Reading and assigning ENVs made blazingly fast.",
+    "description": "Reading and assigning ENVs to a process made blazingly fast.",
     "author": "Matt Carlotta",
     "license": "GPL 3.0",
     "main": "index.js",
@@ -57,7 +57,9 @@
         "test": "NODE_ENV=test DISABLE_LOG=true ts-node ./tests/index.ts",
         "test:logs": "NODE_ENV=test DISABLE_LOG=false ts-node ./tests/index.ts",
         "test:bin": "./bin/src/nvi --files bin.env --dir tests/envs | ts-node ./tests/bin.spec.ts",
-        "test:bin:config": "./bin/src/nvi --config bin | ts-node ./tests/bin.spec.ts"
+        "test:bin:config": "./bin/src/nvi --config bin | ts-node ./tests/bin.spec.ts",
+        "test:bin:config:exec": "./bin/src/nvi --config exec",
+        "test:bin:exec": "./bin/src/nvi --dir tests/envs --exec node ./tests/exec.spec.mjs"
     },
     "keywords": [
         "env",
