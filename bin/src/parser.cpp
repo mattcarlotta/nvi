@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "format.h"
 #include "json.cpp"
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -19,12 +20,15 @@ parser *parser::parse() {
     while (this->byte_count < this->file_length) {
         const string line = this->loaded_file.substr(this->byte_count, this->file_length);
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
+
+        // skip lines that begin with comments
         if (line[0] == constants::COMMENT || line[0] == constants::LINE_DELIMITER) {
             ++this->line_count;
             this->byte_count += line_delimiter_index + 1;
             continue;
         }
 
+        // split key from value by assignment "="
         this->assignment_index = line.find(constants::ASSIGN_OP);
         if (line_delimiter_index >= 0 && this->assignment_index >= 0) {
             this->key = line.substr(0, this->assignment_index);
@@ -36,25 +40,31 @@ parser *parser::parse() {
                 const char current_char = line_slice[this->val_byte_count];
                 const char next_char = line_slice[this->val_byte_count + 1];
 
+                // stop parsing if there's a new line character
                 if (current_char == constants::LINE_DELIMITER) {
                     break;
                 }
 
+                // skip parsing multi-line "\\n" characters
                 if (current_char == constants::BACK_SLASH && next_char == constants::LINE_DELIMITER) {
                     ++this->line_count;
                     this->val_byte_count += 2;
                     continue;
                 }
 
+                // parse an interpolated key into a value
                 if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
                     const string val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
 
                     const int interp_close_index = val_slice_str.find(constants::CLOSE_BRACE);
                     if (interp_close_index >= 0) {
                         this->key_prop = val_slice_str.substr(2, interp_close_index - 2);
+                        const char *val_from_proc = std::getenv(this->key_prop.c_str());
 
                         string interpolated_value = "";
-                        if (this->env_map.count(this->key_prop)) {
+                        if (val_from_proc != nullptr && *val_from_proc != constants::NULL_TERMINATOR) {
+                            interpolated_value = val_from_proc;
+                        } else if (this->env_map.count(this->key_prop)) {
                             interpolated_value = this->env_map.at(this->key_prop);
                         } else if (this->debug) {
                             this->log(constants::PARSER_INTERPOLATION_WARNING);
@@ -62,8 +72,10 @@ parser *parser::parse() {
 
                         this->value += interpolated_value;
 
+                        // factor in the interpolated key length with the "$", "{" and "}" character bytes
                         this->val_byte_count += this->key_prop.length() + 3;
 
+                        // continue the loop because the next character in the value may be another interpolated value
                         continue;
                     } else {
                         this->log(constants::PARSER_INTERPOLATION_ERROR);

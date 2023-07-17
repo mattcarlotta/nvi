@@ -24,7 +24,7 @@ class parse_env_file : public testing::Test {
 
 std::map<string, string> parse_env_file::env_map;
 
-TEST_F(parse_env_file, consistent_parse_size) { EXPECT_EQ(env_map.size(), 27); }
+TEST_F(parse_env_file, consistent_parse_size) { EXPECT_EQ(env_map.size(), 28); }
 
 TEST_F(parse_env_file, basic_env) { EXPECT_EQ(env_map.at("BASIC_ENV"), "true"); }
 
@@ -45,6 +45,8 @@ TEST_F(parse_env_file, spaces_values) { EXPECT_EQ(env_map.at("JUST_SPACES"), "  
 TEST_F(parse_env_file, sentence_values) {
     EXPECT_EQ(env_map.at("SENTENCE"), "chat gippity is just a junior engineer that copies/pastes from StackOverflow");
 }
+
+TEST_F(parse_env_file, interp_env_from_process) { EXPECT_EQ(env_map.at("INTERP_ENV_FROM_PROCESS").length() > 0, true); }
 
 TEST_F(parse_env_file, empty_interp_key_values) { EXPECT_EQ(env_map.at("EMPTY_INTRP_KEY"), "abc123"); }
 

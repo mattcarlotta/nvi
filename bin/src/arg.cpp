@@ -192,10 +192,6 @@ void arg_parser::log(unsigned int code) const {
             << std::endl;
         break;
     }
-    case constants::ARG_EXCEPTION: {
-        std::cerr << "[nvi] (arg::EXCEPTION) Failed to parse arguments. See below for more information." << std::endl;
-        break;
-    }
     case constants::ARG_DEBUG: {
         std::clog << format("[nvi] (arg::DEBUG) The following flags were set: config=\"%s\", "
                             "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",

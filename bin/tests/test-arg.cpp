@@ -3,10 +3,11 @@
 #include <string>
 #include <vector>
 
-char *argv[] = {(char *)"",         (char *)"--config",  (char *)"test",       (char *)"--debug", (char *)"--exec",
-                (char *)"bin",      (char *)"test",      (char *)"--dir",      (char *)"tests",   (char *)"--files",
-                (char *)"test.env", (char *)"test2.env", (char *)"--required", (char *)"KEY1",    (char *)"KEY2"};
-int argc = 15;
+char *argv[] = {(char *)"",           (char *)"--config", (char *)"test",     (char *)"--debug",
+                (char *)"--exec",     (char *)"bin",      (char *)"test",     (char *)"--dir",
+                (char *)"tests",      (char *)"--files",  (char *)"test.env", (char *)"test2.env",
+                (char *)"--required", (char *)"KEY1",     (char *)"KEY2",     NULL};
+int argc = 16;
 
 nvi::arg_parser arg(argc, argv);
 
