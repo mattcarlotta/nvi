@@ -10,17 +10,6 @@ using std::vector;
 
 namespace nvi {
 class arg_parser {
-    private:
-    size_t key;
-    int argc;
-    string bin_name;
-    char **argv;
-    void log(unsigned int code) const;
-    string parse_single_arg(unsigned int code);
-    vector<string> parse_multi_arg(unsigned int code);
-    void parse_command_args();
-    string find_binary_path(const string &bin);
-
     public:
     string config;
     bool debug = false;
@@ -32,6 +21,19 @@ class arg_parser {
     string invalid_arg;
     string invalid_args;
     arg_parser(int &argc, char *argv[]);
+
+    private:
+    void log(unsigned int code) const;
+    string parse_single_arg(unsigned int code);
+    vector<string> parse_multi_arg(unsigned int code);
+    void parse_command_args();
+    string find_binary_path(const string &bin);
+
+    private:
+    size_t key;
+    int argc;
+    string bin_name;
+    char **argv;
 };
 } // namespace nvi
 

@@ -162,7 +162,12 @@ parser *parser::read(const string &env_file_name) {
     }
 
     this->byte_count = 0;
+    this->val_byte_count = 0;
     this->line_count = 0;
+    this->assignment_index = -1;
+    this->key = "";
+    this->key_prop = "";
+    this->value = "";
 
     return this;
 }

@@ -7,6 +7,7 @@ esm
 *.js
 *.d.ts
 *.mjs
+!tests/*.mjs
 *.map
 !rollup.config.js
 !prettier.config.js

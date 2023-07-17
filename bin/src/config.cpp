@@ -49,7 +49,7 @@ config::config(const string *environment, const string env_dir) : env(environmen
     if (this->env_config.count("execute")) {
         this->command = this->env_config.at("execute");
         std::istringstream command_iss(this->command);
-        std::string arg;
+        string arg;
 
         while (command_iss >> arg) {
             char *arg_cstr = new char[arg.length() + 1];

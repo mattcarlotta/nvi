@@ -14,6 +14,20 @@ using std::vector;
 
 namespace nvi {
 class parser {
+    public:
+    std::map<string, string> env_map;
+    parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs = nullptr,
+           const bool &debug = false);
+    void check_envs();
+    parser *parse_envs() noexcept;
+    void set_envs();
+    void print_envs();
+
+    private:
+    void log(unsigned int code) const;
+    parser *read(const string &env_file_name);
+    parser *parse();
+
     private:
     const vector<string> *files;
     string dir;
@@ -32,18 +46,6 @@ class parser {
     string key_prop;
     string value;
     vector<string> undefined_keys;
-    void log(unsigned int code) const;
-    parser *read(const string &env_file_name);
-    parser *parse();
-
-    public:
-    std::map<string, string> env_map;
-    parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs = nullptr,
-           const bool &debug = false);
-    void check_envs();
-    parser *parse_envs() noexcept;
-    void set_envs();
-    void print_envs();
 };
 }; // namespace nvi
 

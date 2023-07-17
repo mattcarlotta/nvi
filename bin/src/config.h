@@ -11,13 +11,6 @@ using std::vector;
 
 namespace nvi {
 class config {
-    private:
-    const string *env;
-    string file_path;
-    nlohmann::json parsed_config;
-    nlohmann::json::object_t env_config;
-    void log(unsigned int code) const;
-
     public:
     bool debug = false;
     string dir;
@@ -26,6 +19,15 @@ class config {
     string command;
     vector<char *> commands;
     config(const string *environment, const string env_dir = "");
+
+    private:
+    void log(unsigned int code) const;
+
+    private:
+    const string *env;
+    string file_path;
+    nlohmann::json parsed_config;
+    nlohmann::json::object_t env_config;
 };
 }; // namespace nvi
 
