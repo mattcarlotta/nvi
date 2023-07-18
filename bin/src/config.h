@@ -42,7 +42,7 @@ class config {
     /**
      * Logs error/warning/debug config details.
      */
-    void log(unsigned int code) const;
+    void log(unsigned int code) const noexcept;
 
     private:
     const string *env;

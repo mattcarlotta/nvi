@@ -6,6 +6,9 @@
 #include <filesystem>
 #include <iostream>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using std::string;
 using std::vector;
@@ -18,7 +21,7 @@ parser::parser(const vector<string> *files, const std::optional<string> &dir, co
 
 parser *parser::parse() {
     while (this->byte_count < this->file_length) {
-        const string line = this->loaded_file.substr(this->byte_count, this->file_length);
+        const std::string_view line = this->loaded_file.substr(this->byte_count, this->file_length);
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
 
         // skip lines that begin with comments
@@ -33,7 +36,7 @@ parser *parser::parse() {
         if (line_delimiter_index >= 0 && this->assignment_index >= 0) {
             this->key = line.substr(0, this->assignment_index);
 
-            const string line_slice = line.substr(this->assignment_index + 1, line.length());
+            const std::string_view line_slice = line.substr(this->assignment_index + 1, line.length());
             this->val_byte_count = 0;
             this->value = "";
             while (this->val_byte_count < line_slice.length()) {
@@ -45,22 +48,23 @@ parser *parser::parse() {
                     break;
                 }
 
-                // skip parsing multi-line "\\n" characters
+                // skip parsing escaped multi-line characters
                 if (current_char == constants::BACK_SLASH && next_char == constants::LINE_DELIMITER) {
                     ++this->line_count;
                     this->val_byte_count += 2;
                     continue;
                 }
 
-                // parse an interpolated key into a value
+                // try interpolating key into a value
                 if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
-                    const string val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
+                    const std::string_view val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
 
                     const int interp_close_index = val_slice_str.find(constants::CLOSE_BRACE);
                     if (interp_close_index >= 0) {
                         this->key_prop = val_slice_str.substr(2, interp_close_index - 2);
                         const char *val_from_proc = std::getenv(this->key_prop.c_str());
 
+                        // interpolate the value from env first, otherwise fallback to the env_map
                         string interpolated_value = "";
                         if (val_from_proc != nullptr && *val_from_proc != constants::NULL_TERMINATOR) {
                             interpolated_value = val_from_proc;
@@ -159,6 +163,14 @@ void parser::print_envs() {
 
 parser *parser::read(const string &env_file_name) {
     this->file_name = env_file_name;
+    this->byte_count = 0;
+    this->val_byte_count = 0;
+    this->line_count = 0;
+    this->assignment_index = -1;
+    this->key.clear();
+    this->key_prop.clear();
+    this->value.clear();
+
     this->file_path = string(std::filesystem::current_path() / this->dir / this->file_name);
     if (!std::filesystem::exists(this->file_path)) {
         this->log(constants::PARSER_FILE_ERROR);
@@ -173,14 +185,6 @@ parser *parser::read(const string &env_file_name) {
         std::exit(1);
     }
 
-    this->byte_count = 0;
-    this->val_byte_count = 0;
-    this->line_count = 0;
-    this->assignment_index = -1;
-    this->key = "";
-    this->key_prop = "";
-    this->value = "";
-
     return this;
 }
 
@@ -192,7 +196,7 @@ parser *parser::parse_envs() noexcept {
     return this;
 }
 
-void parser::log(unsigned int code) const {
+void parser::log(unsigned int code) const noexcept {
     switch (code) {
     case constants::PARSER_INTERPOLATION_WARNING: {
         std::clog << format("[nvi] (parser::INTERPOLATION_WARNING::%s:%d:%d) The key \"%s\" contains an invalid "

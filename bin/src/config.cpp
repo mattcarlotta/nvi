@@ -65,7 +65,7 @@ config::config(const string *environment, const string env_dir) : env(environmen
     }
 };
 
-void config::log(unsigned int code) const {
+void config::log(unsigned int code) const noexcept {
     switch (code) {
     case constants::CONFIG_FILE_ERROR: {
         std::cerr << format("[nvi] (config::FILE_ERROR) Unable to locate \"%s\". The configuration file doesn't appear "

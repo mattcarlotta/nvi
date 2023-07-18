@@ -7,6 +7,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using std::string;
@@ -60,7 +61,7 @@ class parser {
     /**
      * Logs error/warning/debug parser details.
      */
-    void log(unsigned int code) const;
+    void log(unsigned int code) const noexcept;
     /**
      * Reads an .env file and/or resets the loaded file.
      *
@@ -83,7 +84,7 @@ class parser {
     bool debug;
     const vector<string> *required_envs;
     std::ifstream env_file;
-    string loaded_file;
+    std::string_view loaded_file;
     string file_name;
     string file_path;
     size_t file_length;

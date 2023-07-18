@@ -11,9 +11,9 @@ using std::vector;
 
 namespace nvi {
 arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
-    this->key = 1;
-    while (this->key < this->argc) {
-        const string arg = string(this->argv[this->key]);
+    this->index = 1;
+    while (this->index < this->argc) {
+        const string arg = string(this->argv[this->index]);
         if (arg == "-c" || arg == "--config") {
             this->config = this->parse_single_arg(constants::ARG_CONFIG_FLAG_ERROR);
         } else if (arg == "-de" || arg == "--debug") {
@@ -30,18 +30,18 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
         } else if (arg == "-r" || arg == "--required") {
             this->required_envs = this->parse_multi_arg(constants::ARG_REQUIRED_FLAG_ERROR);
         } else {
-            this->invalid_arg = string(this->argv[this->key]);
+            this->invalid_arg = string(this->argv[this->index]);
             this->invalid_args = "";
-            while (this->key < this->argc) {
-                ++this->key;
+            while (this->index < this->argc) {
+                ++this->index;
 
-                if (this->argv[this->key] == nullptr) {
+                if (this->argv[this->index] == nullptr) {
                     break;
                 }
 
-                const string arg = string(this->argv[this->key]);
+                const string arg = string(this->argv[this->index]);
                 if (arg.find("-") != string::npos) {
-                    this->key -= 1;
+                    this->index -= 1;
                     break;
                 }
 
@@ -51,7 +51,7 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
             this->log(constants::ARG_INVALID_FLAG_WARNING);
         }
 
-        ++this->key;
+        ++this->index;
     }
 
     if (this->debug) {
@@ -60,13 +60,13 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
 };
 
 string arg_parser::parse_single_arg(unsigned int code) {
-    ++this->key;
-    if (this->argv[this->key] == nullptr) {
+    ++this->index;
+    if (this->argv[this->index] == nullptr) {
         this->log(code);
         std::exit(1);
     }
 
-    const string arg = string(this->argv[this->key]);
+    const string arg = string(this->argv[this->index]);
     if (arg.find("-") != string::npos) {
         this->log(code);
         std::exit(1);
@@ -77,20 +77,20 @@ string arg_parser::parse_single_arg(unsigned int code) {
 
 vector<string> arg_parser::parse_multi_arg(unsigned int code) {
     vector<string> arg;
-    ++this->key;
-    while (this->key < this->argc) {
-        if (this->argv[this->key] == nullptr) {
+    ++this->index;
+    while (this->index < this->argc) {
+        if (this->argv[this->index] == nullptr) {
             break;
         }
 
-        const string next_arg = string(this->argv[this->key]);
+        const string next_arg = string(this->argv[this->index]);
         if (next_arg.find("-") != string::npos) {
-            this->key -= 1;
+            this->index -= 1;
             break;
         }
 
         arg.push_back(next_arg);
-        ++this->key;
+        ++this->index;
     }
 
     if (!arg.size()) {
@@ -102,15 +102,15 @@ vector<string> arg_parser::parse_multi_arg(unsigned int code) {
 }
 
 void arg_parser::parse_command_args() {
-    ++this->key;
-    while (this->key < this->argc) {
-        if (this->argv[this->key] == nullptr) {
+    ++this->index;
+    while (this->index < this->argc) {
+        if (this->argv[this->index] == nullptr) {
             break;
         }
 
-        string next_arg = string(this->argv[this->key]);
+        string next_arg = string(this->argv[this->index]);
         if (next_arg.find("-") != string::npos) {
-            this->key -= 1;
+            this->index -= 1;
             break;
         } else if (!this->commands.size()) {
             this->bin_name = next_arg;
@@ -121,7 +121,7 @@ void arg_parser::parse_command_args() {
 
         this->command += this->command.size() > 0 ? " " + next_arg : next_arg;
         this->commands.push_back(arg_str);
-        ++this->key;
+        ++this->index;
     }
 
     if (!this->commands.size()) {
@@ -132,7 +132,7 @@ void arg_parser::parse_command_args() {
     this->commands.push_back(nullptr);
 }
 
-void arg_parser::log(unsigned int code) const {
+void arg_parser::log(unsigned int code) const noexcept {
     switch (code) {
     case constants::ARG_CONFIG_FLAG_ERROR: {
         std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "

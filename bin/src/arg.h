@@ -46,7 +46,7 @@ class arg_parser {
     /**
      * Logs error/warning/debug arg_parser details.
      */
-    void log(unsigned int code) const;
+    void log(unsigned int code) const noexcept;
     /**
      * Parses flags that expect single arguments.
      *
@@ -69,7 +69,7 @@ class arg_parser {
     void parse_command_args();
 
     private:
-    size_t key;
+    size_t index;
     int argc;
     string bin_name;
     char **argv;
