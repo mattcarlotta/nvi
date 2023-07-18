@@ -80,7 +80,6 @@ Example parsing an `.env` file, checking the parsed ENVs for required keys, and 
 nvi --files .env --exec npm run dev --required KEY1 KEY2
 ```
 
-
 ## FAQS
 
 ### How do I uninstall the binary?
@@ -89,10 +88,23 @@ If you'd like to remove (uninstall) the binary, simply type:
 sudo rm $(which nvi)
 ```
 
+### What are rules for defining or interpolating keys?
+There are really only 2 simple rules that must be followed:
+- keys can only reference other keys if they're already defined in the process or they've already been parsed (this means you can cross-reference keys in other .env files, but they must have already been parsed in order to be referenced).
+- multi-line keys must end with `\↵` (a back-slash followed by a new line or carriage return). To end a multi-line key, just use a new line without a back-slash.
+
+Other things to note:
+- Keys should not include interpolated values, they'll be ignored and kept as is. For example: `TEST${KEY}=hello` retains the same key: `"TEST${KEY}": "hello"`.
+- Only double quotes are escaped for printing values to stdout, for example `"hello"` will be printed as `"\"hello\""`.
+- Empty spaces are retained `    hello        world      ` and don't require any quotes.
+
+### What Operating Systems are supported?
+Currently GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well) are supported. For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+
 ### How do I read the debug details?
 To read the debug details, let's examine the following debug message:
 ```DOSINI
-[nvi] (parser::INTERPOLATION_WARNING::.env:21:25) The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "USER". Unable to locate a value that corresponds to this key.
+[nvi] (parser::INTERPOLATION_WARNING::.env:21:25) The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
 ```
 - Which part (file) of the binary is being executed: `parser`
 - What type of log is being output: `INTERPOLATION_WARNING`
@@ -101,9 +113,12 @@ To read the debug details, let's examine the following debug message:
 - Which byte within the current line is being processed: `25`
 - Lastly, the debug message: `The key "..." contains an invalid interpolated variable...etc`
 
-In layman's terms, this debug message is stating that a key's value contains an interpolated key `"${KEY}"` that doesn't match any parsed keys.
+In layman's terms, this debug message is stating that a key's value contains an interpolated key `${KEY}` (eg. TEST) that doesn't match any ENV keys in the process nor any previously parsed ENV keys.
+
+The solution to the above is to either ensure the ENV key exists within the process before running the binary or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself).
 
 Not all debug logs will have all the details above, but will generally follow the same pattern.
+
 
 ## Troubleshooting
 
