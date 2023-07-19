@@ -8,6 +8,7 @@ esm
 *.d.ts
 *.mjs
 !tests/*.mjs
+!examples/node/*.mjs
 *.map
 !rollup.config.js
 !prettier.config.js
@@ -15,6 +16,8 @@ esm
 nvi
 **/CMakeFiles/*
 **/CMakeCache.txt
+**/*/CMakeFiles/*
+**/*/CMakeCache.txt
 **/Testing
 **/lib
 **/bin/bin
@@ -22,10 +25,10 @@ nvi
 **/install_manifest.txt
 **/*/node_modules
 **/*/target
+cpp_example
 *.a
 *.cmake
 *.tcl
 *.cache
 compile_commands.json
 Makefile
-
