@@ -14,11 +14,9 @@ The following requirements must be present in order to build from source:
 
 ## Build Source and Install Binary
 ```DOSINI
-git clone git@github.com:mattcarlotta/nvi.git
+git clone git@github.com:mattcarlotta/nvi.git --recursive
 
 cd nvi/bin
-
-git submodule update --init --recursive
 
 # if you want to use custom compile flags see below
 cmake .
@@ -63,7 +61,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 
 ‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within the "env.config.json" file.
 
-### Examples
+### [Examples](/examples)
 
 Example of parsing an `example.env` file from a custom directory with debug logging:
 ```DOSINI
@@ -88,18 +86,29 @@ If you'd like to remove (uninstall) the binary, simply type:
 sudo rm $(which nvi)
 ```
 
-### What are rules for defining or interpolating keys?
+### What are the rules for defining or interpolating keys?
 There are really only 2 simple rules that must be followed:
 - keys can only reference other keys if they're already defined in the process or they've already been parsed (this means you can cross-reference keys in other .env files, but they must have already been parsed in order to be referenced).
 - multi-line keys must end with `\↵` (a back-slash followed by a new line or carriage return). To end a multi-line key, just use a new line without a back-slash.
 
 Other things to note:
 - Keys should not include interpolated values, they'll be ignored and kept as is. For example: `TEST${KEY}=hello` retains the same key: `"TEST${KEY}": "hello"`.
-- Only double quotes are escaped for printing values to stdout, for example `"hello"` will be printed as `"\"hello\""`.
-- Empty spaces are retained `    hello        world      ` and don't require any quotes.
+- Only double quotes are escaped for printing values to `stdout`, for example `"hello"` will be printed as `"\"hello\""`.
+- Empty spaces are retained `      hello        world      ` and don't require any quotes.
 
 ### What Operating Systems are supported?
-Currently GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well) are supported. For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+
+### Can I manually assign parsed ENVs to a process?
+Yes! If you don't use an `-e` or `--exec` or `execute` command, then nvi will print out a stringified JSON result of ENVS to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
+
+Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin` into whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
+- requires language or framework specific code (what this project aims to mitigate)
+- reading from `stdin` may not be possible
+- reading from `stdin` may be asynchronous and there's no guarantee that when a program/process runs that the ENVs will be defined before they are used
+- parsing stringified JSON will more than likely require a 3rd party package
+
+As such, while this feature is available, it's not recommended nor going to be supported by this project. Nevertheless, here's an example of how to pipe ENVs into a [node process](/examples/node) using [stdin](/examples/node/stdin.mjs).
 
 ### How do I read the debug details?
 To read the debug details, let's examine the following debug message:
