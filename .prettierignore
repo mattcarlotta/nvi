@@ -1,6 +1,0 @@
-*.md
-*.js
-*d.ts
-esm
-pnpm-lock.yaml
-!rollup.'config.js

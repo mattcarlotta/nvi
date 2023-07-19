@@ -1,39 +1,155 @@
-# nvi
-A custom-built .env file parser!
+# nvi bin
+A custom-built executable .env file parser!
 
 **Note**: This is a work in progress and will likely change over time. As such, this is **NOT** recommended for production environments yet.
 
-## Why nvi?
-- Doesn't use any [regular expressions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions)
+## Requirements
 
-- Typescript source with included type declarations
+The following requirements must be present in order to build from source:
+- gcc v11.3.0+
+- clang v14.0.x
+- cmake v3.26.3+
+- make v3.8.x+
+- clangd v14.0.x (optional for formatting/linting)
 
-- Logs warnings with `[nvi] (file_name:line:byte)` if an interpolation fails
+## Build Source and Install Binary
+```DOSINI
+git clone git@github.com:mattcarlotta/nvi.git --recursive
 
-- Zero dependencies and is up to [75% faster at parsing](benchmarks/README.md#metrics) than the industry standard
+cd nvi/bin
 
-- Contains CJS and ESM compiled sources
+# if you want to use custom compile flags see below
+cmake .
 
-- Contains a stand-alone [executable](bin/README.md) to parse `.env` files to stringified JSON
+sudo make install
+```
 
-- Unopinionated about `.env` naming
+### Custom CMake Compile Flags
 
-- Supports loading multiple `.env` files at once
+The following custom compile flags can be set for `cmake`:
+- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `bin/src` to a `nvi` binary (default: ON)
+- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `bin/tests` to a `tests` binary (default: OFF)
+- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 
-- Supports overriding Envs in [`process.env`](https://nodejs.org/docs/latest/api/process.html#process_process_env)
+The following represents the default `cmake` settings:
+```DOSINI
+cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin .
+```
 
-- Supports Env interpolation
+## Usage
 
-- Supports multi-line values
-
-- Supports Env preloading
-
-- Supports marking Envs as required
-
-- Supports loading Envs via an `env.config.json` file
+Navigate to a project that contains one or many `.env` files, then type:
+```DOSINI
+nvi <flag> <arg>
+```
 
 
-## Contributing Guide
+## Binary Flags
+All flags below are optional. Short form (`-`) and long form (`--`) flags are supported and can be mixed if desired.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
 
+| flag            | description                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| -c, --config    | Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)‡  |
+| -de, --debug    | Specifies whether or not to log debug details. (ex: --debug)                                          |
+| -d, --dir       | Specifies which directory the env file is located within. (ex: --dir path/to/env)                     |
+| -e, --exec      | Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)     |
+| -f, --files     | Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            |
+| -r, --required  | Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                |
+| -h, --help      | Displays this help information.                                                                       |
+
+‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within the "env.config.json" file.
+
+### [Examples](/examples)
+
+Example of parsing an `example.env` file from a custom directory with debug logging:
+```DOSINI
+nvi --files example.env --dir dist/client --debug
+```
+
+Example parsing one or many `.env` files from a [env.config.json](https://github.com/mattcarlotta/nvi/blob/main/env.config.json#L6-L11) configuration file located at a project's root directory:
+```DOSINI
+nvi --config bin_test_only
+```
+
+Example parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
+```DOSINI
+nvi --files .env --exec npm run dev --required KEY1 KEY2
+```
+
+## FAQS
+
+### How do I uninstall the binary?
+If you'd like to remove (uninstall) the binary, simply type:
+```DOSINI
+sudo rm $(which nvi)
+```
+
+### What are the rules for defining or interpolating keys?
+There are really only 2 simple rules that must be followed:
+- keys can only reference other keys if they're already defined in the process or they've already been parsed (this means you can cross-reference keys in other .env files, but they must have already been parsed in order to be referenced).
+- multi-line keys must end with `\↵` (a back-slash followed by a new line or carriage return). To end a multi-line key, just use a new line without a back-slash.
+
+Other things to note:
+- Keys should not include interpolated values, they'll be ignored and kept as is. For example: `TEST${KEY}=hello` retains the same key: `"TEST${KEY}": "hello"`.
+- Only double quotes are escaped for printing values to `stdout`, for example `"hello"` will be printed as `"\"hello\""`.
+- Empty spaces are retained `      hello        world      ` and don't require any quotes.
+
+### What Operating Systems are supported?
+Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+
+### Can I manually assign parsed ENVs to a process?
+Yes! If you don't use an `-e` or `--exec` or `execute` command, then nvi will print out a stringified JSON result of ENVS to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
+
+Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin` into whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
+- requires language or framework specific code (what this project aims to mitigate)
+- reading from `stdin` may not be possible
+- reading from `stdin` may be asynchronous and there's no guarantee that when a program/process runs that the ENVs will be defined before they are used
+- parsing stringified JSON will more than likely require a 3rd party package
+
+As such, while this feature is available, it's not recommended nor going to be supported by this project. Nevertheless, here's an example of how to pipe ENVs into a [node process](/examples/node) using [stdin](/examples/node/stdin.mjs).
+
+### How do I read the debug details?
+To read the debug details, let's examine the following debug message:
+```DOSINI
+[nvi] (parser::INTERPOLATION_WARNING::.env:21:25) The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
+```
+- Which part (file) of the binary is being executed: `parser`
+- What type of log is being output: `INTERPOLATION_WARNING`
+- Which file is being processed: `.env`
+- Which line within the file is being processed: `21`
+- Which byte within the current line is being processed: `25`
+- Lastly, the debug message: `The key "..." contains an invalid interpolated variable...etc`
+
+In layman's terms, this debug message is stating that a key's value contains an interpolated key `${KEY}` (eg. TEST) that doesn't match any ENV keys in the process nor any previously parsed ENV keys.
+
+The solution to the above is to either ensure the ENV key exists within the process before running the binary or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself).
+
+Not all debug logs will have all the details above, but will generally follow the same pattern.
+
+
+## Troubleshooting
+
+⚠️ Please note that some operating systems (like Mac OS) may not have a "/usr/local/bin" directory nor use it as a search `PATH` for binaries.
+
+To fix this, create the directory (if you're wary of touching `/usr/`, then you may want to use `/opt` or `/opt/bin` instead):
+```DOSINI
+sudo mkdir -p /usr/local/bin
+```
+
+Then, add this directory path to the shell's `PATH` (swap in whichever profile your shell uses, eg. `.bash_profile`, `.bashrc` or `.zsh`):
+```DOSINI
+echo 'export PATH="$PATH:/usr/local/bin"' >> ~/.bash_profile
+```
+
+Then, source the change for your shell profile:
+```DOSINI
+source ~/.bash_profile
+```
+
+To ensure the binary is found, type the command below and you should see the nvi binary path: 
+```DOSINI
+which nvi
+# /usr/local/bin/nvi
+```
