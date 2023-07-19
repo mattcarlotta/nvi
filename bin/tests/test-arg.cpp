@@ -1,5 +1,7 @@
 #include "arg.h"
+#include "constants.h"
 #include "gtest/gtest.h"
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -11,7 +13,10 @@ int argc = 16;
 
 nvi::arg_parser arg(argc, argv);
 
-TEST(arg_parser, parseable_config) { EXPECT_EQ(arg.config, "test"); }
+TEST(arg_parser, parseable_config) {
+    std::clog << "Arg: " << arg.config << std::endl;
+    EXPECT_EQ(arg.config, "test");
+}
 
 TEST(arg_parser, parseable_debug) { EXPECT_EQ(arg.debug, true); }
 

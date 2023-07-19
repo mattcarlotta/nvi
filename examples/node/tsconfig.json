@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "diagnostics": true,
+        "declaration": true,
+        "declarationDir": "./",
+        "noEmitOnError": true,
+        "allowJs": false,
+        "alwaysStrict": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": "./",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noEmit": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "resolveJsonModule": false,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "es2015"
+    }
+}
+

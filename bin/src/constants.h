@@ -14,6 +14,20 @@ constexpr unsigned int ARG_HELP_DOC = 5;
 constexpr unsigned int ARG_INVALID_FLAG_WARNING = 6;
 constexpr unsigned int ARG_DEBUG = 7;
 constexpr unsigned int ARG_NO_PARSEABLE_ENVS = 8;
+constexpr char ARG_CONFIG_SHORT[] = "-c";
+constexpr char ARG_CONFIG_LONG[] = "--config";
+constexpr char ARG_DEBUG_SHORT[] = "-de";
+constexpr char ARG_DEBUG_LONG[] = "--debug";
+constexpr char ARG_DIRECTORY_SHORT[] = "-d";
+constexpr char ARG_DIRECTORY_LONG[] = "--dir";
+constexpr char ARG_EXECUTE_SHORT[] = "-e";
+constexpr char ARG_EXECUTE_LONG[] = "--exec";
+constexpr char ARG_FILES_SHORT[] = "-f";
+constexpr char ARG_FILES_LONG[] = "--files";
+constexpr char ARG_HELP_SHORT[] = "-h";
+constexpr char ARG_HELP_LONG[] = "--help";
+constexpr char ARG_REQUIRED_SHORT[] = "-r";
+constexpr char ARG_REQUIRED_LONG[] = "--required";
 
 // config
 constexpr unsigned int CONFIG_FILE_ERROR = 0;

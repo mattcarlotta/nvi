@@ -7,7 +7,6 @@
 #include <iostream>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using std::string;
@@ -21,7 +20,7 @@ parser::parser(const vector<string> *files, const std::optional<string> &dir, co
 
 parser *parser::parse() {
     while (this->byte_count < this->file_length) {
-        const std::string_view line = this->loaded_file.substr(this->byte_count, this->file_length);
+        const string line = this->loaded_file.substr(this->byte_count, this->file_length);
         const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
 
         // skip lines that begin with comments
@@ -36,7 +35,7 @@ parser *parser::parse() {
         if (line_delimiter_index >= 0 && this->assignment_index >= 0) {
             this->key = line.substr(0, this->assignment_index);
 
-            const std::string_view line_slice = line.substr(this->assignment_index + 1, line.length());
+            const string line_slice = line.substr(this->assignment_index + 1, line.length());
             this->val_byte_count = 0;
             this->value = "";
             while (this->val_byte_count < line_slice.length()) {
@@ -57,7 +56,7 @@ parser *parser::parse() {
 
                 // try interpolating key into a value
                 if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
-                    const std::string_view val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
+                    const string val_slice_str = line_slice.substr(this->val_byte_count, line_slice.length());
 
                     const int interp_close_index = val_slice_str.find(constants::CLOSE_BRACE);
                     if (interp_close_index >= 0) {

@@ -20,6 +20,8 @@ nvi
 **/bin/bin
 **/tests/tests
 **/install_manifest.txt
+**/*/node_modules
+**/*/target
 *.a
 *.cmake
 *.tcl

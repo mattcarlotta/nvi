@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using std::string;
@@ -14,20 +15,20 @@ arg_parser::arg_parser(int &argc, char *argv[]) : argc(argc), argv(argv) {
     this->index = 1;
     while (this->index < this->argc) {
         const string arg = string(this->argv[this->index]);
-        if (arg == "-c" || arg == "--config") {
+        if (arg == constants::ARG_CONFIG_SHORT || arg == constants::ARG_CONFIG_LONG) {
             this->config = this->parse_single_arg(constants::ARG_CONFIG_FLAG_ERROR);
-        } else if (arg == "-de" || arg == "--debug") {
+        } else if (arg == constants::ARG_DEBUG_SHORT || arg == constants::ARG_DEBUG_LONG) {
             this->debug = true;
-        } else if (arg == "-d" || arg == "--dir") {
+        } else if (arg == constants::ARG_DIRECTORY_SHORT || arg == constants::ARG_DIRECTORY_LONG) {
             this->dir = this->parse_single_arg(constants::ARG_DIR_FLAG_ERROR);
-        } else if (arg == "-e" || arg == "--exec") {
+        } else if (arg == constants::ARG_EXECUTE_SHORT || arg == constants::ARG_EXECUTE_LONG) {
             this->parse_command_args();
-        } else if (arg == "-f" || arg == "--files") {
+        } else if (arg == constants::ARG_FILES_SHORT || arg == constants::ARG_FILES_LONG) {
             this->files = this->parse_multi_arg(constants::ARG_FILES_FLAG_ERROR);
-        } else if (arg == "-h" || arg == "--help") {
+        } else if (arg == constants::ARG_HELP_SHORT || arg == constants::ARG_HELP_LONG) {
             this->log(constants::ARG_HELP_DOC);
             std::exit(0);
-        } else if (arg == "-r" || arg == "--required") {
+        } else if (arg == constants::ARG_REQUIRED_SHORT || arg == constants::ARG_REQUIRED_LONG) {
             this->required_envs = this->parse_multi_arg(constants::ARG_REQUIRED_FLAG_ERROR);
         } else {
             this->invalid_arg = string(this->argv[this->index]);
@@ -102,6 +103,17 @@ vector<string> arg_parser::parse_multi_arg(unsigned int code) {
 }
 
 void arg_parser::parse_command_args() {
+    // currently, it's impossible to determine when an "--exec" flag with arguments end and another
+    // flag begins, for example: nvi --debug --exec cargo run --release --required KEY1 KEY2
+    // where "cargo run --release" needs to be separated from the other known flags. A work-around
+    // is to assume the command won't contain any of the used ARG_FLAGS defined below
+    static std::unordered_set<string> RESERVED_FLAGS = {
+        constants::ARG_CONFIG_SHORT,  constants::ARG_CONFIG_LONG,     constants::ARG_DEBUG_SHORT,
+        constants::ARG_DEBUG_LONG,    constants::ARG_DIRECTORY_SHORT, constants::ARG_DIRECTORY_LONG,
+        constants::ARG_EXECUTE_SHORT, constants::ARG_EXECUTE_LONG,    constants::ARG_FILES_SHORT,
+        constants::ARG_FILES_LONG,    constants::ARG_HELP_SHORT,      constants::ARG_REQUIRED_SHORT,
+        constants::ARG_REQUIRED_LONG};
+
     ++this->index;
     while (this->index < this->argc) {
         if (this->argv[this->index] == nullptr) {
@@ -109,7 +121,7 @@ void arg_parser::parse_command_args() {
         }
 
         string next_arg = string(this->argv[this->index]);
-        if (next_arg.find("-") != string::npos) {
+        if (next_arg.find("-") != string::npos && RESERVED_FLAGS.find(next_arg) != RESERVED_FLAGS.end()) {
             this->index -= 1;
             break;
         } else if (!this->commands.size()) {

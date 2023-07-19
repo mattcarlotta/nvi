@@ -7,7 +7,6 @@
 #include <map>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using std::string;
@@ -84,7 +83,7 @@ class parser {
     bool debug;
     const vector<string> *required_envs;
     std::ifstream env_file;
-    std::string_view loaded_file;
+    string loaded_file;
     string file_name;
     string file_path;
     size_t file_length;
