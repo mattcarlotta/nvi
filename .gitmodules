@@ -1,0 +1,6 @@
+[submodule "src/json"]
+	path = src/json
+	url = git@github.com:nlohmann/json.git
+[submodule "tests/googletest"]
+	path = tests/googletest
+	url = git@github.com:google/googletest.git
