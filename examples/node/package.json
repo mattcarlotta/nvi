@@ -1,6 +1,7 @@
 {
     "scripts": {
         "mjs": "node index.mjs",
+        "stdin": "node stdin.mjs",
         "ts": "ts-node index.ts"
     },
     "devDependencies": {
