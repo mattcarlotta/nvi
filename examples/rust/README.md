@@ -1,5 +1,9 @@
 # Rust Example
 
+Requirements:
+- rustup
+- cargo
+
 Example usage:
 ```DOSINI
 # assigning ENVs via env.config.json

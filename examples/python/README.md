@@ -1,19 +1,13 @@
-# C++ Example
+# Python Example
 
 Requirements:
-- cmake
-- make
-
-First build the binary:
-```DOSINI
-cmake .
-make
-```
+- python3
 
 Example usage:
 ```DOSINI
 # assigning ENVs via env.config.json
-nvi -c release
+nvi -c main
 # assigning ENVs via execute command
-nvi -e ./cpp_example
+nvi -e python3 main.py
 ```
+
