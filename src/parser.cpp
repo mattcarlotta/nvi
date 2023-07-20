@@ -115,7 +115,7 @@ parser *parser::parse() {
 
 void parser::check_envs() {
     if (this->required_envs != nullptr && this->required_envs->size()) {
-        for (const string key : *this->required_envs) {
+        for (const string &key : *this->required_envs) {
             if (!this->env_map.count(key) || !this->env_map.at(key).length()) {
                 this->undefined_keys.push_back(key);
             }
@@ -188,7 +188,7 @@ parser *parser::read(const string &env_file_name) {
 }
 
 parser *parser::parse_envs() noexcept {
-    for (const string env : *this->files) {
+    for (const string &env : *this->files) {
         this->read(env)->parse();
     }
 

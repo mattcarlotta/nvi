@@ -12,11 +12,15 @@ The following requirements must be present in order to build from source:
 - make v3.8.x+
 - clangd v14.0.x (optional for formatting/linting)
 
-## Build Source and Install Binary
-```DOSINI
-git clone git@github.com:mattcarlotta/nvi.git --recursive
+You can determine if you're using the correct versions by:
+- Running `which <requirement>` that should output a binary path, if not, then it's not installed and will require platform specific installations
+- Running `<requirement> --version` that should output a binary version equal to or above the required version
 
-cd nvi/bin
+## Copy Source, Build Source and Install Binary
+```DOSINI
+git clone git@github.com:mattcarlotta/nvi.git --recursive nvi
+
+cd nvi
 
 # if you want to use custom compile flags see below
 cmake .
@@ -43,7 +47,6 @@ Navigate to a project that contains one or many `.env` files, then type:
 nvi <flag> <arg>
 ```
 
-
 ## Binary Flags
 All flags below are optional. Short form (`-`) and long form (`--`) flags are supported and can be mixed if desired.
 
@@ -59,21 +62,60 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 | -r, --required  | Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                |
 | -h, --help      | Displays this help information.                                                                       |
 
-‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within the "env.config.json" file.
+‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within a [configuration file](#configuration-file).
+
+
+### Configuration File
+Instead of manually typing out flags and arguments in the CLI, there is support for placing most of them in an `env.config.json` configuration file.
+
+The configuration file is a [JSON](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON) file that contains...
+- An `"environment"` name that encapsulates the following properties: 
+  - debug: `true` or `false` (default: `false`) **OPTIONAL**
+  - dir: `"custom/path/to/envs"` (default: `""`) **OPTIONAL**
+  - execute: `"binary command"` (default: `""`) **OPTIONAL**
+  - files: `["1.env", "2.env", "3.env"]` (default `[]`) **REQUIRED**
+  - required: `["KEY_1", "KEY_2", "KEY_3"]` (default `[]`) **OPTIONAL**
+
+The following represents an example `env.config.json` configuration:
+```json
+{
+    "dev": {
+        "debug": true,
+        "dir": "custom/directory/to/envs",
+        "execute": "bin test",
+        "files": ["1.env", "2.env", "3.env"],
+        "required": ["KEY_1", "KEY_2", "KEY_3"]
+    },
+    "test": {
+        "files": ["test.env"],
+        "required": ["TEST_KEY_1", "TEST_KEY_2", "TEST_KEY_3"]
+    }
+
+}
+```
+
+To target an environment within the configuration file, simply use the `-c` or `--config` flag followed by the environment name:
+```DOSINI
+nvi -c dev
+# or
+nvi --config test
+```
 
 ### [Examples](/examples)
 
-Example of parsing an `example.env` file from a custom directory with debug logging:
+Click on the link above for language specific examples, otherwise, here are some basic use cases:
+
+Parsing an `example.env` file from a custom directory with debug logging:
 ```DOSINI
 nvi --files example.env --dir dist/client --debug
 ```
 
-Example parsing one or many `.env` files from a [env.config.json](https://github.com/mattcarlotta/nvi/blob/main/env.config.json#L6-L11) configuration file located at a project's root directory:
+Parsing one or many `.env` files from a [env.config.json](https://github.com/mattcarlotta/nvi/blob/main/env.config.json#L6-L12) configuration file located at a project's root directory:
 ```DOSINI
 nvi --config bin_test_only
 ```
 
-Example parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
+Parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
 ```DOSINI
 nvi --files .env --exec npm run dev --required KEY1 KEY2
 ```
@@ -87,9 +129,17 @@ sudo rm $(which nvi)
 ```
 
 ### What are the rules for defining or interpolating keys?
-There are really only 2 simple rules that must be followed:
-- keys can only reference other keys if they're already defined in the process or they've already been parsed (this means you can cross-reference keys in other .env files, but they must have already been parsed in order to be referenced).
-- multi-line keys must end with `\↵` (a back-slash followed by a new line or carriage return). To end a multi-line key, just use a new line without a back-slash.
+There are really only 3 simple rules that must be followed:
+- To interpolate a key's value into another key, use `${NAME_OF_KEY}`, where `NAME_OF_KEY` represents the name of an ENV:
+```DOSINI
+NAME_OF_KEY=1
+# interpolates a value from a key above
+REFERENCE=${NAME_OF_KEY}
+# interpolates a value from a shell environment variable
+ENV_HOME_PATH=${HOME}
+```
+- Keys can only reference other keys if they're already defined in the shell environment (use `printenv` in a terminal for a list of shell environment variables) or they've already been parsed by the nvi parser (this means you can cross-reference keys in other .env files, but they must have already been parsed in order to be interpolated).
+- Multi-line keys must end with `\↵` (a back-slash followed by a new line or carriage return). To end a multi-line key, just use a new line without a back-slash.
 
 Other things to note:
 - Keys should not include interpolated values, they'll be ignored and kept as is. For example: `TEST${KEY}=hello` retains the same key: `"TEST${KEY}": "hello"`.
@@ -102,7 +152,7 @@ Currently, GNU linux and Mac OS (v13+ although older versions that support C++17
 ### Can I manually assign parsed ENVs to a process?
 Yes! If you don't use an `-e` or `--exec` or `execute` command, then nvi will print out a stringified JSON result of ENVS to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
-Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin` into whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
+Unfortunately, this means you'll have to manually pipe, parse stringified JSON from `stdin`, and assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
 - requires language or framework specific code (what this project aims to mitigate)
 - reading from `stdin` may not be possible
 - reading from `stdin` may be asynchronous and there's no guarantee that when a program/process runs that the ENVs will be defined before they are used
