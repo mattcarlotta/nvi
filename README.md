@@ -55,8 +55,8 @@ sudo make install
 ### Custom CMake Compile Flags
 
 The following custom compile flags can be set for `cmake`:
-- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `bin/src` to a `nvi` binary (default: ON)
-- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `bin/tests` to a `tests` binary (default: OFF)
+- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `src` to a `nvi` binary (default: ON)
+- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` binary (default: OFF)
 - `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 
 The following represents the default `cmake` settings:
@@ -207,7 +207,7 @@ Not all debug logs will have all the details above, but will generally follow th
 
 ⚠️ Please note that some operating systems (like Mac OS) may not have a "/usr/local/bin" directory nor use it as a search `PATH` for binaries.
 
-To fix this, create the directory (if you're wary of touching `/usr/`, then you may want to use `/opt` or `/opt/bin` instead):
+To fix this, create the directory (if you're wary of touching `/usr`, then you may want to use `/opt` or `/opt/bin` instead):
 ```DOSINI
 sudo mkdir -p /usr/local/bin
 ```
