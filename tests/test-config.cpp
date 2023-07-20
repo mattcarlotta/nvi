@@ -4,25 +4,20 @@
 #include <string>
 #include <vector>
 
-using std::string;
-using std::vector;
+nvi::config config("bin_test_only", "../");
 
-const string env = "bin_test_only";
-const string dir = "../";
-nvi::config config(&env, dir);
+TEST(parse_config_file, debug) { EXPECT_EQ(config.get_options().debug, true); }
 
-TEST(parse_config_file, debug) { EXPECT_EQ(config.debug, true); }
+TEST(parse_config_file, directory) { EXPECT_EQ(config.get_options().dir, "custom/directory"); }
 
-TEST(parse_config_file, directory) { EXPECT_EQ(config.dir, "custom/directory"); }
-
-TEST(parse_config_file, execute) { EXPECT_EQ(config.commands.size(), 3); }
+TEST(parse_config_file, execute) { EXPECT_EQ(config.get_options().commands.size(), 3); }
 
 TEST(parse_config_file, files) {
-    const vector<string> files = {"test1.env", "test2.env", "test3.env"};
-    EXPECT_EQ(config.files, files);
+    const std::vector<std::string> files = {"test1.env", "test2.env", "test3.env"};
+    EXPECT_EQ(config.get_options().files, files);
 }
 
 TEST(parse_config_file, envs) {
-    const vector<string> envs = {"TEST1", "TEST2", "TEST3"};
-    EXPECT_EQ(config.required_envs, envs);
+    const std::vector<std::string> envs = {"TEST1", "TEST2", "TEST3"};
+    EXPECT_EQ(config.get_options().required_envs, envs);
 }
