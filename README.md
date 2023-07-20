@@ -3,6 +3,30 @@ A custom-built executable .env file parser!
 
 **Note**: This is a work in progress and will likely change over time. As such, this is **NOT** recommended for production environments yet.
 
+## Quick Links
+
+[Requirements](#requirements)
+
+[Installation](#installation)
+  - [Custom CMake Compile Flags](#custom-cmake-compile-flags)
+
+[Usage](#usage)
+
+[Flags](#flags)
+
+[Configuration File](#configuration-file)
+
+[Examples](#examples)
+
+[FAQs](#faqs)
+  - [How do I uninstall the binary?](#how-do-i-uninstall-the-binary)
+  - [What are the rules for defining or interpolating keys?](#what-are-the-rules-for-defining-or-interpolating-keys)
+  - [What Operating Systems are supported?](#what-operating-systems-are-supported)
+  - [Can I manually assign parsed ENVs to a process?](#can-i-manually-assign-parsed-envs-to-a-process)
+  - [How do I read the debug details?](#how-do-i-read-the-debug-details)
+
+[Troubleshooting](#troubleshooting)
+
 ## Requirements
 
 The following requirements must be present in order to build from source:
@@ -13,10 +37,10 @@ The following requirements must be present in order to build from source:
 - clangd v14.0.x (optional for formatting/linting)
 
 You can determine if you're using the correct versions by:
-- Running `which <requirement>` that should output a binary path, if not, then it's not installed and will require platform specific installations
-- Running `<requirement> --version` that should output a binary version equal to or above the required version
+- Running `which <requirement>` that should output a binary path, if not, then it's not installed and will require platform specific installations.
+- Running `<requirement> --version` that should output a binary version equal to or above the required version.
 
-## Copy Source, Build Source and Install Binary
+## Installation
 ```DOSINI
 git clone git@github.com:mattcarlotta/nvi.git --recursive nvi
 
@@ -47,7 +71,7 @@ Navigate to a project that contains one or many `.env` files, then type:
 nvi <flag> <arg>
 ```
 
-## Binary Flags
+## Flags
 All flags below are optional. Short form (`-`) and long form (`--`) flags are supported and can be mixed if desired.
 
 If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
@@ -65,8 +89,8 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 ‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within a [configuration file](#configuration-file).
 
 
-### Configuration File
-Instead of manually typing out flags and arguments in the CLI, there is support for placing most of them in an `env.config.json` configuration file.
+## Configuration File
+Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `env.config.json` configuration file.
 
 The configuration file is a [JSON](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON) file that contains...
 - An `"environment"` name that encapsulates the following properties: 
@@ -120,7 +144,7 @@ Parsing an `.env` file, checking the parsed ENVs for required keys, and then, if
 nvi --files .env --exec npm run dev --required KEY1 KEY2
 ```
 
-## FAQS
+## FAQs
 
 ### How do I uninstall the binary?
 If you'd like to remove (uninstall) the binary, simply type:
@@ -150,7 +174,7 @@ Other things to note:
 Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
 
 ### Can I manually assign parsed ENVs to a process?
-Yes! If you don't use an `-e` or `--exec` or `execute` command, then nvi will print out a stringified JSON result of ENVS to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
+Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVS to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
 Unfortunately, this means you'll have to manually pipe, parse stringified JSON from `stdin`, and assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
 - requires language or framework specific code (what this project aims to mitigate)
@@ -172,9 +196,9 @@ To read the debug details, let's examine the following debug message:
 - Which byte within the current line is being processed: `25`
 - Lastly, the debug message: `The key "..." contains an invalid interpolated variable...etc`
 
-In layman's terms, this debug message is stating that a key's value contains an interpolated key `${KEY}` (eg. TEST) that doesn't match any ENV keys in the process nor any previously parsed ENV keys.
+In layman's terms, this debug message is stating that a key's value contains an interpolated key `${KEY}` (`TEST`) that doesn't match any ENV keys in the shell environment nor any previously parsed ENV keys.
 
-The solution to the above is to either ensure the ENV key exists within the process before running the binary or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself).
+The solution to the above is to either ensure the ENV key exists within the shell environment before running the binary or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files before itself).
 
 Not all debug logs will have all the details above, but will generally follow the same pattern.
 
