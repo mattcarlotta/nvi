@@ -15,8 +15,8 @@ using std::vector;
 namespace nvi {
 parser::parser(const vector<string> *files, const std::optional<string> &dir, const vector<string> *required_envs,
                const bool &debug)
-    : files(files), required_envs(required_envs), debug(debug), dir(dir.value_or("")),
-      env_map(std::map<string, string>()) {}
+    : env_map(std::map<string, string>()), files(files), dir(dir.value_or("")), debug(debug),
+      required_envs(required_envs) {}
 
 parser *parser::parse() {
     while (this->byte_count < this->file_length) {

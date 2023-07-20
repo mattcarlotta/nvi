@@ -69,7 +69,7 @@ class arg_parser {
     void parse_command_args();
 
     private:
-    long unsigned int index;
+    int index;
     int argc;
     string bin_name;
     char **argv;

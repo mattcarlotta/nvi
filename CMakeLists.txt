@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(nvi)
 
+add_compile_options(-Werror -Wall -Wextra -Wpedantic -std=c++17)
 option(COMPILE_SRC "Compile source" ON)
 option(COMPILE_TESTS "Compile tests" OFF)
 option(INSTALL_BIN_DIR "Binary installation directory" OFF)

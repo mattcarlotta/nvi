@@ -197,10 +197,9 @@ void arg_parser::log(unsigned int code) const noexcept {
     }
     case constants::ARG_INVALID_FLAG_WARNING: {
         std::clog
-            << format(
-                   "[nvi] (arg::INVALID_FLAG_WARNING) The flag \"%s\" with\%s arguments is not recognized. Skipping.",
-                   this->invalid_arg.c_str(),
-                   (this->invalid_args.length() ? " \"" + this->invalid_args + "\"" : "out").c_str())
+            << format("[nvi] (arg::INVALID_FLAG_WARNING) The flag \"%s\" with%s arguments is not recognized. Skipping.",
+                      this->invalid_arg.c_str(),
+                      (this->invalid_args.length() ? " \"" + this->invalid_args + "\"" : "out").c_str())
             << std::endl;
         break;
     }
