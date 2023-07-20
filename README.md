@@ -1,7 +1,5 @@
 # nvi bin
-A custom-built executable .env file parser!
-
-**Note**: This is a work in progress and will likely change over time. As such, this is **NOT** recommended for production environments yet.
+A standalone .env file parser that assigns ENVs to a process!
 
 ## Quick Links
 
@@ -76,15 +74,13 @@ All flags below are optional. Short form (`-`) and long form (`--`) flags are su
 
 If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
 
-| flag            | description                                                                                           |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| -c, --config    | Specifies which environment configuration to load from the env.config.json file. (ex: --config dev)‡  |
-| -de, --debug    | Specifies whether or not to log debug details. (ex: --debug)                                          |
-| -d, --dir       | Specifies which directory the env file is located within. (ex: --dir path/to/env)                     |
-| -e, --exec      | Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)     |
-| -f, --files     | Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            |
-| -r, --required  | Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                |
-| -h, --help      | Displays this help information.                                                                       |
+- `-c` | `--config`: Specifies which environment config to load from the env.config.json file. (ex: --config dev)‡
+- `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
+- `-d` | `--dir`: Specifies which directory the env file is located within. (ex: --dir path/to/env)
+- `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)
+- `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
+- `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)
+- `-h` | `--help`: Displays this help information.
 
 ‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within a [configuration file](#configuration-file).
 
@@ -94,11 +90,11 @@ Instead of manually typing out flags and arguments in the CLI, there is support 
 
 The configuration file is a [JSON](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON) file that contains...
 - An `"environment"` name that encapsulates the following properties: 
-  - debug: `true` or `false` (default: `false`) **OPTIONAL**
-  - dir: `"custom/path/to/envs"` (default: `""`) **OPTIONAL**
-  - execute: `"binary command"` (default: `""`) **OPTIONAL**
-  - files: `["1.env", "2.env", "3.env"]` (default `[]`) **REQUIRED**
-  - required: `["KEY_1", "KEY_2", "KEY_3"]` (default `[]`) **OPTIONAL**
+  - **debug**: boolean (default: `false`) 
+  - **dir**: string (default: `""`)
+  - **execute**: string (default: `""`)
+  - **files**: string[] (default `[".env"]`) 
+  - **required**: string[] (default `[]`)
 
 The following represents an example `env.config.json` configuration:
 ```json
@@ -114,7 +110,6 @@ The following represents an example `env.config.json` configuration:
         "files": ["test.env"],
         "required": ["TEST_KEY_1", "TEST_KEY_2", "TEST_KEY_3"]
     }
-
 }
 ```
 
