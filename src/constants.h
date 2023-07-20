@@ -51,6 +51,7 @@ namespace nvi::constants {
     constexpr char OPEN_BRACE = '{';       // 0x7b
     constexpr char CLOSE_BRACE = '}';      // 0x7d
     constexpr char DOUBLE_QUOTE = '"';     // 0x22
-};                                         // namespace nvi::constants
+
+}; // namespace nvi::constants
 
 #endif
