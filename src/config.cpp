@@ -11,7 +11,7 @@
 
 namespace nvi {
     config::config(const std::string &environment, const std::string env_dir) : env_(environment) {
-        file_path_ = std::string(std::filesystem::current_path() / env_dir / "env.config.json");
+        file_path_ = std::string(std::filesystem::current_path() / env_dir / "nvi.json");
         if (!std::filesystem::exists(file_path_)) {
             log(constants::CONFIG_FILE_ERROR);
             std::exit(1);
@@ -78,12 +78,11 @@ namespace nvi {
             break;
         }
         case constants::CONFIG_FILE_PARSE_ERROR: {
-            std::cerr
-                << fmt::format(
-                       "[nvi] (config::FILE_PARSE_ERROR) Unable to load a \"%s\" environment from the "
-                       "env.config.json configuration file (%s). The specified environment doesn't appear to exist!",
-                       env_.c_str(), file_path_.c_str())
-                << std::endl;
+            std::cerr << fmt::format(
+                             "[nvi] (config::FILE_PARSE_ERROR) Unable to load a \"%s\" environment from the "
+                             "nvi.json configuration file (%s). The specified environment doesn't appear to exist!",
+                             env_.c_str(), file_path_.c_str())
+                      << std::endl;
             break;
         }
         case constants::CONFIG_DEBUG: {
@@ -94,10 +93,9 @@ namespace nvi {
                 keys += el.key() + comma;
             }
 
-            std::clog << fmt::format(
-                             "[nvi] (config::DEBUG) Parsed the following keys from the env.config.json configuration "
-                             "file: \"%s\" and selected the \"%s\" configuration.",
-                             keys.c_str(), env_.c_str())
+            std::clog << fmt::format("[nvi] (config::DEBUG) Parsed the following keys from the nvi.json configuration "
+                                     "file: \"%s\" and selected the \"%s\" configuration.",
+                                     keys.c_str(), env_.c_str())
                       << std::endl;
 
             std::clog << fmt::format("[nvi] (config::DEBUG) The following flags were set: "

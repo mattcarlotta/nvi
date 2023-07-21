@@ -148,65 +148,52 @@ namespace nvi {
     void arg_parser::log(uint8_t code) const noexcept {
         switch (code) {
         case constants::ARG_CONFIG_FLAG_ERROR: {
-            std::cerr
-                << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "
-                   "environment name from the env.config.json configuration file. Use flag \"-h\" or \"--help\" for "
-                   "more infmt::formation."
-                << std::endl;
+            std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "
+                         "environment name from the nvi.json configuration file. Use flag \"-h\" or \"--help\" for "
+                         "more information."
+                      << std::endl;
             break;
         }
         case constants::ARG_DIR_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::DIR_FLAG_ERROR) The \"-d\" or \"--dir\" flag must contain a "
-                         "valid directory path. Use flag \"-h\" or \"--help\" for more infmt::formation."
+                         "valid directory path. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
         case constants::ARG_COMMAND_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::COMMAND_FLAG_ERROR) The \"-e\" or \"--exec\" flag must contain at least "
-                         "1 command. Use flag \"-h\" or \"--help\" for more infmt::formation."
+                         "1 command. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
         case constants::ARG_FILES_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::FILES_FLAG_ERROR) The \"-f\" or \"--files\" flag must contain at least "
-                         "1 .env file. Use flag \"-h\" or \"--help\" for more infmt::formation."
+                         "1 .env file. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
         case constants::ARG_REQUIRED_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::REQUIRED_FLAG_ERROR) The \"-r\" or \"--required\" flag must contain at "
-                         "least 1 ENV key. Use flag \"-h\" or \"--help\" for more infmt::formation."
+                         "least 1 ENV key. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
         case constants::ARG_HELP_DOC: {
-            // clang-fmt::format off
-            std::clog << "┌────────────────────────────────────────────────────────────────────────────────────────────"
-                         "────────────────────────────┐\n"
-                         "│ NVI CLI Documentation                                                                      "
-                         "                            │\n"
-                         "├─────────────────┬──────────────────────────────────────────────────────────────────────────"
-                         "────────────────────────────┤\n"
-                         "│ flag            │ description                                                              "
-                         "                            │\n"
-                         "├─────────────────┼──────────────────────────────────────────────────────────────────────────"
-                         "────────────────────────────┤\n"
-                         "│ -c, --config    │ Specifies which environment configuration to load from the "
-                         "env.config.json file. (ex: --config dev)  │\n"
-                         "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)             "
-                         "                            │\n"
-                         "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir "
-                         "path/to/env)                    │\n"
-                         "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. "
-                         "(ex: --exec node index.js)    │\n"
-                         "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files "
-                         "test.env test2.env)           │\n"
-                         "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: "
-                         "--required KEY1 KEY2)               │\n"
-                         "└─────────────────┴──────────────────────────────────────────────────────────────────────────"
-                         "────────────────────────────┘"
+            // clang-format off
+            std::clog << "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
+                         "│ NVI CLI Documentation                                                                                                  │\n"
+                         "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
+                         "│ flag            │ description                                                                                          │\n"
+                         "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
+                         "│ -c, --config    │ Specifies which environment configuration to load from the nvi.json file. (ex: --config dev)         │\n"
+                         "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
+                         "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
+                         "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
+                         "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
+                         "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
+                         "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘"
                       << std::endl;
-            // clang-fmt::format on
+            // clang-format on
             break;
         }
         case constants::ARG_INVALID_FLAG_WARNING: {

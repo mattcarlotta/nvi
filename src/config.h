@@ -10,12 +10,12 @@
 
 namespace nvi {
     /** @class
-     * Reads an `env.config.json` configuration file from the project root directory or a specified directory and
+     * Reads an `nvi.json` configuration file from the project root directory or a specified directory and
      * converts the selected environment into `options`.
      *
      * @param `env` contains the name of the environment to load from the configuration file.
      *
-     * @param `dir` is an optional argument to specify where the env.config.json resides according to current directory.
+     * @param `dir` is an optional argument to specify where the nvi.json resides according to current directory.
      *
      * @example Initializing a config
      * ```

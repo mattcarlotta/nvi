@@ -74,7 +74,7 @@ All flags below are optional. Short form (`-`) and long form (`--`) flags are su
 
 If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
 
-- `-c` | `--config`: Specifies which environment config to load from the env.config.json file. (ex: --config dev)‡
+- `-c` | `--config`: Specifies which environment config to load from the nvi.json file. (ex: --config dev)‡
 - `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
 - `-d` | `--dir`: Specifies which directory the env file is located within. (ex: --dir path/to/env)
 - `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)
@@ -86,7 +86,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 
 
 ## Configuration File
-Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `env.config.json` configuration file.
+Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `nvi.json` configuration file.
 
 The configuration file is a [JSON](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON) file that contains...
 - An `"environment"` name that encapsulates the following properties: 
@@ -96,7 +96,7 @@ The configuration file is a [JSON](https://developer.mozilla.org/en-US/docs/Lear
   - **files**: string[] (default `[".env"]`) 
   - **required**: string[] (default `[]`)
 
-The following represents an example `env.config.json` configuration:
+The following represents an example `nvi.json` configuration:
 ```json
 {
     "dev": {
@@ -129,7 +129,7 @@ Parsing an `example.env` file from a custom directory with debug logging:
 nvi --files example.env --dir dist/client --debug
 ```
 
-Parsing one or many `.env` files from a [env.config.json](https://github.com/mattcarlotta/nvi/blob/main/env.config.json#L6-L12) configuration file located at a project's root directory:
+Parsing one or many `.env` files from a [nvi.json](https://github.com/mattcarlotta/nvi/blob/main/nvi.json#L6-L12) configuration file located at a project's root directory:
 ```DOSINI
 nvi --config bin_test_only
 ```
