@@ -4,10 +4,8 @@
 #include "json.cpp"
 #include "options.h"
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <map>
-#include <optional>
 #include <string>
 #include <vector>
 
