@@ -77,7 +77,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 - `-c` | `--config`: Specifies which environment config to load from the nvi.json file. (ex: --config dev)‡
 - `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
 - `-d` | `--dir`: Specifies which directory the env file is located within. (ex: --dir path/to/env)
-- `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)
+- `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVs. (ex: --exec node index.js)
 - `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
 - `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)
 - `-h` | `--help`: Displays this help information.
@@ -169,7 +169,7 @@ Other things to note:
 Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
 
 ### Can I manually assign parsed ENVs to a process?
-Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVS to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
+Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
 Unfortunately, this means you'll have to manually pipe, parse stringified JSON from `stdin`, and assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
 - requires language or framework specific code (what this project aims to mitigate)

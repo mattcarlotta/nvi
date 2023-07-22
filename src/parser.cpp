@@ -6,9 +6,11 @@
 #include <cerrno>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
@@ -19,8 +21,8 @@ namespace nvi {
     const std::map<std::string, std::string> &parser::get_env_map() const { return env_map_; }
 
     parser *parser::parse() {
-        while (byte_count_ < file_length_) {
-            const std::string line = loaded_file_.substr(byte_count_, file_length_);
+        while (byte_count_ < file_.length()) {
+            const std::string_view line = file_view_.substr(byte_count_, file_.length());
             const int line_delimiter_index = line.find(constants::LINE_DELIMITER);
 
             // skip lines that begin with comments
@@ -35,7 +37,7 @@ namespace nvi {
             if (line_delimiter_index >= 0 && assignment_index_ >= 0) {
                 key_ = line.substr(0, assignment_index_);
 
-                const std::string line_slice = line.substr(assignment_index_ + 1, line.length());
+                const std::string_view line_slice = line.substr(assignment_index_ + 1, line.length());
                 val_byte_count_ = 0;
                 value_ = "";
                 while (val_byte_count_ < line_slice.length()) {
@@ -56,7 +58,7 @@ namespace nvi {
 
                     // try interpolating key into a value
                     if (current_char == constants::DOLLAR_SIGN && next_char == constants::OPEN_BRACE) {
-                        const std::string val_slice_str = line_slice.substr(val_byte_count_, line_slice.length());
+                        const std::string_view val_slice_str = line_slice.substr(val_byte_count_, line_slice.length());
 
                         const int interp_close_index = val_slice_str.find(constants::CLOSE_BRACE);
                         if (interp_close_index >= 0) {
@@ -101,7 +103,7 @@ namespace nvi {
 
                 byte_count_ += assignment_index_ + val_byte_count_ + 1;
             } else {
-                byte_count_ = file_length_;
+                byte_count_ = file_.length();
             }
         }
 
@@ -198,6 +200,8 @@ namespace nvi {
         key_.clear();
         key_prop_.clear();
         value_.clear();
+        file_.clear();
+        file_path_.clear();
 
         file_path_ = std::string(std::filesystem::current_path() / options_.dir / file_name_);
         if (!std::filesystem::exists(file_path_)) {
@@ -206,12 +210,16 @@ namespace nvi {
         }
 
         env_file_ = std::ifstream(file_path_, std::ios_base::in);
-        loaded_file_ = std::string{std::istreambuf_iterator<char>(env_file_), std::istreambuf_iterator<char>()};
-        file_length_ = loaded_file_.length();
-        if (!file_length_) {
+        if (env_file_.bad()) {
+            log(constants::PARSER_FILE_ERROR);
+            std::exit(1);
+        }
+        file_ = std::string{std::istreambuf_iterator<char>(env_file_), std::istreambuf_iterator<char>()};
+        if (!file_.length()) {
             log(constants::PARSER_EMPTY_ENVS);
             std::exit(1);
         }
+        file_view_ = std::string_view(file_);
 
         return this;
     }
@@ -265,11 +273,10 @@ namespace nvi {
             break;
         }
         case constants::PARSER_FILE_ERROR: {
-            std::cerr
-                << fmt::format(
-                       "[nvi] (parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear to exist!",
-                       file_path_.c_str())
-                << std::endl;
+            std::cerr << fmt::format("[nvi] (parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear "
+                                     "to exist or isn't a valid file format!",
+                                     file_path_.c_str())
+                      << std::endl;
             break;
         }
         case constants::PARSER_EMPTY_ENVS: {

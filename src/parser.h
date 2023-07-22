@@ -7,6 +7,7 @@
 #include <fstream>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace nvi {
@@ -50,10 +51,10 @@ namespace nvi {
             const options options_;
             std::map<std::string, std::string> env_map_;
             std::ifstream env_file_;
-            std::string loaded_file_;
+            std::string file_;
+            std::string_view file_view_;
             std::string file_name_;
             std::string file_path_;
-            size_t file_length_;
             size_t byte_count_;
             size_t line_count_;
             size_t val_byte_count_;

@@ -10,7 +10,8 @@ class parse_env_file : public testing::Test {
 
     public:
         static void SetUpTestSuite() {
-            nvi::parser parser({{}, "", false, "../envs", {"bin.env"}, {"BASIC_ENV"}});
+            nvi::parser parser(
+                {{}, "", false, "../envs", {".env", "bin.env", "base.env", "reference.env"}, {"BASIC_ENV"}});
             parser.parse_envs()->check_envs();
             env_map = parser.get_env_map();
         }
@@ -18,9 +19,13 @@ class parse_env_file : public testing::Test {
 
 std::map<std::string, std::string> parse_env_file::env_map;
 
-TEST_F(parse_env_file, consistent_parse_size) { EXPECT_EQ(env_map.size(), 28); }
+TEST_F(parse_env_file, consistent_parse_size) { EXPECT_EQ(env_map.size(), 37); }
 
 TEST_F(parse_env_file, basic_env) { EXPECT_EQ(env_map.at("BASIC_ENV"), "true"); }
+
+TEST_F(parse_env_file, base_env) { EXPECT_EQ(env_map.at("BASE"), "hello"); }
+
+TEST_F(parse_env_file, reference_base_env) { EXPECT_EQ(env_map.at("REFERENCE"), "hello"); }
 
 TEST_F(parse_env_file, multi_line_values) {
     EXPECT_EQ(env_map.at("MULTI_LINE_KEY"), "ssh-rsa BBBBPl1P1AD+jk/3Lf3Dw== test@example.com");
