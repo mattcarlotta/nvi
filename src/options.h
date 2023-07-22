@@ -5,7 +5,7 @@
 #include <vector>
 
 namespace nvi {
-    struct options {
+    struct Options {
             std::vector<char *> commands;
             std::string config;
             bool debug = false;

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-nvi::config config("bin_test_only", "../");
+nvi::Config config("bin_test_only", "../envs");
 
 TEST(parse_config_file, debug) { EXPECT_EQ(config.get_options().debug, true); }
 

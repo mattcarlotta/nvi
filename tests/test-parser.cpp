@@ -10,7 +10,7 @@ class parse_env_file : public testing::Test {
 
     public:
         static void SetUpTestSuite() {
-            nvi::parser parser(
+            nvi::Parser parser(
                 {{}, "", false, "../envs", {".env", "bin.env", "base.env", "reference.env"}, {"BASIC_ENV"}});
             parser.parse_envs()->check_envs();
             env_map = parser.get_env_map();

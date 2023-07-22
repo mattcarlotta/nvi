@@ -1,5 +1,4 @@
 #include "config.h"
-#include "constants.h"
 #include "format.h"
 #include "json.cpp"
 #include <cstdint>
@@ -10,106 +9,114 @@
 #include <string>
 
 namespace nvi {
-    config::config(const std::string &environment, const std::string env_dir) : env_(environment) {
-        file_path_ = std::string(std::filesystem::current_path() / env_dir / "nvi.json");
-        if (!std::filesystem::exists(file_path_)) {
-            log(constants::CONFIG_FILE_ERROR);
+
+    enum LOG {
+        FILE_ERROR = 0,
+        FILE_PARSE_ERROR = 1,
+        DEBUG = 2,
+        MISSING_FILES_ARG_ERROR = 3,
+    };
+
+    Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
+        _file_path = std::string(std::filesystem::current_path() / _envdir / "nvi.json");
+        if (not std::filesystem::exists(_file_path)) {
+            log(LOG::FILE_ERROR);
             std::exit(1);
         }
 
-        std::ifstream env_config_file(file_path_, std::ios_base::in);
-        parsed_config_ = nlohmann::json::parse(env_config_file);
-        if (!parsed_config_.count(env_)) {
-            log(constants::CONFIG_FILE_PARSE_ERROR);
+        std::ifstream env_configfile(_file_path, std::ios_base::in);
+        _parsed_config = nlohmann::json::parse(env_configfile);
+        if (not _parsed_config.count(_env)) {
+            log(LOG::FILE_PARSE_ERROR);
             std::exit(1);
         }
 
-        nlohmann::json::object_t env_config_ = parsed_config_.at(env_);
+        nlohmann::json::object_t env_config = _parsed_config.at(_env);
 
-        if (env_config_.count("files")) {
-            options_.files = env_config_.at("files");
+        if (env_config.count("files")) {
+            _options.files = env_config.at("files");
         } else {
-            log(constants::CONFIG_MISSING_FILES_ARG_ERROR);
+            log(LOG::MISSING_FILES_ARG_ERROR);
             std::exit(1);
         }
 
-        if (env_config_.count("debug")) {
-            options_.debug = env_config_.at("debug");
+        if (env_config.count("debug")) {
+            _options.debug = env_config.at("debug");
         }
 
-        if (env_config_.count("dir")) {
-            options_.dir = env_config_.at("dir");
+        if (env_config.count("dir")) {
+            _options.dir = env_config.at("dir");
         }
 
-        if (env_config_.count("required")) {
-            options_.required_envs = env_config_.at("required");
+        if (env_config.count("required")) {
+            _options.required_envs = env_config.at("required");
         }
 
-        if (env_config_.count("execute")) {
-            command_ = env_config_.at("execute");
-            std::stringstream command_iss(command_);
+        if (env_config.count("execute")) {
+            _command = env_config.at("execute");
+            std::stringstream _commandiss(_command);
             std::string arg;
 
-            while (command_iss >> arg) {
+            while (_commandiss >> arg) {
                 char *arg_cstr = new char[arg.length() + 1];
                 std::strcpy(arg_cstr, arg.c_str());
-                options_.commands.push_back(arg_cstr);
+                _options.commands.push_back(arg_cstr);
             }
 
-            options_.commands.push_back(nullptr);
+            _options.commands.push_back(nullptr);
         }
 
-        if (options_.debug) {
-            log(constants::CONFIG_DEBUG);
+        if (_options.debug) {
+            log(LOG::DEBUG);
         }
     };
 
-    const options &config::get_options() const noexcept { return options_; }
+    const Options &Config::get_options() const noexcept { return _options; }
 
-    void config::log(uint8_t code) const noexcept {
+    void Config::log(uint8_t code) const noexcept {
         switch (code) {
-        case constants::CONFIG_FILE_ERROR: {
+        case LOG::FILE_ERROR: {
             std::cerr
                 << fmt::format(
                        "[nvi] (config::FILE_ERROR) Unable to locate \"%s\". The configuration file doesn't appear "
                        "to exist!",
-                       file_path_.c_str())
+                       _file_path.c_str())
                 << std::endl;
             break;
         }
-        case constants::CONFIG_FILE_PARSE_ERROR: {
+        case LOG::FILE_PARSE_ERROR: {
             std::cerr << fmt::format(
                              "[nvi] (config::FILE_PARSE_ERROR) Unable to load a \"%s\" environment from the "
                              "nvi.json configuration file (%s). The specified environment doesn't appear to exist!",
-                             env_.c_str(), file_path_.c_str())
+                             _env.c_str(), _file_path.c_str())
                       << std::endl;
             break;
         }
-        case constants::CONFIG_DEBUG: {
-            const std::string last_key = std::prev(parsed_config_.end()).key();
+        case LOG::DEBUG: {
+            const std::string last_key = std::prev(_parsed_config.end()).key();
             std::string keys;
-            for (auto &el : parsed_config_.items()) {
+            for (auto &el : _parsed_config.items()) {
                 const std::string comma = el.key() != last_key ? ", " : "";
                 keys += el.key() + comma;
             }
 
             std::clog << fmt::format("[nvi] (config::DEBUG) Parsed the following keys from the nvi.json configuration "
                                      "file: \"%s\" and selected the \"%s\" configuration.",
-                                     keys.c_str(), env_.c_str())
+                                     keys.c_str(), _env.c_str())
                       << std::endl;
 
             std::clog << fmt::format("[nvi] (config::DEBUG) The following flags were set: "
                                      "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".\n",
-                                     options_.dir.c_str(), command_.c_str(), fmt::join(options_.files, ", ").c_str(),
-                                     fmt::join(options_.required_envs, ", ").c_str())
+                                     _options.dir.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
+                                     fmt::join(_options.required_envs, ", ").c_str())
                       << std::endl;
             break;
         }
-        case constants::CONFIG_MISSING_FILES_ARG_ERROR: {
+        case LOG::MISSING_FILES_ARG_ERROR: {
             std::cerr << fmt::format(
                              "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a \"files\" property within the "
                              "\"%s\" environment configuration (%s). You must specify at least 1 .env file to load!",
-                             env_.c_str(), file_path_.c_str())
+                             _env.c_str(), _file_path.c_str())
                       << std::endl;
             break;
         }

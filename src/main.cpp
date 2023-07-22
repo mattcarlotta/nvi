@@ -4,15 +4,15 @@
 #include "parser.h"
 
 int main(int argc, char *argv[]) {
-    nvi::arg_parser arg(argc, argv);
-    nvi::options options = arg.get_options();
+    nvi::Arg_Parser arg(argc, argv);
+    nvi::Options options = arg.get_options();
 
     if (options.config.length()) {
-        nvi::config config(options.config);
+        nvi::Config config(options.config);
         options = config.get_options();
     }
 
-    nvi::parser parser(options);
+    nvi::Parser parser(options);
 
     parser.parse_envs()->check_envs()->set_envs();
 

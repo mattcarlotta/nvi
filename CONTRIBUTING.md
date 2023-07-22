@@ -1,25 +1,25 @@
 # Contributing
 
 1. [Fork it](https://help.github.com/articles/fork-a-repo/)
-2. Install dependencies (`pnpm i`)
+2. Install [requirements](README.md#requirements)
 3. Create your feature branch (`git checkout -b my-new-feature`)
 4. Commit your changes (`git commit -am 'Added some feature'`)
-5. Test your changes (`npm run test`)
+5. Test your changes 
 6. Push to the branch (`git push origin my-new-feature`)
 7. [Create new Pull Request](https://help.github.com/articles/creating-a-pull-request/)
 
 ## Testing
 
-We use [Node Assert](https://nodejs.org/docs/latest-v18.x/api/assert.html) to write tests. Run our test suite with this command:
+This project uses [googletest](https://github.com/google/googletest) to write run unit tests. Run the test suite with these commands:
 
-```
-npm run test
+```DOSINI
+# at the project root directory
+cmake -DCOMPILE_TESTS=ON . 
+make 
+cd tests 
+./tests
 ```
 
 ## Code Style
 
-We use [eslint](https://www.npmjs.com/package/eslint) to maintain code style and best practices. Please make sure your PR adheres to the guides by running:
-
-```
-npm run lint
-```
+This project uses [clang-format](https://clang.llvm.org/docs/ClangFormatStyleOptions.html) to maintain code style and best practices and is loosely based upon the recommendations in openstack's [Cpp Standards](https://wiki.openstack.org/wiki/CppCodingStandards).

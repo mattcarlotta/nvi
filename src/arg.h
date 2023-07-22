@@ -24,26 +24,26 @@ namespace nvi {
      *
      * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", NULL };
      *
-     * nvi::arg_parser args(argc, argv);
+     * nvi::Arg_Parser args(argc, argv);
      *
-     * nvi::options options = args.get_options();
+     * nvi::Options options = args.get_options();
      *
      * ```
      */
-    class arg_parser {
+    class Arg_Parser {
         public:
-            arg_parser(int &argc, char *argv[]);
-            const options &get_options() const noexcept;
+            Arg_Parser(int &argc, char *argv[]);
+            const Options &get_options() const noexcept;
 
         private:
-            options options_;
-            int index_;
-            int argc_;
-            std::string bin_name_;
-            char **argv_;
-            std::string invalid_arg_;
-            std::string invalid_args_;
-            std::string command_;
+            Options _options;
+            int _index;
+            int _argc;
+            std::string _bin_name;
+            char **_argv;
+            std::string _invalid_arg;
+            std::string _invalid_args;
+            std::string _command;
 
             void log(uint8_t code) const noexcept;
             std::string parse_single_arg(unsigned int code);

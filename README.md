@@ -25,6 +25,8 @@ A standalone .env file parser that assigns ENVs to a process!
 
 [Troubleshooting](#troubleshooting)
 
+[Contributing](CONTRIBUTING.md)
+
 ## Requirements
 
 The following requirements must be present in order to build from source:

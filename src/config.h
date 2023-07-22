@@ -24,25 +24,25 @@ namespace nvi {
      *
      * const std::string dir = "custom/path/to/envs";
      *
-     * nvi::config config(env, dir);
+     * nvi::Config config(env, dir);
      *
-     * nvi::options options = config.get_options();
+     * nvi::Options options = config.get_options();
      *
      * ```
      */
-    class config {
+    class Config {
         public:
-            config(const std::string &environment, const std::string env_dir = "");
-            const options &get_options() const noexcept;
+            Config(const std::string &environment, const std::string env_dir = "");
+            const Options &get_options() const noexcept;
 
         private:
             void log(uint8_t code) const noexcept;
 
-            options options_;
-            std::string command_;
-            const std::string env_;
-            std::string file_path_;
-            nlohmann::json parsed_config_;
+            Options _options;
+            std::string _command;
+            const std::string _env;
+            std::string _file_path;
+            nlohmann::json _parsed_config;
     };
 }; // namespace nvi
 

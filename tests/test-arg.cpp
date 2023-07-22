@@ -1,5 +1,4 @@
 #include "arg.h"
-#include "constants.h"
 #include "gtest/gtest.h"
 #include <string>
 #include <vector>
@@ -10,7 +9,7 @@ char *argv[] = {(char *)"",           (char *)"--config", (char *)"test",     (c
                 (char *)"--required", (char *)"KEY1",     (char *)"KEY2",     NULL};
 int argc = 16;
 
-nvi::arg_parser arg(argc, argv);
+nvi::Arg_Parser arg(argc, argv);
 
 TEST(arg_parser, parseable_config) { EXPECT_EQ(arg.get_options().config, "test"); }
 
