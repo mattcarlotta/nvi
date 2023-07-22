@@ -34,7 +34,8 @@ The following requirements must be present in order to build from source:
 - clang v14.0.x
 - cmake v3.26.3+
 - make v3.8.x+
-- clangd v14.0.x (optional for formatting/linting)
+- clangd v14.0.x (optional for linting)
+- clang-format v14.0.x (optional for formatting)
 
 You can determine if you're using the correct versions by:
 - Running `which <requirement>` that should output a binary path, if not, then it's not installed and will require platform specific installations.
