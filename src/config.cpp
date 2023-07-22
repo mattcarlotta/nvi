@@ -103,7 +103,7 @@ namespace nvi {
             std::clog << fmt::format("[nvi] (config::DEBUG) Parsed the following keys from the nvi.json configuration "
                                      "file: \"%s\" and selected the \"%s\" configuration.",
                                      keys.c_str(), _env.c_str())
-                      << std::endl;
+                      << '\n';
 
             std::clog << fmt::format("[nvi] (config::DEBUG) The following flags were set: "
                                      "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".\n",

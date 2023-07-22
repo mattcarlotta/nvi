@@ -238,14 +238,15 @@ namespace nvi {
                                      _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
                                      fmt::join(_options.files, ", ").c_str(),
                                      fmt::join(_options.required_envs, ", ").c_str())
-                      << std::endl;
+                      << '\n';
 
             if (_options.config.length() && (_options.dir.length() || _options.commands.size() ||
                                              _options.files.size() > 1 || _options.required_envs.size())) {
                 std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" flag has been set, then "
                              "\"dir\", \"exec\", \"files\", and \"required\" flags are ignored."
-                          << std::endl;
+                          << '\n';
             }
+
             std::clog << std::endl;
             break;
         }

@@ -198,7 +198,7 @@ namespace nvi {
         } else {
             // if a command wasn't provided, print ENVs as a JSON formatted string to stdout
             const std::string last_key = std::prev(_env_map.end())->first;
-            std::cout << "{" << std::endl;
+            std::cout << "{" << '\n';
             for (auto const &[key, value] : _env_map) {
                 std::string esc_value;
                 size_t i = 0;
@@ -212,7 +212,7 @@ namespace nvi {
                 }
                 const std::string comma = key != last_key ? "," : "";
                 std::cout << std::setw(4) << "\"" << key << "\""
-                          << ": \"" << esc_value << "\"" << comma << std::endl;
+                          << ": \"" << esc_value << "\"" << comma << '\n';
             }
             std::cout << "}" << std::endl;
         }
