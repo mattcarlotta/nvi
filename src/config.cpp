@@ -10,7 +10,7 @@
 
 namespace nvi {
 
-    enum LOG {
+    enum MESSAGES {
         FILE_ERROR = 0,
         FILE_PARSE_ERROR = 1,
         DEBUG = 2,
@@ -20,14 +20,14 @@ namespace nvi {
     Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
         _file_path = std::string(std::filesystem::current_path() / _envdir / "nvi.json");
         if (not std::filesystem::exists(_file_path)) {
-            log(LOG::FILE_ERROR);
+            log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
 
         std::ifstream env_configfile(_file_path, std::ios_base::in);
         _parsed_config = nlohmann::json::parse(env_configfile);
         if (not _parsed_config.count(_env)) {
-            log(LOG::FILE_PARSE_ERROR);
+            log(MESSAGES::FILE_PARSE_ERROR);
             std::exit(1);
         }
 
@@ -36,7 +36,7 @@ namespace nvi {
         if (env_config.count("files")) {
             _options.files = env_config.at("files");
         } else {
-            log(LOG::MISSING_FILES_ARG_ERROR);
+            log(MESSAGES::MISSING_FILES_ARG_ERROR);
             std::exit(1);
         }
 
@@ -67,15 +67,15 @@ namespace nvi {
         }
 
         if (_options.debug) {
-            log(LOG::DEBUG);
+            log(MESSAGES::DEBUG);
         }
     };
 
     const Options &Config::get_options() const noexcept { return _options; }
 
-    void Config::log(uint8_t code) const noexcept {
+    void Config::log(const uint_least8_t &code) const noexcept {
         switch (code) {
-        case LOG::FILE_ERROR: {
+        case MESSAGES::FILE_ERROR: {
             std::cerr
                 << fmt::format(
                        "[nvi] (config::FILE_ERROR) Unable to locate \"%s\". The configuration file doesn't appear "
@@ -84,7 +84,7 @@ namespace nvi {
                 << std::endl;
             break;
         }
-        case LOG::FILE_PARSE_ERROR: {
+        case MESSAGES::FILE_PARSE_ERROR: {
             std::cerr << fmt::format(
                              "[nvi] (config::FILE_PARSE_ERROR) Unable to load a \"%s\" environment from the "
                              "nvi.json configuration file (%s). The specified environment doesn't appear to exist!",
@@ -92,7 +92,7 @@ namespace nvi {
                       << std::endl;
             break;
         }
-        case LOG::DEBUG: {
+        case MESSAGES::DEBUG: {
             const std::string last_key = std::prev(_parsed_config.end()).key();
             std::string keys;
             for (auto &el : _parsed_config.items()) {
@@ -112,7 +112,7 @@ namespace nvi {
                       << std::endl;
             break;
         }
-        case LOG::MISSING_FILES_ARG_ERROR: {
+        case MESSAGES::MISSING_FILES_ARG_ERROR: {
             std::cerr << fmt::format(
                              "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a \"files\" property within the "
                              "\"%s\" environment configuration (%s). You must specify at least 1 .env file to load!",

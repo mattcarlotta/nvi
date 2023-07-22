@@ -45,10 +45,11 @@ namespace nvi {
             std::string _invalid_args;
             std::string _command;
 
-            void log(uint8_t code) const noexcept;
-            std::string parse_single_arg(unsigned int code);
-            std::vector<std::string> parse_multi_arg(unsigned int code);
+            std::string parse_single_arg(const uint_least8_t &code);
+            std::vector<std::string> parse_multi_arg(const uint_least8_t &code);
             void parse_command_args();
+            void remove_invalid_arg() noexcept;
+            void log(const uint_least8_t &code) const noexcept;
     };
 } // namespace nvi
 

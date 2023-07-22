@@ -36,7 +36,7 @@ namespace nvi {
             const Options &get_options() const noexcept;
 
         private:
-            void log(uint8_t code) const noexcept;
+            void log(const uint_least8_t &code) const noexcept;
 
             Options _options;
             std::string _command;

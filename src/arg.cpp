@@ -10,7 +10,7 @@
 
 namespace nvi {
 
-    enum LOG {
+    enum MESSAGES {
         CONFIG_FLAG_ERROR = 0,
         DIR_FLAG_ERROR = 1,
         COMMAND_FLAG_ERROR = 2,
@@ -41,51 +41,35 @@ namespace nvi {
         while (_index < _argc) {
             const std::string arg = std::string(_argv[_index]);
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
-                _options.config = parse_single_arg(LOG::CONFIG_FLAG_ERROR);
+                _options.config = parse_single_arg(MESSAGES::CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
                 _options.debug = true;
             } else if (arg == DIRECTORY_SHORT || arg == DIRECTORY_LONG) {
-                _options.dir = parse_single_arg(LOG::DIR_FLAG_ERROR);
+                _options.dir = parse_single_arg(MESSAGES::DIR_FLAG_ERROR);
             } else if (arg == EXECUTE_SHORT || arg == EXECUTE_LONG) {
                 parse_command_args();
             } else if (arg == FILES_SHORT || arg == FILES_LONG) {
-                _options.files = parse_multi_arg(LOG::FILES_FLAG_ERROR);
+                _options.files = parse_multi_arg(MESSAGES::FILES_FLAG_ERROR);
             } else if (arg == HELP_SHORT || arg == HELP_LONG) {
-                log(LOG::HELP_DOC);
+                log(MESSAGES::HELP_DOC);
                 std::exit(0);
             } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
-                _options.required_envs = parse_multi_arg(LOG::REQUIRED_FLAG_ERROR);
+                _options.required_envs = parse_multi_arg(MESSAGES::REQUIRED_FLAG_ERROR);
             } else {
-                _invalid_arg = std::string(_argv[_index]);
-                _invalid_args = "";
-                while (_index < _argc) {
-                    ++_index;
-
-                    if (_argv[_index] == nullptr) {
-                        break;
-                    }
-
-                    const std::string arg = std::string(_argv[_index]);
-                    if (arg.find("-") != std::string::npos) {
-                        _index -= 1;
-                        break;
-                    }
-
-                    _invalid_args += _invalid_args.length() ? " " + arg : arg;
-                }
-
-                log(LOG::INVALID_FLAG_WARNING);
+                remove_invalid_arg();
             }
 
             ++_index;
         }
 
         if (_options.debug) {
-            log(LOG::DEBUG);
+            log(MESSAGES::DEBUG);
         }
     };
 
-    std::string Arg_Parser::parse_single_arg(unsigned int code) {
+    const Options &Arg_Parser::get_options() const noexcept { return _options; }
+
+    std::string Arg_Parser::parse_single_arg(const uint_least8_t &code) {
         ++_index;
         if (_argv[_index] == nullptr) {
             log(code);
@@ -101,7 +85,7 @@ namespace nvi {
         return arg;
     }
 
-    std::vector<std::string> Arg_Parser::parse_multi_arg(unsigned int code) {
+    std::vector<std::string> Arg_Parser::parse_multi_arg(const uint_least8_t &code) {
         std::vector<std::string> arg;
         ++_index;
         while (_index < _argc) {
@@ -131,8 +115,8 @@ namespace nvi {
         // currently, it's impossible to determine when an "--exec" flag with arguments end and another
         // flag begins, for example: nvi --debug --exec cargo run --release --required KEY1 KEY2
         // where "cargo run --release" needs to be separated from the other known flags. A work-around
-        // is to assume the command won't contain any of the used FLAGS defined below
-        static std::unordered_set<std::string> RESERVED_FLAGS = {
+        // is to assume the command won't contain any of the RESERVED_FLAGS defined below
+        static const std::unordered_set<std::string> RESERVED_FLAGS = {
             CONFIG_SHORT, CONFIG_LONG, DEBUG_SHORT, DEBUG_LONG, DIRECTORY_SHORT, DIRECTORY_LONG, EXECUTE_SHORT,
             EXECUTE_LONG, FILES_SHORT, FILES_LONG,  HELP_SHORT, REQUIRED_SHORT,  REQUIRED_LONG};
 
@@ -159,49 +143,69 @@ namespace nvi {
         }
 
         if (not _options.commands.size()) {
-            log(LOG::COMMAND_FLAG_ERROR);
+            log(MESSAGES::COMMAND_FLAG_ERROR);
             std::exit(1);
         }
 
         _options.commands.push_back(nullptr);
     }
 
-    const Options &Arg_Parser::get_options() const noexcept { return _options; }
+    void Arg_Parser::remove_invalid_arg() noexcept {
+        _invalid_arg = std::string(_argv[_index]);
+        _invalid_args = "";
+        while (_index < _argc) {
+            ++_index;
 
-    void Arg_Parser::log(uint8_t code) const noexcept {
+            if (_argv[_index] == nullptr) {
+                break;
+            }
+
+            const std::string arg = std::string(_argv[_index]);
+            if (arg.find("-") != std::string::npos) {
+                _index -= 1;
+                break;
+            }
+
+            _invalid_args += _invalid_args.length() ? " " + arg : arg;
+        }
+
+        log(MESSAGES::INVALID_FLAG_WARNING);
+    }
+
+    void Arg_Parser::log(const uint_least8_t &code) const noexcept {
         switch (code) {
-        case LOG::CONFIG_FLAG_ERROR: {
+        case MESSAGES::CONFIG_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "
                          "environment name from the nvi.json configuration file. Use flag \"-h\" or \"--help\" for "
                          "more information."
                       << std::endl;
             break;
         }
-        case LOG::DIR_FLAG_ERROR: {
+        case MESSAGES::DIR_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::DIR_FLAG_ERROR) The \"-d\" or \"--dir\" flag must contain a "
                          "valid directory path. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
-        case LOG::COMMAND_FLAG_ERROR: {
+        case MESSAGES::COMMAND_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::COMMAND_FLAG_ERROR) The \"-e\" or \"--exec\" flag must contain at least "
                          "1 command. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
-        case LOG::FILES_FLAG_ERROR: {
+        case MESSAGES::FILES_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::FILES_FLAG_ERROR) The \"-f\" or \"--files\" flag must contain at least "
                          "1 .env file. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
-        case LOG::REQUIRED_FLAG_ERROR: {
+        case MESSAGES::REQUIRED_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::REQUIRED_FLAG_ERROR) The \"-r\" or \"--required\" flag must contain at "
                          "least 1 ENV key. Use flag \"-h\" or \"--help\" for more information."
                       << std::endl;
             break;
         }
-        case LOG::HELP_DOC: {
+        case MESSAGES::HELP_DOC: {
             // clang-format off
             std::clog << "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
                          "│ NVI CLI Documentation                                                                                                  │\n"
@@ -219,7 +223,7 @@ namespace nvi {
             // clang-format on
             break;
         }
-        case LOG::INVALID_FLAG_WARNING: {
+        case MESSAGES::INVALID_FLAG_WARNING: {
             std::clog << fmt::format(
                              "[nvi] (arg::INVALID_FLAG_WARNING) The flag \"%s\" with%s arguments is not recognized. "
                              "Skipping.",
@@ -228,7 +232,7 @@ namespace nvi {
                       << std::endl;
             break;
         }
-        case LOG::DEBUG: {
+        case MESSAGES::DEBUG: {
             std::clog << fmt::format("[nvi] (arg::DEBUG) The following flags were set: config=\"%s\", "
                                      "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
                                      _options.config.c_str(), _options.dir.c_str(), _command.c_str(),

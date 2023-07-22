@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     nvi::Parser parser(options);
 
-    parser.parse_envs()->check_envs()->set_envs();
+    parser.parse_envs()->check_envs()->set_or_print_envs();
 
     std::exit(0);
 }

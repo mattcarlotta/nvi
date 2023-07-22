@@ -40,13 +40,13 @@ namespace nvi {
             Parser(const Options &options);
             Parser *check_envs();
             Parser *parse_envs() noexcept;
-            void set_envs();
+            void set_or_print_envs();
             const std::map<std::string, std::string> &get_env_map() const;
 
         private:
-            void log(uint8_t code) const noexcept;
             Parser *read(const std::string &env_file_name);
             Parser *parse();
+            void log(const uint_least8_t &code) const noexcept;
 
             const Options _options;
             std::map<std::string, std::string> _env_map;

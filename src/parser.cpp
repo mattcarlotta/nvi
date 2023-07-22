@@ -16,7 +16,7 @@
 
 namespace nvi {
 
-    enum LOG {
+    enum MESSAGES {
         INTERPOLATION_WARNING = 0,
         INTERPOLATION_ERROR = 1,
         DEBUG = 2,
@@ -37,8 +37,6 @@ namespace nvi {
     constexpr char DOUBLE_QUOTE = '"';     // 0x22
 
     Parser::Parser(const Options &options) : _options(options) {}
-
-    const std::map<std::string, std::string> &Parser::get_env_map() const { return _env_map; }
 
     Parser *Parser::parse() {
         while (_byte_count < _file.length()) {
@@ -92,7 +90,7 @@ namespace nvi {
                             } else if (_env_map.count(_key_prop)) {
                                 interpolated_value = _env_map.at(_key_prop);
                             } else if (_options.debug) {
-                                log(LOG::INTERPOLATION_WARNING);
+                                log(MESSAGES::INTERPOLATION_WARNING);
                             }
 
                             _value += interpolated_value;
@@ -104,7 +102,7 @@ namespace nvi {
                             // value
                             continue;
                         } else {
-                            log(LOG::INTERPOLATION_ERROR);
+                            log(MESSAGES::INTERPOLATION_ERROR);
                             std::exit(1);
                         }
                     }
@@ -117,7 +115,7 @@ namespace nvi {
                 if (_key.length()) {
                     _env_map[_key] = _value;
                     if (_options.debug) {
-                        log(LOG::DEBUG);
+                        log(MESSAGES::DEBUG);
                     }
                 }
 
@@ -128,7 +126,7 @@ namespace nvi {
         }
 
         if (_options.debug) {
-            log(LOG::DEBUG_FILE_PROCESSED);
+            log(MESSAGES::DEBUG_FILE_PROCESSED);
         }
 
         _env_file.close();
@@ -145,20 +143,28 @@ namespace nvi {
             }
 
             if (_undefined_keys.size()) {
-                log(LOG::REQUIRED_ENV_ERROR);
+                log(MESSAGES::REQUIRED_ENV_ERROR);
                 std::exit(1);
             }
         }
 
         if (not _env_map.size()) {
-            log(LOG::EMPTY_ENVS);
+            log(MESSAGES::EMPTY_ENVS);
             std::exit(1);
         }
 
         return this;
     }
 
-    void Parser::set_envs() {
+    Parser *Parser::parse_envs() noexcept {
+        for (const std::string &env : _options.files) {
+            read(env)->parse();
+        }
+
+        return this;
+    }
+
+    void Parser::set_or_print_envs() {
         if (_options.commands.size()) {
             pid_t pid = fork();
 
@@ -212,6 +218,8 @@ namespace nvi {
         }
     }
 
+    const std::map<std::string, std::string> &Parser::get_env_map() const { return _env_map; }
+
     Parser *Parser::read(const std::string &env_file_name) {
         _file_name = env_file_name;
         _byte_count = 0;
@@ -226,18 +234,18 @@ namespace nvi {
 
         _file_path = std::string(std::filesystem::current_path() / _options.dir / _file_name);
         if (not std::filesystem::exists(_file_path)) {
-            log(LOG::FILE_ERROR);
+            log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
 
         _env_file = std::ifstream(_file_path, std::ios_base::in);
         if (_env_file.bad()) {
-            log(LOG::FILE_ERROR);
+            log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
         _file = std::string{std::istreambuf_iterator<char>(_env_file), std::istreambuf_iterator<char>()};
         if (not _file.length()) {
-            log(LOG::EMPTY_ENVS);
+            log(MESSAGES::EMPTY_ENVS);
             std::exit(1);
         }
         _file_view = std::string_view(_file);
@@ -245,17 +253,9 @@ namespace nvi {
         return this;
     }
 
-    Parser *Parser::parse_envs() noexcept {
-        for (const std::string &env : _options.files) {
-            read(env)->parse();
-        }
-
-        return this;
-    }
-
-    void Parser::log(uint8_t code) const noexcept {
+    void Parser::log(const uint_least8_t &code) const noexcept {
         switch (code) {
-        case LOG::INTERPOLATION_WARNING: {
+        case MESSAGES::INTERPOLATION_WARNING: {
             std::clog << fmt::format(
                              "[nvi] (Parser::INTERPOLATION_WARNING::%s:%d:%d) The key \"%s\" contains an invalid "
                              "interpolated variable: \"%s\". Unable to locate a value that corresponds to this key.",
@@ -264,7 +264,7 @@ namespace nvi {
                       << std::endl;
             break;
         }
-        case LOG::INTERPOLATION_ERROR: {
+        case MESSAGES::INTERPOLATION_ERROR: {
             std::cerr << fmt::format("[nvi] (Parser::INTERPOLATION_ERROR::%s:%d:%d) The key \"%s\" contains an "
                                      "interpolated \"{\" operator, but appears to be missing a closing \"}\" operator.",
                                      _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
@@ -272,20 +272,20 @@ namespace nvi {
                       << std::endl;
             break;
         }
-        case LOG::DEBUG: {
+        case MESSAGES::DEBUG: {
             std::clog << fmt::format("[nvi] (Parser::DEBUG::%s:%d:%d) Set key \"%s\" to equal value \"%s\".",
                                      _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
                                      _key.c_str(), _value.c_str())
                       << std::endl;
             break;
         }
-        case LOG::DEBUG_FILE_PROCESSED: {
+        case MESSAGES::DEBUG_FILE_PROCESSED: {
             std::clog << fmt::format("[nvi] (Parser::DEBUG_FILE_PROCESSED::%s) Processed %d line%s and %d bytes!\n",
                                      _file_name.c_str(), _line_count, (_line_count != 1 ? "s" : ""), _byte_count)
                       << std::endl;
             break;
         }
-        case LOG::REQUIRED_ENV_ERROR: {
+        case MESSAGES::REQUIRED_ENV_ERROR: {
             std::cerr << fmt::format(
                              "[nvi] (Parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \"%s\""
                              ", but they are undefined after all of the .env files were parsed.",
@@ -293,19 +293,20 @@ namespace nvi {
                       << std::endl;
             break;
         }
-        case LOG::FILE_ERROR: {
+        case MESSAGES::FILE_ERROR: {
             std::cerr << fmt::format("[nvi] (Parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear "
                                      "to exist or isn't a valid file format!",
                                      _file_path.c_str())
                       << std::endl;
             break;
         }
-        case LOG::EMPTY_ENVS: {
-            std::cerr << fmt::format(
-                             "[nvi] (Parser::LOG::EMPTY_ENVS) Unable to parse any ENVS! Please ensure the \"%s\" file "
-                             "is not empty.",
-                             _file_name.c_str())
-                      << std::endl;
+        case MESSAGES::EMPTY_ENVS: {
+            std::cerr
+                << fmt::format(
+                       "[nvi] (Parser::MESSAGES::EMPTY_ENVS) Unable to parse any ENVS! Please ensure the \"%s\" file "
+                       "is not empty.",
+                       _file_name.c_str())
+                << std::endl;
             break;
         }
         default:
