@@ -1,5 +1,6 @@
 # nvi bin
-A standalone .env file parser that assigns ENVs to a process!
+
+A standalone .env file parser for interpolating and assigning multiple .env files into a process.
 
 ## Quick Links
 
@@ -132,7 +133,7 @@ Parsing an `example.env` file from a custom directory with debug logging:
 nvi --files example.env --dir dist/client --debug
 ```
 
-Parsing one or many `.env` files from a [nvi.json](https://github.com/mattcarlotta/nvi/blob/main/nvi.json#L6-L12) configuration file located at a project's root directory:
+Parsing one or many `.env` files from a [nvi.json](https://github.com/mattcarlotta/nvi/blob/main/envs/nvi.json#L6-L12) configuration file typically located at a project's root directory:
 ```DOSINI
 nvi --config bin_test_only
 ```
