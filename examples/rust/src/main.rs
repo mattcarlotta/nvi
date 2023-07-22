@@ -18,6 +18,6 @@ fn main() {
         "mongodb://root:password@abcd1234.mongolab.com:12345/localhost"
     );
 
-    println!("Successfully assigned ENVs to process!");
+    println!("Successfully assigned ENVs to the process!");
     std::process::exit(0);
 }

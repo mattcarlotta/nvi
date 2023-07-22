@@ -17,6 +17,6 @@ assert.deepEqual(
     "mongodb://root:password@abcd1234.mongolab.com:12345/localhost"
 );
 
-console.log("Successfully assigned ENVs to process.env!");
+console.log("Successfully assigned ENVs to the process!");
 process.exit(0);
 

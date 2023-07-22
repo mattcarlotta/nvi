@@ -8,4 +8,4 @@ assert os.environ.get(
     "MONGOLAB_URI") == ("mongodb://root:password@abcd1234.mongolab.com:"
                         "12345/localhost")
 
-print("Successfully assigned ENVs to process!")
+print("Successfully assigned ENVs to the process!")
