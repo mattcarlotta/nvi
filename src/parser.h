@@ -11,8 +11,8 @@
 #include <vector>
 
 namespace nvi {
-    /** @class
-     * Parses and interpolates an .env file to a single object of `"key": "value"` pairs.
+    /**
+     * @detail Parses and interpolates an .env file to a single object of `"key": "value"` pairs.
      *
      * @param `options` initialize parser with the following required option: `files`, folled by optional options:
      * `dir`, `required_envs`, and `debug`.

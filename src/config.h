@@ -9,8 +9,8 @@
 #include <vector>
 
 namespace nvi {
-    /** @class
-     * Reads an `nvi.json` configuration file from the project root directory or a specified directory and
+    /**
+     * @detail Reads an `nvi.json` configuration file from the project root directory or a specified directory and
      * converts the selected environment into `options`.
      *
      * @param `env` contains the name of the environment to load from the configuration file.

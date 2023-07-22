@@ -176,8 +176,8 @@ namespace nvi {
                     std::cerr
                         << nvi::fmt::format(
                                "[nvi] (main::COMMAND_ENOENT_ERROR) The specified command encountered an error. The "
-                               "command "
-                               "\"%s\" doesn't appear to exist or may not reside in a directory within the shell PATH.",
+                               "command \"%s\" doesn't appear to exist or may not reside in a directory within the "
+                               "shell PATH.",
                                _options.commands[0])
                         << std::endl;
                     _exit(-1);

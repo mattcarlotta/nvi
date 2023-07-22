@@ -7,6 +7,15 @@
 #include <vector>
 
 namespace nvi::fmt {
+    /**
+     * @detail Formats a list of arguments into a single string using `sprintf`.
+     *
+     * @param `fmt` a pointer to a string with interpolations.
+     *
+     * @param `args` contains a list of arguments.
+     *
+     * @return a string buf.
+     */
     template <typename... A> std::string format(const char *fmt, A... args) {
         size_t size = snprintf(nullptr, 0, fmt, args...);
         std::string buf;
@@ -16,6 +25,15 @@ namespace nvi::fmt {
         return buf;
     }
 
+    /**
+     * @detail Joins a list of elements into a single string.
+     *
+     * @param `elements` a list of elements to be combined.
+     *
+     * @param `delimiter` a character to use to separate each item in the string.
+     *
+     * @return a string.
+     */
     template <typename E> std::string join(E const &elements, const char *const delimiter) {
         std::ostringstream os;
         auto b = std::begin(elements);

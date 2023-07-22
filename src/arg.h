@@ -8,8 +8,8 @@
 #include <vector>
 
 namespace nvi {
-    /** @class
-     * Parses flags and arguments from `argv` into `options`.
+    /**
+     * @detail Parses flags and arguments from `argv` into `options`.
      *
      * @param `argc` holds the number of arguments in `argv`.
      *
