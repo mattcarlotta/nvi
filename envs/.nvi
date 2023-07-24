@@ -1,16 +1,16 @@
 [development]
-debug=true
-dir="path/to/custom/dir"
-files=[".env", "base.env", "reference.env"]
-exec="bin test"
-required=["TEST1", "TEST2", "TEST3"]
-
-[staging_1]
 debug = true
 dir = "path/to/custom/dir"
 files = [".env", "base.env", "reference.env"]
 exec = "bin test"
 required = ["TEST1", "TEST2", "TEST3"]
+
+[staging]
+debug=true
+dir="path/to/custom/dir"
+files=[".env", "base.env", "reference.env"]
+exec="bin test"
+required=["TEST1", "TEST2", "TEST3"]
 
 [staging_2]
     debug=true
@@ -21,8 +21,8 @@ required = ["TEST1", "TEST2", "TEST3"]
 
 [test]
     debug = true
-    dir = "path/to/custom/dir"
-    files = [".env", "base.env", "reference.env"]
+    dir = "custom/directory"
+    files = ["test1.env", "test2.env", "test3.env"]
     exec = "bin test"
     required = ["TEST1", "TEST2", "TEST3"]
 
@@ -33,3 +33,4 @@ dir =   "path/to/custom/dir"
     files       =       [".env", "base.env", "reference.env"]
 exec            =           "bin test"
 required=["TEST1", "TEST2", "TEST3"]                
+message="hi"

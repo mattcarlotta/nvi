@@ -78,7 +78,7 @@ All flags below are optional. Short form (`-`) and long form (`--`) flags are su
 
 If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
 
-- `-c` | `--config`: Specifies which environment config to load from the nvi.json file. (ex: --config dev)‡
+- `-c` | `--config`: Specifies which environment config to load from the .nvi file. (ex: --config dev)‡
 - `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
 - `-d` | `--dir`: Specifies which directory the env file is located within. (ex: --dir path/to/env)
 - `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVs. (ex: --exec node index.js)
