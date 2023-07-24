@@ -3,7 +3,6 @@
 
 #include "options.h"
 #include <cstdint>
-#include <fstream>
 #include <string>
 #include <string_view>
 #include <vector>

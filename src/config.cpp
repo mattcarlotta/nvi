@@ -1,6 +1,5 @@
 #include "config.h"
 #include "format.h"
-#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
