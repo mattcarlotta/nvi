@@ -36,6 +36,7 @@ namespace nvi {
             const Options &get_options() const noexcept;
 
         private:
+            const std::string_view trim_surrounding_spaces(const std::string_view &val) noexcept;
             void log(const uint_least8_t &code) const noexcept;
 
             Options _options;

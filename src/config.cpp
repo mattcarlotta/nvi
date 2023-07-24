@@ -60,22 +60,10 @@ namespace nvi {
                 break;
             }
 
-            std::string key;
-            // remove all spaces
-            for (const char &c : line.substr(0, assignment_index)) {
-                if (c != SPACE) {
-                    key += c;
-                }
-            }
+            const std::string_view key = trim_surrounding_spaces(line.substr(0, assignment_index));
 
-            std::string_view value;
-            // remove any leading spaces
-            for (int i = 1; i < eol_index; ++i) {
-                if (line[assignment_index + i] != SPACE) {
-                    value = line.substr(assignment_index + i, eol_index - 1);
-                    break;
-                }
-            }
+            const std::string_view value = trim_surrounding_spaces(line.substr(assignment_index + 1, eol_index - 1));
+
             const char first_char = value[0];
             const char last_char = value[value.length() - 1];
 
@@ -163,6 +151,24 @@ namespace nvi {
     };
 
     const Options &Config::get_options() const noexcept { return _options; }
+
+    const std::string_view Config::trim_surrounding_spaces(const std::string_view &val) noexcept {
+        int left_index = 0;
+        int right_index = val.length() - 1;
+        while (left_index < right_index) {
+            if (val[left_index] != SPACE && val[right_index] != SPACE) {
+                break;
+            }
+            if (val[left_index] == SPACE) {
+                ++left_index;
+            }
+            if (val[right_index] == SPACE) {
+                --right_index;
+            }
+        }
+
+        return val.substr(left_index, right_index - left_index + 1);
+    }
 
     void Config::log(const uint_least8_t &code) const noexcept {
         switch (code) {
