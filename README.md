@@ -21,6 +21,7 @@ A standalone .env file parser for interpolating and assigning multiple .env file
   - [How do I uninstall the binary?](#how-do-i-uninstall-the-binary)
   - [What are the rules for defining or interpolating keys?](#what-are-the-rules-for-defining-or-interpolating-keys)
   - [What Operating Systems are supported?](#what-operating-systems-are-supported)
+  - [What are the nvi configuration file specs?](#what-are-the-nvi-configuration-file-specs)
   - [Can I manually assign parsed ENVs to a process?](#can-i-manually-assign-parsed-envs-to-a-process)
   - [How do I read the debug details?](#how-do-i-read-the-debug-details)
 
@@ -90,31 +91,28 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 
 
 ## Configuration File
-Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `nvi.json` configuration file.
+Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `.nvi` configuration file.
 
-The configuration file is a [JSON](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON) file that contains...
-- An `"environment"` name that encapsulates the following properties: 
+The configuration file is a [TOML](https://toml.io/en/)-like file that contains...
+- An `[environment]` name that defines the following optional properties: 
   - **debug**: boolean (default: `false`) 
   - **dir**: string (default: `""`)
   - **execute**: string (default: `""`)
   - **files**: string[] (default `[".env"]`) 
   - **required**: string[] (default `[]`)
 
-The following represents an example `nvi.json` configuration:
-```json
-{
-    "dev": {
-        "debug": true,
-        "dir": "custom/directory/to/envs",
-        "execute": "bin test",
-        "files": ["1.env", "2.env", "3.env"],
-        "required": ["KEY_1", "KEY_2", "KEY_3"]
-    },
-    "test": {
-        "files": ["test.env"],
-        "required": ["TEST_KEY_1", "TEST_KEY_2", "TEST_KEY_3"]
-    }
-}
+The following represents an example `.nvi` configuration:
+```toml
+[development]
+debug = true
+dir = "path/to/custom/dir"
+files = [".env", "base.env", "reference.env"]
+exec = "bin test"
+required = ["TEST1", "TEST2", "TEST3"]
+
+[staging]
+files = [".env"]
+required = ["TEST1"]
 ```
 
 To target an environment within the configuration file, simply use the `-c` or `--config` flag followed by the environment name:
@@ -123,6 +121,8 @@ nvi -c dev
 # or
 nvi --config test
 ```
+
+Please read [this](#what-are-the-nvi-configuration-file-specs) for config file specs.
 
 ### [Examples](/examples)
 
@@ -133,9 +133,9 @@ Parsing an `example.env` file from a custom directory with debug logging:
 nvi --files example.env --dir dist/client --debug
 ```
 
-Parsing one or many `.env` files from a [nvi.json](https://github.com/mattcarlotta/nvi/blob/main/envs/nvi.json#L6-L12) configuration file typically located at a project's root directory:
+Parsing one or many `.env` files from a [.nvi](envs/.nvi#L5-L10) configuration file typically located at a project's root directory:
 ```DOSINI
-nvi --config bin_test_only
+nvi --config standard
 ```
 
 Parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
@@ -171,6 +171,20 @@ Other things to note:
 
 ### What Operating Systems are supported?
 Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+
+### What are the nvi configuration file specs?
+This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuratin. 
+
+Therefore, the config file parser is **NOT** a TOML-complaint parser and has some rules.
+
+The configuration file must:
+- be named `.nvi`
+- not contain spaces within, before or after the environment's name
+- not contain spaces within a `files` .env name nor within the `required` keys; instead, use underscores: `example_1`
+- not contain comments after a configuration `key = value` option
+- not contain multi-line arguments
+
+Click [here](envs/.nvi) to view valid vs invalid formatting configurations.
 
 ### Can I manually assign parsed ENVs to a process?
 Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 

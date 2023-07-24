@@ -32,6 +32,7 @@ namespace nvi {
     constexpr char FILES_PROP[] = "files";
     constexpr char REQUIRED_PROP[] = "required";
 
+    constexpr char COMMENT = '#';         // 0x23
     constexpr char SPACE = ' ';           // 0x00
     constexpr char OPEN_BRACKET = '[';    // 0x5b
     constexpr char CLOSE_BRACKET = ']';   // 0x5d
@@ -64,6 +65,14 @@ namespace nvi {
         int eol_index = config_options.find(LINE_DELIMITER);
         while (eol_index >= 0) {
             std::string_view line = config_options.substr(0, eol_index);
+
+            // skip comments in config options
+            const int comment_index = line.find(COMMENT);
+            if (comment_index >= 0) {
+                config_options = config_options.substr(eol_index + 1, _file_view.length());
+                eol_index = config_options.find('\n');
+                continue;
+            }
 
             // ensure current line is a key = value
             const int assignment_index = line.find(ASSIGN_OP);
