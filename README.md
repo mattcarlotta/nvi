@@ -45,7 +45,8 @@ You can determine if you're using the correct versions by:
 
 ## Installation
 ```DOSINI
-git clone git@github.com:mattcarlotta/nvi.git --recursive nvi
+# if you plan to run the unit tests, add the "--recursive" flag to install test dependencies
+git clone git@github.com:mattcarlotta/nvi.git nvi
 
 cd nvi
 
@@ -93,7 +94,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 ## Configuration File
 Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `.nvi` configuration file.
 
-The configuration file is a [TOML](https://toml.io/en/)-like file that contains...
+The configuration file is a [TOML](https://toml.io/en/)-like formatted file that contains...
 - An `[environment]` name that defines the following optional properties: 
   - **debug**: boolean (default: `false`) 
   - **dir**: string (default: `""`)
@@ -103,23 +104,23 @@ The configuration file is a [TOML](https://toml.io/en/)-like file that contains.
 
 The following represents an example `.nvi` configuration:
 ```toml
-[development]
+[dev]
 debug = true
 dir = "path/to/custom/dir"
-files = [".env", "base.env", "reference.env"]
+files = [ ".env", "base.env", "reference.env" ]
 exec = "bin test"
-required = ["TEST1", "TEST2", "TEST3"]
+required = [ "TEST1", "TEST2", "TEST3" ]
 
 [staging]
-files = [".env"]
-required = ["TEST1"]
+files = [ ".env" ]
+required = [ "TEST1" ]
 ```
 
 To target an environment within the configuration file, simply use the `-c` or `--config` flag followed by the environment name:
 ```DOSINI
 nvi -c dev
 # or
-nvi --config test
+nvi --config staging
 ```
 
 Please read [this](#what-are-the-nvi-configuration-file-specs) for config file specs.
@@ -173,14 +174,14 @@ Other things to note:
 Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
 
 ### What are the nvi configuration file specs?
-This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuratin. 
+This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
 
-Therefore, the config file parser is **NOT** a TOML-complaint parser and has some rules.
+Therefore, while the config file parser is flexible, it is **NOT** a TOML-complaint parser and has some rules.
 
 The configuration file must:
 - be named `.nvi`
-- not contain spaces within, before or after the environment's name
-- not contain spaces within a `files` .env name nor within the `required` keys; instead, use underscores: `example_1`
+- not contain spaces within, before or after the `[environment]`'s name
+- not contain spaces within a `files` .env name nor within the `required` keys; instead, files/key should use underscores: `example_1`
 - not contain comments after a configuration `key = value` option
 - not contain multi-line arguments
 
