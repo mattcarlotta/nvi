@@ -1,6 +1,5 @@
 #include "parser.h"
 #include "format.h"
-#include "json.cpp"
 #include "options.h"
 #include <cerrno>
 #include <cstdint>

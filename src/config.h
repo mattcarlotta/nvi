@@ -1,11 +1,11 @@
 #ifndef NVI_ENV_CONFIG_H
 #define NVI_ENV_CONFIG_H
 
-#include "json.cpp"
 #include "options.h"
 #include <cstdint>
 #include <fstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace nvi {
@@ -39,10 +39,11 @@ namespace nvi {
             void log(const uint_least8_t &code) const noexcept;
 
             Options _options;
+            std::string _file;
+            std::string_view _file_view;
             std::string _command;
             const std::string _env;
             std::string _file_path;
-            nlohmann::json _parsed_config;
     };
 }; // namespace nvi
 
