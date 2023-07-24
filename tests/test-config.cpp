@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-nvi::Config config("test", "../envs");
+nvi::Config config("staggered_with_comments", "../envs");
 
 TEST(parse_config_file, debug) { EXPECT_EQ(config.get_options().debug, true); }
 
