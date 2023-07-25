@@ -231,13 +231,13 @@ namespace nvi {
         _file.clear();
         _file_path.clear();
 
-        _file_path = std::string(std::filesystem::current_path() / _options.dir / _file_name);
+        _file_path = std::string{std::filesystem::current_path() / _options.dir / _file_name};
         if (not std::filesystem::exists(_file_path)) {
             log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
 
-        _env_file = std::ifstream(_file_path, std::ios_base::in);
+        _env_file = std::ifstream{_file_path, std::ios_base::in};
         if (_env_file.bad()) {
             log(MESSAGES::FILE_ERROR);
             std::exit(1);
@@ -247,7 +247,7 @@ namespace nvi {
             log(MESSAGES::EMPTY_ENVS);
             std::exit(1);
         }
-        _file_view = std::string_view(_file);
+        _file_view = std::string_view{_file};
 
         return this;
     }

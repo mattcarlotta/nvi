@@ -39,7 +39,7 @@ namespace nvi {
     Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc), _argv(argv) {
         _index = 1;
         while (_index < _argc) {
-            const std::string arg = std::string(_argv[_index]);
+            const std::string arg = std::string{_argv[_index]};
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
                 _options.config = parse_single_arg(MESSAGES::CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
@@ -76,7 +76,7 @@ namespace nvi {
             std::exit(1);
         }
 
-        const std::string arg = std::string(_argv[_index]);
+        const std::string arg = std::string{_argv[_index]};
         if (arg.find("-") != std::string::npos) {
             log(code);
             std::exit(1);
@@ -93,7 +93,7 @@ namespace nvi {
                 break;
             }
 
-            const std::string next_arg = std::string(_argv[_index]);
+            const std::string next_arg = std::string{_argv[_index]};
             if (next_arg.find("-") != std::string::npos) {
                 _index -= 1;
                 break;
@@ -126,7 +126,7 @@ namespace nvi {
                 break;
             }
 
-            std::string next_arg = std::string(_argv[_index]);
+            std::string next_arg = std::string{_argv[_index]};
             if (next_arg.find("-") != std::string::npos && RESERVED_FLAGS.find(next_arg) != RESERVED_FLAGS.end()) {
                 _index -= 1;
                 break;
@@ -151,7 +151,7 @@ namespace nvi {
     }
 
     void Arg_Parser::remove_invalid_arg() noexcept {
-        _invalid_arg = std::string(_argv[_index]);
+        _invalid_arg = std::string{_argv[_index]};
         _invalid_args = "";
         while (_index < _argc) {
             ++_index;
@@ -160,7 +160,7 @@ namespace nvi {
                 break;
             }
 
-            const std::string arg = std::string(_argv[_index]);
+            const std::string arg = std::string{_argv[_index]};
             if (arg.find("-") != std::string::npos) {
                 _index -= 1;
                 break;

@@ -130,13 +130,13 @@ namespace nvi {
         int left_index = 0;
         int right_index = val.length() - 1;
         while (left_index < right_index) {
-            if (val.at(left_index) != SPACE && val.at(right_index) != SPACE) {
+            if (val[left_index] != SPACE && val[right_index] != SPACE) {
                 break;
             }
-            if (val.at(left_index) == SPACE) {
+            if (val[left_index] == SPACE) {
                 ++left_index;
             }
-            if (val.at(right_index) == SPACE) {
+            if (val[right_index] == SPACE) {
                 --right_index;
             }
         }
@@ -145,7 +145,7 @@ namespace nvi {
     }
 
     const std::string_view Config::parse_string_arg(const uint_least8_t &code) const {
-        if (_value.at(0) != DOUBLE_QUOTE || _value.at(_value.length() - 1) != DOUBLE_QUOTE) {
+        if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
             log(code);
             std::exit(1);
         }
@@ -154,7 +154,7 @@ namespace nvi {
     }
 
     const std::vector<std::string> Config::parse_vector_arg(const uint_least8_t &code) const {
-        if (_value.at(0) != OPEN_BRACKET || _value.at(_value.length() - 1) != CLOSE_BRACKET) {
+        if (_value[0] != OPEN_BRACKET || _value[_value.length() - 1] != CLOSE_BRACKET) {
             log(code);
             std::exit(1);
         }
@@ -197,21 +197,21 @@ namespace nvi {
         case MESSAGES::DEBUG_ARG_ERROR: {
             std::cerr << fmt::format("[nvi] (config::DEBUG_ARG_ERROR) The \"debug\" property contains an "
                                      "invalid value. Expected a boolean value, but instead received: %s.",
-                                     std::string(_value).c_str())
+                                     std::string{_value}.c_str())
                       << std::endl;
             break;
         }
         case MESSAGES::DIR_ARG_ERROR: {
             std::cerr << fmt::format("[nvi] (config::DIR_ARG_ERROR) The \"dir\" property contains an "
                                      "invalid value. Expected a string value, but instead received: %s.",
-                                     std::string(_value).c_str())
+                                     std::string{_value}.c_str())
                       << std::endl;
             break;
         }
         case MESSAGES::FILES_ARG_ERROR: {
             std::cerr << fmt::format("[nvi] (config::FILES_ARG_ERROR) The \"files\" property contains an "
                                      "invalid value. Expected a vector of strings, but instead received: %s.",
-                                     std::string(_value).c_str())
+                                     std::string{_value}.c_str())
                       << std::endl;
             break;
         }
@@ -226,21 +226,21 @@ namespace nvi {
         case MESSAGES::EXEC_ARG_ERROR: {
             std::cerr << fmt::format("[nvi] (config::EXEC_ARG_ERROR) The \"exec\" property contains an "
                                      "invalid value. Expected a string value, but instead received: %s.",
-                                     std::string(_value).c_str())
+                                     std::string{_value}.c_str())
                       << std::endl;
             break;
         }
         case MESSAGES::REQUIRED_ARG_ERROR: {
             std::cerr << fmt::format("[nvi] (config::REQUIRED_ARG_ERROR) The \"required\" property contains an "
                                      "invalid value. Expected a vector of strings, but instead received: %s.",
-                                     std::string(_value).c_str())
+                                     std::string{_value}.c_str())
                       << std::endl;
             break;
         }
         case MESSAGES::INVALID_PROPERTY_WARNING: {
             std::clog << fmt::format("[nvi] (config::INVALID_PROPERTY_WARNING) Found an invalid property: \"%s\" "
                                      "within the \"%s\" config. Skipping.",
-                                     std::string(_key).c_str(), _env.c_str())
+                                     std::string{_key}.c_str(), _env.c_str())
                       << std::endl;
             break;
         }
