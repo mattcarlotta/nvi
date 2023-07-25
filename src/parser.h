@@ -2,7 +2,6 @@
 #define NVI_PARSER_H
 
 #include "options.h"
-#include <cstdint>
 #include <fstream>
 #include <map>
 #include <string>
@@ -18,7 +17,7 @@ namespace nvi {
      *
      * @example Initializing a parser, parsing .env files, checking ENVs, and setting ENVs
      * ```
-     * nvi::Options options;
+     * nvi::options_t options;
      *
      * options.debug = false;
      *
@@ -36,7 +35,7 @@ namespace nvi {
      */
     class Parser {
         public:
-            Parser(const Options &options);
+            Parser(const options_t &options);
             Parser *check_envs();
             Parser *parse_envs() noexcept;
             void set_or_print_envs();
@@ -45,9 +44,9 @@ namespace nvi {
         private:
             Parser *read(const std::string &env_file_name);
             Parser *parse();
-            void log(const uint_least8_t &code) const noexcept;
+            void log(const unsigned int &code) const noexcept;
 
-            const Options _options;
+            const options_t _options;
             std::map<std::string, std::string> _env_map;
             std::ifstream _env_file;
             std::string _file;

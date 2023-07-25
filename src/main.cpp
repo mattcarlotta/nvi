@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[]) {
     nvi::Arg_Parser arg(argc, argv);
-    nvi::Options options = arg.get_options();
+    nvi::options_t options = arg.get_options();
 
     if (options.config.length()) {
         nvi::Config config(options.config);

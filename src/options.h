@@ -13,6 +13,8 @@ namespace nvi {
             std::vector<std::string> files{".env"};
             std::vector<std::string> required_envs;
     };
+
+    typedef Options options_t;
 }; // namespace nvi
 
 #endif

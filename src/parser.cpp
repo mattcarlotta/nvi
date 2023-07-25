@@ -2,7 +2,6 @@
 #include "format.h"
 #include "options.h"
 #include <cerrno>
-#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -16,13 +15,13 @@
 namespace nvi {
 
     enum MESSAGES {
-        INTERPOLATION_WARNING = 0,
-        INTERPOLATION_ERROR = 1,
-        DEBUG = 2,
-        DEBUG_FILE_PROCESSED = 3,
-        REQUIRED_ENV_ERROR = 4,
-        FILE_ERROR = 5,
-        EMPTY_ENVS = 6,
+        INTERPOLATION_WARNING,
+        INTERPOLATION_ERROR,
+        DEBUG,
+        DEBUG_FILE_PROCESSED,
+        REQUIRED_ENV_ERROR,
+        FILE_ERROR,
+        EMPTY_ENVS
     };
 
     constexpr char NULL_TERMINATOR = '\0'; // 0x00
@@ -35,7 +34,7 @@ namespace nvi {
     constexpr char CLOSE_BRACE = '}';      // 0x7d
     constexpr char DOUBLE_QUOTE = '"';     // 0x22
 
-    Parser::Parser(const Options &options) : _options(options) {}
+    Parser::Parser(const options_t &options) : _options(options) {}
 
     Parser *Parser::parse() {
         while (_byte_count < _file.length()) {
@@ -252,7 +251,7 @@ namespace nvi {
         return this;
     }
 
-    void Parser::log(const uint_least8_t &code) const noexcept {
+    void Parser::log(const unsigned int &code) const noexcept {
         switch (code) {
         case MESSAGES::INTERPOLATION_WARNING: {
             std::clog << fmt::format(

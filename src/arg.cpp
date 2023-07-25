@@ -1,7 +1,6 @@
 #include "arg.h"
 #include "format.h"
 #include "options.h"
-#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -11,14 +10,14 @@
 namespace nvi {
 
     enum MESSAGES {
-        CONFIG_FLAG_ERROR = 0,
-        DIR_FLAG_ERROR = 1,
-        COMMAND_FLAG_ERROR = 2,
-        FILES_FLAG_ERROR = 3,
-        REQUIRED_FLAG_ERROR = 4,
-        HELP_DOC = 5,
-        INVALID_FLAG_WARNING = 6,
-        DEBUG = 7,
+        CONFIG_FLAG_ERROR,
+        DIR_FLAG_ERROR,
+        COMMAND_FLAG_ERROR,
+        FILES_FLAG_ERROR,
+        REQUIRED_FLAG_ERROR,
+        HELP_DOC,
+        INVALID_FLAG_WARNING,
+        DEBUG
     };
 
     constexpr char CONFIG_SHORT[] = "-c";
@@ -67,9 +66,9 @@ namespace nvi {
         }
     };
 
-    const Options &Arg_Parser::get_options() const noexcept { return _options; }
+    const options_t &Arg_Parser::get_options() const noexcept { return _options; }
 
-    std::string Arg_Parser::parse_single_arg(const uint_least8_t &code) {
+    std::string Arg_Parser::parse_single_arg(const unsigned int &code) {
         ++_index;
         if (_argv[_index] == nullptr) {
             log(code);
@@ -85,7 +84,7 @@ namespace nvi {
         return arg;
     }
 
-    std::vector<std::string> Arg_Parser::parse_multi_arg(const uint_least8_t &code) {
+    std::vector<std::string> Arg_Parser::parse_multi_arg(const unsigned int &code) {
         std::vector<std::string> arg;
         ++_index;
         while (_index < _argc) {
@@ -172,7 +171,7 @@ namespace nvi {
         log(MESSAGES::INVALID_FLAG_WARNING);
     }
 
-    void Arg_Parser::log(const uint_least8_t &code) const noexcept {
+    void Arg_Parser::log(const unsigned int &code) const noexcept {
         switch (code) {
         case MESSAGES::CONFIG_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "

@@ -1,6 +1,5 @@
 #include "config.h"
 #include "format.h"
-#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -13,16 +12,16 @@
 namespace nvi {
 
     enum MESSAGES {
-        FILE_ERROR = 0,
-        FILE_PARSE_ERROR = 1,
-        DEBUG_ARG_ERROR = 2,
-        DIR_ARG_ERROR = 3,
-        FILES_ARG_ERROR = 4,
-        MISSING_FILES_ARG_ERROR = 5,
-        EXEC_ARG_ERROR = 6,
-        REQUIRED_ARG_ERROR = 7,
-        INVALID_PROPERTY_WARNING = 8,
-        DEBUG = 9
+        FILE_ERROR,
+        FILE_PARSE_ERROR,
+        DEBUG_ARG_ERROR,
+        DIR_ARG_ERROR,
+        FILES_ARG_ERROR,
+        MISSING_FILES_ARG_ERROR,
+        EXEC_ARG_ERROR,
+        REQUIRED_ARG_ERROR,
+        INVALID_PROPERTY_WARNING,
+        DEBUG
     };
 
     constexpr char DEBUG_PROP[] = "debug";
@@ -124,7 +123,7 @@ namespace nvi {
         }
     };
 
-    const Options &Config::get_options() const noexcept { return _options; }
+    const options_t &Config::get_options() const noexcept { return _options; }
 
     const std::string_view Config::trim_surrounding_spaces(const std::string_view &val) noexcept {
         int left_index = 0;
@@ -144,7 +143,7 @@ namespace nvi {
         return val.substr(left_index, right_index - left_index + 1);
     }
 
-    const std::string_view Config::parse_string_arg(const uint_least8_t &code) const {
+    const std::string_view Config::parse_string_arg(const unsigned int &code) const {
         if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
             log(code);
             std::exit(1);
@@ -153,7 +152,7 @@ namespace nvi {
         return _value.substr(1, _value.length() - 2);
     }
 
-    const std::vector<std::string> Config::parse_vector_arg(const uint_least8_t &code) const {
+    const std::vector<std::string> Config::parse_vector_arg(const unsigned int &code) const {
         if (_value[0] != OPEN_BRACKET || _value[_value.length() - 1] != CLOSE_BRACKET) {
             log(code);
             std::exit(1);
@@ -176,7 +175,7 @@ namespace nvi {
         return arg;
     }
 
-    void Config::log(const uint_least8_t &code) const noexcept {
+    void Config::log(const unsigned int &code) const noexcept {
         switch (code) {
         case MESSAGES::FILE_ERROR: {
             std::cerr

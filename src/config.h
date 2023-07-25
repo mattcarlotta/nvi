@@ -2,7 +2,6 @@
 #define NVI_ENV_CONFIG_H
 
 #include "options.h"
-#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,22 +24,22 @@ namespace nvi {
      *
      * nvi::Config config(env, dir);
      *
-     * nvi::Options options = config.get_options();
+     * nvi::options_t options = config.get_options();
      *
      * ```
      */
     class Config {
         public:
             Config(const std::string &environment, const std::string env_dir = "");
-            const Options &get_options() const noexcept;
+            const options_t &get_options() const noexcept;
 
         private:
             const std::string_view trim_surrounding_spaces(const std::string_view &val) noexcept;
-            const std::vector<std::string> parse_vector_arg(const uint_least8_t &code) const;
-            const std::string_view parse_string_arg(const uint_least8_t &code) const;
-            void log(const uint_least8_t &code) const noexcept;
+            const std::vector<std::string> parse_vector_arg(const unsigned int &code) const;
+            const std::string_view parse_string_arg(const unsigned int &code) const;
+            void log(const unsigned int &code) const noexcept;
 
-            Options _options;
+            options_t _options;
             std::string _file;
             std::string_view _file_view;
             std::string _command;

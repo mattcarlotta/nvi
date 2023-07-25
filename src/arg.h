@@ -2,7 +2,6 @@
 #define NVI_ARG_H
 
 #include "options.h"
-#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -26,17 +25,17 @@ namespace nvi {
      *
      * nvi::Arg_Parser args(argc, argv);
      *
-     * nvi::Options options = args.get_options();
+     * nvi::options_t options = args.get_options();
      *
      * ```
      */
     class Arg_Parser {
         public:
             Arg_Parser(int &argc, char *argv[]);
-            const Options &get_options() const noexcept;
+            const options_t &get_options() const noexcept;
 
         private:
-            Options _options;
+            options_t _options;
             int _index;
             int _argc;
             std::string _bin_name;
@@ -45,11 +44,11 @@ namespace nvi {
             std::string _invalid_args;
             std::string _command;
 
-            std::string parse_single_arg(const uint_least8_t &code);
-            std::vector<std::string> parse_multi_arg(const uint_least8_t &code);
+            std::string parse_single_arg(const unsigned int &code);
+            std::vector<std::string> parse_multi_arg(const unsigned int &code);
             void parse_command_args();
             void remove_invalid_arg() noexcept;
-            void log(const uint_least8_t &code) const noexcept;
+            void log(const unsigned int &code) const noexcept;
     };
 } // namespace nvi
 
