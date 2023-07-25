@@ -112,7 +112,6 @@ namespace nvi {
             } else if (_key == REQUIRED_PROP) {
                 _options.required_envs = parse_vector_arg(MESSAGES::REQUIRED_ARG_ERROR);
             } else {
-                // skip unknown properties
                 log(MESSAGES::INVALID_PROPERTY_WARNING);
             }
 
