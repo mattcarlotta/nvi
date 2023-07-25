@@ -2,8 +2,8 @@
 #define NVI_ENV_CONFIG_H
 
 #include "options.h"
+#include <filesystem>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace nvi {
@@ -34,19 +34,19 @@ namespace nvi {
             const options_t &get_options() const noexcept;
 
         private:
-            const std::string_view trim_surrounding_spaces(const std::string_view &val) noexcept;
+            const std::string trim_surrounding_spaces(const std::string &val) noexcept;
+            bool parse_bool_arg(const unsigned int &code) const;
             const std::vector<std::string> parse_vector_arg(const unsigned int &code) const;
-            const std::string_view parse_string_arg(const unsigned int &code) const;
+            const std::string parse_string_arg(const unsigned int &code) const;
             void log(const unsigned int &code) const noexcept;
 
             options_t _options;
             std::string _file;
-            std::string_view _file_view;
             std::string _command;
             const std::string _env;
-            std::string _file_path;
-            std::string_view _key;
-            std::string_view _value;
+            std::filesystem::path _file_path;
+            std::string _key;
+            std::string _value;
     };
 }; // namespace nvi
 

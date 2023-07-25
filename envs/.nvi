@@ -17,7 +17,7 @@ exec="bin test"
 required=["TEST1","TEST2","TEST3"]
 
 
-[indented]
+[indented]     
     debug=true
     dir="path/to/custom/dir"
     files=[".env", "base.env", "reference.env"]
@@ -33,7 +33,7 @@ required=["TEST1","TEST2","TEST3"]
                     required = [ "TEST1", "TEST2", "TEST3" ]
 
 
-[wacky_indentations]
+                [wacky_indentations]
         debug   =   true            
 dir=   "path/to/custom/dir"
     files       =[".env"]
@@ -45,8 +45,8 @@ required=[       "TEST1",    "TEST2",  "TEST3"]
 # The examples below represent invalid formats  #
 # --------------------------------------------- #
 
-# spaces before, within or after an environment name
-    [invalid environment 1]     
+#spaces within environment name
+[invalid environment 1]
 
 # spaces within an array's string
 [invalid_environment_2]

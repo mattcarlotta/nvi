@@ -4,8 +4,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
-#include <string_view>
 #include <unordered_set>
 #include <vector>
 
@@ -40,35 +40,35 @@ namespace nvi {
     constexpr char ASSIGN_OP = '=';       // 0x3d
 
     Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
-        _file_path = std::string{std::filesystem::current_path() / _envdir / ".nvi"};
+        _file_path = std::filesystem::current_path() / _envdir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
             log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
 
-        std::ifstream config_file = std::ifstream{_file_path, std::ios_base::in};
-        _file = std::string{std::istreambuf_iterator<char>(config_file), std::istreambuf_iterator<char>()};
-        _file_view = std::string_view{_file};
+        std::ifstream config_file{_file_path, std::ios_base::in};
+        if (not config_file.is_open()) {
+            log(MESSAGES::FILE_ERROR);
+            std::exit(1);
+        }
 
-        const int config_index = _file_view.find("[" + environment + "]");
+        _file = std::string{std::istreambuf_iterator<char>(config_file), std::istreambuf_iterator<char>()};
+        const int config_index = _file.find(environment);
         if (config_index < 0) {
             log(MESSAGES::FILE_PARSE_ERROR);
             std::exit(1);
         }
 
-        // factor in '[' + ']' + '\n' character bytes
-        std::string_view config_options =
-            _file_view.substr(config_index + environment.length() + 3, _file_view.length());
+        std::string config{_file.substr(config_index, _file.length())};
+        const int env_eol_index = config.find_first_of(LINE_DELIMITER);
+        // remove environment name
+        std::istringstream configiss{config.substr(env_eol_index + 1, _file.length())};
 
-        int eol_index = config_options.find(LINE_DELIMITER);
-        while (eol_index >= 0) {
-            std::string_view line = config_options.substr(0, eol_index);
-
+        std::string line;
+        while (std::getline(configiss, line)) {
             // skip comments in config options
             const int comment_index = line.find(COMMENT);
             if (comment_index >= 0) {
-                config_options = config_options.substr(eol_index + 1, _file_view.length());
-                eol_index = config_options.find('\n');
                 continue;
             }
 
@@ -79,14 +79,10 @@ namespace nvi {
             }
 
             _key = trim_surrounding_spaces(line.substr(0, assignment_index));
-            _value = trim_surrounding_spaces(line.substr(assignment_index + 1, eol_index - 1));
+            _value = trim_surrounding_spaces(line.substr(assignment_index + 1, line.length() - 1));
 
             if (_key == DEBUG_PROP) {
-                if (_value != "true" && _value != "false") {
-                    log(MESSAGES::DEBUG_ARG_ERROR);
-                    std::exit(1);
-                }
-                _options.debug = _value == "true";
+                _options.debug = parse_bool_arg(MESSAGES::DEBUG_ARG_ERROR);
             } else if (_key == DIR_PROP) {
                 _options.dir = parse_string_arg(MESSAGES::DIR_ARG_ERROR);
             } else if (_key == FILES_PROP) {
@@ -113,9 +109,6 @@ namespace nvi {
             } else {
                 log(MESSAGES::INVALID_PROPERTY_WARNING);
             }
-
-            config_options = config_options.substr(eol_index + 1, _file_view.length());
-            eol_index = config_options.find('\n');
         }
 
         if (_options.debug) {
@@ -125,25 +118,34 @@ namespace nvi {
 
     const options_t &Config::get_options() const noexcept { return _options; }
 
-    const std::string_view Config::trim_surrounding_spaces(const std::string_view &val) noexcept {
-        int left_index = 0;
-        int right_index = val.length() - 1;
-        while (left_index < right_index) {
-            if (val[left_index] != SPACE && val[right_index] != SPACE) {
+    const std::string Config::trim_surrounding_spaces(const std::string &val) noexcept {
+        int l = 0;
+        int r = val.length() - 1;
+        while (l < r) {
+            if (val[l] != SPACE && val[r] != SPACE) {
                 break;
             }
-            if (val[left_index] == SPACE) {
-                ++left_index;
+            if (val[l] == SPACE) {
+                ++l;
             }
-            if (val[right_index] == SPACE) {
-                --right_index;
+            if (val[r] == SPACE) {
+                --r;
             }
         }
 
-        return val.substr(left_index, right_index - left_index + 1);
+        return val.substr(l, r - l + 1);
     }
 
-    const std::string_view Config::parse_string_arg(const unsigned int &code) const {
+    bool Config::parse_bool_arg(const unsigned int &code) const {
+        if (_value != "true" && _value != "false") {
+            log(code);
+            std::exit(1);
+        }
+
+        return _value == "true";
+    }
+
+    const std::string Config::parse_string_arg(const unsigned int &code) const {
         if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
             log(code);
             std::exit(1);

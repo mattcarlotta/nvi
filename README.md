@@ -180,9 +180,9 @@ Therefore, while the config file parser is flexible, it is **NOT** a TOML-compla
 
 The configuration file must:
 - be named `.nvi`
-- not contain spaces within, before or after the `[environment]`'s name
+- not contain spaces within the `[environment]`'s name
 - not contain spaces within a `files` .env name nor within the `required` keys; instead, files/key should use underscores: `example_1`
-- not contain comments after a configuration `key = value` option
+- not contain comments after a configuration `key = value # comment` option
 - not contain multi-line arguments
 
 Click [here](envs/.nvi) to view valid vs invalid formatting configurations.
