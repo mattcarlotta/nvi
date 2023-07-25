@@ -1,10 +1,10 @@
 [mjs]
-    debug = true
-    exec = "node index.mjs"
-    files = [".env"]
-    required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
+debug = true
+exec = "node index.mjs"
+files = [".env"]
+required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
 
 [ts]
-    exec = "pnpm run ts"
-    files = [".env"]
-    required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
+exec = "pnpm run ts"
+files = [".env"]
+required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
