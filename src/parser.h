@@ -41,6 +41,11 @@ namespace nvi {
             Parser *parse_envs() noexcept;
             void set_or_print_envs();
             const std::map<std::string, std::string> &get_env_map() const;
+            ~Parser() {
+                for (char *command : _options.commands) {
+                    delete[] command;
+                }
+            }
 
         private:
             Parser *read(const std::string &env_file_name);
