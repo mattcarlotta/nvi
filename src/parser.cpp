@@ -21,6 +21,7 @@ namespace nvi {
         DEBUG_FILE_PROCESSED,
         REQUIRED_ENV_ERROR,
         FILE_ERROR,
+        FILE_EXTENSION_ERROR,
         EMPTY_ENVS
     };
 
@@ -230,14 +231,20 @@ namespace nvi {
         _file.clear();
         _file_path.clear();
 
-        _file_path = std::string{std::filesystem::current_path() / _options.dir / _file_name};
+        _file_path = std::filesystem::current_path() / _options.dir / _file_name;
         if (not std::filesystem::exists(_file_path)) {
             log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
 
+        if (std::string{_file_path.extension()}.find(".env") == std::string::npos &&
+            std::string{_file_path.stem()}.find(".env") == std::string::npos) {
+            log(MESSAGES::FILE_EXTENSION_ERROR);
+            std::exit(1);
+        }
+
         _env_file = std::ifstream{_file_path, std::ios_base::in};
-        if (_env_file.bad()) {
+        if (_env_file.bad() || not _env_file.is_open()) {
             log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
@@ -295,6 +302,13 @@ namespace nvi {
             std::cerr << fmt::format("[nvi] (parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear "
                                      "to exist or isn't a valid file format!",
                                      _file_path.c_str())
+                      << std::endl;
+            break;
+        }
+        case MESSAGES::FILE_EXTENSION_ERROR: {
+            std::cerr << fmt::format("[nvi] (parser::FILE_EXTENSION_ERROR) The \"%s\" file is not a valid \".env\""
+                                     " file extension.",
+                                     _file_name.c_str())
                       << std::endl;
             break;
         }

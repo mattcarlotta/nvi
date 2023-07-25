@@ -47,7 +47,7 @@ namespace nvi {
         }
 
         std::ifstream config_file{_file_path, std::ios_base::in};
-        if (not config_file.is_open()) {
+        if (config_file.bad() || not config_file.is_open()) {
             log(MESSAGES::FILE_ERROR);
             std::exit(1);
         }
@@ -61,7 +61,7 @@ namespace nvi {
 
         std::string config{_file.substr(config_index, _file.length())};
         const int env_eol_index = config.find_first_of(LINE_DELIMITER);
-        // remove environment name
+        // remove environment name line
         std::istringstream configiss{config.substr(env_eol_index + 1, _file.length())};
 
         std::string line;
@@ -114,6 +114,8 @@ namespace nvi {
         if (_options.debug) {
             log(MESSAGES::DEBUG);
         }
+
+        config_file.close();
     };
 
     const options_t &Config::get_options() const noexcept { return _options; }

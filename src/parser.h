@@ -2,6 +2,7 @@
 #define NVI_PARSER_H
 
 #include "options.h"
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <string>
@@ -52,7 +53,7 @@ namespace nvi {
             std::string _file;
             std::string_view _file_view;
             std::string _file_name;
-            std::string _file_path;
+            std::filesystem::path _file_path;
             size_t _byte_count;
             size_t _line_count;
             size_t _val_byte_count;
