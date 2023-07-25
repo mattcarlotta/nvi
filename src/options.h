@@ -10,7 +10,7 @@ namespace nvi {
             std::string config;
             bool debug = false;
             std::string dir;
-            std::vector<std::string> files = std::vector<std::string>{".env"};
+            std::vector<std::string> files{".env"};
             std::vector<std::string> required_envs;
     };
 }; // namespace nvi
