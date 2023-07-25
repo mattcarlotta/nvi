@@ -32,7 +32,7 @@ namespace nvi {
     constexpr char REQUIRED_PROP[] = "required";
 
     constexpr char COMMENT = '#';         // 0x23
-    constexpr char SPACE = ' ';           // 0x00
+    constexpr char SPACE = ' ';           // 0x20
     constexpr char OPEN_BRACKET = '[';    // 0x5b
     constexpr char CLOSE_BRACKET = ']';   // 0x5d
     constexpr char COMMA = ',';           // 0x2c

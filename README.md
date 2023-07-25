@@ -98,7 +98,7 @@ The configuration file is a [TOML](https://toml.io/en/)-like formatted file that
 - An `[environment]` name that defines the following optional properties: 
   - **debug**: boolean (default: `false`) 
   - **dir**: string (default: `""`)
-  - **execute**: string (default: `""`)
+  - **exec**: string (default: `""`)
   - **files**: string[] (default `[".env"]`) 
   - **required**: string[] (default `[]`)
 
@@ -190,7 +190,7 @@ Click [here](envs/.nvi) to view valid vs invalid formatting configurations.
 ### Can I manually assign parsed ENVs to a process?
 Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
-Unfortunately, this means you'll have to manually pipe, parse stringified JSON from `stdin`, and assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
+Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin`, and then assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
 - requires language or framework specific code (what this project aims to mitigate)
 - reading from `stdin` may not be possible
 - reading from `stdin` may be asynchronous and there's no guarantee that when a program/process runs that the ENVs will be defined before they are used
