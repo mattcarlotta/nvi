@@ -183,6 +183,7 @@ The configuration file must:
 - not contain spaces within the `[environment]`'s name
 - not contain spaces within a `files` .env name nor within the `required` keys; instead, files/key should use underscores: `example_1`
 - not contain comments after a configuration `key = value # comment` option
+- not contain empty lines between a config `key = value # comment` option; empty lines after the last config option is okay
 - not contain multi-line arguments
 
 Click [here](envs/.nvi) to view valid vs invalid formatting configurations.

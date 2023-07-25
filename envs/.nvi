@@ -52,6 +52,14 @@ required=[       "TEST1",    "TEST2",  "TEST3"]
 [invalid_environment_2]
 files = [ "test     example         123.env" ]
 
-# comments after a value
+# comments after an option
 [invalid_environment_3]
 files = [".env"] # invalid comment
+
+# empty lines between an option
+[invalid_environment_4]
+debug = true
+
+files = [".env"] 
+
+required = [ "TEST1", "TEST2", "TEST3" ]
