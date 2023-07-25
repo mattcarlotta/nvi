@@ -1,10 +1,9 @@
 #include "config.h"
-#include "json.cpp"
 #include "gtest/gtest.h"
 #include <string>
 #include <vector>
 
-nvi::Config config("bin_test_only", "../envs");
+nvi::Config config("staggered_with_comments", "../envs");
 
 TEST(parse_config_file, debug) { EXPECT_EQ(config.get_options().debug, true); }
 

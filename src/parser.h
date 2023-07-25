@@ -1,7 +1,6 @@
 #ifndef NVI_PARSER_H
 #define NVI_PARSER_H
 
-#include "json.cpp"
 #include "options.h"
 #include <cstdint>
 #include <fstream>

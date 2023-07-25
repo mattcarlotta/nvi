@@ -176,7 +176,7 @@ namespace nvi {
         switch (code) {
         case MESSAGES::CONFIG_FLAG_ERROR: {
             std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "
-                         "environment name from the nvi.json configuration file. Use flag \"-h\" or \"--help\" for "
+                         "environment name from the .nvi configuration file. Use flag \"-h\" or \"--help\" for "
                          "more information."
                       << std::endl;
             break;
@@ -212,7 +212,7 @@ namespace nvi {
                          "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
                          "│ flag            │ description                                                                                          │\n"
                          "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
-                         "│ -c, --config    │ Specifies which environment configuration to load from the nvi.json file. (ex: --config dev)         │\n"
+                         "│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │\n"
                          "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
                          "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
                          "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
@@ -233,7 +233,7 @@ namespace nvi {
             break;
         }
         case MESSAGES::DEBUG: {
-            std::clog << fmt::format("[nvi] (arg::DEBUG) The following flags were set: config=\"%s\", "
+            std::clog << fmt::format("[nvi] (arg::DEBUG) The following options were set: config=\"%s\", "
                                      "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
                                      _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
                                      fmt::join(_options.files, ", ").c_str(),

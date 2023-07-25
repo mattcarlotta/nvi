@@ -1,6 +1,5 @@
 #include "parser.h"
 #include "format.h"
-#include "json.cpp"
 #include "options.h"
 #include <cerrno>
 #include <cstdint>
@@ -257,7 +256,7 @@ namespace nvi {
         switch (code) {
         case MESSAGES::INTERPOLATION_WARNING: {
             std::clog << fmt::format(
-                             "[nvi] (Parser::INTERPOLATION_WARNING::%s:%d:%d) The key \"%s\" contains an invalid "
+                             "[nvi] (parser::INTERPOLATION_WARNING::%s:%d:%d) The key \"%s\" contains an invalid "
                              "interpolated variable: \"%s\". Unable to locate a value that corresponds to this key.",
                              _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2, _key.c_str(),
                              _key_prop.c_str())
@@ -265,7 +264,7 @@ namespace nvi {
             break;
         }
         case MESSAGES::INTERPOLATION_ERROR: {
-            std::cerr << fmt::format("[nvi] (Parser::INTERPOLATION_ERROR::%s:%d:%d) The key \"%s\" contains an "
+            std::cerr << fmt::format("[nvi] (parser::INTERPOLATION_ERROR::%s:%d:%d) The key \"%s\" contains an "
                                      "interpolated \"{\" operator, but appears to be missing a closing \"}\" operator.",
                                      _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
                                      _key.c_str())
@@ -273,28 +272,28 @@ namespace nvi {
             break;
         }
         case MESSAGES::DEBUG: {
-            std::clog << fmt::format("[nvi] (Parser::DEBUG::%s:%d:%d) Set key \"%s\" to equal value \"%s\".",
+            std::clog << fmt::format("[nvi] (parser::DEBUG::%s:%d:%d) Set key \"%s\" to equal value \"%s\".",
                                      _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
                                      _key.c_str(), _value.c_str())
                       << std::endl;
             break;
         }
         case MESSAGES::DEBUG_FILE_PROCESSED: {
-            std::clog << fmt::format("[nvi] (Parser::DEBUG_FILE_PROCESSED::%s) Processed %d line%s and %d bytes!\n",
+            std::clog << fmt::format("[nvi] (parser::DEBUG_FILE_PROCESSED::%s) Processed %d line%s and %d bytes!\n",
                                      _file_name.c_str(), _line_count, (_line_count != 1 ? "s" : ""), _byte_count)
                       << std::endl;
             break;
         }
         case MESSAGES::REQUIRED_ENV_ERROR: {
             std::cerr << fmt::format(
-                             "[nvi] (Parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \"%s\""
+                             "[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \"%s\""
                              ", but they are undefined after all of the .env files were parsed.",
                              fmt::join(_undefined_keys, ", ").c_str())
                       << std::endl;
             break;
         }
         case MESSAGES::FILE_ERROR: {
-            std::cerr << fmt::format("[nvi] (Parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear "
+            std::cerr << fmt::format("[nvi] (parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear "
                                      "to exist or isn't a valid file format!",
                                      _file_path.c_str())
                       << std::endl;
@@ -303,7 +302,7 @@ namespace nvi {
         case MESSAGES::EMPTY_ENVS: {
             std::cerr
                 << fmt::format(
-                       "[nvi] (Parser::MESSAGES::EMPTY_ENVS) Unable to parse any ENVS! Please ensure the \"%s\" file "
+                       "[nvi] (parser::MESSAGES::EMPTY_ENVS) Unable to parse any ENVS! Please ensure the \"%s\" file "
                        "is not empty.",
                        _file_name.c_str())
                 << std::endl;
