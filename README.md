@@ -1,6 +1,6 @@
 # nvi bin
 
-A standalone .env file parser for interpolating and assigning multiple .env files into a process.
+A stand-alone .env file parser for interpolating and assigning multiple .env files into a process.
 
 ## Quick Links
 
@@ -18,7 +18,7 @@ A standalone .env file parser for interpolating and assigning multiple .env file
 [Examples](#examples)
 
 [FAQs](#faqs)
-  - [How do I uninstall the binary?](#how-do-i-uninstall-the-binary)
+  - [How do I uninstall the executable?](#how-do-i-uninstall-the-executable)
   - [What are the rules for defining or interpolating keys?](#what-are-the-rules-for-defining-or-interpolating-keys)
   - [What Operating Systems are supported?](#what-operating-systems-are-supported)
   - [What are the nvi configuration file specs?](#what-are-the-nvi-configuration-file-specs)
@@ -40,8 +40,8 @@ The following requirements must be present in order to build from source:
 - clang-format v14.0.x (optional for formatting)
 
 You can determine if you're using the correct versions by:
-- Running `which <requirement>` that should output a binary path, if not, then it's not installed and will require platform specific installations.
-- Running `<requirement> --version` that should output a binary version equal to or above the required version.
+- Running `which <requirement>` that should output a executable path, if not, then it's not installed and will require platform specific installations.
+- Running `<requirement> --version` that should output a executable version equal to or above the required version.
 
 ## Installation
 ```DOSINI
@@ -59,9 +59,9 @@ sudo make install
 ### Custom CMake Compile Flags
 
 The following custom compile flags can be set for `cmake`:
-- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `src` to a `nvi` binary (default: ON)
-- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` binary (default: OFF)
-- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
+- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `src` to a `nvi` executable (default: ON)
+- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` executable (default: OFF)
+- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the executable installation directory when running `sudo make install` (default: /usr/local/bin)
 
 The following represents the default `cmake` settings:
 ```DOSINI
@@ -146,8 +146,8 @@ nvi --files .env --exec npm run dev --required KEY1 KEY2
 
 ## FAQs
 
-### How do I uninstall the binary?
-If you'd like to remove (uninstall) the binary, simply type:
+### How do I uninstall the executable?
+If you'd like to remove (uninstall) the executable, simply type:
 ```DOSINI
 sudo rm $(which nvi)
 ```
@@ -181,9 +181,9 @@ Therefore, while the config file parser is flexible, it is **NOT** a TOML-compla
 The configuration file must:
 - be named `.nvi`
 - not contain spaces within the `[environment]`'s name
-- not contain spaces within a `files` .env name nor within the `required` keys; instead, files/key should use underscores: `example_1`
+- not contain spaces within a `files` .env name nor within the `required` keys; instead, files/keys should use underscores: `example_1`
 - not contain comments after a configuration `key = value # comment` option
-- not contain empty lines between a config `key = value # comment` option; empty lines after the last config option is okay
+- not contain empty lines between a config `key = value` option; empty lines after the last config option are okay
 - not contain multi-line arguments
 
 Click [here](envs/.nvi) to view valid vs invalid formatting configurations.
@@ -204,7 +204,7 @@ To read the debug details, let's examine the following debug message:
 ```DOSINI
 [nvi] (parser::INTERPOLATION_WARNING::.env:21:25) The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
 ```
-- Which part (file) of the binary is being executed: `parser`
+- Which part (file) of the executable is being executed: `parser`
 - What type of log is being output: `INTERPOLATION_WARNING`
 - Which file is being processed: `.env`
 - Which line within the file is being processed: `21`
@@ -213,7 +213,7 @@ To read the debug details, let's examine the following debug message:
 
 In layman's terms, this debug message is stating that a key's value contains an interpolated key `${KEY}` (`TEST`) that doesn't match any ENV keys in the shell environment nor any previously parsed ENV keys.
 
-The solution to the above is to either ensure the ENV key exists within the shell environment before running the binary or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files before itself).
+The solution to the above is to either ensure the ENV key exists within the shell environment before running the executable or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files before itself).
 
 Not all debug logs will have all the details above, but will generally follow the same pattern.
 
@@ -237,7 +237,7 @@ Then, source the change for your shell profile:
 source ~/.bash_profile
 ```
 
-To ensure the binary is found, type the command below and you should see the nvi binary path: 
+To ensure the executable is found, type the command below and you should see the nvi executable path: 
 ```DOSINI
 which nvi
 # /usr/local/bin/nvi
