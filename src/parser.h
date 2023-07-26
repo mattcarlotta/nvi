@@ -12,7 +12,7 @@
 namespace nvi {
     /**
      * @detail Parses and interpolates an .env file to a single object of `"key": "value"` pairs.
-     * @param `options` initialize parser with the following required option: `files`, folled by optional options:
+     * @param `options` initialize parser with the following required option: `files`, followed by optional options:
      * `dir`, `required_envs`, and `debug`.
      * @example Initializing a parser, parsing .env files, checking ENVs, and setting ENVs
      *
