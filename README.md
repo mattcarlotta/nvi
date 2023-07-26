@@ -202,20 +202,21 @@ As such, while this feature is available, it's not recommended nor going to be s
 ### How do I read the debug details?
 To read the debug details, let's examine the following debug message:
 ```DOSINI
-[nvi] (parser::INTERPOLATION_WARNING::.env:21:25) The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
+[nvi] (Parser::log::INTERPOLATION_WARNING) [.env:88:21] The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
 ```
-- Which part (file) of the executable is being executed: `parser`
-- What type of log is being output: `INTERPOLATION_WARNING`
-- Which file is being processed: `.env`
-- Which line within the file is being processed: `21`
-- Which byte within the current line is being processed: `25`
-- Lastly, the debug message: `The key "..." contains an invalid interpolated variable...etc`
+- The class that spawned the message: `Parser`
+- The class method that logged the message: `log`
+- The type of message that is being logged: `INTERPOLATION_WARNING`
+- The file that is referenced: `.env`
+- The line within the file that is referenced: `88`
+- The byte within the line that is referenced: `21`
+- The message: `The key "..." contains an invalid interpolated variable...`
 
-In layman's terms, this debug message is stating that a key's value contains an interpolated key `${KEY}` (`TEST`) that doesn't match any ENV keys in the shell environment nor any previously parsed ENV keys.
+In layman's terms, this debug message is stating that a key's value within an `.env` file contains an interpolated key `${KEY}` (`TEST`) on line 88 at byte 21 that doesn't match any ENV keys in the shell environment nor any previously parsed ENV keys.
 
-The solution to the above is to either ensure the ENV key exists within the shell environment before running the executable or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files before itself).
+The solution to the above is to either ensure the ENV key exists within the shell environment before running the executable or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files that have been parsed before itself).
 
-Not all debug logs will have all the details above, but will generally follow the same pattern.
+Not all debug logs will have all the details above, but they will generally follow this pattern.
 
 
 ## Troubleshooting
