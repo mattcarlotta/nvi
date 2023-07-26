@@ -12,20 +12,20 @@
 
 namespace nvi {
 
-    constexpr char DEBUG_PROP[] = "debug";
-    constexpr char DIR_PROP[] = "dir";
-    constexpr char EXEC_PROP[] = "exec";
-    constexpr char FILES_PROP[] = "files";
-    constexpr char REQUIRED_PROP[] = "required";
+    inline const constexpr char DEBUG_PROP[] = "debug";
+    inline const constexpr char DIR_PROP[] = "dir";
+    inline const constexpr char EXEC_PROP[] = "exec";
+    inline const constexpr char FILES_PROP[] = "files";
+    inline const constexpr char REQUIRED_PROP[] = "required";
 
-    constexpr char COMMENT = '#';         // 0x23
-    constexpr char SPACE = ' ';           // 0x20
-    constexpr char OPEN_BRACKET = '[';    // 0x5b
-    constexpr char CLOSE_BRACKET = ']';   // 0x5d
-    constexpr char COMMA = ',';           // 0x2c
-    constexpr char DOUBLE_QUOTE = '\"';   // 0x22
-    constexpr char LINE_DELIMITER = '\n'; // 0x0a
-    constexpr char ASSIGN_OP = '=';       // 0x3d
+    inline const constexpr char COMMENT = '#';         // 0x23
+    inline const constexpr char SPACE = ' ';           // 0x20
+    inline const constexpr char OPEN_BRACKET = '[';    // 0x5b
+    inline const constexpr char CLOSE_BRACKET = ']';   // 0x5d
+    inline const constexpr char COMMA = ',';           // 0x2c
+    inline const constexpr char DOUBLE_QUOTE = '\"';   // 0x22
+    inline const constexpr char LINE_DELIMITER = '\n'; // 0x0a
+    inline const constexpr char ASSIGN_OP = '=';       // 0x3d
 
     Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
         _file_path = std::filesystem::current_path() / _envdir / ".nvi";
@@ -162,11 +162,13 @@ namespace nvi {
     }
 
     void Config::log(const unsigned int &code) const noexcept {
+        // clang-format off
         switch (code) {
         case FILE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(FILE_ERROR,
-                                   "Unable to locate \"%s\". The configuration file doesn't appear to exist!",
-                                   _file_path.c_str());
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ERROR,
+                "Unable to locate \"%s\". The configuration file doesn't appear to exist!",
+                _file_path.c_str());
             break;
         }
         case FILE_PARSE_ERROR: {
@@ -220,28 +222,30 @@ namespace nvi {
         case REQUIRED_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_ARG_ERROR,
-                "The \"required\" property contains an invalid value. Expected a vector of strings, but "
-                "instead received: %s.",
+                "The \"required\" property contains an invalid value. Expected a vector of strings, but instead "
+                "received: %s.",
                 std::string{_value}.c_str());
             break;
         }
         case INVALID_PROPERTY_WARNING: {
-            NVI_LOG_DEBUG(INVALID_PROPERTY_WARNING,
-                          "Found an invalid property: \"%s\" within the \"%s\" config. Skipping.",
-                          std::string{_key}.c_str(), _env.c_str());
+            NVI_LOG_DEBUG(
+                INVALID_PROPERTY_WARNING,
+                "Found an invalid property: \"%s\" within the \"%s\" config. Skipping.",
+                std::string{_key}.c_str(), _env.c_str());
             break;
         }
         case DEBUG: {
-            NVI_LOG_DEBUG(DEBUG,
-                          "Successfully parsed the \"%s\" environment configuration and the folowing "
-                          "options were set: debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", "
-                          "required=\"%s\".\n",
-                          _env.c_str(), _options.dir.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
-                          fmt::join(_options.required_envs, ", ").c_str());
+            NVI_LOG_DEBUG(
+                DEBUG,
+                "Successfully parsed the \"%s\" environment configuration and the folowing options "
+                "were set: debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
+                _env.c_str(), _options.dir.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
+                fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         default:
             break;
         }
+        // clang-format on
     }
 } // namespace nvi

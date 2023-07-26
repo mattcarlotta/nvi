@@ -1,5 +1,6 @@
 #include "arg.h"
 #include "format.h"
+#include "log.h"
 #include "options.h"
 #include <cstring>
 #include <iostream>
@@ -9,51 +10,39 @@
 
 namespace nvi {
 
-    enum MESSAGES {
-        CONFIG_FLAG_ERROR,
-        DIR_FLAG_ERROR,
-        COMMAND_FLAG_ERROR,
-        FILES_FLAG_ERROR,
-        REQUIRED_FLAG_ERROR,
-        HELP_DOC,
-        INVALID_FLAG_WARNING,
-        DEBUG
-    };
-
-    constexpr char CONFIG_SHORT[] = "-c";
-    constexpr char CONFIG_LONG[] = "--config";
-    constexpr char DEBUG_SHORT[] = "-de";
-    constexpr char DEBUG_LONG[] = "--debug";
-    constexpr char DIRECTORY_SHORT[] = "-d";
-    constexpr char DIRECTORY_LONG[] = "--dir";
-    constexpr char EXECUTE_SHORT[] = "-e";
-    constexpr char EXECUTE_LONG[] = "--exec";
-    constexpr char FILES_SHORT[] = "-f";
-    constexpr char FILES_LONG[] = "--files";
-    constexpr char HELP_SHORT[] = "-h";
-    constexpr char HELP_LONG[] = "--help";
-    constexpr char REQUIRED_SHORT[] = "-r";
-    constexpr char REQUIRED_LONG[] = "--required";
+    inline const constexpr char CONFIG_SHORT[] = "-c";
+    inline const constexpr char CONFIG_LONG[] = "--config";
+    inline const constexpr char DEBUG_SHORT[] = "-de";
+    inline const constexpr char DEBUG_LONG[] = "--debug";
+    inline const constexpr char DIRECTORY_SHORT[] = "-d";
+    inline const constexpr char DIRECTORY_LONG[] = "--dir";
+    inline const constexpr char EXECUTE_SHORT[] = "-e";
+    inline const constexpr char EXECUTE_LONG[] = "--exec";
+    inline const constexpr char FILES_SHORT[] = "-f";
+    inline const constexpr char FILES_LONG[] = "--files";
+    inline const constexpr char HELP_SHORT[] = "-h";
+    inline const constexpr char HELP_LONG[] = "--help";
+    inline const constexpr char REQUIRED_SHORT[] = "-r";
+    inline const constexpr char REQUIRED_LONG[] = "--required";
 
     Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc), _argv(argv) {
         _index = 1;
         while (_index < _argc) {
             const std::string arg = std::string{_argv[_index]};
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
-                _options.config = parse_single_arg(MESSAGES::CONFIG_FLAG_ERROR);
+                _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
                 _options.debug = true;
             } else if (arg == DIRECTORY_SHORT || arg == DIRECTORY_LONG) {
-                _options.dir = parse_single_arg(MESSAGES::DIR_FLAG_ERROR);
+                _options.dir = parse_single_arg(DIR_FLAG_ERROR);
             } else if (arg == EXECUTE_SHORT || arg == EXECUTE_LONG) {
                 parse_command_args();
             } else if (arg == FILES_SHORT || arg == FILES_LONG) {
-                _options.files = parse_multi_arg(MESSAGES::FILES_FLAG_ERROR);
+                _options.files = parse_multi_arg(FILES_FLAG_ERROR);
             } else if (arg == HELP_SHORT || arg == HELP_LONG) {
-                log(MESSAGES::HELP_DOC);
-                std::exit(0);
+                log(HELP_DOC);
             } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
-                _options.required_envs = parse_multi_arg(MESSAGES::REQUIRED_FLAG_ERROR);
+                _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
             } else {
                 remove_invalid_arg();
             }
@@ -62,7 +51,7 @@ namespace nvi {
         }
 
         if (_options.debug) {
-            log(MESSAGES::DEBUG);
+            log(DEBUG);
         }
     };
 
@@ -72,13 +61,11 @@ namespace nvi {
         ++_index;
         if (_argv[_index] == nullptr) {
             log(code);
-            std::exit(1);
         }
 
         const std::string arg = std::string{_argv[_index]};
         if (arg.find("-") != std::string::npos) {
             log(code);
-            std::exit(1);
         }
 
         return arg;
@@ -104,7 +91,6 @@ namespace nvi {
 
         if (not arg.size()) {
             log(code);
-            std::exit(1);
         }
 
         return arg;
@@ -142,8 +128,7 @@ namespace nvi {
         }
 
         if (not _options.commands.size()) {
-            log(MESSAGES::COMMAND_FLAG_ERROR);
-            std::exit(1);
+            log(COMMAND_FLAG_ERROR);
         }
 
         _options.commands.push_back(nullptr);
@@ -168,89 +153,105 @@ namespace nvi {
             _invalid_args += _invalid_args.length() ? " " + arg : arg;
         }
 
-        log(MESSAGES::INVALID_FLAG_WARNING);
+        log(INVALID_FLAG_WARNING);
     }
 
     void Arg_Parser::log(const unsigned int &code) const noexcept {
+        // clang-format off
         switch (code) {
-        case MESSAGES::CONFIG_FLAG_ERROR: {
-            std::cerr << "[nvi] (arg::CONFIG_FLAG_ERROR) The \"-c\" or \"--config\" flag must contain an "
-                         "environment name from the .nvi configuration file. Use flag \"-h\" or \"--help\" for "
-                         "more information."
-                      << std::endl;
+        case CONFIG_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ERROR,
+                "The \"-c\" or \"--config\" flag must contain an environment name from the .nvi configuration"
+                "file. Use flag \"-h\" or \"--help\" for more information.", 
+                NULL);
             break;
         }
-        case MESSAGES::DIR_FLAG_ERROR: {
-            std::cerr << "[nvi] (arg::DIR_FLAG_ERROR) The \"-d\" or \"--dir\" flag must contain a "
-                         "valid directory path. Use flag \"-h\" or \"--help\" for more information."
-                      << std::endl;
+        case DIR_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                DIR_FLAG_ERROR,
+                "The \"-d\" or \"--dir\" flag must contain a valid directory path. Use flag \"-h\" or "
+                "\"--help\" for more information.",
+                NULL);
             break;
         }
-        case MESSAGES::COMMAND_FLAG_ERROR: {
-            std::cerr << "[nvi] (arg::COMMAND_FLAG_ERROR) The \"-e\" or \"--exec\" flag must contain at least "
-                         "1 command. Use flag \"-h\" or \"--help\" for more information."
-                      << std::endl;
+        case COMMAND_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                COMMAND_FLAG_ERROR,
+                "The \"-e\" or \"--exec\" flag must contain at least 1 command. Use flag \"-h\" or \"--help\""
+                "for more information.",
+                NULL);
             break;
         }
-        case MESSAGES::FILES_FLAG_ERROR: {
-            std::cerr << "[nvi] (arg::FILES_FLAG_ERROR) The \"-f\" or \"--files\" flag must contain at least "
-                         "1 .env file. Use flag \"-h\" or \"--help\" for more information."
-                      << std::endl;
+        case FILES_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILES_FLAG_ERROR,
+                "The \"-f\" or \"--files\" flag must contain at least 1 .env file. Use flag \"-h\" or "
+                "\"--help\" for more information.",
+                NULL);
             break;
         }
-        case MESSAGES::REQUIRED_FLAG_ERROR: {
-            std::cerr << "[nvi] (arg::REQUIRED_FLAG_ERROR) The \"-r\" or \"--required\" flag must contain at "
-                         "least 1 ENV key. Use flag \"-h\" or \"--help\" for more information."
-                      << std::endl;
+        case REQUIRED_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                REQUIRED_FLAG_ERROR,
+                "The \"-r\" or \"--required\" flag must contain at least 1 ENV key. Use flag \"-h\" or "
+                "\"--help\" for more information.",
+                NULL);
             break;
         }
-        case MESSAGES::HELP_DOC: {
-            // clang-format off
-            std::clog << "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
-                         "│ NVI CLI Documentation                                                                                                  │\n"
-                         "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
-                         "│ flag            │ description                                                                                          │\n"
-                         "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
-                         "│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │\n"
-                         "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
-                         "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
-                         "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
-                         "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
-                         "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
-                         "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘"
-                      << std::endl;
-            // clang-format on
+        case HELP_DOC: {
+            NVI_LOG_AND_EXIT(
+                HELP_DOC,
+                "The following information is just a brief summary of the flags. For additional information, please take a look at the README.\n"
+                "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
+                "│ NVI CLI Documentation                                                                                                  │\n"
+                "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
+                "│ flag            │ description                                                                                          │\n"
+                "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
+                "│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │\n"
+                "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
+                "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
+                "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
+                "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
+                "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
+                "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘",
+                NULL);
             break;
         }
-        case MESSAGES::INVALID_FLAG_WARNING: {
-            std::clog << fmt::format(
-                             "[nvi] (arg::INVALID_FLAG_WARNING) The flag \"%s\" with%s arguments is not recognized. "
-                             "Skipping.",
-                             _invalid_arg.c_str(),
-                             (_invalid_args.length() ? " \"" + _invalid_args + "\"" : "out").c_str())
-                      << std::endl;
+        case INVALID_FLAG_WARNING: {
+            NVI_LOG_DEBUG(
+                INVALID_FLAG_WARNING,
+                "The flag \"%s\" with%s arguments is not recognized. Skipping.",
+                _invalid_arg.c_str(), 
+                (_invalid_args.length() ? " \"" + _invalid_args + "\"" : "out").c_str());
             break;
         }
-        case MESSAGES::DEBUG: {
-            std::clog << fmt::format("[nvi] (arg::DEBUG) The following options were set: config=\"%s\", "
-                                     "debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
-                                     _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
-                                     fmt::join(_options.files, ", ").c_str(),
-                                     fmt::join(_options.required_envs, ", ").c_str())
-                      << '\n';
+        case DEBUG: {
+            NVI_LOG_DEBUG(
+                DEBUG,
+                "The following options were set: config=\"%s\", debug=\"true\", dir=\"%s\", execute=\"%s\", "
+                "files=\"%s\", required=\"%s\".",
+                _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
+                fmt::join(_options.files, ", ").c_str(),
+                fmt::join(_options.required_envs, ", ").c_str());
 
-            if (_options.config.length() && (_options.dir.length() || _options.commands.size() ||
-                                             _options.files.size() > 1 || _options.required_envs.size())) {
-                std::clog << "[nvi] (arg::DEBUG) Found conflicting flags. When the \"config\" flag has been set, then "
-                             "\"dir\", \"exec\", \"files\", and \"required\" flags are ignored."
-                          << '\n';
+            if (_options.config.length() && 
+                    (_options.dir.length() || 
+                     _options.commands.size() ||
+                     _options.files.size() > 1 || 
+                     _options.required_envs.size())) 
+            {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    "Found conflicting flags. When the \"config\" flag has been set, then \"dir\", \"exec\", "
+                    "\"files\", and \"required\" flags are ignored.",
+                    NULL);
             }
-
-            std::clog << std::endl;
             break;
         }
         default:
             break;
         }
+        // clang-format on
     }
 } // namespace nvi

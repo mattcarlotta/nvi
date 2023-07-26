@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "format.h"
+#include "log.h"
 #include "options.h"
 #include <cerrno>
 #include <cstdlib>
@@ -14,26 +15,15 @@
 
 namespace nvi {
 
-    enum MESSAGES {
-        INTERPOLATION_WARNING,
-        INTERPOLATION_ERROR,
-        DEBUG,
-        DEBUG_FILE_PROCESSED,
-        REQUIRED_ENV_ERROR,
-        FILE_ERROR,
-        FILE_EXTENSION_ERROR,
-        EMPTY_ENVS
-    };
-
-    constexpr char NULL_TERMINATOR = '\0'; // 0x00
-    constexpr char COMMENT = '#';          // 0x23
-    constexpr char LINE_DELIMITER = '\n';  // 0x0a
-    constexpr char BACK_SLASH = '\\';      // 0x5c
-    constexpr char ASSIGN_OP = '=';        // 0x3d
-    constexpr char DOLLAR_SIGN = '$';      // 0x24
-    constexpr char OPEN_BRACE = '{';       // 0x7b
-    constexpr char CLOSE_BRACE = '}';      // 0x7d
-    constexpr char DOUBLE_QUOTE = '"';     // 0x22
+    inline const constexpr char NULL_TERMINATOR = '\0'; // 0x00
+    inline const constexpr char COMMENT = '#';          // 0x23
+    inline const constexpr char LINE_DELIMITER = '\n';  // 0x0a
+    inline const constexpr char BACK_SLASH = '\\';      // 0x5c
+    inline const constexpr char ASSIGN_OP = '=';        // 0x3d
+    inline const constexpr char DOLLAR_SIGN = '$';      // 0x24
+    inline const constexpr char OPEN_BRACE = '{';       // 0x7b
+    inline const constexpr char CLOSE_BRACE = '}';      // 0x7d
+    inline const constexpr char DOUBLE_QUOTE = '"';     // 0x22
 
     Parser::Parser(const options_t &options) : _options(options) {}
 
@@ -89,7 +79,7 @@ namespace nvi {
                             } else if (_env_map.count(_key_prop)) {
                                 interpolated_value = _env_map.at(_key_prop);
                             } else if (_options.debug) {
-                                log(MESSAGES::INTERPOLATION_WARNING);
+                                log(INTERPOLATION_WARNING);
                             }
 
                             _value += interpolated_value;
@@ -101,8 +91,7 @@ namespace nvi {
                             // value
                             continue;
                         } else {
-                            log(MESSAGES::INTERPOLATION_ERROR);
-                            std::exit(1);
+                            log(INTERPOLATION_ERROR);
                         }
                     }
 
@@ -114,7 +103,7 @@ namespace nvi {
                 if (_key.length()) {
                     _env_map[_key] = _value;
                     if (_options.debug) {
-                        log(MESSAGES::DEBUG);
+                        log(DEBUG);
                     }
                 }
 
@@ -125,7 +114,7 @@ namespace nvi {
         }
 
         if (_options.debug) {
-            log(MESSAGES::DEBUG_FILE_PROCESSED);
+            log(DEBUG_FILE_PROCESSED);
         }
 
         _env_file.close();
@@ -142,14 +131,12 @@ namespace nvi {
             }
 
             if (_undefined_keys.size()) {
-                log(MESSAGES::REQUIRED_ENV_ERROR);
-                std::exit(1);
+                log(REQUIRED_ENV_ERROR);
             }
         }
 
         if (not _env_map.size()) {
-            log(MESSAGES::EMPTY_ENVS);
-            std::exit(1);
+            log(EMPTY_ENVS_ERROR);
         }
 
         return this;
@@ -178,21 +165,14 @@ namespace nvi {
                 // for example: "npm run dev" won't work because "npm" can't find "node"
                 execvp(_options.commands[0], _options.commands.data());
                 if (errno == ENOENT) {
-                    std::cerr
-                        << nvi::fmt::format(
-                               "[nvi] (main::COMMAND_ENOENT_ERROR) The specified command encountered an error. The "
-                               "command \"%s\" doesn't appear to exist or may not reside in a directory within the "
-                               "shell PATH.",
-                               _options.commands[0])
-                        << std::endl;
+                    log(COMMAND_ENOENT_ERROR);
                     _exit(-1);
                 }
             } else if (pid > 0) {
                 int status;
                 wait(&status);
             } else {
-                std::cerr << "[nvi] (main::COMMAND_FAILED_TO_START) Unable to run the specified command." << std::endl;
-                std::exit(1);
+                log(COMMAND_FAILED_TO_START);
             }
         } else {
             // if a command wasn't provided, print ENVs as a JSON formatted string to stdout
@@ -233,25 +213,21 @@ namespace nvi {
 
         _file_path = std::filesystem::current_path() / _options.dir / _file_name;
         if (not std::filesystem::exists(_file_path)) {
-            log(MESSAGES::FILE_ERROR);
-            std::exit(1);
+            log(FILE_ERROR);
         }
 
         if (std::string{_file_path.extension()}.find(".env") == std::string::npos &&
             std::string{_file_path.stem()}.find(".env") == std::string::npos) {
-            log(MESSAGES::FILE_EXTENSION_ERROR);
-            std::exit(1);
+            log(FILE_EXTENSION_ERROR);
         }
 
         _env_file = std::ifstream{_file_path, std::ios_base::in};
         if (_env_file.bad() || not _env_file.is_open()) {
-            log(MESSAGES::FILE_ERROR);
-            std::exit(1);
+            log(FILE_ERROR);
         }
         _file = std::string{std::istreambuf_iterator<char>(_env_file), std::istreambuf_iterator<char>()};
         if (not _file.length()) {
-            log(MESSAGES::EMPTY_ENVS);
-            std::exit(1);
+            log(EMPTY_ENVS_ERROR);
         }
         _file_view = std::string_view{_file};
 
@@ -259,70 +235,89 @@ namespace nvi {
     }
 
     void Parser::log(const unsigned int &code) const noexcept {
+        // clang-format off
         switch (code) {
-        case MESSAGES::INTERPOLATION_WARNING: {
-            std::clog << fmt::format(
-                             "[nvi] (parser::INTERPOLATION_WARNING::%s:%d:%d) The key \"%s\" contains an invalid "
-                             "interpolated variable: \"%s\". Unable to locate a value that corresponds to this key.",
-                             _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2, _key.c_str(),
-                             _key_prop.c_str())
-                      << std::endl;
+        case INTERPOLATION_WARNING: {
+            NVI_LOG_DEBUG(
+                INTERPOLATION_WARNING,
+                "[%s:%d:%d] The key \"%s\" contains an invalid interpolated variable: \"%s\". Unable to locate "
+                "a value that corresponds to this key.",
+                _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2, 
+                _key.c_str(), _key_prop.c_str());
             break;
         }
-        case MESSAGES::INTERPOLATION_ERROR: {
-            std::cerr << fmt::format("[nvi] (parser::INTERPOLATION_ERROR::%s:%d:%d) The key \"%s\" contains an "
-                                     "interpolated \"{\" operator, but appears to be missing a closing \"}\" operator.",
-                                     _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
-                                     _key.c_str())
-                      << std::endl;
+        case INTERPOLATION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INTERPOLATION_ERROR,
+                "[%s:%d:%d] The key \"%s\" contains an interpolated \"{\" operator, but appears to be missing a "
+                "closing \"}\" operator.",
+                _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
+                _key.c_str());
             break;
         }
-        case MESSAGES::DEBUG: {
-            std::clog << fmt::format("[nvi] (parser::DEBUG::%s:%d:%d) Set key \"%s\" to equal value \"%s\".",
-                                     _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
-                                     _key.c_str(), _value.c_str())
-                      << std::endl;
+        case DEBUG: {
+            NVI_LOG_DEBUG(
+                DEBUG,
+                "[%s:%d:%d] Set key \"%s\" to equal value \"%s\".",
+                _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
+                _key.c_str(), _value.c_str());
             break;
         }
-        case MESSAGES::DEBUG_FILE_PROCESSED: {
-            std::clog << fmt::format("[nvi] (parser::DEBUG_FILE_PROCESSED::%s) Processed %d line%s and %d bytes!\n",
-                                     _file_name.c_str(), _line_count, (_line_count != 1 ? "s" : ""), _byte_count)
-                      << std::endl;
+        case DEBUG_FILE_PROCESSED: {
+            NVI_LOG_DEBUG(
+                DEBUG_FILE_PROCESSED,
+                "(%s) Processed %d line%s and %d bytes!\n",
+                _file_name.c_str(), _line_count, 
+                (_line_count != 1 ? "s" : ""), _byte_count);
             break;
         }
-        case MESSAGES::REQUIRED_ENV_ERROR: {
-            std::cerr << fmt::format(
-                             "[nvi] (parser::REQUIRED_ENV_ERROR) The following ENV keys are marked as required: \"%s\""
-                             ", but they are undefined after all of the .env files were parsed.",
-                             fmt::join(_undefined_keys, ", ").c_str())
-                      << std::endl;
+        case REQUIRED_ENV_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                REQUIRED_ENV_ERROR,
+                "The following ENV keys are marked as required: \"%s\", but they are undefined after the list of "
+                ".env files were parsed.",
+                fmt::join(_undefined_keys, ", ").c_str());
             break;
         }
-        case MESSAGES::FILE_ERROR: {
-            std::cerr << fmt::format("[nvi] (parser::FILE_ERROR) Unable to locate \"%s\". The .env file doesn't appear "
-                                     "to exist or isn't a valid file format!",
-                                     _file_path.c_str())
-                      << std::endl;
+        case FILE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ERROR,
+                "Unable to locate \"%s\". The .env file doesn't appear to exist or isn't a valid file format!",
+                _file_path.c_str());
             break;
         }
-        case MESSAGES::FILE_EXTENSION_ERROR: {
-            std::cerr << fmt::format("[nvi] (parser::FILE_EXTENSION_ERROR) The \"%s\" file is not a valid \".env\""
-                                     " file extension.",
-                                     _file_name.c_str())
-                      << std::endl;
+        case FILE_EXTENSION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_EXTENSION_ERROR,
+                "The \"%s\" file is not a valid \".env\" file extension.",
+                _file_name.c_str());
             break;
         }
-        case MESSAGES::EMPTY_ENVS: {
-            std::cerr
-                << fmt::format(
-                       "[nvi] (parser::MESSAGES::EMPTY_ENVS) Unable to parse any ENVS! Please ensure the \"%s\" file "
-                       "is not empty.",
-                       _file_name.c_str())
-                << std::endl;
+        case EMPTY_ENVS_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                EMPTY_ENVS_ERROR,
+                "Unable to parse any ENVS! Please ensure the \"%s\" file is not empty.",
+                _file_name.c_str());
+            break;
+        }
+        case COMMAND_ENOENT_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                COMMAND_FAILED_TO_START,
+                "The specified command encountered an error. The command \"%s\" doesn't appear to exist or may "
+                "not reside in a directory within the shell PATH.",
+                _options.commands[0]);
+            break;
+        }
+        case COMMAND_FAILED_TO_START: {
+            NVI_LOG_ERROR_AND_EXIT(
+                COMMAND_FAILED_TO_START,
+                "Unable to run the specified command.",
+                NULL);
             break;
         }
         default:
             break;
         }
+        // clang-format on
     }
 }; // namespace nvi
