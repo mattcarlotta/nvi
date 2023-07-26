@@ -301,7 +301,7 @@ namespace nvi {
             break;
         }
         case COMMAND_ENOENT_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
+            NVI_LOG_DEBUG(
                 COMMAND_FAILED_TO_START,
                 "The specified command encountered an error. The command \"%s\" doesn't appear to exist or may "
                 "not reside in a directory within the shell PATH.",
