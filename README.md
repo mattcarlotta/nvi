@@ -53,6 +53,12 @@ cd nvi
 # if you want to use custom compile flags see below
 cmake .
 
+# optional command to build the source quickly
+# swap NUMBER_OF_CPU_CORES for the number that is printed using one of the commands below:
+# GNU/LINUX: grep -m 1 'cpu cores' /proc/cpuinfo
+# MAC OS: sysctl -n hw.ncpu
+# cmake --build . -j NUMBER_OF_CPU_CORES
+
 sudo make install
 ```
 
