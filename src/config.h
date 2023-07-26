@@ -35,10 +35,9 @@ namespace nvi {
 
         private:
             const std::string trim_surrounding_spaces(const std::string &val) noexcept;
-            bool parse_bool_arg(const std::string &val, const unsigned int &code) const noexcept;
-            const std::vector<std::string> parse_vector_arg(const std::string &val,
-                                                            const unsigned int &code) const noexcept;
-            const std::string parse_string_arg(const std::string &val, const unsigned int &code) const noexcept;
+            bool parse_bool_arg(const unsigned int &code) const noexcept;
+            const std::vector<std::string> parse_vector_arg(const unsigned int &code) const noexcept;
+            const std::string parse_string_arg(const unsigned int &code) const noexcept;
             void log(const unsigned int &code) const noexcept;
 
             options_t _options;

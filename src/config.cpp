@@ -67,18 +67,18 @@ namespace nvi {
             _value = trim_surrounding_spaces(line.substr(assignment_index + 1, line.length() - 1));
 
             if (_key == DEBUG_PROP) {
-                _options.debug = parse_bool_arg(_value, DEBUG_ARG_ERROR);
+                _options.debug = parse_bool_arg(DEBUG_ARG_ERROR);
             } else if (_key == DIR_PROP) {
-                _options.dir = parse_string_arg(_value, DIR_ARG_ERROR);
+                _options.dir = parse_string_arg(DIR_ARG_ERROR);
             } else if (_key == FILES_PROP) {
                 _options.files.clear();
-                _options.files = parse_vector_arg(_value, FILES_ARG_ERROR);
+                _options.files = parse_vector_arg(FILES_ARG_ERROR);
 
                 if (not _options.files.size()) {
                     log(MISSING_FILES_ARG_ERROR);
                 }
             } else if (_key == EXEC_PROP) {
-                _command = std::string{parse_string_arg(_value, EXEC_ARG_ERROR)};
+                _command = std::string{parse_string_arg(EXEC_ARG_ERROR)};
                 std::stringstream commandiss{_command};
                 std::string arg;
 
@@ -89,7 +89,7 @@ namespace nvi {
 
                 _options.commands.push_back(nullptr);
             } else if (_key == REQUIRED_PROP) {
-                _options.required_envs = parse_vector_arg(_value, REQUIRED_ARG_ERROR);
+                _options.required_envs = parse_vector_arg(REQUIRED_ARG_ERROR);
             } else {
                 log(INVALID_PROPERTY_WARNING);
             }
@@ -122,32 +122,31 @@ namespace nvi {
         return val.substr(l, r - l + 1);
     }
 
-    bool Config::parse_bool_arg(const std::string &val, const unsigned int &code) const noexcept {
-        if (val != "true" && val != "false") {
+    bool Config::parse_bool_arg(const unsigned int &code) const noexcept {
+        if (_value != "true" && _value != "false") {
             log(code);
         }
 
-        return val == "true";
+        return _value == "true";
     }
 
-    const std::string Config::parse_string_arg(const std::string &val, const unsigned int &code) const noexcept {
-        if (val[0] != DOUBLE_QUOTE || val[val.length() - 1] != DOUBLE_QUOTE) {
+    const std::string Config::parse_string_arg(const unsigned int &code) const noexcept {
+        if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
             log(code);
         }
 
-        return val.substr(1, val.length() - 2);
+        return _value.substr(1, _value.length() - 2);
     }
 
-    const std::vector<std::string> Config::parse_vector_arg(const std::string &val,
-                                                            const unsigned int &code) const noexcept {
-        if (val[0] != OPEN_BRACKET || val[val.length() - 1] != CLOSE_BRACKET) {
+    const std::vector<std::string> Config::parse_vector_arg(const unsigned int &code) const noexcept {
+        if (_value[0] != OPEN_BRACKET || _value[_value.length() - 1] != CLOSE_BRACKET) {
             log(code);
         }
 
         static const std::unordered_set<char> SPECIAL_CHARS = {OPEN_BRACKET, CLOSE_BRACKET, DOUBLE_QUOTE, COMMA, SPACE};
         std::string temp_val;
         std::vector<std::string> arg;
-        for (const char &c : val) {
+        for (const char &c : _value) {
             if (SPECIAL_CHARS.find(c) == SPECIAL_CHARS.end()) {
                 temp_val += c;
                 continue;
