@@ -1,6 +1,7 @@
 #ifndef NVI_PARSER_H
 #define NVI_PARSER_H
 
+#include "log.h"
 #include "options.h"
 #include <filesystem>
 #include <fstream>
@@ -10,6 +11,7 @@
 #include <vector>
 
 namespace nvi {
+    typedef std::map<std::string, std::string> env_map_t;
     /**
      * @detail Parses and interpolates an .env file to a single object of `"key": "value"` pairs.
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
@@ -30,15 +32,15 @@ namespace nvi {
             Parser *check_envs() noexcept;
             Parser *parse_envs() noexcept;
             void set_or_print_envs() noexcept;
-            const std::map<std::string, std::string> &get_env_map() const noexcept;
+            const env_map_t &get_env_map() const noexcept;
 
         private:
             Parser *read(const std::string &env_file_name) noexcept;
             Parser *parse() noexcept;
-            void log(const unsigned int &code) const noexcept;
+            void log(const messages_t &code) const noexcept;
 
             const options_t _options;
-            std::map<std::string, std::string> _env_map;
+            env_map_t _env_map;
             std::ifstream _env_file;
             std::string _file;
             std::string_view _file_view;

@@ -13,20 +13,20 @@ namespace nvi::fmt {
      * @return a string.
      */
     template <typename E> std::string join(E const &elements, const char *const delimiter) {
-        std::ostringstream os;
+        std::ostringstream oss;
         auto b = std::begin(elements);
         auto e = std::end(elements);
 
         if (b != e) {
-            std::copy(b, std::prev(e), std::ostream_iterator<std::string>(os, delimiter));
+            std::copy(b, std::prev(e), std::ostream_iterator<std::string>(oss, delimiter));
             b = std::prev(e);
         }
 
         if (b != e) {
-            os << *b;
+            oss << *b;
         }
 
-        return os.str();
+        return oss.str();
     }
 }; // namespace nvi::fmt
 

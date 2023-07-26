@@ -88,7 +88,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 
 - `-c` | `--config`: Specifies which environment config to load from the .nvi file. (ex: --config dev)‡
 - `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
-- `-d` | `--dir`: Specifies which directory the env file is located within. (ex: --dir path/to/env)
+- `-d` | `--dir`: Specifies which directory the .env files are located within. (ex: --dir path/to/envs)
 - `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVs. (ex: --exec node index.js)
 - `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
 - `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)

@@ -28,7 +28,7 @@ namespace nvi {
     Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc), _argv(argv) {
         _index = 1;
         while (_index < _argc) {
-            const std::string arg = std::string{_argv[_index]};
+            const std::string arg{_argv[_index]};
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
                 _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
@@ -57,13 +57,13 @@ namespace nvi {
 
     const options_t &Arg_Parser::get_options() const noexcept { return _options; }
 
-    std::string Arg_Parser::parse_single_arg(const unsigned int &code) noexcept {
+    std::string Arg_Parser::parse_single_arg(const messages_t &code) noexcept {
         ++_index;
         if (_argv[_index] == nullptr) {
             log(code);
         }
 
-        const std::string arg = std::string{_argv[_index]};
+        const std::string arg{_argv[_index]};
         if (arg.find("-") != std::string::npos) {
             log(code);
         }
@@ -71,7 +71,7 @@ namespace nvi {
         return arg;
     }
 
-    std::vector<std::string> Arg_Parser::parse_multi_arg(const unsigned int &code) noexcept {
+    std::vector<std::string> Arg_Parser::parse_multi_arg(const messages_t &code) noexcept {
         std::vector<std::string> arg;
         ++_index;
         while (_index < _argc) {
@@ -79,7 +79,7 @@ namespace nvi {
                 break;
             }
 
-            const std::string next_arg = std::string{_argv[_index]};
+            const std::string next_arg{_argv[_index]};
             if (next_arg.find("-") != std::string::npos) {
                 _index -= 1;
                 break;
@@ -101,7 +101,7 @@ namespace nvi {
         // flag begins, for example: nvi --debug --exec cargo run --release --required KEY1 KEY2
         // where "cargo run --release" needs to be separated from the other known flags. A work-around
         // is to assume the command won't contain any of the RESERVED_FLAGS defined below
-        static const std::unordered_set<std::string> RESERVED_FLAGS = {
+        static const std::unordered_set<std::string> RESERVED_FLAGS{
             CONFIG_SHORT, CONFIG_LONG, DEBUG_SHORT, DEBUG_LONG, DIRECTORY_SHORT, DIRECTORY_LONG, EXECUTE_SHORT,
             EXECUTE_LONG, FILES_SHORT, FILES_LONG,  HELP_SHORT, REQUIRED_SHORT,  REQUIRED_LONG};
 
@@ -111,7 +111,7 @@ namespace nvi {
                 break;
             }
 
-            std::string next_arg = std::string{_argv[_index]};
+            std::string next_arg{_argv[_index]};
             if (next_arg.find("-") != std::string::npos && RESERVED_FLAGS.find(next_arg) != RESERVED_FLAGS.end()) {
                 _index -= 1;
                 break;
@@ -144,7 +144,7 @@ namespace nvi {
                 break;
             }
 
-            const std::string arg = std::string{_argv[_index]};
+            const std::string arg{_argv[_index]};
             if (arg.find("-") != std::string::npos) {
                 _index -= 1;
                 break;
@@ -156,13 +156,13 @@ namespace nvi {
         log(INVALID_FLAG_WARNING);
     }
 
-    void Arg_Parser::log(const unsigned int &code) const noexcept {
+    void Arg_Parser::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
         case CONFIG_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
-                FILE_ERROR,
-                "The \"-c\" or \"--config\" flag must contain an environment name from the .nvi configuration"
+                CONFIG_FLAG_ERROR,
+                "The \"-c\" or \"--config\" flag must contain an environment name from the .nvi configuration "
                 "file. Use flag \"-h\" or \"--help\" for more information.", 
                 NULL);
             break;
@@ -179,7 +179,7 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 COMMAND_FLAG_ERROR,
                 "The \"-e\" or \"--exec\" flag must contain at least 1 command. Use flag \"-h\" or \"--help\""
-                "for more information.",
+                " for more information.",
                 NULL);
             break;
         }
@@ -202,7 +202,8 @@ namespace nvi {
         case HELP_DOC: {
             NVI_LOG_AND_EXIT(
                 HELP_DOC,
-                "The following information is just a brief summary of the flags. For additional information, please take a look at the README.\n"
+                "The following information is just a brief summary of the accepted CLI flags. For additional information, please see the "
+                "README.\n"
                 "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
                 "│ NVI CLI Documentation                                                                                                  │\n"
                 "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
@@ -210,7 +211,7 @@ namespace nvi {
                 "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
                 "│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │\n"
                 "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
-                "│ -d, --dir       │ Specifies which directory the env file is located within. (ex: --dir path/to/env)                    │\n"
+                "│ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │\n"
                 "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
                 "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
                 "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"

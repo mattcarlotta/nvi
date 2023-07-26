@@ -1,23 +1,21 @@
 #include "parser.h"
 #include "gtest/gtest.h"
-#include <map>
-#include <string>
-#include <vector>
 
 class parse_env_file : public testing::Test {
     protected:
-        static std::map<std::string, std::string> env_map;
+        static nvi::env_map_t env_map;
 
     public:
         static void SetUpTestSuite() {
-            nvi::Parser parser(
-                {{}, "", false, "../envs", {".env", "bin.env", "base.env", "reference.env"}, {"BASIC_ENV"}});
+            nvi::Parser parser({/* commands */ {}, /* config */ "", /* debug */ false, /* dir */ "../envs",
+                                /* files */ {".env", "bin.env", "base.env", "reference.env"},
+                                /* required_envs */ {"BASIC_ENV"}});
             parser.parse_envs()->check_envs();
             env_map = parser.get_env_map();
         }
 };
 
-std::map<std::string, std::string> parse_env_file::env_map;
+nvi::env_map_t parse_env_file::env_map;
 
 TEST_F(parse_env_file, consistent_parse_size) { EXPECT_EQ(env_map.size(), 37); }
 

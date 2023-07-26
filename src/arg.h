@@ -1,6 +1,7 @@
 #ifndef NVI_ARG_H
 #define NVI_ARG_H
 
+#include "log.h"
 #include "options.h"
 #include <map>
 #include <string>
@@ -34,11 +35,11 @@ namespace nvi {
             std::string _invalid_args;
             std::string _command;
 
-            std::string parse_single_arg(const unsigned int &code) noexcept;
-            std::vector<std::string> parse_multi_arg(const unsigned int &code) noexcept;
+            std::string parse_single_arg(const messages_t &code) noexcept;
+            std::vector<std::string> parse_multi_arg(const messages_t &code) noexcept;
             void parse_command_args() noexcept;
             void remove_invalid_arg() noexcept;
-            void log(const unsigned int &code) const noexcept;
+            void log(const messages_t &code) const noexcept;
     };
 } // namespace nvi
 

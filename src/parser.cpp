@@ -11,7 +11,6 @@
 #include <string_view>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <vector>
 
 namespace nvi {
 
@@ -172,7 +171,7 @@ namespace nvi {
                 int status;
                 wait(&status);
             } else {
-                log(COMMAND_FAILED_TO_START);
+                log(COMMAND_FAILED_TO_RUN);
             }
         } else {
             // if a command wasn't provided, print ENVs as a JSON formatted string to stdout
@@ -197,7 +196,7 @@ namespace nvi {
         }
     }
 
-    const std::map<std::string, std::string> &Parser::get_env_map() const noexcept { return _env_map; }
+    const env_map_t &Parser::get_env_map() const noexcept { return _env_map; }
 
     Parser *Parser::read(const std::string &env_file_name) noexcept {
         _file_name = env_file_name;
@@ -213,7 +212,7 @@ namespace nvi {
 
         _file_path = std::filesystem::current_path() / _options.dir / _file_name;
         if (not std::filesystem::exists(_file_path)) {
-            log(FILE_ERROR);
+            log(FILE_ENOENT_ERROR);
         }
 
         if (std::string{_file_path.extension()}.find(".env") == std::string::npos &&
@@ -234,7 +233,7 @@ namespace nvi {
         return this;
     }
 
-    void Parser::log(const unsigned int &code) const noexcept {
+    void Parser::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
         case INTERPOLATION_WARNING: {
@@ -279,10 +278,17 @@ namespace nvi {
                 fmt::join(_undefined_keys, ", ").c_str());
             break;
         }
+        case FILE_ENOENT_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ENOENT_ERROR,
+                "Unable to locate \"%s\". The .env file doesn't appear to exist at this path!",
+                _file_path.c_str());
+            break;
+        }
         case FILE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ERROR,
-                "Unable to locate \"%s\". The .env file doesn't appear to exist or isn't a valid file format!",
+                "Unable to open \"%s\". The .env file is either invalid, has restricted access, or may be corrupted.",
                 _file_path.c_str());
             break;
         }
@@ -296,22 +302,22 @@ namespace nvi {
         case EMPTY_ENVS_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_ENVS_ERROR,
-                "Unable to parse any ENVS! Please ensure the \"%s\" file is not empty.",
+                "Unable to parse any ENVs! Please ensure the \"%s\" file is not empty.",
                 _file_name.c_str());
             break;
         }
         case COMMAND_ENOENT_ERROR: {
             NVI_LOG_DEBUG(
-                COMMAND_FAILED_TO_START,
+                COMMAND_ENOENT_ERROR,
                 "The specified command encountered an error. The command \"%s\" doesn't appear to exist or may "
                 "not reside in a directory within the shell PATH.",
                 _options.commands[0]);
             break;
         }
-        case COMMAND_FAILED_TO_START: {
+        case COMMAND_FAILED_TO_RUN: {
             NVI_LOG_ERROR_AND_EXIT(
-                COMMAND_FAILED_TO_START,
-                "Unable to run the specified command.",
+                COMMAND_FAILED_TO_RUN,
+                "Unable to run the specified command. See terminal logs for more information.",
                 NULL);
             break;
         }

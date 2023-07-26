@@ -1,6 +1,7 @@
 #ifndef NVI_ENV_CONFIG_H
 #define NVI_ENV_CONFIG_H
 
+#include "log.h"
 #include "options.h"
 #include <filesystem>
 #include <string>
@@ -25,11 +26,11 @@ namespace nvi {
             const options_t &get_options() const noexcept;
 
         private:
-            const std::string trim_surrounding_spaces(const std::string &val) noexcept;
-            bool parse_bool_arg(const unsigned int &code) const noexcept;
-            const std::vector<std::string> parse_vector_arg(const unsigned int &code) const noexcept;
-            const std::string parse_string_arg(const unsigned int &code) const noexcept;
-            void log(const unsigned int &code) const noexcept;
+            const std::string trim_surrounding_spaces(const std::string &val) const noexcept;
+            bool parse_bool_arg(const messages_t &code) const noexcept;
+            const std::vector<std::string> parse_vector_arg(const messages_t &code) const noexcept;
+            const std::string parse_string_arg(const messages_t &code) const noexcept;
+            void log(const messages_t &code) const noexcept;
 
             options_t _options;
             std::string _file;

@@ -10,7 +10,7 @@
 #define __CLASS__ get_class_name(__PRETTY_FUNCTION__)
 
 /**
- * @detail Logs a message to stdlog.
+ * @detail Logs a message to stdlog (stderr).
  */
 #define NVI_LOG_DEBUG(...)                                                                                             \
     do {                                                                                                               \
@@ -18,11 +18,11 @@
     } while (false)
 
 /**
- * @detail Logs a message to stdlog and exits.
+ * @detail Logs a message to stdlog (stderr) and exits.
  */
 #define NVI_LOG_AND_EXIT(...)                                                                                          \
     do {                                                                                                               \
-        ::nvi::_log_and_exit(std::clog, 0, __CLASS__, __VA_ARGS__);                                                    \
+        ::nvi::_log_and_exit(std::clog, /* exit code */ 0, __CLASS__, __VA_ARGS__);                                    \
     } while (false)
 
 /**
@@ -30,11 +30,11 @@
  */
 #define NVI_LOG_ERROR_AND_EXIT(...)                                                                                    \
     do {                                                                                                               \
-        ::nvi::_log_and_exit(std::cerr, 1, __CLASS__, __VA_ARGS__);                                                    \
+        ::nvi::_log_and_exit(std::cerr, /* exit code */ 1, __CLASS__, __VA_ARGS__);                                    \
     } while (false)
 
 namespace nvi {
-    enum MESSAGES {
+    typedef enum MESSAGES {
         // arg
         CONFIG_FLAG_ERROR,
         DIR_FLAG_ERROR,
@@ -44,12 +44,11 @@ namespace nvi {
         HELP_DOC,
         INVALID_FLAG_WARNING,
         // config
-        FILE_ERROR,
         FILE_PARSE_ERROR,
         DEBUG_ARG_ERROR,
         DIR_ARG_ERROR,
         FILES_ARG_ERROR,
-        MISSING_FILES_ARG_ERROR,
+        EMPTY_FILES_ARG_ERROR,
         EXEC_ARG_ERROR,
         REQUIRED_ARG_ERROR,
         INVALID_PROPERTY_WARNING,
@@ -61,15 +60,18 @@ namespace nvi {
         FILE_EXTENSION_ERROR,
         EMPTY_ENVS_ERROR,
         COMMAND_ENOENT_ERROR,
-        COMMAND_FAILED_TO_START,
+        COMMAND_FAILED_TO_RUN,
         // shared
+        FILE_ERROR,
+        FILE_ENOENT_ERROR,
         DEBUG
-    };
+    } messages_t;
 
     inline const std::string get_class_name(const std::string &class_name) {
         size_t colons = class_name.find("::");
         size_t begin = class_name.substr(0, colons).rfind(" ") + 1;
         size_t end = class_name.rfind("(") - begin;
+        // remove namespace "nvi::"
         return class_name.substr(begin + 5, end - 5);
     }
 
@@ -89,8 +91,6 @@ namespace nvi {
             return "HELP_DOC";
         case INVALID_FLAG_WARNING:
             return "INVALID_FLAG_WARNING";
-        case FILE_ERROR:
-            return "FILE_ERROR";
         case FILE_PARSE_ERROR:
             return "FILE_PARSE_ERROR";
         case DEBUG_ARG_ERROR:
@@ -99,8 +99,8 @@ namespace nvi {
             return "DIR_ARG_ERROR";
         case FILES_ARG_ERROR:
             return "FILES_ARG_ERROR";
-        case MISSING_FILES_ARG_ERROR:
-            return "MISSING_FILES_ARG_ERROR";
+        case EMPTY_FILES_ARG_ERROR:
+            return "EMPTY_FILES_ARG_ERROR";
         case EXEC_ARG_ERROR:
             return "EXEC_ARG_ERROR";
         case REQUIRED_ARG_ERROR:
@@ -121,8 +121,12 @@ namespace nvi {
             return "EMPTY_ENVS_ERROR";
         case COMMAND_ENOENT_ERROR:
             return "COMMAND_ENOENT_ERROR";
-        case COMMAND_FAILED_TO_START:
-            return "COMMAND_FAILED_TO_START";
+        case COMMAND_FAILED_TO_RUN:
+            return "COMMAND_FAILED_TO_RUN";
+        case FILE_ERROR:
+            return "FILE_ERROR";
+        case FILE_ENOENT_ERROR:
+            return "FILE_ENOENT_ERROR";
         case DEBUG:
             return "DEBUG";
         default:
@@ -131,7 +135,7 @@ namespace nvi {
     }
 
     template <typename... A>
-    void _log(std::ostream &log, const std::string &filename, const unsigned int &code, const char *fmt, A... args) {
+    void _log(std::ostream &log, const std::string &filename, const messages_t &code, const char *fmt, A... args) {
         const std::string message = get_message_from_code(code);
         size_t size = snprintf(nullptr, 0, fmt, args...);
         std::string buf;
@@ -142,7 +146,7 @@ namespace nvi {
     }
 
     template <typename... A>
-    void _log_and_exit(std::ostream &log, const int &exit_code, const std::string &filename, const unsigned int &error,
+    void _log_and_exit(std::ostream &log, const int &exit_code, const std::string &filename, const messages_t &error,
                        const char *fmt, A... args) {
         _log(log, filename, error, fmt, args...);
         std::exit(exit_code);

@@ -30,7 +30,7 @@ namespace nvi {
     Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
         _file_path = std::filesystem::current_path() / _envdir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
-            log(FILE_ERROR);
+            log(FILE_ENOENT_ERROR);
         }
 
         std::ifstream config_file{_file_path, std::ios_base::in};
@@ -47,10 +47,10 @@ namespace nvi {
         std::string config{_file.substr(config_index, _file.length())};
         const int env_eol_index = config.find_first_of(LINE_DELIMITER);
         // remove environment name line
-        std::istringstream configiss{config.substr(env_eol_index + 1, _file.length())};
+        std::istringstream config_iss{config.substr(env_eol_index + 1, _file.length())};
 
         std::string line;
-        while (std::getline(configiss, line)) {
+        while (std::getline(config_iss, line)) {
             // skip comments in config options
             const int comment_index = line.find(COMMENT);
             if (comment_index >= 0) {
@@ -75,14 +75,14 @@ namespace nvi {
                 _options.files = parse_vector_arg(FILES_ARG_ERROR);
 
                 if (not _options.files.size()) {
-                    log(MISSING_FILES_ARG_ERROR);
+                    log(EMPTY_FILES_ARG_ERROR);
                 }
             } else if (_key == EXEC_PROP) {
-                _command = std::string{parse_string_arg(EXEC_ARG_ERROR)};
-                std::stringstream commandiss{_command};
+                _command = parse_string_arg(EXEC_ARG_ERROR);
+                std::stringstream command_iss{_command};
                 std::string arg;
 
-                while (commandiss >> arg) {
+                while (command_iss >> arg) {
                     char *arg_cstr = new char[arg.length() + 1];
                     _options.commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
                 }
@@ -104,25 +104,25 @@ namespace nvi {
 
     const options_t &Config::get_options() const noexcept { return _options; }
 
-    const std::string Config::trim_surrounding_spaces(const std::string &val) noexcept {
-        int l = 0;
-        int r = val.length() - 1;
-        while (l < r) {
-            if (val[l] != SPACE && val[r] != SPACE) {
+    const std::string Config::trim_surrounding_spaces(const std::string &val) const noexcept {
+        int begin = 0;
+        int end = val.length() - 1;
+        while (begin < end) {
+            if (val[begin] != SPACE && val[end] != SPACE) {
                 break;
             }
-            if (val[l] == SPACE) {
-                ++l;
+            if (val[begin] == SPACE) {
+                ++begin;
             }
-            if (val[r] == SPACE) {
-                --r;
+            if (val[end] == SPACE) {
+                --end;
             }
         }
 
-        return val.substr(l, r - l + 1);
+        return val.substr(begin, end - begin + 1);
     }
 
-    bool Config::parse_bool_arg(const unsigned int &code) const noexcept {
+    bool Config::parse_bool_arg(const messages_t &code) const noexcept {
         if (_value != "true" && _value != "false") {
             log(code);
         }
@@ -130,7 +130,7 @@ namespace nvi {
         return _value == "true";
     }
 
-    const std::string Config::parse_string_arg(const unsigned int &code) const noexcept {
+    const std::string Config::parse_string_arg(const messages_t &code) const noexcept {
         if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
             log(code);
         }
@@ -138,12 +138,12 @@ namespace nvi {
         return _value.substr(1, _value.length() - 2);
     }
 
-    const std::vector<std::string> Config::parse_vector_arg(const unsigned int &code) const noexcept {
+    const std::vector<std::string> Config::parse_vector_arg(const messages_t &code) const noexcept {
         if (_value[0] != OPEN_BRACKET || _value[_value.length() - 1] != CLOSE_BRACKET) {
             log(code);
         }
 
-        static const std::unordered_set<char> SPECIAL_CHARS = {OPEN_BRACKET, CLOSE_BRACKET, DOUBLE_QUOTE, COMMA, SPACE};
+        static const std::unordered_set<char> SPECIAL_CHARS{OPEN_BRACKET, CLOSE_BRACKET, DOUBLE_QUOTE, COMMA, SPACE};
         std::string temp_val;
         std::vector<std::string> arg;
         for (const char &c : _value) {
@@ -160,13 +160,20 @@ namespace nvi {
         return arg;
     }
 
-    void Config::log(const unsigned int &code) const noexcept {
+    void Config::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
+        case FILE_ENOENT_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ENOENT_ERROR,
+                "Unable to locate \"%s\". The .nvi configuration file doesn't appear to exist at this path!",
+                _file_path.c_str());
+            break;
+        }
         case FILE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ERROR,
-                "Unable to locate \"%s\". The configuration file doesn't appear to exist!",
+                "Unable to open \"%s\". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.",
                 _file_path.c_str());
             break;
         }
@@ -202,11 +209,11 @@ namespace nvi {
                 _value.c_str());
             break;
         }
-        case MISSING_FILES_ARG_ERROR: {
+        case EMPTY_FILES_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
-                MISSING_FILES_ARG_ERROR,
-                "Unable to locate a \"files\" property within the \"%s\" environment configuration (%s). You"
-                "must specify at least 1 .env file to load!",
+                EMPTY_FILES_ARG_ERROR,
+                "The \"files\" property within the \"%s\" environment configuration (%s) appears to be empty. "
+                "You must specify at least 1 .env file to load!",
                 _env.c_str(), _file_path.c_str());
             break;
         }
@@ -221,7 +228,7 @@ namespace nvi {
         case REQUIRED_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_ARG_ERROR,
-                "The \"required\" property contains an invalid value. Expected a vector of strings, but instead "
+                "The \"required\" property contains an invalid value. Expected an array of strings, but instead "
                 "received: %s.",
                 _value.c_str());
             break;
