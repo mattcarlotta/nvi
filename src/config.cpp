@@ -1,5 +1,6 @@
 #include "config.h"
 #include "format.h"
+#include "log.h"
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -10,19 +11,6 @@
 #include <vector>
 
 namespace nvi {
-
-    enum MESSAGES {
-        FILE_ERROR,
-        FILE_PARSE_ERROR,
-        DEBUG_ARG_ERROR,
-        DIR_ARG_ERROR,
-        FILES_ARG_ERROR,
-        MISSING_FILES_ARG_ERROR,
-        EXEC_ARG_ERROR,
-        REQUIRED_ARG_ERROR,
-        INVALID_PROPERTY_WARNING,
-        DEBUG
-    };
 
     constexpr char DEBUG_PROP[] = "debug";
     constexpr char DIR_PROP[] = "dir";
@@ -42,21 +30,18 @@ namespace nvi {
     Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
         _file_path = std::filesystem::current_path() / _envdir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
-            log(MESSAGES::FILE_ERROR);
-            std::exit(1);
+            log(FILE_ERROR);
         }
 
         std::ifstream config_file{_file_path, std::ios_base::in};
         if (config_file.bad() || not config_file.is_open()) {
-            log(MESSAGES::FILE_ERROR);
-            std::exit(1);
+            log(FILE_ERROR);
         }
 
         _file = std::string{std::istreambuf_iterator<char>(config_file), std::istreambuf_iterator<char>()};
         const int config_index = _file.find(environment);
         if (config_index < 0) {
-            log(MESSAGES::FILE_PARSE_ERROR);
-            std::exit(1);
+            log(FILE_PARSE_ERROR);
         }
 
         std::string config{_file.substr(config_index, _file.length())};
@@ -82,19 +67,18 @@ namespace nvi {
             _value = trim_surrounding_spaces(line.substr(assignment_index + 1, line.length() - 1));
 
             if (_key == DEBUG_PROP) {
-                _options.debug = parse_bool_arg(MESSAGES::DEBUG_ARG_ERROR);
+                _options.debug = parse_bool_arg(_value, DEBUG_ARG_ERROR);
             } else if (_key == DIR_PROP) {
-                _options.dir = parse_string_arg(MESSAGES::DIR_ARG_ERROR);
+                _options.dir = parse_string_arg(_value, DIR_ARG_ERROR);
             } else if (_key == FILES_PROP) {
                 _options.files.clear();
-                _options.files = parse_vector_arg(MESSAGES::FILES_ARG_ERROR);
+                _options.files = parse_vector_arg(_value, FILES_ARG_ERROR);
 
                 if (not _options.files.size()) {
-                    log(MESSAGES::MISSING_FILES_ARG_ERROR);
-                    std::exit(1);
+                    log(MISSING_FILES_ARG_ERROR);
                 }
             } else if (_key == EXEC_PROP) {
-                _command = std::string{parse_string_arg(MESSAGES::EXEC_ARG_ERROR)};
+                _command = std::string{parse_string_arg(_value, EXEC_ARG_ERROR)};
                 std::stringstream commandiss{_command};
                 std::string arg;
 
@@ -105,14 +89,14 @@ namespace nvi {
 
                 _options.commands.push_back(nullptr);
             } else if (_key == REQUIRED_PROP) {
-                _options.required_envs = parse_vector_arg(MESSAGES::REQUIRED_ARG_ERROR);
+                _options.required_envs = parse_vector_arg(_value, REQUIRED_ARG_ERROR);
             } else {
-                log(MESSAGES::INVALID_PROPERTY_WARNING);
+                log(INVALID_PROPERTY_WARNING);
             }
         }
 
         if (_options.debug) {
-            log(MESSAGES::DEBUG);
+            log(DEBUG);
         }
 
         config_file.close();
@@ -138,42 +122,40 @@ namespace nvi {
         return val.substr(l, r - l + 1);
     }
 
-    bool Config::parse_bool_arg(const unsigned int &code) const {
-        if (_value != "true" && _value != "false") {
+    bool Config::parse_bool_arg(const std::string &val, const unsigned int &code) const noexcept {
+        if (val != "true" && val != "false") {
             log(code);
-            std::exit(1);
         }
 
-        return _value == "true";
+        return val == "true";
     }
 
-    const std::string Config::parse_string_arg(const unsigned int &code) const {
-        if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
+    const std::string Config::parse_string_arg(const std::string &val, const unsigned int &code) const noexcept {
+        if (val[0] != DOUBLE_QUOTE || val[val.length() - 1] != DOUBLE_QUOTE) {
             log(code);
-            std::exit(1);
         }
 
-        return _value.substr(1, _value.length() - 2);
+        return val.substr(1, val.length() - 2);
     }
 
-    const std::vector<std::string> Config::parse_vector_arg(const unsigned int &code) const {
-        if (_value[0] != OPEN_BRACKET || _value[_value.length() - 1] != CLOSE_BRACKET) {
+    const std::vector<std::string> Config::parse_vector_arg(const std::string &val,
+                                                            const unsigned int &code) const noexcept {
+        if (val[0] != OPEN_BRACKET || val[val.length() - 1] != CLOSE_BRACKET) {
             log(code);
-            std::exit(1);
         }
 
         static const std::unordered_set<char> SPECIAL_CHARS = {OPEN_BRACKET, CLOSE_BRACKET, DOUBLE_QUOTE, COMMA, SPACE};
-        std::string val;
+        std::string temp_val;
         std::vector<std::string> arg;
-        for (const char &c : _value) {
+        for (const char &c : val) {
             if (SPECIAL_CHARS.find(c) == SPECIAL_CHARS.end()) {
-                val += c;
+                temp_val += c;
                 continue;
-            } else if (val.length()) {
-                arg.push_back(val);
+            } else if (temp_val.length()) {
+                arg.push_back(temp_val);
             }
 
-            val.clear();
+            temp_val.clear();
         }
 
         return arg;
@@ -181,80 +163,81 @@ namespace nvi {
 
     void Config::log(const unsigned int &code) const noexcept {
         switch (code) {
-        case MESSAGES::FILE_ERROR: {
-            std::cerr
-                << fmt::format(
-                       "[nvi] (config::FILE_ERROR) Unable to locate \"%s\". The configuration file doesn't appear "
-                       "to exist!",
-                       _file_path.c_str())
-                << std::endl;
+        case FILE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(FILE_ERROR,
+                                   "Unable to locate \"%s\". The configuration file doesn't appear to exist!",
+                                   _file_path.c_str());
             break;
         }
-        case MESSAGES::FILE_PARSE_ERROR: {
-            std::cerr << fmt::format("[nvi] (config::FILE_PARSE_ERROR) Unable to load a \"%s\" environment from the "
-                                     ".nvi configuration file (%s). The specified environment doesn't appear to exist!",
-                                     _env.c_str(), _file_path.c_str())
-                      << std::endl;
+        case FILE_PARSE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_PARSE_ERROR,
+                "Unable to load a \"%s\" environment from the .nvi configuration file (%s). The specified "
+                "environment doesn't appear to exist!",
+                _env.c_str(), _file_path.c_str());
             break;
         }
-        case MESSAGES::DEBUG_ARG_ERROR: {
-            std::cerr << fmt::format("[nvi] (config::DEBUG_ARG_ERROR) The \"debug\" property contains an "
-                                     "invalid value. Expected a boolean value, but instead received: %s.",
-                                     std::string{_value}.c_str())
-                      << std::endl;
+        case DEBUG_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                DEBUG_ARG_ERROR,
+                "The \"debug\" property contains an invalid value. Expected a boolean value, but instead "
+                "received: %s.",
+                std::string{_value}.c_str());
             break;
         }
-        case MESSAGES::DIR_ARG_ERROR: {
-            std::cerr << fmt::format("[nvi] (config::DIR_ARG_ERROR) The \"dir\" property contains an "
-                                     "invalid value. Expected a string value, but instead received: %s.",
-                                     std::string{_value}.c_str())
-                      << std::endl;
+        case DIR_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                DIR_ARG_ERROR,
+                "The \"dir\" property contains an invalid value. Expected a string value, but instead "
+                "received: %s.",
+                std::string{_value}.c_str());
             break;
         }
-        case MESSAGES::FILES_ARG_ERROR: {
-            std::cerr << fmt::format("[nvi] (config::FILES_ARG_ERROR) The \"files\" property contains an "
-                                     "invalid value. Expected a vector of strings, but instead received: %s.",
-                                     std::string{_value}.c_str())
-                      << std::endl;
+        case FILES_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILES_ARG_ERROR,
+                "The \"files\" property contains an invalid value. Expected a vector of strings, but "
+                "instead received: %s.",
+                std::string{_value}.c_str());
             break;
         }
-        case MESSAGES::MISSING_FILES_ARG_ERROR: {
-            std::cerr << fmt::format(
-                             "[nvi] (config::MISSING_FILES_ARG_ERROR) Unable to locate a \"files\" property within the "
-                             "\"%s\" environment configuration (%s). You must specify at least 1 .env file to load!",
-                             _env.c_str(), _file_path.c_str())
-                      << std::endl;
+        case MISSING_FILES_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                MISSING_FILES_ARG_ERROR,
+                "Unable to locate a \"files\" property within the \"%s\" environment configuration (%s). You"
+                "must specify at least 1 .env file to load!",
+                _env.c_str(), _file_path.c_str());
             break;
         }
-        case MESSAGES::EXEC_ARG_ERROR: {
-            std::cerr << fmt::format("[nvi] (config::EXEC_ARG_ERROR) The \"exec\" property contains an "
-                                     "invalid value. Expected a string value, but instead received: %s.",
-                                     std::string{_value}.c_str())
-                      << std::endl;
+        case EXEC_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                EXEC_ARG_ERROR,
+                "The \"exec\" property contains an invalid value. Expected a string value, but instead "
+                "received: %s.",
+                std::string{_value}.c_str());
             break;
         }
-        case MESSAGES::REQUIRED_ARG_ERROR: {
-            std::cerr << fmt::format("[nvi] (config::REQUIRED_ARG_ERROR) The \"required\" property contains an "
-                                     "invalid value. Expected a vector of strings, but instead received: %s.",
-                                     std::string{_value}.c_str())
-                      << std::endl;
+        case REQUIRED_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                REQUIRED_ARG_ERROR,
+                "The \"required\" property contains an invalid value. Expected a vector of strings, but "
+                "instead received: %s.",
+                std::string{_value}.c_str());
             break;
         }
-        case MESSAGES::INVALID_PROPERTY_WARNING: {
-            std::clog << fmt::format("[nvi] (config::INVALID_PROPERTY_WARNING) Found an invalid property: \"%s\" "
-                                     "within the \"%s\" config. Skipping.",
-                                     std::string{_key}.c_str(), _env.c_str())
-                      << std::endl;
+        case INVALID_PROPERTY_WARNING: {
+            NVI_LOG_DEBUG(INVALID_PROPERTY_WARNING,
+                          "Found an invalid property: \"%s\" within the \"%s\" config. Skipping.",
+                          std::string{_key}.c_str(), _env.c_str());
             break;
         }
-        case MESSAGES::DEBUG: {
-            std::clog << fmt::format(
-                             "[nvi] (config::DEBUG) Successfully parsed the \"%s\" environment configuration and the "
-                             "following options were set: debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", "
-                             "required=\"%s\".\n",
-                             _env.c_str(), _options.dir.c_str(), _command.c_str(),
-                             fmt::join(_options.files, ", ").c_str(), fmt::join(_options.required_envs, ", ").c_str())
-                      << std::endl;
+        case DEBUG: {
+            NVI_LOG_DEBUG(DEBUG,
+                          "Successfully parsed the \"%s\" environment configuration and the folowing "
+                          "options were set: debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", "
+                          "required=\"%s\".\n",
+                          _env.c_str(), _options.dir.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
+                          fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         default:
