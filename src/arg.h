@@ -9,25 +9,15 @@
 namespace nvi {
     /**
      * @detail Parses flags and arguments from `argv` into `options`.
-     *
      * @param `argc` holds the number of arguments in `argv`.
-     *
      * @param `argv` contains flags and any arguments associated with them.
-     *
      * @see `nvi -h` or `nvi --help` for more information about the flags and arguments.
-     *
      * @example Parsing flags and arguments
-     * ```
      *
      * int argc = 5;
-     *
      * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", NULL };
-     *
      * nvi::Arg_Parser args(argc, argv);
-     *
      * nvi::options_t options = args.get_options();
-     *
-     * ```
      */
     class Arg_Parser {
         public:

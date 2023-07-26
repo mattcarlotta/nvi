@@ -8,11 +8,8 @@
 namespace nvi::fmt {
     /**
      * @detail Joins a list of elements into a single string.
-     *
      * @param `elements` a list of elements to be combined.
-     *
      * @param `delimiter` a character to use to separate each item in the string.
-     *
      * @return a string.
      */
     template <typename E> std::string join(E const &elements, const char *const delimiter) {

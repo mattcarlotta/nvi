@@ -10,23 +10,14 @@ namespace nvi {
     /**
      * @detail Reads an `.nvi` configuration file from the project root directory or a specified directory and
      * converts the selected environment into `options`.
-     *
      * @param `env` contains the name of the environment to load from the configuration file.
-     *
      * @param `dir` is an optional argument to specify where the .nvi file resides according to current directory
-     *
      * @example Initializing a config
-     * ```
      *
      * const string::string env = "development";
-     *
      * const std::string dir = "custom/path/to/envs";
-     *
      * nvi::Config config(env, dir);
-     *
      * nvi::options_t options = config.get_options();
-     *
-     * ```
      */
     class Config {
         public:
