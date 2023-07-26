@@ -57,7 +57,7 @@ namespace nvi {
 
     const options_t &Arg_Parser::get_options() const noexcept { return _options; }
 
-    std::string Arg_Parser::parse_single_arg(const unsigned int &code) {
+    std::string Arg_Parser::parse_single_arg(const unsigned int &code) noexcept {
         ++_index;
         if (_argv[_index] == nullptr) {
             log(code);
@@ -71,7 +71,7 @@ namespace nvi {
         return arg;
     }
 
-    std::vector<std::string> Arg_Parser::parse_multi_arg(const unsigned int &code) {
+    std::vector<std::string> Arg_Parser::parse_multi_arg(const unsigned int &code) noexcept {
         std::vector<std::string> arg;
         ++_index;
         while (_index < _argc) {
@@ -96,7 +96,7 @@ namespace nvi {
         return arg;
     }
 
-    void Arg_Parser::parse_command_args() {
+    void Arg_Parser::parse_command_args() noexcept {
         // currently, it's impossible to determine when an "--exec" flag with arguments end and another
         // flag begins, for example: nvi --debug --exec cargo run --release --required KEY1 KEY2
         // where "cargo run --release" needs to be separated from the other known flags. A work-around

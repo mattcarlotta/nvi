@@ -44,9 +44,9 @@ namespace nvi {
             std::string _invalid_args;
             std::string _command;
 
-            std::string parse_single_arg(const unsigned int &code);
-            std::vector<std::string> parse_multi_arg(const unsigned int &code);
-            void parse_command_args();
+            std::string parse_single_arg(const unsigned int &code) noexcept;
+            std::vector<std::string> parse_multi_arg(const unsigned int &code) noexcept;
+            void parse_command_args() noexcept;
             void remove_invalid_arg() noexcept;
             void log(const unsigned int &code) const noexcept;
     };

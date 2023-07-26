@@ -37,14 +37,14 @@ namespace nvi {
     class Parser {
         public:
             Parser(const options_t &options);
-            Parser *check_envs();
+            Parser *check_envs() noexcept;
             Parser *parse_envs() noexcept;
-            void set_or_print_envs();
-            const std::map<std::string, std::string> &get_env_map() const;
+            void set_or_print_envs() noexcept;
+            const std::map<std::string, std::string> &get_env_map() const noexcept;
 
         private:
-            Parser *read(const std::string &env_file_name);
-            Parser *parse();
+            Parser *read(const std::string &env_file_name) noexcept;
+            Parser *parse() noexcept;
             void log(const unsigned int &code) const noexcept;
 
             const options_t _options;

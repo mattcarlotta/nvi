@@ -27,7 +27,7 @@ namespace nvi {
 
     Parser::Parser(const options_t &options) : _options(options) {}
 
-    Parser *Parser::parse() {
+    Parser *Parser::parse() noexcept {
         while (_byte_count < _file.length()) {
             const std::string_view line = _file_view.substr(_byte_count, _file.length());
             const int line_delimiter_index = line.find(LINE_DELIMITER);
@@ -122,7 +122,7 @@ namespace nvi {
         return this;
     }
 
-    Parser *Parser::check_envs() {
+    Parser *Parser::check_envs() noexcept {
         if (_options.required_envs.size()) {
             for (const std::string &key : _options.required_envs) {
                 if (not _env_map.count(key) || not _env_map.at(key).length()) {
@@ -150,7 +150,7 @@ namespace nvi {
         return this;
     }
 
-    void Parser::set_or_print_envs() {
+    void Parser::set_or_print_envs() noexcept {
         if (_options.commands.size()) {
             pid_t pid = fork();
 
@@ -197,9 +197,9 @@ namespace nvi {
         }
     }
 
-    const std::map<std::string, std::string> &Parser::get_env_map() const { return _env_map; }
+    const std::map<std::string, std::string> &Parser::get_env_map() const noexcept { return _env_map; }
 
-    Parser *Parser::read(const std::string &env_file_name) {
+    Parser *Parser::read(const std::string &env_file_name) noexcept {
         _file_name = env_file_name;
         _byte_count = 0;
         _val_byte_count = 0;

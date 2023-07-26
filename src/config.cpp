@@ -183,7 +183,7 @@ namespace nvi {
                 DEBUG_ARG_ERROR,
                 "The \"debug\" property contains an invalid value. Expected a boolean value, but instead "
                 "received: %s.",
-                std::string{_value}.c_str());
+                _value.c_str());
             break;
         }
         case DIR_ARG_ERROR: {
@@ -191,7 +191,7 @@ namespace nvi {
                 DIR_ARG_ERROR,
                 "The \"dir\" property contains an invalid value. Expected a string value, but instead "
                 "received: %s.",
-                std::string{_value}.c_str());
+                _value.c_str());
             break;
         }
         case FILES_ARG_ERROR: {
@@ -199,7 +199,7 @@ namespace nvi {
                 FILES_ARG_ERROR,
                 "The \"files\" property contains an invalid value. Expected a vector of strings, but "
                 "instead received: %s.",
-                std::string{_value}.c_str());
+                _value.c_str());
             break;
         }
         case MISSING_FILES_ARG_ERROR: {
@@ -215,7 +215,7 @@ namespace nvi {
                 EXEC_ARG_ERROR,
                 "The \"exec\" property contains an invalid value. Expected a string value, but instead "
                 "received: %s.",
-                std::string{_value}.c_str());
+                _value.c_str());
             break;
         }
         case REQUIRED_ARG_ERROR: {
@@ -223,14 +223,14 @@ namespace nvi {
                 REQUIRED_ARG_ERROR,
                 "The \"required\" property contains an invalid value. Expected a vector of strings, but instead "
                 "received: %s.",
-                std::string{_value}.c_str());
+                _value.c_str());
             break;
         }
         case INVALID_PROPERTY_WARNING: {
             NVI_LOG_DEBUG(
                 INVALID_PROPERTY_WARNING,
                 "Found an invalid property: \"%s\" within the \"%s\" config. Skipping.",
-                std::string{_key}.c_str(), _env.c_str());
+                _key.c_str(), _env.c_str());
             break;
         }
         case DEBUG: {
