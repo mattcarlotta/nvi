@@ -6,8 +6,10 @@ A stand-alone .env file parser for interpolating and assigning multiple .env fil
 
 [Requirements](#requirements)
 
-[Installation](#installation)
+[Quick Installation](#quick-installation)
   - [Custom CMake Compile Flags](#custom-cmake-compile-flags)
+
+[Custom Installations](#custom-installations)
 
 [Usage](#usage)
 
@@ -18,9 +20,9 @@ A stand-alone .env file parser for interpolating and assigning multiple .env fil
 [Examples](#examples)
 
 [FAQs](#faqs)
-  - [How do I uninstall the executable?](#how-do-i-uninstall-the-executable)
+  - [How do I uninstall the binary?](#how-do-i-uninstall-the-binary)
   - [What are the rules for defining or interpolating keys?](#what-are-the-rules-for-defining-or-interpolating-keys)
-  - [What Operating Systems are supported?](#what-operating-systems-are-supported)
+  - [What operating systems are supported?](#what-operating-systems-are-supported)
   - [What are the nvi configuration file specs?](#what-are-the-nvi-configuration-file-specs)
   - [Can I manually assign parsed ENVs to a process?](#can-i-manually-assign-parsed-envs-to-a-process)
   - [How do I read the debug details?](#how-do-i-read-the-debug-details)
@@ -31,19 +33,19 @@ A stand-alone .env file parser for interpolating and assigning multiple .env fil
 
 ## Requirements
 
-The following requirements must be present in order to build from source:
-- gcc v11.3.0+
-- clang v14.0.x
+The following requirements should be present in order to build from source:
+- g++ v11.3.0+
+- clang or clang++ v14.0.x
 - cmake v3.26.3+
 - make v3.8.x+
 - clangd v14.0.x (optional for linting)
 - clang-format v14.0.x (optional for formatting)
 
 You can determine if you're using the correct versions by:
-- Running `which <requirement>` that should output a executable path, if not, then it's not installed and will require platform specific installations.
-- Running `<requirement> --version` that should output a executable version equal to or above the required version.
+- Running `which <requirement>` that should output a binary path, if not, then it's not installed and will require platform specific installations.
+- Running `<requirement> --version` that should output a binary version equal to or above the required version.
 
-## Installation
+## Quick Installation
 ```DOSINI
 # if you plan to run the unit tests, add the "--recursive" flag to install test dependencies
 git clone git@github.com:mattcarlotta/nvi.git nvi
@@ -65,13 +67,62 @@ sudo make install
 ### Custom CMake Compile Flags
 
 The following custom compile flags can be set for `cmake`:
-- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `src` to a `nvi` executable (default: ON)
-- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` executable (default: OFF)
-- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the executable installation directory when running `sudo make install` (default: /usr/local/bin)
+- `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `src` to a `nvi` binary (default: ON)
+- `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` binary (default: OFF)
+- `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 
 The following represents the default `cmake` settings:
 ```DOSINI
 cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin .
+```
+
+## Custom Installations
+
+If you would like to compile with a specific compiler, then the following instructions will allow you to build with `clang`, `clang++` or `g++` (provided they're already installed on the system):
+
+After cloning the source code, enter the `src` directory:
+```DOSINI
+cd src
+```
+
+Then, pick one of the following compiler commands:
+```DOSINI
+clang -x c++ -lstdc++ -std=c++17 *.cpp -o nvi
+```
+or
+```DOSINI
+clang++ -std=c++17 *.cpp -o nvi
+```
+or
+```DOSINI
+g++ -std=c++17 *.cpp -o nvi
+```
+
+To install it as a system binary, you'll need to select a path recognized by your shell's `PATH` variable:
+```DOSINI
+echo $PATH
+```
+
+You should see an output of paths separated by colons (`:`), for example:
+```DOSINI
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+```
+
+Typically, you'll want to install the binary in `/usr/local/bin`; however, if you don't have that path on your system, see the [Troubleshooting](#troubleshooting) steps for more information.
+
+Then, you'll either want to the move or copy the binary to a system binary path (must still be within the `src` directory):
+```DOSINI
+sudo mv nvi /usr/local/bin
+```
+or
+```DOSINI
+sudo cp nvi /usr/local/bin
+```
+
+To ensure the binary is installed, type:
+```DOSINI
+which nvi
+# /usr/local/bin/nvi
 ```
 
 ## Usage
@@ -152,8 +203,8 @@ nvi --files .env --exec npm run dev --required KEY1 KEY2
 
 ## FAQs
 
-### How do I uninstall the executable?
-If you'd like to remove (uninstall) the executable, simply type:
+### How do I uninstall the binary?
+If you'd like to remove (uninstall) the binary, simply type:
 ```DOSINI
 sudo rm $(which nvi)
 ```
@@ -176,8 +227,8 @@ Other things to note:
 - Only double quotes are escaped for printing values to `stdout`, for example `"hello"` will be printed as `"\"hello\""`.
 - Empty spaces are retained `      hello        world      ` and don't require any quotes.
 
-### What Operating Systems are supported?
-Currently, GNU linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+### What operating systems are supported?
+Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
 
 ### What are the nvi configuration file specs?
 This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
@@ -220,14 +271,14 @@ To read the debug details, let's examine the following debug message:
 
 In layman's terms, this debug message is stating that a key's value within an `.env` file contains an interpolated key `${KEY}` (`TEST`) on line 88 at byte 21 that doesn't match any ENV keys in the shell environment nor any previously parsed ENV keys.
 
-The solution to the above is to either ensure the ENV key exists within the shell environment before running the executable or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files that have been parsed before itself).
+The solution to the above is to either ensure the ENV key exists within the shell environment before running the binary or only reference keys in the .env file after they've been parsed (.env files are parsed top-down, therefore keys can only reference other keys above itself, and .env files are parsed left to right, therefore keys can only reference other keys in files that have been parsed before itself).
 
 Not all debug logs will have all the details above, but they will generally follow this pattern.
 
 
 ## Troubleshooting
 
-⚠️ Please note that some operating systems (like Mac OS) may not have a "/usr/local/bin" directory nor use it as a search `PATH` for binaries.
+⚠️ Please note that some operating systems (like Mac OS) may not have a `/usr/local/bin` directory nor use it as a search `PATH` for binaries.
 
 To fix this, create the directory (if you're wary of touching `/usr`, then you may want to use `/opt` or `/opt/bin` instead):
 ```DOSINI
@@ -244,7 +295,7 @@ Then, source the change for your shell profile:
 source ~/.bash_profile
 ```
 
-To ensure the executable is found, type the command below and you should see the nvi executable path: 
+To ensure the binary is found, type the command below and you should see the nvi binary path: 
 ```DOSINI
 which nvi
 # /usr/local/bin/nvi
