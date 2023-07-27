@@ -46,21 +46,40 @@ You can determine if you're using the correct versions by:
 - Running `<requirement> --version` that should output a binary version equal to or above the required version.
 
 ## Quick Installation
-```DOSINI
-# if you plan to run the unit tests, add the "--recursive" flag to install test dependencies
+
+Run the following command to clone the source code (if you plan on running the unit tests, add the "--recursive" flag to download test dependencies):
+```bash
 git clone git@github.com:mattcarlotta/nvi.git nvi
+```
 
+Change directory:
+```bash
 cd nvi
+```
 
-# if you want to use custom compile flags see below
+Set up cmake using the default parameters OR you can check out the [Custom CMake Compile Flags](#custom-cmake-compile-flags):
+```bash
 cmake .
+```
 
-# optional command to build the source quickly
-# swap NUMBER_OF_CPU_CORES for the number that is printed using one of the commands below:
-# GNU/LINUX: grep -m 1 'cpu cores' /proc/cpuinfo
-# MAC OS: sysctl -n hw.ncpu
-# cmake --build . -j NUMBER_OF_CPU_CORES
+You can either build the source quickly by swapping in `NUMBER_OF_CPU_CORES` for the number that is printed using one of the commands below:
+```DOSINI
+# GNU/LINUX: 
+$ grep -m 1 'cpu cores' /proc/cpuinfo
 
+# MAC OS: 
+$ sysctl -n hw.ncpu
+
+# then build the source using the cpu core count
+$ cmake --build . -j NUMBER_OF_CPU_CORES
+```
+OR, you can just build the source using the default make parameters:
+```bash
+make
+```
+
+Lastly, install the binary to the system path:
+```bash
 sudo make install
 ```
 
@@ -72,7 +91,7 @@ The following custom compile flags can be set for `cmake`:
 - `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 
 The following represents the default `cmake` settings:
-```DOSINI
+```bash
 cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin .
 ```
 
@@ -81,25 +100,25 @@ cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin .
 If you would like to compile with a specific compiler, then the following instructions will allow you to build with `clang`, `clang++` or `g++` (provided they're already installed on the system):
 
 After cloning the source code, enter the `src` directory:
-```DOSINI
+```bash
 cd src
 ```
 
 Then, pick one of the following compiler commands:
-```DOSINI
+```bash
 clang -x c++ -lstdc++ -std=c++17 *.cpp -o nvi
 ```
 or
-```DOSINI
+```bash
 clang++ -std=c++17 *.cpp -o nvi
 ```
 or
-```DOSINI
+```bash
 g++ -std=c++17 *.cpp -o nvi
 ```
 
-To install it as a system binary, you'll need to select a path recognized by your shell's `PATH` variable:
-```DOSINI
+To install the compiled binary as a system binary, you'll need to select a path recognized by your shell's `PATH` variable:
+```bash
 echo $PATH
 ```
 
@@ -111,16 +130,16 @@ You should see an output of paths separated by colons (`:`), for example:
 Typically, you'll want to install the binary in `/usr/local/bin`; however, if you don't have that path on your system, see the [Troubleshooting](#troubleshooting) steps for more information.
 
 Then, you'll either want to the move or copy the binary to a system binary path (must still be within the `src` directory):
-```DOSINI
+```bash
 sudo mv nvi /usr/local/bin
 ```
 or
-```DOSINI
+```bash
 sudo cp nvi /usr/local/bin
 ```
 
 To ensure the binary is installed, type:
-```DOSINI
+```bash
 which nvi
 # /usr/local/bin/nvi
 ```
@@ -149,7 +168,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 
 
 ## Configuration File
-Instead of manually typing out flags and arguments in the CLI, there is support for placing them in an `.nvi` configuration file.
+Instead of manually typing out flags and arguments in the CLI, there is support for placing them in a `.nvi` configuration file.
 
 The configuration file is a [TOML](https://toml.io/en/)-like formatted file that contains...
 - An `[environment]` name that defines the following optional properties: 
@@ -187,17 +206,17 @@ Please read [this](#what-are-the-nvi-configuration-file-specs) for config file s
 Click on the link above for language specific examples, otherwise, here are some basic use cases:
 
 Parsing an `example.env` file from a custom directory with debug logging:
-```DOSINI
+```bash
 nvi --files example.env --dir dist/client --debug
 ```
 
 Parsing one or many `.env` files from a [.nvi](envs/.nvi#L5-L10) configuration file typically located at a project's root directory:
-```DOSINI
+```bash
 nvi --config standard
 ```
 
 Parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
-```DOSINI
+```bash
 nvi --files .env --exec npm run dev --required KEY1 KEY2
 ```
 
@@ -205,7 +224,7 @@ nvi --files .env --exec npm run dev --required KEY1 KEY2
 
 ### How do I uninstall the binary?
 If you'd like to remove (uninstall) the binary, simply type:
-```DOSINI
+```bash
 sudo rm $(which nvi)
 ```
 
@@ -258,7 +277,7 @@ As such, while this feature is available, it's not recommended nor going to be s
 
 ### How do I read the debug details?
 To read the debug details, let's examine the following debug message:
-```DOSINI
+```bash
 [nvi] (Parser::log::INTERPOLATION_WARNING) [.env:88:21] The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
 ```
 - The class that spawned the message: `Parser`
@@ -281,17 +300,17 @@ Not all debug logs will have all the details above, but they will generally foll
 ⚠️ Please note that some operating systems (like Mac OS) may not have a `/usr/local/bin` directory nor use it as a search `PATH` for binaries.
 
 To fix this, create the directory (if you're wary of touching `/usr`, then you may want to use `/opt` or `/opt/bin` instead):
-```DOSINI
+```bash
 sudo mkdir -p /usr/local/bin
 ```
 
 Then, add this directory path to the shell's `PATH` (swap in whichever profile your shell uses, eg. `.bash_profile`, `.bashrc` or `.zsh`):
-```DOSINI
+```bash
 echo 'export PATH="$PATH:/usr/local/bin"' >> ~/.bash_profile
 ```
 
 Then, source the change for your shell profile:
-```DOSINI
+```bash
 source ~/.bash_profile
 ```
 
