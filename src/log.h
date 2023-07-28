@@ -43,6 +43,7 @@ namespace nvi {
         REQUIRED_FLAG_ERROR,
         HELP_DOC,
         INVALID_FLAG_WARNING,
+        NVI_VERSION,
         // config
         FILE_PARSE_ERROR,
         DEBUG_ARG_ERROR,
@@ -129,6 +130,8 @@ namespace nvi {
             return "FILE_ENOENT_ERROR";
         case DEBUG:
             return "DEBUG";
+        case NVI_VERSION:
+            return "NVI_VERSION";
         default:
             return "UNKNOWN_MESSAGE_TYPE";
         }

@@ -3,7 +3,6 @@
 
 #include "log.h"
 #include "options.h"
-#include <map>
 #include <string>
 #include <vector>
 

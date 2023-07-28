@@ -2,6 +2,7 @@
 #include "format.h"
 #include "log.h"
 #include "options.h"
+#include "version.h"
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -24,6 +25,8 @@ namespace nvi {
     inline const constexpr char HELP_LONG[] = "--help";
     inline const constexpr char REQUIRED_SHORT[] = "-r";
     inline const constexpr char REQUIRED_LONG[] = "--required";
+    inline const constexpr char VERSION_SHORT[] = "-v";
+    inline const constexpr char VERSION_LONG[] = "--version";
 
     Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc), _argv(argv) {
         _index = 1;
@@ -43,6 +46,8 @@ namespace nvi {
                 log(HELP_DOC);
             } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
                 _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
+            } else if (arg == VERSION_SHORT || arg == VERSION_LONG) {
+                log(NVI_VERSION);
             } else {
                 remove_invalid_arg();
             }
@@ -202,8 +207,7 @@ namespace nvi {
         case HELP_DOC: {
             NVI_LOG_AND_EXIT(
                 HELP_DOC,
-                "The following information is just a brief summary of the accepted CLI flags. For additional information, please see the "
-                "README.\n"
+                "\n\n"
                 "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
                 "│ NVI CLI Documentation                                                                                                  │\n"
                 "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
@@ -215,8 +219,19 @@ namespace nvi {
                 "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
                 "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
                 "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
-                "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘",
+                "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘\n"
+                "For additional information, please see the source README.\n",
                 NULL);
+            break;
+        }
+        case NVI_VERSION: {
+            NVI_LOG_AND_EXIT(
+                NVI_VERSION,
+                "\n\nnvi %s \n"
+                "Copyright (C) 2023 Matt Carlotta.\n"
+                "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.\n" 
+                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
+                LIB_VERSION);
             break;
         }
         case INVALID_FLAG_WARNING: {

@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.26.3)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-project(nvi)
+project(
+    nvi 
+    VERSION 0.0.1 
+    DESCRIPTION "A stand-alone .env file parser for interpolating and assigning multiple .env files into a process"
+)
 
 add_compile_options(-Werror -Wall -Wextra -Wpedantic -std=c++17)
 option(COMPILE_SRC "Compile source" ON)
@@ -11,8 +15,8 @@ set(SRC_FOLDER ${CMAKE_SOURCE_DIR}/src)
 file(GLOB SRC_FILES ${SRC_FOLDER}/*.cpp)
 list(REMOVE_ITEM SRC_FILES ${SRC_FOLDER}/main.cpp)
 
-project(${PROJECT_NAME} VERSION 1.0)
 if(COMPILE_SRC MATCHES ON)
+    add_definitions(-DNVI_LIB_VERSION="${CMAKE_PROJECT_VERSION}")
     add_subdirectory(${SRC_FOLDER})
 endif()
 
