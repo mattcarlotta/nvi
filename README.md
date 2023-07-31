@@ -83,6 +83,8 @@ Lastly, install the binary to the system path:
 sudo make install
 ```
 
+⚠️ Be careful of using the command above if you've also compiled the `tests` using the custom cmake `-DCOMPILE_TESTS` flag. As noted below, the flag is **OFF** be default. If the flag is active, it will install gtest dependencies to your `/usr` directory.
+
 ### Custom CMake Compile Flags
 
 The following custom compile flags can be set for `cmake`:
