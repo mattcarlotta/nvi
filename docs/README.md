@@ -10,12 +10,12 @@ man ./nvi.1
 
 # System Installation
 
-List directories that `man` uses:
+List directories that `man` uses (directories are separated by colons `:`):
 ```bash
-echo $MANPATH
+man --path
 ```
 
-Select one directory within `MANPATH` and run following command below (must be located within this `/docs` directory):
+Select a directory and run the following command below (must be located within this `/docs` directory):
 
 GNU/LINUX (typically installed in `/usr/share/man/man1`)
 MAC OS (typically installed in `/usr/local/share/man/man1`)
