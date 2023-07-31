@@ -208,6 +208,8 @@ namespace nvi {
             NVI_LOG_AND_EXIT(
                 HELP_DOC,
                 "\n\n"
+                "The following information is just a brief summary of the accepted CLI flags. For additional information, please refer to the "
+                "man documentation or the README.\n"
                 "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
                 "│ NVI CLI Documentation                                                                                                  │\n"
                 "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
