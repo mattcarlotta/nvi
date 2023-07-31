@@ -1,4 +1,4 @@
-% nvi(1) documentation v0.0.1 
+% nvi(1) CLI Documentation v0.0.1 
 % Matt Carlotta
 % 07-31-2023
 
@@ -30,11 +30,11 @@ assign them to a forked child process.
 
 -d, --dir [path]{.underline}
 
-:   Specifies which directory path the .env files are located within. The [path]{.underline} will used as a relative to the current directory.
+:   Specifies which directory path the .env files are located within. The [path]{.underline} will be relative to the current directory.
 
 -e, --exec [command]{.underline}
 
-:   A command to run in a forked child process that has been assigned parsed ENVs.
+:   A command to run in a forked child process that has been assigned with the parsed ENVs.
 
 -f, --files [file]{.underline}
 
