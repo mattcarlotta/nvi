@@ -208,8 +208,6 @@ namespace nvi {
             NVI_LOG_AND_EXIT(
                 HELP_DOC,
                 "\n\n"
-                "The following information is just a brief summary of the accepted CLI flags. For additional information, please refer to the "
-                "man documentation or the README.\n"
                 "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
                 "│ NVI CLI Documentation                                                                                                  │\n"
                 "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
@@ -222,7 +220,7 @@ namespace nvi {
                 "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
                 "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
                 "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘\n"
-                "For additional information, please see the source README.\n",
+                "For additional information, please see the man documentation or README.\n",
                 NULL);
             break;
         }
