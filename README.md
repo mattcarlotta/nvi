@@ -83,7 +83,7 @@ Lastly, install the binary to the system path:
 sudo make install
 ```
 
-⚠️ Be careful of using the command above if you've also compiled the `tests` using the custom cmake `-DCOMPILE_TESTS` flag. As noted below, the flag is **OFF** be default. If the flag is active, it will install gtest dependencies to your `/usr` directory.
+⚠️ Be careful of using the command above if you've also compiled the `tests` using the custom cmake `-DCOMPILE_TESTS` flag. As noted below, the flag is **OFF** by default. If the flag is active, it will install gtest dependencies to your `/usr` directory.
 
 ### Custom CMake Compile Flags
 
@@ -91,11 +91,11 @@ The following custom compile flags can be set for `cmake`:
 - `-DCOMPILE_SRC=ON|OFF` this compiles the source files within `src` to a `nvi` binary (default: ON)
 - `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` binary (default: OFF)
 - `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
-- `-DINSTALL_MAN_DOC_DIR=/path/to/man/man1` this will automatically install the nvi man [documentation](docs#README) to the specified directory when running `sudo make install` (default: OFF)
+- `-DINSTALL_MAN_DIR=/path/to/man/man1` this will automatically install the nvi man [documentation](docs#README) to the specified directory when running `sudo make install` (default: OFF)
 
 The following represents the default `cmake` settings:
 ```bash
-cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin -DINSTALL_MAN_DOC_DIR=OFF .
+cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin -DINSTALL_MAN_DIR=OFF .
 ```
 
 ## Custom Installations
@@ -230,7 +230,7 @@ If you'd like to remove (uninstall) the binary, simply type:
 ```bash
 sudo rm $(which nvi)
 ```
-If you've installed the nvi man documentation using the custom cmake `-DINSTALL_MAN_DOC_DIR` flag, then you'll need to remove it as well:
+If you've installed the nvi man documentation using the custom cmake `-DINSTALL_MAN_DIR` flag, then you'll need to remove it as well:
 ```bash
 sudo rm /path/to/man/man1/nvi.1
 ```

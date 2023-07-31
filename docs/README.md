@@ -1,6 +1,6 @@
-# NVI Man Page Documentation
+# NVI Man Documentation
 
-The man page documentation has been pre-built and exists [here](nvi.1). 
+The nvi man documentation has been pre-built and exists [here](nvi.1). 
 
 # Usage
 
