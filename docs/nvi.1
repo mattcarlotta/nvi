@@ -29,7 +29,15 @@ nvi is a zero-dependency, stand-alone binary that parses and
 interpolates .env files.
 It will either print ENVs as stringified JSON to standard output or it
 will assign them to a forked child process.
-.SS OPTIONS
+.PP
+All options below are optional.
+Short form (-) and long form (--) flags are supported and can be mixed
+if desired.
+.PP
+If no flags are assigned, then an .env (that is named \[lq].env\[rq])
+located at the current directory will be parsed and printed to standard
+out.
+.SH OPTIONS
 .TP
 -c, --config \f[I]environment\f[R]
 Specifies which environment config to load from the .nvi file.

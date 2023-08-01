@@ -16,7 +16,13 @@ nvi is a zero-dependency, stand-alone binary that parses and interpolates .env f
 It will either print ENVs as stringified JSON to standard output or it will
 assign them to a forked child process. 
 
-## OPTIONS
+All options below are optional. Short form (-) and long form (\--) flags are supported 
+and can be mixed if desired.
+
+If no flags are assigned, then an .env (that is named ".env") located at the current 
+directory will be parsed and printed to standard out.
+
+# OPTIONS
 
 -c, \--config [environment]{.underline}
 
