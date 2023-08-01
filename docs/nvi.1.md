@@ -18,37 +18,37 @@ assign them to a forked child process.
 
 ## OPTIONS
 
--c, --config [environment]{.underline}
+-c, \--config [environment]{.underline}
 
 :  Specifies which environment config to load from the .nvi file. 
 
     When this flag is present, then the options below are ignored as they should be defined within the .nvi configuration file.
 
--de, --debug
+-de, \--debug
 
 :   Specifies whether or not to log debug details.
 
--d, --dir [path]{.underline}
+-d, \--dir [path]{.underline}
 
 :   Specifies which directory path the .env files are located within. The [path]{.underline} will be relative to the current directory.
 
--e, --exec [command]{.underline}
+-e, \--exec [command]{.underline}
 
 :   A command to run in a forked child process that has been assigned with the parsed ENVs.
 
--f, --files [file]{.underline}
+-f, \--files [file]{.underline}
 
 :   A list of .env files to parse. Each specified [file]{.underline} needs to be separated by a space.
 
--h, --help
+-h, \--help
 
 :   Prints brief CLI flag usage information.
 
--r, --required [KEY]{.underline}
+-r, \--required [KEY]{.underline}
 
 :   A list of ENV keys are that required to exist after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
 
--v, --version
+-v, \--version
 
 :   Prints the current version number.
 

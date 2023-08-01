@@ -31,7 +31,7 @@ It will either print ENVs as stringified JSON to standard output or it
 will assign them to a forked child process.
 .SS OPTIONS
 .TP
--c, \[en]config \f[I]environment\f[R]
+-c, --config \f[I]environment\f[R]
 Specifies which environment config to load from the .nvi file.
 .RS
 .PP
@@ -39,29 +39,29 @@ When this flag is present, then the options below are ignored as they
 should be defined within the .nvi configuration file.
 .RE
 .TP
--de, \[en]debug
+-de, --debug
 Specifies whether or not to log debug details.
 .TP
--d, \[en]dir \f[I]path\f[R]
+-d, --dir \f[I]path\f[R]
 Specifies which directory path the .env files are located within.
 The \f[I]path\f[R] will be relative to the current directory.
 .TP
--e, \[en]exec \f[I]command\f[R]
+-e, --exec \f[I]command\f[R]
 A command to run in a forked child process that has been assigned with
 the parsed ENVs.
 .TP
--f, \[en]files \f[I]file\f[R]
+-f, --files \f[I]file\f[R]
 A list of .env files to parse.
 Each specified \f[I]file\f[R] needs to be separated by a space.
 .TP
--h, \[en]help
+-h, --help
 Prints brief CLI flag usage information.
 .TP
--r, \[en]required \f[I]KEY\f[R]
+-r, --required \f[I]KEY\f[R]
 A list of ENV keys are that required to exist after parsing.
 Each specified \f[I]KEY\f[R] needs to be separated by a space.
 .TP
--v, \[en]version
+-v, --version
 Prints the current version number.
 .SH EXIT STATUS
 .PP
