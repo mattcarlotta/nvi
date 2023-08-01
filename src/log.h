@@ -1,4 +1,3 @@
-
 #ifndef NVI_LOG_H
 #define NVI_LOG_H
 

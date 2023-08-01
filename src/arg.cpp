@@ -231,7 +231,7 @@ namespace nvi {
                 "Copyright (C) 2023 Matt Carlotta.\n"
                 "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.\n" 
                 "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
-                LIB_VERSION);
+                NVI_LIB_VERSION);
             break;
         }
         case INVALID_FLAG_WARNING: {

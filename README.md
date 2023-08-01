@@ -107,7 +107,7 @@ After cloning the source code, enter the `src` directory:
 cd src
 ```
 
-Then, pick one of the following compiler commands (note: the version won't be printed with `-v` or `--version` without manually adding the flag `-DNVI_LIB_VERSION=\"x.x.x\"` where `x.x.x` needs to be replaced with this [version](CMakeLists.txt#L6)):
+Then, pick one of the following compiler commands:
 ```bash
 clang -x c++ -lstdc++ -std=c++17 *.cpp -o nvi
 ```
