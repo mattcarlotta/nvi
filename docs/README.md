@@ -35,7 +35,7 @@ sudo rm <MANPATH_DIRECTORY>/nvi.1
 ```
 
 # Build
-## Requirements
+### Requirements
 - pandoc v3.1.6+ (click [here](https://pandoc.org/MANUAL.html) for documentation)
 
 To manually generate the man documentation, run the following command:
