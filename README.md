@@ -62,20 +62,17 @@ Set up cmake using the default parameters OR you can check out the [Custom CMake
 cmake .
 ```
 
-You can either build the source quickly by swapping in `NUMBER_OF_CPU_CORES` for the number that is printed using one of the commands below:
-```DOSINI
-# GNU/LINUX: 
-$ grep -m 1 'cpu cores' /proc/cpuinfo
-
-# MAC OS: 
-$ sysctl -n hw.ncpu
-
-# then build the source using the cpu core count
-$ cmake --build . -j NUMBER_OF_CPU_CORES
-```
-OR, you can just build the source using the default make parameters:
+You can either build the source using the default make parameters:
 ```bash
 make
+```
+OR you can build the source quickly with cmake by using one of the commands below:
+```bash
+# GNU/LINUX: 
+$ cmake --build . -j $(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*/ //')
+
+# MAC OS: 
+$ cmake --build . -j $(sysctl -n hw.ncpu)
 ```
 
 Lastly, install the binary to the system path:
@@ -126,7 +123,7 @@ echo $PATH
 ```
 
 You should see an output of paths separated by colons (`:`), for example:
-```DOSINI
+```bash
 /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 ```
 
@@ -150,11 +147,12 @@ which nvi
 ## Usage
 
 Navigate to a project that contains one or many `.env` files, then type:
-```DOSINI
+```bash
 nvi <flag> <arg>
 ```
 
 ## Flags
+
 All flags below are optional. Short form (`-`) and long form (`--`) flags are supported and can be mixed if desired.
 
 If no flags are assigned, then an `.env` (that is named ".env") located at the root directory will be parsed.
@@ -171,6 +169,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 
 
 ## Configuration File
+
 Instead of manually typing out flags and arguments in the CLI, there is support for placing them in a `.nvi` configuration file.
 
 The configuration file is a [TOML](https://toml.io/en/)-like formatted file that contains...
@@ -196,7 +195,7 @@ required = [ "TEST1" ]
 ```
 
 To target an environment within the configuration file, simply use the `-c` or `--config` flag followed by the environment name:
-```DOSINI
+```bash
 nvi -c dev
 # or
 nvi --config staging
@@ -226,6 +225,7 @@ nvi --files .env --exec npm run dev --required KEY1 KEY2
 ## FAQs
 
 ### How do I uninstall the binary?
+
 If you'd like to remove (uninstall) the binary, simply type:
 ```bash
 sudo rm $(which nvi)
@@ -236,9 +236,10 @@ sudo rm /path/to/man/man1/nvi.1
 ```
 
 ### What are the rules for defining or interpolating keys?
+
 There are really only 3 simple rules that must be followed:
 - To interpolate a key's value into another key, use `${NAME_OF_KEY}`, where `NAME_OF_KEY` represents the name of an ENV:
-```DOSINI
+```bash
 NAME_OF_KEY=1
 # interpolates a value from a key above
 REFERENCE=${NAME_OF_KEY}
@@ -254,9 +255,11 @@ Other things to note:
 - Empty spaces are retained `      hello        world      ` and don't require any quotes.
 
 ### What operating systems are supported?
+
 Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
 
 ### What are the nvi configuration file specs?
+
 This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
 
 Therefore, while the config file parser is flexible, it is **NOT** a TOML-complaint parser and has some rules.
@@ -272,6 +275,7 @@ The configuration file must:
 Click [here](envs/.nvi) to view valid vs invalid formatting configurations.
 
 ### Can I manually assign parsed ENVs to a process?
+
 Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
 Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin`, and then assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
@@ -283,6 +287,7 @@ Unfortunately, this means you'll have to manually pipe and parse stringified JSO
 As such, while this feature is available, it's not recommended nor going to be supported by this project. Nevertheless, here's an example of how to pipe ENVs into a [node process](/examples/node) using [stdin](/examples/node/stdin.mjs).
 
 ### How do I read the debug details?
+
 To read the debug details, let's examine the following debug message:
 ```bash
 [nvi] (Parser::log::INTERPOLATION_WARNING) [.env:88:21] The key "INTERP_ENV_FROM_PROCESS" contains an invalid interpolated variable: "TEST". Unable to locate a value that corresponds to this key.
@@ -322,7 +327,7 @@ source ~/.bash_profile
 ```
 
 To ensure the binary is found, type the command below and you should see the nvi binary path: 
-```DOSINI
+```bash
 which nvi
 # /usr/local/bin/nvi
 ```
