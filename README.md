@@ -164,6 +164,7 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 - `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
 - `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)
 - `-h` | `--help`: Displays this help information.
+- `-v` | `--version`: Displays binary information.
 
 ‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within a [configuration file](#configuration-file).
 
@@ -262,17 +263,17 @@ Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17
 
 This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
 
-Therefore, while the config file parser is flexible, it is **NOT** a TOML-complaint parser and has some rules.
+Therefore, while the config file parser is flexible, it is **NOT** a [TOML](https://toml.io/en/)-complaint parser and has some rules.
 
 The configuration file must:
 - be named `.nvi`
 - not contain spaces within the `[environment]`'s name
 - not contain spaces within a `files` .env name nor within the `required` keys; instead, files/keys should use underscores: `example_1`
 - not contain comments after a configuration `key = value # comment` option
-- not contain empty lines between a config `key = value` option; empty lines after the last config option are okay
+- not contain empty lines between a configuration `key = value` option; empty lines after the last config option are okay
 - not contain multi-line arguments
 
-Click [here](envs/.nvi) to view valid vs invalid formatting configurations.
+Click [here](envs/.nvi) to view valid and invalid formatting configurations.
 
 ### Can I manually assign parsed ENVs to a process?
 

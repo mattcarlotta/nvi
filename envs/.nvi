@@ -45,7 +45,7 @@ required=[       "TEST1",    "TEST2",  "TEST3"]
 # The examples below represent invalid formats  #
 # --------------------------------------------- #
 
-# spaces within environment name
+# spaces within an environment name
 [invalid environment 1]
 
 # spaces within an array's string
