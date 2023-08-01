@@ -69,7 +69,7 @@ make
 OR you can build the source quickly with cmake by using one of the commands below:
 ```bash
 # GNU/LINUX: 
-$ cmake --build . -j $(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*/ //')
+$ cmake --build . -j $(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //')
 
 # MAC OS: 
 $ cmake --build . -j $(sysctl -n hw.ncpu)
