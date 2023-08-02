@@ -257,7 +257,7 @@ Other things to note:
 
 ### What operating systems are supported?
 
-Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://i.imgur.com/MPGenY1.gif).
+Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17 may work as well). For Windows support, please visit this [documentation](https://youtu.be/BwSts2s4ba4).
 
 ### What are the nvi configuration file specs?
 
