@@ -26,7 +26,7 @@ namespace nvi {
 
         private:
             options_t _options;
-            int _index;
+            int _index = 0;
             int _argc;
             std::string _bin_name;
             char **_argv;
