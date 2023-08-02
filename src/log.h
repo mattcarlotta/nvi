@@ -75,7 +75,7 @@ namespace nvi {
         return class_name.substr(begin + 5, end - 5);
     }
 
-    inline const std::string get_message_from_code(const unsigned int &error) {
+    inline const std::string get_string_from_code(const unsigned int &error) {
         switch (error) {
         case CONFIG_FLAG_ERROR:
             return "CONFIG_FLAG_ERROR";
@@ -138,13 +138,12 @@ namespace nvi {
 
     template <typename... A>
     void _log(std::ostream &log, const std::string &filename, const messages_t &code, const char *fmt, A... args) {
-        const std::string message = get_message_from_code(code);
         size_t size = snprintf(nullptr, 0, fmt, args...);
         std::string buf;
         buf.reserve(size + 1);
         buf.resize(size);
         snprintf(&buf[0], size + 1, fmt, args...);
-        log << "[nvi] (" << filename << "::" << message << ") " << buf << std::endl;
+        log << "[nvi] (" << filename << "::" << get_string_from_code(code) << ") " << buf << std::endl;
     }
 
     template <typename... A>

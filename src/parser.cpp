@@ -14,15 +14,15 @@
 
 namespace nvi {
 
-    inline const constexpr char NULL_TERMINATOR = '\0'; // 0x00
-    inline const constexpr char COMMENT = '#';          // 0x23
-    inline const constexpr char LINE_DELIMITER = '\n';  // 0x0a
-    inline const constexpr char BACK_SLASH = '\\';      // 0x5c
-    inline const constexpr char ASSIGN_OP = '=';        // 0x3d
-    inline const constexpr char DOLLAR_SIGN = '$';      // 0x24
-    inline const constexpr char OPEN_BRACE = '{';       // 0x7b
-    inline const constexpr char CLOSE_BRACE = '}';      // 0x7d
-    inline const constexpr char DOUBLE_QUOTE = '"';     // 0x22
+    inline const constexpr char NULL_CHAR = '\0';      // 0x00
+    inline const constexpr char COMMENT = '#';         // 0x23
+    inline const constexpr char LINE_DELIMITER = '\n'; // 0x0a
+    inline const constexpr char BACK_SLASH = '\\';     // 0x5c
+    inline const constexpr char ASSIGN_OP = '=';       // 0x3d
+    inline const constexpr char DOLLAR_SIGN = '$';     // 0x24
+    inline const constexpr char OPEN_BRACE = '{';      // 0x7b
+    inline const constexpr char CLOSE_BRACE = '}';     // 0x7d
+    inline const constexpr char DOUBLE_QUOTE = '"';    // 0x22
 
     Parser::Parser(const options_t &options) : _options(options) {}
 
@@ -45,7 +45,7 @@ namespace nvi {
 
                 const std::string_view line_slice = line.substr(_assignment_index + 1, line.length());
                 _val_byte_count = 0;
-                _value = "";
+                _value.clear();
                 while (_val_byte_count < line_slice.length()) {
                     const char current_char = line_slice[_val_byte_count];
                     const char next_char = line_slice[_val_byte_count + 1];
@@ -69,12 +69,12 @@ namespace nvi {
                         const int interp_close_index = val_slice_str.find(CLOSE_BRACE);
                         if (interp_close_index >= 0) {
                             _key_prop = val_slice_str.substr(2, interp_close_index - 2);
-                            const char *val_from_proc = std::getenv(_key_prop.c_str());
+                            const char *val_from_env = std::getenv(_key_prop.c_str());
 
                             // interpolate the value from env first, otherwise fallback to the env_map
-                            std::string interpolated_value = "";
-                            if (val_from_proc != nullptr && *val_from_proc != NULL_TERMINATOR) {
-                                interpolated_value = val_from_proc;
+                            std::string interpolated_value;
+                            if (val_from_env != nullptr && *val_from_env != NULL_CHAR) {
+                                interpolated_value = val_from_env;
                             } else if (_env_map.count(_key_prop)) {
                                 interpolated_value = _env_map.at(_key_prop);
                             } else if (_options.debug) {
@@ -180,17 +180,16 @@ namespace nvi {
             for (auto const &[key, value] : _env_map) {
                 std::string esc_value;
                 size_t i = 0;
-                while (i < value.size()) {
-                    char current_char = value[i];
+                while (i < value.length()) {
+                    const char current_char = value[i];
                     if (current_char == DOUBLE_QUOTE) {
                         esc_value += BACK_SLASH;
                     }
                     esc_value += current_char;
                     ++i;
                 }
-                const std::string comma = key != last_key ? "," : "";
-                std::cout << std::setw(4) << "\"" << key << "\""
-                          << ": \"" << esc_value << "\"" << comma << '\n';
+                std::cout << std::setw(4) << DOUBLE_QUOTE << key << DOUBLE_QUOTE << ':' << DOUBLE_QUOTE << esc_value
+                          << DOUBLE_QUOTE << (key != last_key ? "," : "") << '\n';
             }
             std::cout << "}" << std::endl;
         }
@@ -221,7 +220,7 @@ namespace nvi {
         }
 
         _env_file = std::ifstream{_file_path, std::ios_base::in};
-        if (_env_file.bad() || not _env_file.is_open()) {
+        if (not _env_file.is_open()) {
             log(FILE_ERROR);
         }
         _file = std::string{std::istreambuf_iterator<char>(_env_file), std::istreambuf_iterator<char>()};
@@ -265,7 +264,7 @@ namespace nvi {
         case DEBUG_FILE_PROCESSED: {
             NVI_LOG_DEBUG(
                 DEBUG_FILE_PROCESSED,
-                "(%s) Processed %d line%s and %d bytes!\n",
+                "[%s] Processed %d line%s and %d bytes!\n",
                 _file_name.c_str(), _line_count, 
                 (_line_count != 1 ? "s" : ""), _byte_count);
             break;

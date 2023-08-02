@@ -84,7 +84,7 @@ namespace nvi {
 
             const std::string next_arg{_argv[_index]};
             if (next_arg.find("-") != std::string::npos) {
-                _index -= 1;
+                --_index;
                 break;
             }
 
@@ -116,7 +116,7 @@ namespace nvi {
 
             std::string next_arg{_argv[_index]};
             if (next_arg.find("-") != std::string::npos && RESERVED_FLAGS.find(next_arg) != RESERVED_FLAGS.end()) {
-                _index -= 1;
+                --_index;
                 break;
             } else if (not _options.commands.size()) {
                 _bin_name = next_arg;
@@ -125,7 +125,7 @@ namespace nvi {
             char *arg_str = new char[next_arg.size() + 1];
             std::strcpy(arg_str, next_arg.c_str());
 
-            _command += _command.size() > 0 ? " " + next_arg : next_arg;
+            _command += _command.length() > 0 ? " " + next_arg : next_arg;
             _options.commands.push_back(arg_str);
         }
 
@@ -138,7 +138,7 @@ namespace nvi {
 
     void Arg_Parser::remove_invalid_arg() noexcept {
         _invalid_arg = std::string{_argv[_index]};
-        _invalid_args = "";
+        _invalid_args.clear();
         while (_index < _argc) {
             ++_index;
 
@@ -148,7 +148,7 @@ namespace nvi {
 
             const std::string arg{_argv[_index]};
             if (arg.find("-") != std::string::npos) {
-                _index -= 1;
+                --_index;
                 break;
             }
 
@@ -234,9 +234,9 @@ namespace nvi {
         case INVALID_FLAG_WARNING: {
             NVI_LOG_DEBUG(
                 INVALID_FLAG_WARNING,
-                "The flag \"%s\" with%s arguments is not recognized. Skipping.",
+                "The flag \"%s\"%s is not recognized. Skipping.",
                 _invalid_arg.c_str(), 
-                (_invalid_args.length() ? " \"" + _invalid_args + "\"" : "out").c_str());
+                (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
             break;
         }
         case DEBUG: {

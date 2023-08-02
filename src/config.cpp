@@ -34,7 +34,7 @@ namespace nvi {
         }
 
         std::ifstream config_file{_file_path, std::ios_base::in};
-        if (config_file.bad() || not config_file.is_open()) {
+        if (not config_file.is_open()) {
             log(FILE_ERROR);
         }
 
@@ -105,8 +105,8 @@ namespace nvi {
     const options_t &Config::get_options() const noexcept { return _options; }
 
     const std::string Config::trim_surrounding_spaces(const std::string &val) const noexcept {
-        int begin = 0;
-        int end = val.length() - 1;
+        size_t begin = 0;
+        size_t end = val.length() - 1;
         while (begin < end) {
             if (val[begin] != SPACE && val[end] != SPACE) {
                 break;
