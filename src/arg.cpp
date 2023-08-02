@@ -29,9 +29,9 @@ namespace nvi {
     inline const constexpr char VERSION_LONG[] = "--version";
 
     Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc), _argv(argv) {
-        _index = 0;
+        _index = 1;
         while (_index < _argc) {
-            const std::string arg{_argv[++_index]};
+            const std::string arg{_argv[_index]};
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
                 _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
@@ -51,6 +51,8 @@ namespace nvi {
             } else {
                 remove_invalid_arg();
             }
+
+            ++_index;
         }
 
         if (_options.debug) {
