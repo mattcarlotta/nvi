@@ -29,9 +29,9 @@ namespace nvi {
     inline const constexpr char VERSION_LONG[] = "--version";
 
     Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc), _argv(argv) {
-        _index = 1;
+        _index = 0;
         while (_index < _argc) {
-            const std::string arg{_argv[_index]};
+            const std::string arg{_argv[++_index]};
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
                 _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
@@ -51,8 +51,6 @@ namespace nvi {
             } else {
                 remove_invalid_arg();
             }
-
-            ++_index;
         }
 
         if (_options.debug) {
@@ -78,8 +76,9 @@ namespace nvi {
 
     std::vector<std::string> Arg_Parser::parse_multi_arg(const messages_t &code) noexcept {
         std::vector<std::string> arg;
-        ++_index;
         while (_index < _argc) {
+            ++_index;
+
             if (_argv[_index] == nullptr) {
                 break;
             }
@@ -91,7 +90,6 @@ namespace nvi {
             }
 
             arg.push_back(next_arg);
-            ++_index;
         }
 
         if (not arg.size()) {
@@ -110,8 +108,9 @@ namespace nvi {
             CONFIG_SHORT, CONFIG_LONG, DEBUG_SHORT, DEBUG_LONG, DIRECTORY_SHORT, DIRECTORY_LONG, EXECUTE_SHORT,
             EXECUTE_LONG, FILES_SHORT, FILES_LONG,  HELP_SHORT, REQUIRED_SHORT,  REQUIRED_LONG};
 
-        ++_index;
         while (_index < _argc) {
+            ++_index;
+
             if (_argv[_index] == nullptr) {
                 break;
             }
@@ -129,7 +128,6 @@ namespace nvi {
 
             _command += _command.size() > 0 ? " " + next_arg : next_arg;
             _options.commands.push_back(arg_str);
-            ++_index;
         }
 
         if (not _options.commands.size()) {
