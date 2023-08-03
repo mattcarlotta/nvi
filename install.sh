@@ -68,10 +68,10 @@ generate_cmake_cache() {
 compile_bin() {
     generate_cmake_cache
 
-    $cmake_bin --build . -j $1 > /dev/null 2>&1
-    if [[ $? -ne 0 ]];
+    local cmake_build_result=$($cmake_bin --build . -j $1 2>&1 1>/dev/null)
+    if [[ ! -z "$cmake_build_result" ]];
     then
-        log_error "Failed to compile the nvi binary."
+        log_error "Failed to compile the nvi binary.\n$cmake_build_result"
     else
         log_success "Compiled the nvi binary!"
     fi
@@ -90,12 +90,12 @@ compile_for_gnu_linux() {
 
 check_system_requirements() {
     local install_message="doesn't appear to be installed on the system. You must install it before using this script. Optionally you can manually build and install nvi by reading the Custom Installations section in the README."
-    if [ -z $cmake_bin ];
+    if [ -z "$cmake_bin" ];
     then
         log_error "cmake $install_message"
     fi
 
-    if [ -z $make_bin ];
+    if [ -z "$make_bin" ];
     then
         log_error "make $install_message"
     fi
