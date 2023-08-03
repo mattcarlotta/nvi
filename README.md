@@ -17,6 +17,8 @@ A stand-alone .env file parser for interpolating and assigning multiple .env fil
 
 [Configuration File](#configuration-file)
 
+[Man Documenation](docs/README.md)
+
 [Examples](#examples)
 
 [FAQs](#faqs)
@@ -57,30 +59,17 @@ Change directory:
 cd nvi
 ```
 
-Set up cmake using the default parameters OR you can check out the [Custom CMake Compile Flags](#custom-cmake-compile-flags):
+Run the install script to build and install the binary using the default parameters:
+```bash
+./install.sh
+```
+
+OR you can manually build and install the binary (for more cmake options, check out the [Custom CMake Compile Flags](#custom-cmake-compile-flags)):
 ```bash
 cmake .
-```
-
-You can either build the source using the default make parameters:
-```bash
-make
-```
-OR you can build the source quickly with cmake by using one of the commands below:
-```bash
-# GNU/LINUX: 
-$ cmake --build . -j $(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //')
-
-# MAC OS: 
-$ cmake --build . -j $(sysctl -n hw.ncpu)
-```
-
-Lastly, install the binary to the system path:
-```bash
 sudo make install
 ```
-
-⚠️ Be careful of using the command above if you've also compiled the `tests` using the custom cmake `-DCOMPILE_TESTS` flag. As noted below, the flag is **OFF** by default. If the flag is active, it will install gtest dependencies to your `/usr` directory.
+⚠️ Be careful when running the install script or `sudo make install` if you've also compiled the `tests` using the custom cmake `-DCOMPILE_TESTS` flag. As noted below, the flag is **OFF** by default. If the flag is active, it will install gtest dependencies to your `/usr` directory.
 
 ### Custom CMake Compile Flags
 
@@ -231,7 +220,7 @@ If you'd like to remove (uninstall) the binary, simply type:
 ```bash
 sudo rm $(which nvi)
 ```
-If you've installed the nvi man documentation using the custom cmake `-DINSTALL_MAN_DIR` flag, then you'll need to remove it as well:
+If you've installed the nvi [man documentation](docs/README.md) using the custom cmake `-DINSTALL_MAN_DIR` flag, then you'll need to remove it as well:
 ```bash
 sudo rm /path/to/man/man1/nvi.1
 ```
