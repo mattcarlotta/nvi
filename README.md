@@ -59,7 +59,7 @@ Change directory:
 cd nvi
 ```
 
-Run the install script to build and install the binary using the default parameters:
+Run the install script to build and install the binary using the default cmake parameters:
 ```bash
 ./install.sh
 ```

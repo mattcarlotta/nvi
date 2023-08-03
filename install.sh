@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Script to automagically install nvi
+# Script to automagically install nvi for GNU/Linux and Mac OS systems
 #
 # Copyright (c) 2023 by Matt Carlotta
 #
@@ -24,17 +24,17 @@ blue=$($tput_bin setaf 4)
 cmake_bin=$(which cmake)
 make_bin=$(which make)
 
-log_empty_line() {
-    echo -e " "
-}
-
 log_error() {
     echo -e "\n❌ ${bold}${red}ERROR: $1 ${normal}"
     exit 1
 }
 
-log_warning() {
+log_warning_with_icon() {
     echo -e "⚠️  ${bold}${yellow}$1 ${normal}"
+}
+
+log_warning() {
+    echo -e "${bold}${yellow}$1 ${normal}"
 }
 
 log_success() {
@@ -42,9 +42,10 @@ log_success() {
 }
 
 install_bin() {
-    log_warning "In order to install nvi to your system, this script requires ${blue}${underline}ROOT${nounderline}${yellow} level access."
-    echo -e "${bold}${yellow}You can skip this step by pressing ctrl + c and manually installing the nvi binary to your system. ${normal}"
-    echo -e "${bold}${yellow}Otherwise, enter your password below to install the nvi binary to ${blue}${underline}/usr/local/bin${nounderline}${yellow}.${normal}"
+    log_warning_with_icon "In order to install nvi to your system, this script requires ${blue}${underline}ROOT${nounderline}${yellow} level privileges."
+    log_warning "You can skip this step by pressing ctrl + c and manually installing the nvi binary to your system."
+    log_warning "Otherwise, enter your password below to install the nvi binary to ${blue}${underline}/usr/local/bin${nounderline}${yellow}."
+
     sudo make install > /dev/null 2>&1
     if [[ $? -ne 0 ]];
     then
@@ -83,20 +84,20 @@ compile_for_mac() {
 }
 
 compile_for_gnu_linux() {
-    local cpu_core_count=$(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //') > /dev/null 2>&1
+    local cpu_core_count=$(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //')
     compile_bin $cpu_core_count
 }
 
 check_system_requirements() {
-    local install_message="doesn't appear to be installed on the system. You must install it before using this script. Optionally you can manually build and install nvi by reading the Custom Installations section in the README"
+    local install_message="doesn't appear to be installed on the system. You must install it before using this script. Optionally you can manually build and install nvi by reading the Custom Installations section in the README."
     if [ -z $cmake_bin ];
     then
-        log_error "cmake $install_message."
+        log_error "cmake $install_message"
     fi
 
     if [ -z $make_bin ];
     then
-        log_error "make $install_message."
+        log_error "make $install_message"
     fi
 }
 
