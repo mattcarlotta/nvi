@@ -1,6 +1,6 @@
 # NVI Man Documentation
 
-The nvi man documentation has been pre-built and exists [here](nvi.1). 
+This documentation has been pre-built and exists [here](nvi.1). 
 
 # Usage
 
@@ -10,17 +10,23 @@ man ./nvi.1
 
 # System Installation
 
-List directories that `man` uses (directories are separated by colons `:`):
+Locate directory paths that `man` searches within by running one of the commands below (directories are separated by colons `:`):
+
+GNU/Linux:
 ```bash
 man --path
 ```
+MAC OS:
+```bash
+cat /private/etc/manpaths
+```
 
-Select a directory and run the following command below (must be located within this `/docs` directory):
+Select a directory path and run the following command below (must be located within this `/docs` directory):
 
 GNU/LINUX (typically installed in `/usr/share/man/man1`)
 MAC OS (typically installed in `/usr/local/share/man/man1`)
 ```bash
-sudo mv nvi.1 <MANPATH_DIRECTORY>
+sudo cp nvi.1 <MANPATH_DIRECTORY>
 ```
 
 To view installed documentation:
