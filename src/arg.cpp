@@ -28,7 +28,7 @@ namespace nvi {
     inline const constexpr char VERSION_SHORT[] = "-v";
     inline const constexpr char VERSION_LONG[] = "--version";
 
-    Arg_Parser::Arg_Parser(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
+    Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
         while (_index < _argc) {
             const std::string arg{_argv[++_index]};
             if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
@@ -57,9 +57,9 @@ namespace nvi {
         }
     };
 
-    const options_t &Arg_Parser::get_options() const noexcept { return _options; }
+    const options_t &Arg::get_options() const noexcept { return _options; }
 
-    std::string Arg_Parser::parse_single_arg(const messages_t &code) noexcept {
+    std::string Arg::parse_single_arg(const messages_t &code) noexcept {
         ++_index;
         if (_argv[_index] == nullptr) {
             log(code);
@@ -73,7 +73,7 @@ namespace nvi {
         return arg;
     }
 
-    std::vector<std::string> Arg_Parser::parse_multi_arg(const messages_t &code) noexcept {
+    std::vector<std::string> Arg::parse_multi_arg(const messages_t &code) noexcept {
         std::vector<std::string> arg;
         while (_index < _argc) {
             ++_index;
@@ -98,7 +98,7 @@ namespace nvi {
         return arg;
     }
 
-    void Arg_Parser::parse_command_args() noexcept {
+    void Arg::parse_command_args() noexcept {
         // currently, it's impossible to determine when an "--exec" flag with arguments end and another
         // flag begins, for example: nvi --debug --exec cargo run --release --required KEY1 KEY2
         // where "cargo run --release" needs to be separated from the other known flags. A work-around
@@ -136,7 +136,7 @@ namespace nvi {
         _options.commands.push_back(nullptr);
     }
 
-    void Arg_Parser::remove_invalid_arg() noexcept {
+    void Arg::remove_invalid_arg() noexcept {
         _invalid_arg = std::string{_argv[_index]};
         _invalid_args.clear();
         while (_index < _argc) {
@@ -158,83 +158,83 @@ namespace nvi {
         log(INVALID_FLAG_WARNING);
     }
 
-    void Arg_Parser::log(const messages_t &code) const noexcept {
+    void Arg::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
         case CONFIG_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 CONFIG_FLAG_ERROR,
-                "The \"-c\" or \"--config\" flag must contain an environment name from the .nvi configuration "
-                "file. Use flag \"-h\" or \"--help\" for more information.", 
+                R"(The "-c" or "--config" flag must contain an environment name from the .nvi configuration file. Use flag "-h" or "--help" for more information.)", 
                 NULL);
             break;
         }
         case DIR_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DIR_FLAG_ERROR,
-                "The \"-d\" or \"--dir\" flag must contain a valid directory path. Use flag \"-h\" or "
-                "\"--help\" for more information.",
+                R"(The "-d" or "--dir" flag must contain a valid directory path. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }
         case COMMAND_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 COMMAND_FLAG_ERROR,
-                "The \"-e\" or \"--exec\" flag must contain at least 1 command. Use flag \"-h\" or \"--help\""
-                " for more information.",
+                R"(The "-e" or "--exec" flag must contain at least 1 command. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }
         case FILES_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILES_FLAG_ERROR,
-                "The \"-f\" or \"--files\" flag must contain at least 1 .env file. Use flag \"-h\" or "
-                "\"--help\" for more information.",
+                R"(The "-f" or "--files" flag must contain at least 1 .env file. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }
         case REQUIRED_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_FLAG_ERROR,
-                "The \"-r\" or \"--required\" flag must contain at least 1 ENV key. Use flag \"-h\" or "
-                "\"--help\" for more information.",
+                R"(The "-r" or "--required" flag must contain at least 1 ENV key. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }
         case HELP_DOC: {
             NVI_LOG_AND_EXIT(
                 HELP_DOC,
-                "\n\n"
-                "┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐\n"
-                "│ NVI CLI Documentation                                                                                                  │\n"
-                "├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
-                "│ flag            │ description                                                                                          │\n"
-                "├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤\n"
-                "│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │\n"
-                "│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │\n"
-                "│ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │\n"
-                "│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │\n"
-                "│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │\n"
-                "│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │\n"
-                "└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘\n"
-                "For additional information, please see the man documentation or README.\n",
+                "\n"
+                R"(
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ NVI CLI Documentation                                                                                                  │
+├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ flag            │ description                                                                                          │
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │
+│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │
+│ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │
+│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │
+│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │
+│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │
+└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+For additional information, please see the man documentation or README.)"
+                "\n",
                 NULL);
             break;
         }
         case NVI_VERSION: {
             NVI_LOG_AND_EXIT(
                 NVI_VERSION,
-                "\n\nnvi %s \n"
-                "Copyright (C) 2023 Matt Carlotta.\n"
-                "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.\n" 
-                "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
+                "\n"
+                R"(
+nvi %s
+Copyright (C) 2023 Matt Carlotta.
+This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.)"
+                "\n",
                 NVI_LIB_VERSION);
             break;
         }
         case INVALID_FLAG_WARNING: {
             NVI_LOG_DEBUG(
                 INVALID_FLAG_WARNING,
-                "The flag \"%s\"%s is not recognized. Skipping.",
+                R"(The flag "%s"%s is not recognized. Skipping.)",
                 _invalid_arg.c_str(), 
                 (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
             break;
@@ -242,8 +242,7 @@ namespace nvi {
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                "The following options were set: config=\"%s\", debug=\"true\", dir=\"%s\", execute=\"%s\", "
-                "files=\"%s\", required=\"%s\".",
+                R"(The following options were set: config="%s", debug="true", dir="%s", execute="%s", files="%s", required="%s".)",
                 _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
                 fmt::join(_options.files, ", ").c_str(),
                 fmt::join(_options.required_envs, ", ").c_str());
@@ -256,8 +255,7 @@ namespace nvi {
             {
                 NVI_LOG_DEBUG(
                     DEBUG,
-                    "Found conflicting flags. When the \"config\" flag has been set, then \"dir\", \"exec\", "
-                    "\"files\", and \"required\" flags are ignored.",
+                    R"(Found conflicting flags. When the "config" flag has been set, then "dir", "exec", "files", and "required" flags are ignored.)",
                     NULL);
             }
             break;

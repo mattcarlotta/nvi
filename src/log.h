@@ -137,19 +137,19 @@ namespace nvi {
     }
 
     template <typename... A>
-    void _log(std::ostream &log, const std::string &filename, const messages_t &code, const char *fmt, A... args) {
+    void _log(std::ostream &ostr, const std::string &filename, const messages_t &code, const char *fmt, A... args) {
         size_t size = snprintf(nullptr, 0, fmt, args...);
         std::string buf;
         buf.reserve(size + 1);
         buf.resize(size);
         snprintf(&buf[0], size + 1, fmt, args...);
-        log << "[nvi] (" << filename << "::" << get_string_from_code(code) << ") " << buf << std::endl;
+        ostr << "[nvi] (" << filename << "::" << get_string_from_code(code) << ") " << buf << std::endl;
     }
 
     template <typename... A>
-    void _log_and_exit(std::ostream &log, const int &exit_code, const std::string &filename, const messages_t &error,
+    void _log_and_exit(std::ostream &ostr, const int &exit_code, const std::string &filename, const messages_t &error,
                        const char *fmt, A... args) {
-        _log(log, filename, error, fmt, args...);
+        _log(ostr, filename, error, fmt, args...);
         std::exit(exit_code);
     }
 } // namespace nvi

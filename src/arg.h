@@ -15,13 +15,13 @@ namespace nvi {
      * @example Parsing flags and arguments
      *
      * int argc = 5;
-     * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", NULL };
-     * nvi::Arg_Parser args(argc, argv);
+     * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", (char *)NULL };
+     * nvi::Arg args(argc, argv);
      * nvi::options_t options = args.get_options();
      */
-    class Arg_Parser {
+    class Arg {
         public:
-            Arg_Parser(int &argc, char *argv[]);
+            Arg(int &argc, char *argv[]);
             const options_t &get_options() const noexcept;
 
         private:

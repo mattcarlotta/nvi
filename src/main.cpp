@@ -4,7 +4,7 @@
 #include "parser.h"
 
 int main(int argc, char *argv[]) {
-    nvi::Arg_Parser arg(argc, argv);
+    nvi::Arg arg(argc, argv);
     nvi::options_t options = arg.get_options();
 
     if (options.config.length()) {

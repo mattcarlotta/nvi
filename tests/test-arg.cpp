@@ -9,22 +9,22 @@ char *argv[] = {(char *)"tests",      (char *)"--config", (char *)"test",     (c
                 (char *)"--required", (char *)"KEY1",     (char *)"KEY2",     (char *)NULL};
 int argc = 16;
 
-nvi::Arg_Parser arg(argc, argv);
+nvi::Arg args(argc, argv);
 
-TEST(arg_parser, parseable_config) { EXPECT_EQ(arg.get_options().config, "test"); }
+TEST(arg, parseable_config) { EXPECT_EQ(args.get_options().config, "test"); }
 
-TEST(arg_parser, parseable_debug) { EXPECT_EQ(arg.get_options().debug, true); }
+TEST(arg, parseable_debug) { EXPECT_EQ(args.get_options().debug, true); }
 
-TEST(arg_parser, parseable_directory) { EXPECT_EQ(arg.get_options().dir, "tests"); }
+TEST(arg, parseable_directory) { EXPECT_EQ(args.get_options().dir, "tests"); }
 
-TEST(arg_parser, parseable_execute) { EXPECT_EQ(arg.get_options().commands.size(), 3); }
+TEST(arg, parseable_execute) { EXPECT_EQ(args.get_options().commands.size(), 3); }
 
-TEST(arg_parser, parseable_files) {
+TEST(arg, parseable_files) {
     const std::vector<std::string> files = {"test.env", "test2.env"};
-    EXPECT_EQ(arg.get_options().files, files);
+    EXPECT_EQ(args.get_options().files, files);
 }
 
-TEST(arg_parser, parseable_required_envs) {
+TEST(arg, parseable_required_envs) {
     const std::vector<std::string> required_envs = {"KEY1", "KEY2"};
-    EXPECT_EQ(arg.get_options().required_envs, required_envs);
+    EXPECT_EQ(args.get_options().required_envs, required_envs);
 }

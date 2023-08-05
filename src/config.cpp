@@ -166,85 +166,77 @@ namespace nvi {
         case FILE_ENOENT_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ENOENT_ERROR,
-                "Unable to locate \"%s\". The .nvi configuration file doesn't appear to exist at this path!",
+                R"(Unable to locate "%s". The .nvi configuration file doesn't appear to exist at this path!)",
                 _file_path.c_str());
             break;
         }
         case FILE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ERROR,
-                "Unable to open \"%s\". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.",
+                R"(Unable to open "%s". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.)",
                 _file_path.c_str());
             break;
         }
         case FILE_PARSE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_PARSE_ERROR,
-                "Unable to load a \"%s\" environment from the .nvi configuration file (%s). The specified "
-                "environment doesn't appear to exist!",
+                R"(Unable to load the "%s" environment from the .nvi configuration file (%s). The specified environment doesn't appear to exist!)",
                 _env.c_str(), _file_path.c_str());
             break;
         }
         case DEBUG_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DEBUG_ARG_ERROR,
-                "The \"debug\" property contains an invalid value. Expected a boolean value, but instead "
-                "received: %s.",
+                R"(The "debug" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value.c_str());
             break;
         }
         case DIR_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DIR_ARG_ERROR,
-                "The \"dir\" property contains an invalid value. Expected a string value, but instead "
-                "received: %s.",
+                R"(The "dir" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value.c_str());
             break;
         }
         case FILES_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILES_ARG_ERROR,
-                "The \"files\" property contains an invalid value. Expected a vector of strings, but "
-                "instead received: %s.",
+                R"(The "files" property contains an invalid value. Expected a vector of strings, but instead received: %s.)",
                 _value.c_str());
             break;
         }
         case EMPTY_FILES_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_FILES_ARG_ERROR,
-                "The \"files\" property within the \"%s\" environment configuration (%s) appears to be empty. "
-                "You must specify at least 1 .env file to load!",
+                R"(The "files" property within the "%s" environment configuration (%s) appears to be empty. You must specify at least 1 .env file to load!)",
                 _env.c_str(), _file_path.c_str());
             break;
         }
         case EXEC_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EXEC_ARG_ERROR,
-                "The \"exec\" property contains an invalid value. Expected a string value, but instead "
-                "received: %s.",
+                R"(The "exec" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value.c_str());
             break;
         }
         case REQUIRED_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_ARG_ERROR,
-                "The \"required\" property contains an invalid value. Expected an array of strings, but instead "
-                "received: %s.",
+                R"(The "required" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
                 _value.c_str());
             break;
         }
         case INVALID_PROPERTY_WARNING: {
             NVI_LOG_DEBUG(
                 INVALID_PROPERTY_WARNING,
-                "Found an invalid property: \"%s\" within the \"%s\" config. Skipping.",
+                R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
                 _key.c_str(), _env.c_str());
             break;
         }
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                "Successfully parsed the \"%s\" environment configuration and the folowing options "
-                "were set: debug=\"true\", dir=\"%s\", execute=\"%s\", files=\"%s\", required=\"%s\".",
+                R"(Successfully parsed the "%s" environment configuration and the folowing options were set: debug="true", dir="%s", execute="%s", files="%s", required="%s".)",
                 _env.c_str(), _options.dir.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
                 fmt::join(_options.required_envs, ", ").c_str());
             break;

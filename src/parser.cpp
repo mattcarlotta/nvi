@@ -238,8 +238,7 @@ namespace nvi {
         case INTERPOLATION_WARNING: {
             NVI_LOG_DEBUG(
                 INTERPOLATION_WARNING,
-                "[%s:%d:%d] The key \"%s\" contains an invalid interpolated variable: \"%s\". Unable to locate "
-                "a value that corresponds to this key.",
+                R"([%s:%d:%d] The key "%s" contains an invalid interpolated variable: "%s". Unable to locate a value that corresponds to this key.)",
                 _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2, 
                 _key.c_str(), _key_prop.c_str());
             break;
@@ -247,8 +246,7 @@ namespace nvi {
         case INTERPOLATION_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 INTERPOLATION_ERROR,
-                "[%s:%d:%d] The key \"%s\" contains an interpolated \"{\" operator, but appears to be missing a "
-                "closing \"}\" operator.",
+                R"([%s:%d:%d] The key "%s" contains an interpolated "{" operator, but appears to be missing a closing "}" operator.)",
                 _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
                 _key.c_str());
             break;
@@ -256,7 +254,7 @@ namespace nvi {
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                "[%s:%d:%d] Set key \"%s\" to equal value \"%s\".",
+                R"([%s:%d:%d] Set key "%s" to equal value "%s".)",
                 _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
                 _key.c_str(), _value.c_str());
             break;
@@ -272,44 +270,42 @@ namespace nvi {
         case REQUIRED_ENV_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_ENV_ERROR,
-                "The following ENV keys are marked as required: \"%s\", but they are undefined after the list of "
-                ".env files were parsed.",
+                R"(The following ENV keys are marked as required: "%s", but they are undefined after the list of .env files were parsed.)",
                 fmt::join(_undefined_keys, ", ").c_str());
             break;
         }
         case FILE_ENOENT_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ENOENT_ERROR,
-                "Unable to locate \"%s\". The .env file doesn't appear to exist at this path!",
+                R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
                 _file_path.c_str());
             break;
         }
         case FILE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ERROR,
-                "Unable to open \"%s\". The .env file is either invalid, has restricted access, or may be corrupted.",
+                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
                 _file_path.c_str());
             break;
         }
         case FILE_EXTENSION_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_EXTENSION_ERROR,
-                "The \"%s\" file is not a valid \".env\" file extension.",
+                R"(The "%s" file is not a valid ".env" file extension.)",
                 _file_name.c_str());
             break;
         }
         case EMPTY_ENVS_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_ENVS_ERROR,
-                "Unable to parse any ENVs! Please ensure the \"%s\" file is not empty.",
+                R"(Unable to parse any ENVs! Please ensure the "%s" file is not empty.)",
                 _file_name.c_str());
             break;
         }
         case COMMAND_ENOENT_ERROR: {
             NVI_LOG_DEBUG(
                 COMMAND_ENOENT_ERROR,
-                "The specified command encountered an error. The command \"%s\" doesn't appear to exist or may "
-                "not reside in a directory within the shell PATH.",
+                R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
                 _options.commands[0]);
             break;
         }
