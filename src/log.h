@@ -6,31 +6,22 @@
 #include <sstream>
 #include <string>
 
-#define __CLASS__ get_class_name(__PRETTY_FUNCTION__)
+#define __CLASS__ _get_class_name(__PRETTY_FUNCTION__)
 
 /**
  * @detail Logs a message to stdlog (stderr).
  */
-#define NVI_LOG_DEBUG(...)                                                                                             \
-    do {                                                                                                               \
-        ::nvi::_log(std::clog, __CLASS__, __VA_ARGS__);                                                                \
-    } while (false)
+#define NVI_LOG_DEBUG(...) _log(std::clog, __CLASS__, __VA_ARGS__);
 
 /**
  * @detail Logs a message to stdlog (stderr) and exits.
  */
-#define NVI_LOG_AND_EXIT(...)                                                                                          \
-    do {                                                                                                               \
-        ::nvi::_log_and_exit(std::clog, /* exit code */ 0, __CLASS__, __VA_ARGS__);                                    \
-    } while (false)
+#define NVI_LOG_AND_EXIT(...) _log_and_exit(std::clog, /* exit code */ 0, __CLASS__, __VA_ARGS__);
 
 /**
  * @detail Logs an error to stderr and then exits the process.
  */
-#define NVI_LOG_ERROR_AND_EXIT(...)                                                                                    \
-    do {                                                                                                               \
-        ::nvi::_log_and_exit(std::cerr, /* exit code */ 1, __CLASS__, __VA_ARGS__);                                    \
-    } while (false)
+#define NVI_LOG_ERROR_AND_EXIT(...) _log_and_exit(std::cerr, /* exit code */ 1, __CLASS__, __VA_ARGS__);
 
 namespace nvi {
     typedef enum MESSAGES {
@@ -67,7 +58,7 @@ namespace nvi {
         DEBUG
     } messages_t;
 
-    inline const std::string get_class_name(const std::string &class_name) {
+    inline const std::string _get_class_name(const std::string &class_name) {
         size_t colons = class_name.find("::");
         size_t begin = class_name.substr(0, colons).rfind(" ") + 1;
         size_t end = class_name.rfind("(") - begin;
@@ -75,7 +66,7 @@ namespace nvi {
         return class_name.substr(begin + 5, end - 5);
     }
 
-    inline const std::string get_string_from_code(const unsigned int &error) {
+    inline const std::string _get_string_from_code(const unsigned int &error) {
         switch (error) {
         case CONFIG_FLAG_ERROR:
             return "CONFIG_FLAG_ERROR";
@@ -143,7 +134,7 @@ namespace nvi {
         buf.reserve(size + 1);
         buf.resize(size);
         snprintf(&buf[0], size + 1, fmt, args...);
-        ostr << "[nvi] (" << filename << "::" << get_string_from_code(code) << ") " << buf << std::endl;
+        ostr << "[nvi] (" << filename << "::" << _get_string_from_code(code) << ") " << buf << std::endl;
     }
 
     template <typename... A>
