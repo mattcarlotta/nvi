@@ -39,7 +39,7 @@ namespace nvi {
         }
 
         _file = std::string{std::istreambuf_iterator<char>(config_file), std::istreambuf_iterator<char>()};
-        const int config_index = _file.find(environment);
+        const int config_index = _file.find(OPEN_BRACKET + environment + CLOSE_BRACKET);
         if (config_index < 0) {
             log(FILE_PARSE_ERROR);
         }

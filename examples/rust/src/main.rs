@@ -1,9 +1,8 @@
 fn get_env(key: &str) -> String {
-    if let Ok(env_value) = std::env::var(key) {
-        return env_value;
-    } else {
-        return String::new();
-    }
+    return match std::env::var(key) {
+        Ok(val) => val,
+        Err(_) => String::new(),
+    };
 }
 
 fn main() {
