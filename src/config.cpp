@@ -12,20 +12,20 @@
 
 namespace nvi {
 
-    inline const constexpr char DEBUG_PROP[] = "debug";
-    inline const constexpr char DIR_PROP[] = "dir";
-    inline const constexpr char EXEC_PROP[] = "exec";
-    inline const constexpr char FILES_PROP[] = "files";
-    inline const constexpr char REQUIRED_PROP[] = "required";
+    inline constexpr char DEBUG_PROP[] = "debug";
+    inline constexpr char DIR_PROP[] = "dir";
+    inline constexpr char EXEC_PROP[] = "exec";
+    inline constexpr char FILES_PROP[] = "files";
+    inline constexpr char REQUIRED_PROP[] = "required";
 
-    inline const constexpr char COMMENT = '#';         // 0x23
-    inline const constexpr char SPACE = ' ';           // 0x20
-    inline const constexpr char OPEN_BRACKET = '[';    // 0x5b
-    inline const constexpr char CLOSE_BRACKET = ']';   // 0x5d
-    inline const constexpr char COMMA = ',';           // 0x2c
-    inline const constexpr char DOUBLE_QUOTE = '\"';   // 0x22
-    inline const constexpr char LINE_DELIMITER = '\n'; // 0x0a
-    inline const constexpr char ASSIGN_OP = '=';       // 0x3d
+    inline constexpr char COMMENT = '#';         // 0x23
+    inline constexpr char SPACE = ' ';           // 0x20
+    inline constexpr char OPEN_BRACKET = '[';    // 0x5b
+    inline constexpr char CLOSE_BRACKET = ']';   // 0x5d
+    inline constexpr char COMMA = ',';           // 0x2c
+    inline constexpr char DOUBLE_QUOTE = '\"';   // 0x22
+    inline constexpr char LINE_DELIMITER = '\n'; // 0x0a
+    inline constexpr char ASSIGN_OP = '=';       // 0x3d
 
     Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
         _file_path = std::filesystem::current_path() / _envdir / ".nvi";

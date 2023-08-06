@@ -30,14 +30,14 @@ namespace nvi {
             int _argc;
             std::string _bin_name;
             char **_argv;
-            std::string _invalid_arg;
+            std::string _invalid_flag;
             std::string _invalid_args;
             std::string _command;
 
             std::string parse_single_arg(const messages_t &code) noexcept;
             std::vector<std::string> parse_multi_arg(const messages_t &code) noexcept;
             void parse_command_args() noexcept;
-            void remove_invalid_arg() noexcept;
+            void remove_invalid_flag() noexcept;
             void log(const messages_t &code) const noexcept;
     };
 } // namespace nvi

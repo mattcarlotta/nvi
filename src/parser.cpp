@@ -14,15 +14,15 @@
 
 namespace nvi {
 
-    inline const constexpr char NULL_CHAR = '\0';      // 0x00
-    inline const constexpr char COMMENT = '#';         // 0x23
-    inline const constexpr char LINE_DELIMITER = '\n'; // 0x0a
-    inline const constexpr char BACK_SLASH = '\\';     // 0x5c
-    inline const constexpr char ASSIGN_OP = '=';       // 0x3d
-    inline const constexpr char DOLLAR_SIGN = '$';     // 0x24
-    inline const constexpr char OPEN_BRACE = '{';      // 0x7b
-    inline const constexpr char CLOSE_BRACE = '}';     // 0x7d
-    inline const constexpr char DOUBLE_QUOTE = '"';    // 0x22
+    inline constexpr char NULL_CHAR = '\0';      // 0x00
+    inline constexpr char COMMENT = '#';         // 0x23
+    inline constexpr char LINE_DELIMITER = '\n'; // 0x0a
+    inline constexpr char BACK_SLASH = '\\';     // 0x5c
+    inline constexpr char ASSIGN_OP = '=';       // 0x3d
+    inline constexpr char DOLLAR_SIGN = '$';     // 0x24
+    inline constexpr char OPEN_BRACE = '{';      // 0x7b
+    inline constexpr char CLOSE_BRACE = '}';     // 0x7d
+    inline constexpr char DOUBLE_QUOTE = '"';    // 0x22
 
     Parser::Parser(const options_t &options) : _options(options) {}
 

@@ -3,30 +3,28 @@
 #include "log.h"
 #include "options.h"
 #include "version.h"
-#include <cstring>
-#include <iostream>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 namespace nvi {
 
-    inline const constexpr char CONFIG_SHORT[] = "-c";
-    inline const constexpr char CONFIG_LONG[] = "--config";
-    inline const constexpr char DEBUG_SHORT[] = "-de";
-    inline const constexpr char DEBUG_LONG[] = "--debug";
-    inline const constexpr char DIRECTORY_SHORT[] = "-d";
-    inline const constexpr char DIRECTORY_LONG[] = "--dir";
-    inline const constexpr char EXECUTE_SHORT[] = "-e";
-    inline const constexpr char EXECUTE_LONG[] = "--exec";
-    inline const constexpr char FILES_SHORT[] = "-f";
-    inline const constexpr char FILES_LONG[] = "--files";
-    inline const constexpr char HELP_SHORT[] = "-h";
-    inline const constexpr char HELP_LONG[] = "--help";
-    inline const constexpr char REQUIRED_SHORT[] = "-r";
-    inline const constexpr char REQUIRED_LONG[] = "--required";
-    inline const constexpr char VERSION_SHORT[] = "-v";
-    inline const constexpr char VERSION_LONG[] = "--version";
+    inline constexpr char CONFIG_SHORT[] = "-c";
+    inline constexpr char CONFIG_LONG[] = "--config";
+    inline constexpr char DEBUG_SHORT[] = "-de";
+    inline constexpr char DEBUG_LONG[] = "--debug";
+    inline constexpr char DIRECTORY_SHORT[] = "-d";
+    inline constexpr char DIRECTORY_LONG[] = "--dir";
+    inline constexpr char EXECUTE_SHORT[] = "-e";
+    inline constexpr char EXECUTE_LONG[] = "--exec";
+    inline constexpr char FILES_SHORT[] = "-f";
+    inline constexpr char FILES_LONG[] = "--files";
+    inline constexpr char HELP_SHORT[] = "-h";
+    inline constexpr char HELP_LONG[] = "--help";
+    inline constexpr char REQUIRED_SHORT[] = "-r";
+    inline constexpr char REQUIRED_LONG[] = "--required";
+    inline constexpr char VERSION_SHORT[] = "-v";
+    inline constexpr char VERSION_LONG[] = "--version";
 
     Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
         while (_index < _argc) {
@@ -48,7 +46,7 @@ namespace nvi {
             } else if (arg == VERSION_SHORT || arg == VERSION_LONG) {
                 log(NVI_VERSION);
             } else {
-                remove_invalid_arg();
+                remove_invalid_flag();
             }
         }
 
@@ -122,11 +120,8 @@ namespace nvi {
                 _bin_name = next_arg;
             }
 
-            char *arg_str = new char[next_arg.size() + 1];
-            std::strcpy(arg_str, next_arg.c_str());
-
             _command += _command.length() > 0 ? " " + next_arg : next_arg;
-            _options.commands.push_back(arg_str);
+            _options.commands.push_back(std::move(_argv[_index]));
         }
 
         if (not _options.commands.size()) {
@@ -136,8 +131,8 @@ namespace nvi {
         _options.commands.push_back(nullptr);
     }
 
-    void Arg::remove_invalid_arg() noexcept {
-        _invalid_arg = std::string{_argv[_index]};
+    void Arg::remove_invalid_flag() noexcept {
+        _invalid_flag = std::string{_argv[_index]};
         _invalid_args.clear();
         while (_index < _argc) {
             ++_index;
@@ -235,7 +230,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
             NVI_LOG_DEBUG(
                 INVALID_FLAG_WARNING,
                 R"(The flag "%s"%s is not recognized. Skipping.)",
-                _invalid_arg.c_str(), 
+                _invalid_flag.c_str(), 
                 (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
             break;
         }
