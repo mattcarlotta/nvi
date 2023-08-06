@@ -3,6 +3,7 @@
 #include "log.h"
 #include "options.h"
 #include "version.h"
+#include <ctime>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -214,16 +215,20 @@ For additional information, please see the man documentation or README.)"
             break;
         }
         case NVI_VERSION: {
+            std::time_t current_time{std::time(nullptr)};
+            std::tm const *time_stamp{std::localtime(&current_time)};
+
             NVI_LOG_AND_EXIT(
                 NVI_VERSION,
                 "\n"
                 R"(
 nvi %s
-Copyright (C) 2023 Matt Carlotta.
+Copyright (C) %d Matt Carlotta.
 This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.
 There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.)"
                 "\n",
-                NVI_LIB_VERSION);
+                NVI_LIB_VERSION,
+                time_stamp->tm_year + 1900);
             break;
         }
         case INVALID_FLAG_WARNING: {
