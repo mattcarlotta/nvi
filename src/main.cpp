@@ -3,16 +3,18 @@
 #include "options.h"
 #include "parser.h"
 
-int main(int argc, char *argv[]) {
-    nvi::Arg arg(argc, argv);
-    nvi::options_t options = arg.get_options();
+int main(int argc, char **argv) {
+    using namespace nvi;
+
+    Arg arg(argc, argv);
+    options_t options = arg.get_options();
 
     if (options.config.length()) {
-        nvi::Config config(options.config);
+        Config config(options.config);
         options = config.get_options();
     }
 
-    nvi::Parser parser(options);
+    Parser parser(options);
 
     parser.parse_envs()->check_envs()->set_or_print_envs();
 
