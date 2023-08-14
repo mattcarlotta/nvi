@@ -3,7 +3,7 @@
 #include "options.h"
 #include "parser.h"
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
     using namespace nvi;
 
     Arg arg(argc, argv);
