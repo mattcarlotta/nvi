@@ -299,7 +299,9 @@ Not all debug logs will have all the details above, but they will generally foll
 
 ## Troubleshooting
 
-⚠️ Please note that some operating systems (like Mac OS) may not have a `/usr/local/bin` directory nor use it as a search `PATH` for binaries.
+### The binary directory doesn't exist
+
+Some operating systems (like Mac OS) may not have a `/usr/local/bin` directory nor use it as a search `PATH` for binaries.
 
 To fix this, create the directory (if you're wary of touching `/usr`, then you may want to use `/opt` or `/opt/bin` instead):
 ```bash
@@ -321,3 +323,17 @@ To ensure the binary is found, type the command below and you should see the nvi
 which nvi
 # /usr/local/bin/nvi
 ```
+
+### Can't run any command line tools in a terminal
+
+On older versions of Mac OS or after an OS update, you may come across this error:
+```bash
+xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools), missing xcrun at: /Library/Developer/CommandLineTools/usr/bin/xcrun
+```
+To solve this error, you'll need to reinstall Command Line Tools for Xcode:
+```bash
+xcode-select --install
+```
+or visit this [link](https://developer.apple.com/download/all/?q=xcode%20command%20line%20tools) to download the lastest (preferably non-beta) Command Line Tools for Xcode.
+
+For more debugging information, take a look at this [post](https://stackoverflow.com/questions/52522565/git-is-not-working-after-macos-update-xcrun-error-invalid-active-developer-p). 
