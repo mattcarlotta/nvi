@@ -16,12 +16,12 @@
 /**
  * @detail Logs a message to stdlog (stderr) and exits.
  */
-#define NVI_LOG_AND_EXIT(...) _log_and_exit(std::clog, /* exit code */ 0, __CLASS__, __VA_ARGS__);
+#define NVI_LOG_AND_EXIT(...) _log_and_exit(std::clog, EXIT_SUCCESS, __CLASS__, __VA_ARGS__);
 
 /**
  * @detail Logs an error to stderr and then exits the process.
  */
-#define NVI_LOG_ERROR_AND_EXIT(...) _log_and_exit(std::cerr, /* exit code */ 1, __CLASS__, __VA_ARGS__);
+#define NVI_LOG_ERROR_AND_EXIT(...) _log_and_exit(std::cerr, EXIT_FAILURE, __CLASS__, __VA_ARGS__);
 
 namespace nvi {
     typedef enum MESSAGES {

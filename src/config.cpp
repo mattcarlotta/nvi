@@ -51,9 +51,10 @@ namespace nvi {
 
         std::string line;
         while (std::getline(config_iss, line)) {
+            line = trim_surrounding_spaces(line);
+
             // skip comments in config options
-            const int comment_index = line.find(COMMENT);
-            if (comment_index >= 0) {
+            if (line[0] == COMMENT) {
                 continue;
             }
 
