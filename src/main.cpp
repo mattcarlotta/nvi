@@ -4,6 +4,17 @@
 // #include "parser.h"
 #include "lexer.h"
 
+std::string lookup_type(int code) {
+    switch (code) {
+    case 0:
+        return "normal";
+    case 1:
+        return "interpolated";
+    default:
+        return "multiline";
+    }
+}
+
 int main(int argc, char *argv[]) {
     using namespace nvi;
 
@@ -17,12 +28,16 @@ int main(int argc, char *argv[]) {
         std::clog << '\n';
         std::clog << "FILE: " << token.file << '\n';
         std::clog << "KEY: " << token.key.value() << '\n';
-        std::clog << "VALUE(" << token.values.size() << "): ";
+        std::clog << "VALUE(" << token.values.size() << "): \n";
         for (const auto &vt : token.values) {
-            std::clog << (vt.value.has_value() ? vt.value.value() : "") << "(" << static_cast<int>(vt.type) << ")";
+            std::clog << '\n';
+            std::clog << "      VALUE_TYPE: " << lookup_type(static_cast<int>(vt.type)) << '\n';
+            std::clog << "      VALUE: " << (vt.value.has_value() ? vt.value.value() : "") << '\n';
+            std::clog << "      LINE: " << vt.line << '\n';
+            std::clog << "      BYTE: " << vt.byte << '\n';
         }
-        std::clog << std::endl;
     }
+    std::clog << std::endl;
     // if (options.config.length()) {
     //     Config config(options.config);
     //     options = config.get_options();
