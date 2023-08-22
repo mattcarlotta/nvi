@@ -8,6 +8,9 @@
 #include <unistd.h>
 
 namespace nvi {
+    inline constexpr char OPEN_BRACE = '{';  // 0x7b
+    inline constexpr char CLOSE_BRACE = '}'; // 0x7d
+
     Generator::Generator(const env_map_t &env_map, const options_t options) : _env_map(env_map), _options(options) {}
 
     void Generator::set_or_print_envs() const noexcept {
@@ -35,13 +38,13 @@ namespace nvi {
                 log(COMMAND_FAILED_TO_RUN);
             }
         } else {
-            // if a command wasn't provided, print ENVs as a JSON formatted string to stdout
+            // print ENVs as a JSON formatted string to stdout
             const std::string last_key = std::prev(_env_map.end())->first;
-            std::cout << "{";
+            std::cout << OPEN_BRACE;
             for (auto const &[key, value] : _env_map) {
                 std::cout << std::quoted(key) << ": " << std::quoted(value) << (key != last_key ? "," : "");
             }
-            std::cout << "}" << std::endl;
+            std::cout << CLOSE_BRACE << std::endl;
         }
     }
 
