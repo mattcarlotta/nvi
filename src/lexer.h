@@ -1,6 +1,7 @@
 #ifndef NVI_ENV_LEXER_H
 #define NVI_ENV_LEXER_H
 
+#include "log.h"
 #include "options.h"
 #include <cstddef>
 #include <filesystem>
@@ -38,6 +39,7 @@ namespace nvi {
             std::optional<char> peek(int offset = 0) const noexcept;
             char commit() noexcept;
             void skip(int offset = 1) noexcept;
+            void log(const messages_t &code) const noexcept;
 
             options_t _options;
             size_t _byte;
@@ -47,6 +49,7 @@ namespace nvi {
             std::string _file_name;
             std::filesystem::path _file_path;
             std::vector<Token> _tokens;
+            std::string _token_key;
     };
 }; // namespace nvi
 #endif

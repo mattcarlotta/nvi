@@ -85,8 +85,8 @@ namespace nvi {
 
                     while (peek().has_value() && peek().value() != CLOSE_BRACE) {
                         if (peek().value() == LINE_DELIMITER) {
-                            std::cerr << "Invalid interpolation" << std::endl;
-                            std::exit(EXIT_FAILURE);
+                            _token_key = token.key.value();
+                            log(INTERPOLATION_ERROR);
                         } else {
                             value.push_back(commit());
                         }
@@ -179,29 +179,21 @@ namespace nvi {
 
             _file_path = std::filesystem::current_path() / _options.dir / _file_name;
             if (not std::filesystem::exists(_file_path)) {
-                NVI_LOG_ERROR_AND_EXIT(FILE_ENOENT_ERROR,
-                                       R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
-                                       _file_path.c_str());
+                log(FILE_ENOENT_ERROR);
             }
 
             if (std::string{_file_path.extension()}.find(".env") == std::string::npos &&
                 std::string{_file_path.stem()}.find(".env") == std::string::npos) {
-                NVI_LOG_ERROR_AND_EXIT(FILE_EXTENSION_ERROR, R"(The "%s" file is not a valid ".env" file extension.)",
-                                       _file_name.c_str());
+                log(FILE_EXTENSION_ERROR);
             }
 
             _env_file = std::ifstream{_file_path, std::ios_base::in};
             if (not _env_file.is_open()) {
-                NVI_LOG_ERROR_AND_EXIT(
-                    FILE_ERROR,
-                    R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
-                    _file_path.c_str());
+                log(FILE_ERROR);
             }
             _file = std::string{std::istreambuf_iterator<char>(_env_file), std::istreambuf_iterator<char>()};
             if (not _file.length()) {
-                NVI_LOG_ERROR_AND_EXIT(EMPTY_ENVS_ERROR,
-                                       R"(Unable to parse any ENVs! Please ensure the "%s" file is not empty.)",
-                                       _file_name.c_str());
+                log(EMPTY_ENVS_ERROR);
             }
 
             lex_file();
@@ -210,6 +202,50 @@ namespace nvi {
         }
 
         return this;
+    }
+
+    void Lexer::log(const messages_t &code) const noexcept {
+        // clang-format off
+        switch (code) {
+        case INTERPOLATION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INTERPOLATION_ERROR,
+                R"([%s:%d:%d] The key "%s" contains an interpolated "{" operator, but appears to be missing a closing "}" operator.)",
+                _file_name.c_str(), _line, _byte, _token_key.c_str());
+            break;
+        }
+           case FILE_ENOENT_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ENOENT_ERROR,
+                R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
+                _file_path.c_str());
+            break;
+        }
+        case FILE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ERROR,
+                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
+                _file_path.c_str());
+            break;
+        }
+        case FILE_EXTENSION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_EXTENSION_ERROR,
+                R"(The "%s" file is not a valid ".env" file extension.)",
+                _file_name.c_str());
+            break;
+        } 
+        case EMPTY_ENVS_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                EMPTY_ENVS_ERROR,
+                R"(Unable to parse any ENVs! Please ensure the "%s" file is not empty.)",
+                _file.c_str());
+            break;
+        }
+        default:
+            break;
+        }
+        // clang-format on
     }
 
 }; // namespace nvi
