@@ -1,20 +1,10 @@
 #include "arg.h"
 #include "config.h"
+#include "generator.h"
 #include "lexer.h"
 #include "options.h"
 #include "parser.h"
 #include <cstdlib>
-
-std::string lookup_type(int code) {
-    switch (code) {
-    case 0:
-        return "normal";
-    case 1:
-        return "interpolated";
-    default:
-        return "multiline";
-    }
-}
 
 int main(int argc, char *argv[]) {
     using namespace nvi;
@@ -31,7 +21,10 @@ int main(int argc, char *argv[]) {
     tokens_t tokens = lexer.read_files()->get_tokens();
 
     Parser parser(tokens, options);
-    parser.parse_tokens()->check_envs()->set_or_print_envs();
+    env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();
+
+    Generator generator(env_map, options);
+    generator.set_or_print_envs();
 
     std::exit(EXIT_SUCCESS);
 }
