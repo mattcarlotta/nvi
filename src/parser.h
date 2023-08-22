@@ -29,7 +29,7 @@ namespace nvi {
             Token _token;
             ValueToken _value_token;
             std::string _key;
-            std::string _key_prop;
+            std::string _interp_key;
             std::string _value;
             std::vector<std::string> _undefined_keys;
             env_map_t _env_map;

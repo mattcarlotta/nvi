@@ -35,7 +35,7 @@ namespace nvi {
         for (const Token &t : _tokens) {
             _token = t;
             _key.clear();
-            _key_prop.clear();
+            _interp_key.clear();
             _value.clear();
 
             if (_token.values.size()) {
@@ -43,18 +43,18 @@ namespace nvi {
                     _value_token = vt;
                     _key = _token.key.value();
                     if (_value_token.type == ValueType::interpolated) {
-                        _key_prop = _value_token.value.has_value() ? _value_token.value.value() : std::string{};
-                        const char *val_from_env = std::getenv(_key_prop.c_str());
+                        _interp_key = _value_token.value.has_value() ? _value_token.value.value() : std::string{};
+                        const char *val_from_env = std::getenv(_interp_key.c_str());
 
                         if (val_from_env != nullptr && *val_from_env != NULL_CHAR) {
                             _value += val_from_env;
-                        } else if (_env_map.count(_key_prop)) {
-                            _value += _env_map.at(_key_prop);
+                        } else if (_env_map.count(_interp_key)) {
+                            _value += _env_map.at(_interp_key);
                         } else if (_options.debug) {
                             log(INTERPOLATION_WARNING);
                         }
                     } else {
-                        _value += _value_token.value.value();
+                        _value += _value_token.value.has_value() ? _value_token.value.value() : std::string{};
                     }
                 }
 
@@ -82,7 +82,7 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 INTERPOLATION_WARNING,
                 R"([%s:%d:%d] The key "%s" contains an invalid interpolated variable: "%s". Unable to locate a value that corresponds to this key.)",
-                _token.file.c_str(), _value_token.line, _value_token.byte, _token.key->c_str(), _key_prop.c_str());
+                _token.file.c_str(), _value_token.line, _value_token.byte, _token.key->c_str(), _interp_key.c_str());
             break;
         }
         case DEBUG: {
