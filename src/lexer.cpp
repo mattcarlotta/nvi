@@ -140,12 +140,12 @@ namespace nvi {
                              (peek(1).has_value() && peek(1).value() == LINE_DELIMITER)) ||
                             is_eol) {
 
+                            ++_line;
                             token.values.push_back(
                                 {is_eol ? ValueType::normal : ValueType::multiline, value, _byte, _line});
-                            value.clear();
 
-                            ++_line;
                             _byte = 1;
+                            value.clear();
 
                             // skip '\n' or "\\n"
                             skip(is_eol ? 1 : 2);
