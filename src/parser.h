@@ -16,7 +16,7 @@ namespace nvi {
 
     class Parser {
         public:
-            Parser(const tokens_t &tokens, const options_t &options);
+            Parser(tokens_t tokens, const options_t &options);
             Parser *check_envs() noexcept;
             const env_map_t &get_env_map() const noexcept;
             Parser *parse_tokens() noexcept;

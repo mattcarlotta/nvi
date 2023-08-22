@@ -7,7 +7,7 @@
 namespace nvi {
     inline constexpr char NULL_CHAR = '\0'; // 0x00
 
-    Parser::Parser(const tokens_t &tokens, const options_t &options) : _tokens(tokens), _options(options) {}
+    Parser::Parser(tokens_t tokens, const options_t &options) : _tokens(tokens), _options(options) {}
 
     const env_map_t &Parser::get_env_map() const noexcept { return _env_map; }
 

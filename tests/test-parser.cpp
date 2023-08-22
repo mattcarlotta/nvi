@@ -1,3 +1,5 @@
+#include "lexer.h"
+#include "options.h"
 #include "parser.h"
 #include "gtest/gtest.h"
 
@@ -7,11 +9,16 @@ class parse_env_file : public testing::Test {
 
     public:
         static void SetUpTestSuite() {
-            nvi::Parser parser({/* commands */ {}, /* config */ "", /* debug */ false, /* dir */ "../envs",
-                                /* files */ {".env", "bin.env", "base.env", "reference.env"},
-                                /* required_envs */ {"BASIC_ENV"}});
-            parser.parse_envs()->check_envs();
-            env_map = parser.get_env_map();
+            nvi::options_t options = {/* commands */ {},
+                                      /* config */ "",
+                                      /* debug */ false,
+                                      /* dir */ "../envs",
+                                      /* files */ {".env", "base.env", "reference.env"},
+                                      /* required_envs */ {"BASIC_ENV"}};
+            nvi::Lexer lexer(options);
+            nvi::tokens_t tokens = lexer.read_files()->get_tokens();
+            nvi::Parser parser(std::move(tokens), options);
+            env_map = parser.parse_tokens()->check_envs()->get_env_map();
         }
 };
 

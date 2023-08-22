@@ -40,6 +40,7 @@ namespace nvi {
             char commit() noexcept;
             void skip(int offset = 1) noexcept;
             void log(const messages_t &code) const noexcept;
+            std::string get_value_type_string(const ValueType &vt) const noexcept;
 
             options_t _options;
             size_t _index;

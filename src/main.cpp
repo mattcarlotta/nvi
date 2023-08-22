@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     Lexer lexer(options);
     tokens_t tokens = lexer.read_files()->get_tokens();
 
-    Parser parser(tokens, options);
+    Parser parser(std::move(tokens), options);
     env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();
 
     Generator generator(env_map, std::move(options));

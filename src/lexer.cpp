@@ -3,8 +3,10 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -160,7 +162,11 @@ namespace nvi {
 
                     _tokens.push_back(token);
                     token.key->clear();
+                    token.values.clear();
+                    value.clear();
+                    _byte = 1;
 
+                    ++_line;
                     continue;
                 } else if (current_char != LINE_DELIMITER) {
                     value.push_back(commit());
@@ -216,7 +222,22 @@ namespace nvi {
             _env_file.close();
         }
 
+        if (_options.debug) {
+            log(DEBUG);
+        }
+
         return this;
+    }
+
+    std::string Lexer::get_value_type_string(const ValueType &vt) const noexcept {
+        switch (static_cast<int>(vt)) {
+        case 0:
+            return "a normal value";
+        case 1:
+            return "an interpolated key";
+        default:
+            return "a multiline value";
+        }
     }
 
     void Lexer::log(const messages_t &code) const noexcept {
@@ -257,10 +278,22 @@ namespace nvi {
                 _file.c_str());
             break;
         }
+        case DEBUG: {
+            for (const Token &token : _tokens) {
+                std::stringstream ss;
+                ss << "Created a token key " << std::quoted(token.key.value()) << " with the following tokenized values(" << token.values.size() << "): \n";
+                for (const ValueToken &vt : token.values) {
+                    ss << "      [" << token.file << "::" << vt.line << "::" << vt.byte << "] ";
+                    ss << "A token value of " << std::quoted((vt.value.has_value() ? vt.value.value() : ""));
+                    ss << " has been created as " << get_value_type_string(vt.type) << "." << std::endl;
+                }
+                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
+            }
+            break;
+        }
         default:
             break;
         }
         // clang-format on
     }
-
 }; // namespace nvi
