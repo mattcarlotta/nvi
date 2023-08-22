@@ -24,16 +24,12 @@ namespace nvi {
             }
         }
 
-        if (not _env_map.size()) {
-            log(EMPTY_ENVS_ERROR);
-        }
-
         return this;
     }
 
     Parser *Parser::parse_tokens() noexcept {
         if (!_tokens.size()) {
-            return this;
+            log(EMPTY_ENVS_ERROR);
         }
 
         for (const Token &t : _tokens) {
@@ -42,14 +38,12 @@ namespace nvi {
             _key_prop.clear();
             _value.clear();
 
-            if (not _token.values.size()) {
-                continue;
-            } else {
-                for (const auto &vt : _token.values) {
+            if (_token.values.size()) {
+                for (const ValueToken &vt : _token.values) {
                     _value_token = vt;
                     _key = _token.key.value();
                     if (_value_token.type == ValueType::interpolated) {
-                        _key_prop = _value_token.value.has_value() ? _value_token.value.value() : "";
+                        _key_prop = _value_token.value.has_value() ? _value_token.value.value() : std::string{};
                         const char *val_from_env = std::getenv(_key_prop.c_str());
 
                         if (val_from_env != nullptr && *val_from_env != NULL_CHAR) {
@@ -64,16 +58,17 @@ namespace nvi {
                     }
                 }
 
-                if (_token.key.has_value()) {
-                    _env_map[_token.key.value()] = _value;
-                    if (_options.debug) {
-                        log(DEBUG);
-                    }
+                _env_map[_key] = _value;
+
+                if (_options.debug) {
+                    log(DEBUG);
                 }
             }
         }
 
-        if (_options.debug) {
+        if (not _env_map.size()) {
+            log(EMPTY_ENVS_ERROR);
+        } else if (_options.debug) {
             log(DEBUG_FILE_PROCESSED);
         }
 
@@ -114,8 +109,8 @@ namespace nvi {
         case EMPTY_ENVS_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_ENVS_ERROR,
-                R"(Unable to parse any ENVs! Please ensure the "%s" file is not empty.)",
-                _token.file.c_str());
+                R"(Unable to parse any ENVs! Please ensure the provided .env files are not empty.)",
+                NULL);
             break;
         }
         default:
