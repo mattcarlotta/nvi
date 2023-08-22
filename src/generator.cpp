@@ -10,7 +10,7 @@ namespace nvi {
     inline constexpr char BACK_SLASH = '\\';  // 0x5c
     inline constexpr char DOUBLE_QUOTE = '"'; // 0x22
 
-    Generator::Generator(const env_map_t &env_map, const options_t &options) : _env_map(env_map), _options(options) {}
+    Generator::Generator(const env_map_t &env_map, const options_t options) : _env_map(env_map), _options(options) {}
 
     void Generator::set_or_print_envs() const noexcept {
         if (_options.commands.size()) {
