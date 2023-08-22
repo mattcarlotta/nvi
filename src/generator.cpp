@@ -3,6 +3,7 @@
 #include "options.h"
 #include "parser.h"
 #include <cerrno>
+#include <iomanip>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -39,20 +40,9 @@ namespace nvi {
         } else {
             // if a command wasn't provided, print ENVs as a JSON formatted string to stdout
             const std::string last_key = std::prev(_env_map.end())->first;
-            std::cout << "{" << '\n';
+            std::cout << "{";
             for (auto const &[key, value] : _env_map) {
-                std::string esc_value;
-                size_t i = 0;
-                while (i < value.length()) {
-                    const char current_char = value[i];
-                    if (current_char == DOUBLE_QUOTE) {
-                        esc_value += BACK_SLASH;
-                    }
-                    esc_value += current_char;
-                    ++i;
-                }
-                std::cout << std::setw(4) << DOUBLE_QUOTE << key << DOUBLE_QUOTE << ": " << DOUBLE_QUOTE << esc_value
-                          << DOUBLE_QUOTE << (key != last_key ? "," : "") << '\n';
+                std::cout << std::quoted(key) << ": " << std::quoted(value) << (key != last_key ? "," : "");
             }
             std::cout << "}" << std::endl;
         }
