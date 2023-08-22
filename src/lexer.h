@@ -42,9 +42,9 @@ namespace nvi {
             void log(const messages_t &code) const noexcept;
 
             options_t _options;
+            size_t _index;
             size_t _byte;
             size_t _line;
-            size_t _index;
             std::ifstream _env_file;
             std::string _file;
             std::string _file_name;
