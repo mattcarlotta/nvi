@@ -1,7 +1,10 @@
 #include "arg.h"
 #include "config.h"
+#include "generator.h"
+#include "lexer.h"
 #include "options.h"
 #include "parser.h"
+#include <cstdlib>
 
 int main(int argc, char *argv[]) {
     using namespace nvi;
@@ -14,9 +17,14 @@ int main(int argc, char *argv[]) {
         options = config.get_options();
     }
 
-    Parser parser(options);
+    Lexer lexer(options);
+    tokens_t tokens = lexer.read_files()->get_tokens();
 
-    parser.parse_envs()->check_envs()->set_or_print_envs();
+    Parser parser(std::move(tokens), options);
+    env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();
 
-    std::exit(0);
+    Generator generator(env_map, std::move(options));
+    generator.set_or_print_envs();
+
+    std::exit(EXIT_SUCCESS);
 }

@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -11,7 +12,7 @@ void assert(std::string key, std::string value) {
 
     std::cerr << "ERROR: Expected the \"" << key << "\" value to match \"" << value << "\". Actual value: \""
               << expected_value << "\"." << std::endl;
-    std::exit(1);
+    std::exit(EXIT_FAILURE);
 }
 
 int main() {
