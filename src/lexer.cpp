@@ -34,12 +34,12 @@ namespace nvi {
 
     void Lexer::skip(int offset) noexcept { _byte += offset; }
 
-    void Lexer::lex() {
+    void Lexer::lex_file() {
         Token token;
         token.file = _file_name;
 
         std::string value;
-        while (peek().has_value() && _byte < _file.length()) {
+        while (peek().has_value()) {
             const char current_char = peek().has_value() ? peek().value() : NULL_CHAR;
 
             if (std::isalnum(current_char)) {
@@ -204,7 +204,7 @@ namespace nvi {
                                        _file_name.c_str());
             }
 
-            this->lex();
+            lex_file();
 
             _env_file.close();
         }

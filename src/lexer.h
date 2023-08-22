@@ -34,7 +34,7 @@ namespace nvi {
             tokens_t get_tokens() const noexcept;
 
         private:
-            void lex();
+            void lex_file();
             std::optional<char> peek(int offset = 0) const noexcept;
             char commit() noexcept;
             void skip(int offset = 1) noexcept;

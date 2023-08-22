@@ -99,9 +99,9 @@ namespace nvi {
         }
         case DEBUG_FILE_PROCESSED: {
             NVI_LOG_DEBUG(
-                DEBUG,
-                "Successfully parsed the %s file!\n",
-                _token.file.c_str())
+                DEBUG_FILE_PROCESSED,
+                "Successfully parsed the %s file%s!\n",
+                fmt::join(_options.files, ", ").c_str(), (_options.files.size() > 1 ? "s" : ""))
             break;
         }
         case REQUIRED_ENV_ERROR: {
