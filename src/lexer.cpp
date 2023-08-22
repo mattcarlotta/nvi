@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace nvi {
-    inline constexpr char NULL_CHAR = '\0';      // 0x00
     inline constexpr char HASH = '#';            // 0x23
     inline constexpr char LINE_DELIMITER = '\n'; // 0x0a
     inline constexpr char BACK_SLASH = '\\';     // 0x5c
@@ -42,7 +41,7 @@ namespace nvi {
 
         std::string value;
         while (peek().has_value()) {
-            const char current_char = peek().has_value() ? peek().value() : NULL_CHAR;
+            const char current_char = peek().value();
 
             if (std::isalnum(current_char)) {
                 while (peek().has_value() && std::isalnum(peek().value())) {
