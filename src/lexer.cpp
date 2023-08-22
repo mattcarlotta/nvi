@@ -22,7 +22,7 @@ namespace nvi {
 
     std::vector<Token> Lexer::get_tokens() const noexcept { return _tokens; }
 
-    std::optional<char> Lexer::peek(int offset) const {
+    std::optional<char> Lexer::peek(int offset) const noexcept {
         if (_byte + offset >= _file.length()) {
             return std::nullopt;
         } else {
@@ -30,9 +30,9 @@ namespace nvi {
         }
     }
 
-    char Lexer::consume() { return _file.at(_byte++); }
+    char Lexer::commit() noexcept { return _file.at(_byte++); }
 
-    void Lexer::skip(int offset) { _byte += offset; }
+    void Lexer::skip(int offset) noexcept { _byte += offset; }
 
     void Lexer::lex() {
         Token token;
@@ -44,11 +44,11 @@ namespace nvi {
 
             if (std::isalnum(current_char)) {
                 while (peek().has_value() && std::isalnum(peek().value())) {
-                    value.push_back(consume());
+                    value.push_back(commit());
                 };
                 continue;
             } else if (std::isblank(current_char)) {
-                value.push_back(consume());
+                value.push_back(commit());
                 continue;
             } else if (std::ispunct(current_char)) {
                 if (current_char == ASSIGN_OP) {
@@ -59,8 +59,8 @@ namespace nvi {
                     continue;
                 } else if (current_char == HASH) {
                     if (token.key->length()) {
-                        // consume lines with hashes
-                        value.push_back(consume());
+                        // commit lines with hashes
+                        value.push_back(commit());
                         continue;
                     } else {
                         // skip lines with comments
@@ -88,7 +88,7 @@ namespace nvi {
                             std::cerr << "Invalid interpolation" << std::endl;
                             std::exit(EXIT_FAILURE);
                         } else {
-                            value.push_back(consume());
+                            value.push_back(commit());
                         }
                     }
 
@@ -143,7 +143,7 @@ namespace nvi {
                             }
                         }
 
-                        value.push_back(consume());
+                        value.push_back(commit());
                     }
 
                     _tokens.push_back(token);
@@ -151,7 +151,7 @@ namespace nvi {
 
                     continue;
                 } else if (current_char != LINE_DELIMITER) {
-                    value.push_back(consume());
+                    value.push_back(commit());
                     continue;
                 }
             } else {
@@ -205,6 +205,8 @@ namespace nvi {
             }
 
             this->lex();
+
+            _env_file.close();
         }
 
         return this;

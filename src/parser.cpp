@@ -1,125 +1,22 @@
 #include "parser.h"
 #include "format.h"
+#include "lexer.h"
 #include "log.h"
 #include "options.h"
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <string_view>
 #include <sys/wait.h>
 #include <unistd.h>
 
 namespace nvi {
+    inline constexpr char NULL_CHAR = '\0';   // 0x00
+    inline constexpr char BACK_SLASH = '\\';  // 0x5c
+    inline constexpr char DOUBLE_QUOTE = '"'; // 0x22
 
-    inline constexpr char NULL_CHAR = '\0';      // 0x00
-    inline constexpr char COMMENT = '#';         // 0x23
-    inline constexpr char LINE_DELIMITER = '\n'; // 0x0a
-    inline constexpr char BACK_SLASH = '\\';     // 0x5c
-    inline constexpr char ASSIGN_OP = '=';       // 0x3d
-    inline constexpr char DOLLAR_SIGN = '$';     // 0x24
-    inline constexpr char OPEN_BRACE = '{';      // 0x7b
-    inline constexpr char CLOSE_BRACE = '}';     // 0x7d
-    inline constexpr char DOUBLE_QUOTE = '"';    // 0x22
+    Parser::Parser(const tokens_t &tokens, const options_t &options) : _tokens(tokens), _options(options) {}
 
-    Parser::Parser(const options_t &options) : _options(options) {}
-
-    Parser *Parser::parse() noexcept {
-        while (_byte_count < _file.length()) {
-            const std::string_view line = _file_view.substr(_byte_count, _file.length());
-            const int line_delimiter_index = line.find(LINE_DELIMITER);
-
-            // skip lines that begin with comments
-            if (line[0] == COMMENT || line[0] == LINE_DELIMITER) {
-                ++_line_count;
-                _byte_count += line_delimiter_index + 1;
-                continue;
-            }
-
-            // split key from value by assignment "="
-            _assignment_index = line.find(ASSIGN_OP);
-            if (line_delimiter_index >= 0 && _assignment_index >= 0) {
-                _key = line.substr(0, _assignment_index);
-
-                const std::string_view line_slice = line.substr(_assignment_index + 1, line.length());
-                _val_byte_count = 0;
-                _value.clear();
-                while (_val_byte_count < line_slice.length()) {
-                    const char current_char = line_slice[_val_byte_count];
-                    const char next_char = line_slice[_val_byte_count + 1];
-
-                    // stop parsing if there's a new line character
-                    if (current_char == LINE_DELIMITER) {
-                        break;
-                    }
-
-                    // skip parsing escaped multi-line characters
-                    if (current_char == BACK_SLASH && next_char == LINE_DELIMITER) {
-                        ++_line_count;
-                        _val_byte_count += 2;
-                        continue;
-                    }
-
-                    // try interpolating key into a value
-                    if (current_char == DOLLAR_SIGN && next_char == OPEN_BRACE) {
-                        const std::string_view val_slice_str = line_slice.substr(_val_byte_count, line_slice.length());
-
-                        const int interp_close_index = val_slice_str.find(CLOSE_BRACE);
-                        if (interp_close_index >= 0) {
-                            _key_prop = val_slice_str.substr(2, interp_close_index - 2);
-                            const char *val_from_env = std::getenv(_key_prop.c_str());
-
-                            // interpolate the value from env first, otherwise fallback to the env_map
-                            std::string interpolated_value;
-                            if (val_from_env != nullptr && *val_from_env != NULL_CHAR) {
-                                interpolated_value = val_from_env;
-                            } else if (_env_map.count(_key_prop)) {
-                                interpolated_value = _env_map.at(_key_prop);
-                            } else if (_options.debug) {
-                                log(INTERPOLATION_WARNING);
-                            }
-
-                            _value += interpolated_value;
-
-                            // factor in the interpolated key length with the "$", "{" and "}" character bytes
-                            _val_byte_count += _key_prop.length() + 3;
-
-                            // continue the loop because the next character in the value may be another interpolated
-                            // value
-                            continue;
-                        } else {
-                            log(INTERPOLATION_ERROR);
-                        }
-                    }
-
-                    _value += line_slice[_val_byte_count];
-
-                    ++_val_byte_count;
-                }
-
-                if (_key.length()) {
-                    _env_map[_key] = _value;
-                    if (_options.debug) {
-                        log(DEBUG);
-                    }
-                }
-
-                _byte_count += _assignment_index + _val_byte_count + 1;
-            } else {
-                _byte_count = _file.length();
-            }
-        }
-
-        if (_options.debug) {
-            log(DEBUG_FILE_PROCESSED);
-        }
-
-        _env_file.close();
-
-        return this;
-    }
+    const env_map_t &Parser::get_env_map() const noexcept { return _env_map; }
 
     Parser *Parser::check_envs() noexcept {
         if (_options.required_envs.size()) {
@@ -136,14 +33,6 @@ namespace nvi {
 
         if (not _env_map.size()) {
             log(EMPTY_ENVS_ERROR);
-        }
-
-        return this;
-    }
-
-    Parser *Parser::parse_envs() noexcept {
-        for (const std::string &env : _options.files) {
-            read(env)->parse();
         }
 
         return this;
@@ -188,46 +77,58 @@ namespace nvi {
                     esc_value += current_char;
                     ++i;
                 }
-                std::cout << std::setw(4) << DOUBLE_QUOTE << key << DOUBLE_QUOTE << ':' << DOUBLE_QUOTE << esc_value
+                std::cout << std::setw(4) << DOUBLE_QUOTE << key << DOUBLE_QUOTE << ": " << DOUBLE_QUOTE << esc_value
                           << DOUBLE_QUOTE << (key != last_key ? "," : "") << '\n';
             }
             std::cout << "}" << std::endl;
         }
     }
 
-    const env_map_t &Parser::get_env_map() const noexcept { return _env_map; }
-
-    Parser *Parser::read(const std::string &env_file_name) noexcept {
-        _file_name = env_file_name;
-        _byte_count = 0;
-        _val_byte_count = 0;
-        _line_count = 0;
-        _assignment_index = -1;
-        _key.clear();
-        _key_prop.clear();
-        _value.clear();
-        _file.clear();
-        _file_path.clear();
-
-        _file_path = std::filesystem::current_path() / _options.dir / _file_name;
-        if (not std::filesystem::exists(_file_path)) {
-            log(FILE_ENOENT_ERROR);
+    Parser *Parser::parse_tokens() noexcept {
+        if (!_tokens.size()) {
+            return this;
         }
 
-        if (std::string{_file_path.extension()}.find(".env") == std::string::npos &&
-            std::string{_file_path.stem()}.find(".env") == std::string::npos) {
-            log(FILE_EXTENSION_ERROR);
+        for (const Token &t : _tokens) {
+            _token = t;
+            _key.clear();
+            _key_prop.clear();
+            _value.clear();
+
+            if (not _token.values.size()) {
+                continue;
+            } else {
+                for (const auto &vt : _token.values) {
+                    _value_token = vt;
+                    _key = _token.key.value();
+                    if (_value_token.type == ValueType::interpolated) {
+                        _key_prop = _value_token.value.has_value() ? _value_token.value.value() : "";
+                        const char *val_from_env = std::getenv(_key_prop.c_str());
+
+                        if (val_from_env != nullptr && *val_from_env != NULL_CHAR) {
+                            _value += val_from_env;
+                        } else if (_env_map.count(_key_prop)) {
+                            _value += _env_map.at(_key_prop);
+                        } else if (_options.debug) {
+                            log(INTERPOLATION_WARNING);
+                        }
+                    } else {
+                        _value += _value_token.value.value();
+                    }
+                }
+
+                if (_token.key.has_value()) {
+                    _env_map[_token.key.value()] = _value;
+                    if (_options.debug) {
+                        log(DEBUG);
+                    }
+                }
+            }
         }
 
-        _env_file = std::ifstream{_file_path, std::ios_base::in};
-        if (not _env_file.is_open()) {
-            log(FILE_ERROR);
+        if (_options.debug) {
+            log(DEBUG_FILE_PROCESSED);
         }
-        _file = std::string{std::istreambuf_iterator<char>(_env_file), std::istreambuf_iterator<char>()};
-        if (not _file.length()) {
-            log(EMPTY_ENVS_ERROR);
-        }
-        _file_view = std::string_view{_file};
 
         return this;
     }
@@ -239,32 +140,21 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 INTERPOLATION_WARNING,
                 R"([%s:%d:%d] The key "%s" contains an invalid interpolated variable: "%s". Unable to locate a value that corresponds to this key.)",
-                _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2, 
-                _key.c_str(), _key_prop.c_str());
-            break;
-        }
-        case INTERPOLATION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INTERPOLATION_ERROR,
-                R"([%s:%d:%d] The key "%s" contains an interpolated "{" operator, but appears to be missing a closing "}" operator.)",
-                _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
-                _key.c_str());
+                _token.file.c_str(), _value_token.line, _value_token.byte, _token.key->c_str(), _key_prop.c_str());
             break;
         }
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
                 R"([%s:%d:%d] Set key "%s" to equal value "%s".)",
-                _file_name.c_str(), _line_count + 1, _assignment_index + _val_byte_count + 2,
-                _key.c_str(), _value.c_str());
+                _token.file.c_str(), _value_token.line, _value_token.byte, _key.c_str(), _value.c_str());
             break;
         }
         case DEBUG_FILE_PROCESSED: {
             NVI_LOG_DEBUG(
-                DEBUG_FILE_PROCESSED,
-                "[%s] Processed %d line%s and %d bytes!\n",
-                _file_name.c_str(), _line_count, 
-                (_line_count != 1 ? "s" : ""), _byte_count);
+                DEBUG,
+                "Successfully parsed the %s file!\n",
+                _token.file.c_str())
             break;
         }
         case REQUIRED_ENV_ERROR: {
@@ -274,32 +164,11 @@ namespace nvi {
                 fmt::join(_undefined_keys, ", ").c_str());
             break;
         }
-        case FILE_ENOENT_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ENOENT_ERROR,
-                R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
-                _file_path.c_str());
-            break;
-        }
-        case FILE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ERROR,
-                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
-                _file_path.c_str());
-            break;
-        }
-        case FILE_EXTENSION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_EXTENSION_ERROR,
-                R"(The "%s" file is not a valid ".env" file extension.)",
-                _file_name.c_str());
-            break;
-        }
         case EMPTY_ENVS_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_ENVS_ERROR,
                 R"(Unable to parse any ENVs! Please ensure the "%s" file is not empty.)",
-                _file_name.c_str());
+                _token.file.c_str());
             break;
         }
         case COMMAND_ENOENT_ERROR: {
@@ -321,4 +190,4 @@ namespace nvi {
         }
         // clang-format on
     }
-}; // namespace nvi
+} // namespace nvi

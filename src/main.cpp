@@ -1,8 +1,9 @@
 #include "arg.h"
 #include "config.h"
-#include "options.h"
-// #include "parser.h"
 #include "lexer.h"
+#include "options.h"
+#include "parser.h"
+#include <cstdlib>
 
 std::string lookup_type(int code) {
     switch (code) {
@@ -21,31 +22,16 @@ int main(int argc, char *argv[]) {
     Arg arg(argc, argv);
     options_t options = arg.get_options();
 
+    if (options.config.length()) {
+        Config config(options.config);
+        options = config.get_options();
+    }
+
     Lexer lexer(options);
     tokens_t tokens = lexer.read_files()->get_tokens();
 
-    for (const auto &token : tokens) {
-        std::clog << '\n';
-        std::clog << "FILE: " << token.file << '\n';
-        std::clog << "KEY: " << token.key.value() << '\n';
-        std::clog << "VALUE(" << token.values.size() << "): \n";
-        for (const auto &vt : token.values) {
-            std::clog << '\n';
-            std::clog << "      VALUE_TYPE: " << lookup_type(static_cast<int>(vt.type)) << '\n';
-            std::clog << "      VALUE: " << (vt.value.has_value() ? vt.value.value() : "") << '\n';
-            std::clog << "      LINE: " << vt.line << '\n';
-            std::clog << "      BYTE: " << vt.byte << '\n';
-        }
-    }
-    std::clog << std::endl;
-    // if (options.config.length()) {
-    //     Config config(options.config);
-    //     options = config.get_options();
-    // }
+    Parser parser(tokens, options);
+    parser.parse_tokens()->check_envs()->set_or_print_envs();
 
-    // Parser parser(options);
-
-    // parser.parse_envs()->check_envs()->set_or_print_envs();
-
-    std::exit(0);
+    std::exit(EXIT_SUCCESS);
 }

@@ -10,14 +10,13 @@
 #include <vector>
 
 namespace nvi {
-    //
     enum class ValueType { normal, interpolated, multiline };
 
     struct ValueToken {
             ValueType type;
             std::optional<std::string> value{};
-            size_t byte;
-            size_t line;
+            size_t byte = 0;
+            size_t line = 0;
     };
 
     struct Token {
@@ -31,15 +30,14 @@ namespace nvi {
     class Lexer {
         public:
             Lexer(const options_t &options);
-
             Lexer *read_files() noexcept;
             tokens_t get_tokens() const noexcept;
 
         private:
             void lex();
-            std::optional<char> peek(int offset = 0) const;
-            char consume();
-            void skip(int offset = 1);
+            std::optional<char> peek(int offset = 0) const noexcept;
+            char commit() noexcept;
+            void skip(int offset = 1) noexcept;
 
             options_t _options;
             size_t _byte;

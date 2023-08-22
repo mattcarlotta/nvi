@@ -44,6 +44,7 @@ namespace nvi {
         REQUIRED_ARG_ERROR,
         INVALID_PROPERTY_WARNING,
         // parser
+        EMPTY_KEY_WARNING,
         INTERPOLATION_WARNING,
         INTERPOLATION_ERROR,
         DEBUG_FILE_PROCESSED,
@@ -98,6 +99,8 @@ namespace nvi {
             return "REQUIRED_ARG_ERROR";
         case INVALID_PROPERTY_WARNING:
             return "INVALID_PROPERTY_WARNING";
+        case EMPTY_KEY_WARNING:
+            return "EMPTY_KEY_WARNING";
         case INTERPOLATION_WARNING:
             return "INTERPOLATION_WARNING";
         case INTERPOLATION_ERROR:
