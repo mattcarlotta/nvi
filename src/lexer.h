@@ -28,6 +28,20 @@ namespace nvi {
 
     typedef std::vector<Token> tokens_t;
 
+    /**
+     * @detail Lexes one or many .env files into tokens.
+     * @param `options` initialize parser with the following required option: `files`, followed by optional options:
+     * `dir`, `required_envs`, and `debug`.
+     * @example Initializing a lexer and lexing .env files
+     *
+     * nvi::options_t options;
+     * options.debug = false;
+     * options.dir = "custom/path/to/envs";
+     * options.files = {".env", "base.env", ...etc};
+     * optons.required_envs = {"KEY1", "KEY2", ...etc};
+     * nvi::Lexer lexer(options);
+     * lexer.read_files();
+     */
     class Lexer {
         public:
             Lexer(const options_t &options);
