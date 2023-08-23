@@ -21,7 +21,7 @@ namespace nvi {
     };
 
     struct Token {
-            std::optional<std::string> key{};
+            std::optional<std::string> key = "";
             std::vector<ValueToken> values{};
             std::string file;
     };
@@ -40,21 +40,24 @@ namespace nvi {
      * options.files = {".env", "base.env", ...etc};
      * optons.required_envs = {"KEY1", "KEY2", ...etc};
      * nvi::Lexer lexer(options);
-     * lexer.read_files();
+     * lexer.parse_files();
      */
     class Lexer {
         public:
             Lexer(const options_t &options);
-            Lexer *read_files() noexcept;
+            Lexer *parse_files() noexcept;
             tokens_t get_tokens() const noexcept;
 
         private:
-            void lex_file();
+            void parse_file() noexcept;
             std::optional<char> peek(int offset = 0) const noexcept;
             char commit() noexcept;
             void skip(int offset = 1) noexcept;
             void log(const messages_t &code) const noexcept;
             std::string get_value_type_string(const ValueType &vt) const noexcept;
+            void reset_byte_count() noexcept;
+            void increase_byte_count(size_t offset = 1) noexcept;
+            void increase_line_count() noexcept;
 
             options_t _options;
             size_t _index;

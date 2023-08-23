@@ -16,7 +16,7 @@ class Parse_Env_File : public testing::Test {
                                       /* files */ {".env", "base.env", "reference.env"},
                                       /* required_envs */ {"BASIC_ENV"}};
             nvi::Lexer lexer(options);
-            lexer.read_files();
+            lexer.parse_files();
             nvi::Parser parser(lexer.get_tokens(), options);
             env_map = parser.parse_tokens()->check_envs()->get_env_map();
         }

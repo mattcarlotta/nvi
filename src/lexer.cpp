@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -32,11 +33,20 @@ namespace nvi {
         }
     }
 
-    char Lexer::commit() noexcept { return _file.at(_index++); }
+    char Lexer::commit() noexcept {
+        increase_byte_count();
+        return _file.at(_index++);
+    }
 
     void Lexer::skip(int offset) noexcept { _index += offset; }
 
-    void Lexer::lex_file() {
+    void Lexer::reset_byte_count() noexcept { _byte = 1; }
+
+    void Lexer::increase_byte_count(size_t offset) noexcept { _byte += offset; }
+
+    void Lexer::increase_line_count() noexcept { ++_line; }
+
+    void Lexer::parse_file() noexcept {
         Token token;
         token.file = _file_name;
 
@@ -47,28 +57,20 @@ namespace nvi {
             if (std::isalnum(current_char)) {
                 while (peek().has_value() && std::isalnum(peek().value())) {
                     value.push_back(commit());
-                    ++_byte;
                 };
                 continue;
-            } else if (std::isblank(current_char)) {
-                value.push_back(commit());
-                ++_byte;
-
-                continue;
-            } else if (std::ispunct(current_char)) {
+            } else if (std::isblank(current_char) || std::ispunct(current_char)) {
                 if (current_char == ASSIGN_OP) {
                     token.key = value;
-                    ++_byte;
-
+                    increase_byte_count();
                     value.clear();
+                    // skip '='
                     skip();
                     continue;
                 } else if (current_char == HASH) {
                     if (token.key->length()) {
                         // commit lines with hashes
                         value.push_back(commit());
-                        ++_byte;
-
                         continue;
                     } else {
                         // skip lines with comments
@@ -76,8 +78,7 @@ namespace nvi {
                             skip();
                         };
 
-                        ++_line;
-
+                        increase_line_count();
                         // skip '\n'
                         skip();
                     }
@@ -90,14 +91,13 @@ namespace nvi {
 
                     // skip "${"
                     skip(2);
-                    _byte += 2;
+                    increase_byte_count(2);
 
                     while (peek().has_value() && peek().value() != CLOSE_BRACE) {
                         if (peek().value() == LINE_DELIMITER) {
                             _token_key = token.key.value();
                             log(INTERPOLATION_ERROR);
                         } else {
-                            ++_byte;
                             value.push_back(commit());
                         }
                     }
@@ -107,20 +107,20 @@ namespace nvi {
 
                     // skip '}'
                     skip();
-                    ++_byte;
+                    increase_byte_count();
 
                     // if the next value is a new line, store the token and then reset it
                     if (peek().has_value() && peek().value() == LINE_DELIMITER) {
                         _tokens.push_back(token);
                         token.key->clear();
                         token.values.clear();
-                        ++_line;
-                        _byte = 1;
+                        reset_byte_count();
+                        value.clear();
+                        increase_line_count();
 
                         // skip '\n'
                         skip();
                     }
-
                     continue;
                 } else if (current_char == BACK_SLASH && (peek(1).has_value() && peek(1).value() == LINE_DELIMITER)) {
                     if (value.length()) {
@@ -129,7 +129,7 @@ namespace nvi {
 
                     // skip "\\n"
                     skip(2);
-                    _byte = 1;
+                    reset_byte_count();
 
                     // handle multiline values
                     value.clear();
@@ -140,12 +140,12 @@ namespace nvi {
                              (peek(1).has_value() && peek(1).value() == LINE_DELIMITER)) ||
                             is_eol) {
 
-                            ++_line;
+                            increase_line_count();
                             token.values.push_back(
                                 {is_eol ? ValueType::normal : ValueType::multiline, value, _byte, _line});
 
-                            _byte = 1;
                             value.clear();
+                            reset_byte_count();
 
                             // skip '\n' or "\\n"
                             skip(is_eol ? 1 : 2);
@@ -156,7 +156,7 @@ namespace nvi {
                                 continue;
                             }
                         }
-                        ++_byte;
+
                         value.push_back(commit());
                     }
 
@@ -164,13 +164,13 @@ namespace nvi {
                     token.key->clear();
                     token.values.clear();
                     value.clear();
-                    _byte = 1;
-
-                    ++_line;
+                    reset_byte_count();
+                    increase_line_count();
                     continue;
                 } else if (current_char != LINE_DELIMITER) {
                     value.push_back(commit());
-                    ++_byte;
+                    continue;
+                } else {
                     continue;
                 }
             } else {
@@ -182,14 +182,14 @@ namespace nvi {
                 token.key->clear();
                 token.values.clear();
                 value.clear();
-                _byte = 1;
-
-                ++_line;
+                reset_byte_count();
+                increase_line_count();
                 skip();
+                continue;
             }
         };
     }
-    Lexer *Lexer::read_files() noexcept {
+    Lexer *Lexer::parse_files() noexcept {
         for (const std::string &env : _options.files) {
             _index = 0;
             _byte = 1;
@@ -217,7 +217,7 @@ namespace nvi {
                 log(EMPTY_ENVS_ERROR);
             }
 
-            lex_file();
+            parse_file();
 
             _env_file.close();
         }

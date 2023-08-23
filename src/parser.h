@@ -27,7 +27,7 @@ namespace nvi {
      * options.files = {".env", "base.env", ...etc};
      * optons.required_envs = {"KEY1", "KEY2", ...etc};
      * nvi::Lexer lexer(options);
-     * nvi::tokens_t tokens = lexer.read_files()->get_tokens();
+     * nvi::tokens_t tokens = lexer.parse_files()->get_tokens();
      * nvi::Parser parser(tokens, options);
      * parser.parse_envs()->check_envs();
      */
