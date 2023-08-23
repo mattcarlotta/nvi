@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "log.h"
 #include <cctype>
+#include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -229,10 +230,10 @@ namespace nvi {
     }
 
     std::string Lexer::get_value_type_string(const ValueType &vt) const noexcept {
-        switch (static_cast<int>(vt)) {
-        case 0:
+        switch (vt) {
+        case ValueType::normal:
             return "a normal value";
-        case 1:
+        case ValueType::interpolated:
             return "an interpolated key";
         default:
             return "a multiline value";
@@ -280,11 +281,16 @@ namespace nvi {
         case DEBUG: {
             for (const Token &token : _tokens) {
                 std::stringstream ss;
-                ss << "Created a token key " << std::quoted(token.key.value()) << " with the following tokenized values(" << token.values.size() << "): \n";
-                for (const ValueToken &vt : token.values) {
-                    ss << "      [" << token.file << "::" << vt.line << "::" << vt.byte << "] ";
+                ss << "Created a token key " << std::quoted(token.key.value());
+                ss << " with the following tokenized values(" << token.values.size() << "): \n";
+                for (size_t index = 0; index < token.values.size(); ++index) {
+                    const ValueToken &vt = token.values.at(index);
+                    ss << std::setw(4) << index + 1 << ": [" << token.file << "::" << vt.line << "::" << vt.byte << "] ";
                     ss << "A token value of " << std::quoted((vt.value.has_value() ? vt.value.value() : ""));
-                    ss << " has been created as " << get_value_type_string(vt.type) << "." << std::endl;
+                    ss << " has been created as " << get_value_type_string(vt.type) << ".";
+                    if(index + 1 != token.values.size()) {
+                        ss << '\n';
+                    }
                 }
                 NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
             }
