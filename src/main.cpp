@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     Parser parser(std::move(tokens), options);
     env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();
 
-    Generator generator(env_map, std::move(options));
+    Generator generator(std::move(env_map), std::move(options));
     generator.set_or_print_envs();
 
     std::exit(EXIT_SUCCESS);
