@@ -1,3 +1,4 @@
+#include "api.h"
 #include "arg.h"
 #include "config.h"
 #include "generator.h"
@@ -16,6 +17,9 @@ int main(int argc, char *argv[]) {
         Config config(options.config);
         options = config.get_options();
     }
+
+    API api(options);
+    api.get_API_key_from_cli()->fetch_envs();
 
     Lexer lexer(options);
     tokens_t tokens = lexer.parse_files()->get_tokens();
