@@ -199,7 +199,7 @@ namespace nvi {
 
         _file = envs;
         if (not _file.length()) {
-            log(EMPTY_ENVS_ERROR);
+            log(EMPTY_RESPONSE_ENVS_ERROR);
         }
 
         parse_file();
@@ -293,6 +293,13 @@ namespace nvi {
                 _file_name.c_str());
             break;
         } 
+        case EMPTY_RESPONSE_ENVS_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                EMPTY_RESPONSE_ENVS_ERROR,
+                R"(Unable to parse any ENVs! Please ensure the "%s" project has a(n) "%s" environment with at least 1 ENV.)",
+                _file_path.c_str(), _file_name.c_str());
+            break;
+        }
         case EMPTY_ENVS_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_ENVS_ERROR,

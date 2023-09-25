@@ -55,9 +55,11 @@ namespace nvi {
         INTERPOLATION_WARNING,
         INTERPOLATION_ERROR,
         DEBUG_FILE_PROCESSED,
+        DEBUG_RESPONSE_PROCESSED,
         REQUIRED_ENV_ERROR,
         FILE_EXTENSION_ERROR,
         EMPTY_ENVS_ERROR,
+        EMPTY_RESPONSE_ENVS_ERROR,
         COMMAND_ENOENT_ERROR,
         COMMAND_FAILED_TO_RUN,
         // shared
@@ -126,10 +128,14 @@ namespace nvi {
             return "INTERPOLATION_ERROR";
         case DEBUG_FILE_PROCESSED:
             return "DEBUG_FILE_PROCESSED";
+        case DEBUG_RESPONSE_PROCESSED:
+            return "DEBUG_RESPONSE_PROCESSED";
         case REQUIRED_ENV_ERROR:
             return "REQUIRED_ENV_ERROR";
         case FILE_EXTENSION_ERROR:
             return "FILE_EXTENSION_ERROR";
+        case EMPTY_RESPONSE_ENVS_ERROR:
+            return "EMPTY_RESPONSE_ENVS_ERROR";
         case EMPTY_ENVS_ERROR:
             return "EMPTY_ENVS_ERROR";
         case COMMAND_ENOENT_ERROR:
