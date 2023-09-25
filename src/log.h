@@ -25,11 +25,18 @@
 
 namespace nvi {
     typedef enum MESSAGES {
+        // api
+        INVALID_INPUT_KEY,
+        REQUEST_ERROR,
+        RESPONSE_ERROR,
+        CURL_FAILED_TO_INIT,
         // arg
         CONFIG_FLAG_ERROR,
         DIR_FLAG_ERROR,
         COMMAND_FLAG_ERROR,
+        ENV_FLAG_ERROR,
         FILES_FLAG_ERROR,
+        PROJECT_FLAG_ERROR,
         REQUIRED_FLAG_ERROR,
         HELP_DOC,
         INVALID_FLAG_WARNING,
@@ -69,14 +76,26 @@ namespace nvi {
 
     inline const std::string _get_string_from_code(const unsigned int &error) {
         switch (error) {
+        case INVALID_INPUT_KEY:
+            return "INVALID_INPUT_KEY";
+        case REQUEST_ERROR:
+            return "REQUEST_ERROR";
+        case RESPONSE_ERROR:
+            return "RESPONSE_ERROR";
+        case CURL_FAILED_TO_INIT:
+            return "CURL_FAILED_TO_INIT";
         case CONFIG_FLAG_ERROR:
             return "CONFIG_FLAG_ERROR";
         case DIR_FLAG_ERROR:
             return "DIR_FLAG_ERROR";
         case COMMAND_FLAG_ERROR:
             return "COMMAND_FLAG_ERROR";
+        case ENV_FLAG_ERROR:
+            return "ENV_FLAG_ERROR";
         case FILES_FLAG_ERROR:
             return "FILES_FLAG_ERROR";
+        case PROJECT_FLAG_ERROR:
+            return "PROJECT_FLAG_ERROR";
         case REQUIRED_FLAG_ERROR:
             return "REQUIRED_FLAG_ERROR";
         case HELP_DOC:

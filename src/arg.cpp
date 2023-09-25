@@ -16,12 +16,16 @@ namespace nvi {
     inline constexpr char DEBUG_LONG[] = "--debug";
     inline constexpr char DIRECTORY_SHORT[] = "-d";
     inline constexpr char DIRECTORY_LONG[] = "--dir";
-    inline constexpr char EXECUTE_SHORT[] = "-e";
+    inline constexpr char ENVIRONMENT_SHORT[] = "-e";
+    inline constexpr char ENVIRONMENT_LONG[] = "--env";
+    inline constexpr char EXECUTE_SHORT[] = "-x";
     inline constexpr char EXECUTE_LONG[] = "--exec";
     inline constexpr char FILES_SHORT[] = "-f";
     inline constexpr char FILES_LONG[] = "--files";
     inline constexpr char HELP_SHORT[] = "-h";
     inline constexpr char HELP_LONG[] = "--help";
+    inline constexpr char PROJECT_SHORT[] = "-p";
+    inline constexpr char PROJECT_LONG[] = "--project";
     inline constexpr char REQUIRED_SHORT[] = "-r";
     inline constexpr char REQUIRED_LONG[] = "--required";
     inline constexpr char VERSION_SHORT[] = "-v";
@@ -36,12 +40,16 @@ namespace nvi {
                 _options.debug = true;
             } else if (arg == DIRECTORY_SHORT || arg == DIRECTORY_LONG) {
                 _options.dir = parse_single_arg(DIR_FLAG_ERROR);
+            } else if (arg == ENVIRONMENT_SHORT || arg == ENVIRONMENT_LONG) {
+                _options.environment = parse_single_arg(ENV_FLAG_ERROR);
             } else if (arg == EXECUTE_SHORT || arg == EXECUTE_LONG) {
                 parse_command_args();
             } else if (arg == FILES_SHORT || arg == FILES_LONG) {
                 _options.files = parse_multi_arg(FILES_FLAG_ERROR);
             } else if (arg == HELP_SHORT || arg == HELP_LONG) {
                 log(HELP_DOC);
+            } else if (arg == PROJECT_SHORT || arg == PROJECT_LONG) {
+                _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
             } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
                 _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
             } else if (arg == VERSION_SHORT || arg == VERSION_LONG) {
@@ -174,7 +182,14 @@ namespace nvi {
         case COMMAND_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 COMMAND_FLAG_ERROR,
-                R"(The "-e" or "--exec" flag must contain at least 1 command. Use flag "-h" or "--help" for more information.)",
+                R"(The "-x" or "--exec" flag must contain at least 1 system command. Use flag "-h" or "--help" for more information.)",
+                NULL);
+            break;
+        }
+        case ENV_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                ENV_FLAG_ERROR,
+                R"(The "-e" or "--env" flag must contain a valid environment name. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }
@@ -205,8 +220,10 @@ namespace nvi {
 │ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │
 │ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │
 │ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │
-│ -e, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │
+│ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                   │
+│ -x, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │
 │ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │
+│ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                │
 │ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │
 └─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
 For additional information, please see the man documentation or README.)"
@@ -229,6 +246,13 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
                 "\n",
                 NVI_LIB_VERSION,
                 time_stamp->tm_year + 1900);
+            break;
+        }
+        case PROJECT_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                PROJECT_FLAG_ERROR,
+                R"(The "-p" or "--project" flag must contain a valid project name. Use flag "-h" or "--help" for more information.)",
+                NULL);
             break;
         }
         case INVALID_FLAG_WARNING: {

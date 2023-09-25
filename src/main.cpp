@@ -6,6 +6,7 @@
 #include "options.h"
 #include "parser.h"
 #include <cstdlib>
+#include <string>
 
 int main(int argc, char *argv[]) {
     using namespace nvi;
@@ -18,11 +19,15 @@ int main(int argc, char *argv[]) {
         options = config.get_options();
     }
 
-    API api(options);
-    api.get_API_key_from_cli()->fetch_envs();
+    std::string api_envs;
+    if (options.project.length()) {
+        API api(options);
+        api_envs = api.get_api_key_from_cli()->fetch_envs();
+    }
 
     Lexer lexer(options);
-    tokens_t tokens = lexer.parse_files()->get_tokens();
+    tokens_t tokens =
+        api_envs.length() ? lexer.parse_response(api_envs)->get_tokens() : lexer.parse_files()->get_tokens();
 
     Parser parser(std::move(tokens), options);
     env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();

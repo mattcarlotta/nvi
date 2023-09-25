@@ -189,6 +189,28 @@ namespace nvi {
             }
         };
     }
+
+    Lexer *Lexer::parse_response(const std::string &envs) noexcept {
+        _index = 0;
+        _byte = 1;
+        _line = 1;
+        _file_name = _options.environment;
+        _file_path = _options.project;
+
+        _file = envs;
+        if (not _file.length()) {
+            log(EMPTY_ENVS_ERROR);
+        }
+
+        parse_file();
+
+        if (_options.debug) {
+            log(DEBUG);
+        }
+
+        return this;
+    }
+
     Lexer *Lexer::parse_files() noexcept {
         for (const std::string &env : _options.files) {
             _index = 0;

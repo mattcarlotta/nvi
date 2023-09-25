@@ -2,7 +2,6 @@ find_package(CURL REQUIRED)
 
 add_executable(${PROJECT_NAME} main.cpp ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE CURL::libcurl)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wno-infinite-recursion)
 
 if(INSTALL_BIN_DIR MATCHES OFF) 
     set(INSTALL_DIR "/usr/local/bin")

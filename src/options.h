@@ -10,7 +10,9 @@ namespace nvi {
             std::string config;
             bool debug = false;
             std::string dir;
+            std::string environment;
             std::vector<std::string> files{".env"};
+            std::string project;
             std::vector<std::string> required_envs;
     } options_t;
 }; // namespace nvi

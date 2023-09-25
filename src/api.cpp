@@ -1,4 +1,5 @@
 #include "api.h"
+#include "log.h"
 #include "options.h"
 #include <algorithm>
 #include <cctype>
@@ -10,74 +11,87 @@
 #include <string>
 
 namespace nvi {
-    API::API(const options_t &options) : _options(options) {}
+    API::API(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
 
-    API *API::get_API_key_from_cli() noexcept {
+    API *API::get_api_key_from_cli() noexcept {
+        std::string api_key;
         std::clog << "[nvi] Please enter your unique API key: ";
-        std::getline(std::cin, _apiKey);
+        std::getline(std::cin, api_key);
 
-        ++_attempts;
+        const bool api_key_is_valid =
+            std::all_of(api_key.begin(), api_key.end(), [](char c) { return std::isalnum(c); });
 
-        const bool is_valid = std::all_of(_apiKey.begin(), _apiKey.end(), [](char c) { return std::isalnum(c); });
-
-        if (_apiKey.size() == 0 || not is_valid) {
-            if (_attempts >= 5) {
-                std::cerr << "[nvi] You've made too many attempts. Please try again later." << std::endl;
-                std::exit(EXIT_FAILURE);
-            }
-            std::cerr << "[nvi] The supplied input is not a valid API key. Please enter a valid [aAzZ0-9] API key."
-                      << " (attempts:" << _attempts << "/5)"
-                      << "\n";
-            get_API_key_from_cli();
+        if (api_key.size() == 0 || not api_key_is_valid) {
+            log(INVALID_INPUT_KEY);
         }
+
+        // TODO(carlotta): this needs to be dynamic for dev and prod compilations
+        _api_url = "http://127.0.0.1:5000/cli/secrets/?project=" + _options.project +
+                   "&environment=" + _options.environment + "&apiKey=" + api_key;
 
         return this;
     }
 
-    size_t write_response(void *contents, size_t size, size_t nmemb, std::string *output) {
+    static size_t write_response(char *data, size_t size, size_t nmemb, std::string *output) {
         size_t totalSize = size * nmemb;
-        output->append(static_cast<char *>(contents), totalSize);
+        output->append(static_cast<char *>(data), totalSize);
         return totalSize;
     }
 
-    void API::fetch_envs() noexcept {
-        CURL *curl;
-        CURLcode res;
-        std::string response_data;
-        std::string api_url{"http://127.0.0.1:5000/cli/secrets/?project=nvi&environment=development&apiKey=" + _apiKey};
-
-        curl = curl_easy_init();
-
-        if (curl) {
-            curl_easy_setopt(curl, CURLOPT_URL, api_url.c_str());
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_response);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
-
-            res = curl_easy_perform(curl);
-
-            if (res != CURLE_OK) {
-                std::cerr << "[nvi] ERROR: cURL failed. Reason: " << curl_easy_strerror(res) << '\n';
-                std::exit(EXIT_FAILURE);
-            } else if (_attempts >= 5) {
-                std::cerr << "[nvi] ERROR: You've made too many attempts. Please try again later." << std::endl;
-                std::exit(EXIT_FAILURE);
-            } else {
-                unsigned int res_status_code;
-                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &res_status_code);
-                if (res_status_code >= 400) {
-                    std::cerr << "[nvi] ERROR: The nvi API responded with a " << res_status_code
-                              << ". Reason: " << response_data << ". (attempts:" << _attempts << "/5)" << std::endl;
-                    get_API_key_from_cli()->fetch_envs();
-                } else {
-                    std::cout << "[nvi] GOOD Response: " << response_data << std::endl;
-                }
-            }
-
-            curl_easy_cleanup(curl);
-        } else {
-            std::cerr << "Failed to initialize cURL. Are you sure it's installed?" << std::endl;
+    const std::string &API::fetch_envs() noexcept {
+        if (_curl == nullptr) {
+            log(CURL_FAILED_TO_INIT);
         }
 
-        std::exit(0);
+        curl_easy_setopt(_curl, CURLOPT_URL, _api_url.c_str());
+        curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_response);
+        curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_res_data);
+
+        _res = curl_easy_perform(_curl);
+        curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_res_status_code);
+
+        if (_res != CURLE_OK) {
+            log(REQUEST_ERROR);
+        } else if (_res_status_code >= 400) {
+            log(RESPONSE_ERROR);
+        }
+
+        return _res_data;
+    }
+
+    void API::log(const messages_t &code) const noexcept {
+        // clang-format off
+        switch (code) {
+        case INVALID_INPUT_KEY: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_INPUT_KEY,
+                R"(The supplied input is not a valid API key. Please enter a valid API key (aAzZ0-9).)", 
+                NULL);
+            break;
+        }
+        case REQUEST_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                REQUEST_ERROR,
+                R"(The cURL command failed. Reason: %s.)", 
+                curl_easy_strerror(_res));
+            break;
+        }
+        case RESPONSE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                RESPONSE_ERROR,
+                R"(The nvi API responded with a %d. Reason: %s.)", 
+                _res_status_code, _res_data.c_str());
+            break;
+        }
+        case CURL_FAILED_TO_INIT: {
+            NVI_LOG_ERROR_AND_EXIT(
+                CURL_FAILED_TO_INIT,
+                R"("Failed to initialize cURL. Are you sure it's installed?)", 
+                _res_status_code, _res_data.c_str());
+            break;
+        }
+        default:
+            break;
+        }
     }
 }; // namespace nvi
