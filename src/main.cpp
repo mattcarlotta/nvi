@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     Lexer lexer(options);
     tokens_t tokens =
-        api_envs.length() ? lexer.parse_response(api_envs)->get_tokens() : lexer.parse_files()->get_tokens();
+        api_envs.length() ? lexer.parse_api_response(api_envs)->get_tokens() : lexer.parse_files()->get_tokens();
 
     Parser parser(std::move(tokens), options);
     env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();
