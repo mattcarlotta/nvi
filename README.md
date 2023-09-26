@@ -308,7 +308,7 @@ Click [here](envs/.nvi) to view valid and invalid formatting configurations.
 
 ### Can I manually assign parsed ENVs to a process?
 
-Yes! If you don't use a `--` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
+Yes! If you don't use a `--` or an `exec` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
 Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin`, and then assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
 - requires language or framework specific code (what this project aims to mitigate)
