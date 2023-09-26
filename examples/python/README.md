@@ -8,6 +8,6 @@ Example usage:
 # assigning ENVs via .nvi
 nvi -c main
 # assigning ENVs via execute command
-nvi -e python3 main.py
+nvi -- python3 main.py
 ```
 

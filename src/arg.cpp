@@ -18,8 +18,7 @@ namespace nvi {
     inline constexpr char DIRECTORY_LONG[] = "--dir";
     inline constexpr char ENVIRONMENT_SHORT[] = "-e";
     inline constexpr char ENVIRONMENT_LONG[] = "--env";
-    inline constexpr char EXECUTE_SHORT[] = "-x";
-    inline constexpr char EXECUTE_LONG[] = "--exec";
+    inline constexpr char EXECUTE_LONG[] = "--";
     inline constexpr char FILES_SHORT[] = "-f";
     inline constexpr char FILES_LONG[] = "--files";
     inline constexpr char HELP_SHORT[] = "-h";
@@ -42,8 +41,9 @@ namespace nvi {
                 _options.dir = parse_single_arg(DIR_FLAG_ERROR);
             } else if (arg == ENVIRONMENT_SHORT || arg == ENVIRONMENT_LONG) {
                 _options.environment = parse_single_arg(ENV_FLAG_ERROR);
-            } else if (arg == EXECUTE_SHORT || arg == EXECUTE_LONG) {
+            } else if (arg == EXECUTE_LONG) {
                 parse_command_args();
+                break;
             } else if (arg == FILES_SHORT || arg == FILES_LONG) {
                 _options.files = parse_multi_arg(FILES_FLAG_ERROR);
             } else if (arg == HELP_SHORT || arg == HELP_LONG) {
@@ -106,14 +106,6 @@ namespace nvi {
     }
 
     void Arg::parse_command_args() noexcept {
-        // currently, it's impossible to determine when an "--exec" flag with arguments end and another
-        // flag begins, for example: nvi --debug --exec cargo run --release --required KEY1 KEY2
-        // where "cargo run --release" needs to be separated from the other known flags. A work-around
-        // is to assume the command won't contain any of the RESERVED_FLAGS defined below
-        static const std::unordered_set<std::string> RESERVED_FLAGS{
-            CONFIG_SHORT, CONFIG_LONG, DEBUG_SHORT, DEBUG_LONG, DIRECTORY_SHORT, DIRECTORY_LONG, EXECUTE_SHORT,
-            EXECUTE_LONG, FILES_SHORT, FILES_LONG,  HELP_SHORT, REQUIRED_SHORT,  REQUIRED_LONG};
-
         while (_index < _argc) {
             ++_index;
 
@@ -122,10 +114,7 @@ namespace nvi {
             }
 
             std::string next_arg{_argv[_index]};
-            if (next_arg.find("-") != std::string::npos && RESERVED_FLAGS.find(next_arg) != RESERVED_FLAGS.end()) {
-                --_index;
-                break;
-            } else if (not _options.commands.size()) {
+            if (not _options.commands.size()) {
                 _bin_name = next_arg;
             }
 
@@ -182,7 +171,7 @@ namespace nvi {
         case COMMAND_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 COMMAND_FLAG_ERROR,
-                R"(The "-x" or "--exec" flag must contain at least 1 system command. Use flag "-h" or "--help" for more information.)",
+                R"(The "--" (execute) flag must contain at least 1 system command. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }
@@ -221,7 +210,7 @@ namespace nvi {
 │ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │
 │ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │
 │ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                   │
-│ -x, --exec      │ Specifies which command to run in a separate process with parsed ENVS. (ex: --exec node index.js)    │
+│ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)        │
 │ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │
 │ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                │
 │ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │

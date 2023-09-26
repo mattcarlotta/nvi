@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "nvi" "1" "07-31-2023" "CLI Documentation v0.0.1" ""
+.TH "nvi" "1" "09-26-2023" "CLI Documentation v0.0.2" ""
 .hy
 .SH NAME
 .PP
@@ -54,9 +54,11 @@ Specifies whether or not to log debug details.
 Specifies which directory path the .env files are located within.
 The \f[I]path\f[R] will be relative to the current directory.
 .TP
--x, --exec \f[I]command\f[R]
-A command to run in a forked child process that has been assigned with
-the parsed ENVs.
+-- \f[I]command\f[R]
+A system command to run in a forked child process that has been assigned
+with the parsed ENVs.
+This should be last flag defined, therefore anything placed after it
+will be consumed as part of the system command.
 .TP
 -e --env \f[I]environment\f[R]
 Specifies which environment config to use within a remote project.
@@ -115,7 +117,7 @@ required keys, and then, if good, applying those ENVs to a spawned
 .IP
 .nf
 \f[C]
-$ nvi --files .env --exec npm run dev --required KEY1 KEY2
+$ nvi --files .env --required KEY1 KEY2 -- npm run dev
 \f[R]
 .fi
 .PP
@@ -129,19 +131,18 @@ clipboard button - Using the nvi CLI tool, input the following flags: -
 \[lq]-p\[rq] | \[lq]\[en]project\[rq] followed by a space and then the
 name of the project you\[cq]ve created - \[lq]-e\[rq] |
 \[lq]\[en]env\[rq] followed by a space and then the name of the
-environment you\[cq]ve created - \[lq]-x\[rq] | \[lq]\[en]exec\[rq]
-followed by a space and then a system command to run - Prss the
-\[lq]Enter\[rq] key and nvi will prompt you for your unique API key -
-Input the API key and nvi will attempt to retrieve and assign remote
-ENVs from the selected project and environment to the command (if no
-command is provided then nvi will just print the parsed and interpolated
-envs to standard out)
+environment you\[cq]ve created - \[lq]\[en]\[rq] followed by a space and
+then a system command to run - Prss the \[lq]Enter\[rq] key and nvi will
+prompt you for your unique API key - Input the API key and nvi will
+attempt to retrieve and assign remote ENVs from the selected project and
+environment to the command (if no command is provided then nvi will just
+print the parsed and interpolated envs to standard out)
 .PP
 Retrieving remote ENVs:
 .IP
 .nf
 \f[C]
-$ nvi -p my_project -e development -x cargo run
+$ nvi -p my_project -e development -- cargo run
 \f[R]
 .fi
 .PP

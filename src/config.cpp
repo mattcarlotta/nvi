@@ -14,8 +14,10 @@ namespace nvi {
 
     inline constexpr char DEBUG_PROP[] = "debug";
     inline constexpr char DIR_PROP[] = "dir";
+    inline constexpr char ENV_PROP[] = "env";
     inline constexpr char EXEC_PROP[] = "exec";
     inline constexpr char FILES_PROP[] = "files";
+    inline constexpr char PROJECT_PROP[] = "project";
     inline constexpr char REQUIRED_PROP[] = "required";
 
     inline constexpr char COMMENT = '#';         // 0x23
@@ -81,6 +83,8 @@ namespace nvi {
                 if (not _options.files.size()) {
                     log(EMPTY_FILES_ARG_ERROR);
                 }
+            } else if (_key == ENV_PROP) {
+                _options.environment = parse_string_arg(ENV_ARG_ERROR);
             } else if (_key == EXEC_PROP) {
                 _command = parse_string_arg(EXEC_ARG_ERROR);
                 std::stringstream command_iss{_command};
@@ -92,6 +96,8 @@ namespace nvi {
                 }
 
                 _options.commands.push_back(nullptr);
+            } else if (_key == PROJECT_PROP) {
+                _options.project = parse_string_arg(PROJECT_ARG_ERROR);
             } else if (_key == REQUIRED_PROP) {
                 _options.required_envs = parse_vector_arg(REQUIRED_ARG_ERROR);
             } else {
@@ -202,6 +208,13 @@ namespace nvi {
                 _value.c_str());
             break;
         }
+        case ENV_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                ENV_ARG_ERROR,
+                R"(The "env" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                _value.c_str());
+            break;
+        }
         case FILES_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILES_ARG_ERROR,
@@ -220,6 +233,13 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 EXEC_ARG_ERROR,
                 R"(The "exec" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                _value.c_str());
+            break;
+        }
+        case PROJECT_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                PROJECT_ARG_ERROR,
+                R"(The "project" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value.c_str());
             break;
         }

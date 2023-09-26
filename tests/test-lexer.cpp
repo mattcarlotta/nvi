@@ -1,10 +1,11 @@
 #include "lexer.h"
 #include "parser.h"
 #include "gtest/gtest.h"
+#include <sstream>
 
 class Lex_Env_File : public testing::Test {
     protected:
-        static nvi::tokens_t tokens;
+        static nvi::tokens_t file_tokens;
 
     public:
         static void SetUpTestSuite() {
@@ -12,18 +13,20 @@ class Lex_Env_File : public testing::Test {
                               /* config */ "",
                               /* debug */ false,
                               /* dir */ "../envs",
+                              /* environment */ "",
                               /* files */ {"simple.env"},
+                              /* project */ "",
                               /* required_envs */ {}});
-            tokens = lexer.parse_files()->get_tokens();
+            file_tokens = lexer.parse_files()->get_tokens();
         }
 };
 
-nvi::tokens_t Lex_Env_File::tokens;
+nvi::tokens_t Lex_Env_File::file_tokens;
 
-TEST_F(Lex_Env_File, consistent_lex_size) { EXPECT_EQ(tokens.size(), 11); }
+TEST_F(Lex_Env_File, consistent_file_lex_size) { EXPECT_EQ(file_tokens.size(), 11); }
 
 TEST_F(Lex_Env_File, basic_env) {
-    const auto token = tokens.at(0);
+    const auto token = file_tokens.at(0);
     EXPECT_EQ(token.key, "BASIC_ENV");
     EXPECT_EQ(token.file, "simple.env");
     EXPECT_EQ(token.values.size(), 1);
@@ -35,7 +38,7 @@ TEST_F(Lex_Env_File, basic_env) {
 }
 
 TEST_F(Lex_Env_File, no_value) {
-    const auto token = tokens.at(1);
+    const auto token = file_tokens.at(1);
     EXPECT_EQ(token.key, "NO_VALUE");
     EXPECT_EQ(token.file, "simple.env");
     EXPECT_EQ(token.values.size(), 1);
@@ -47,7 +50,7 @@ TEST_F(Lex_Env_File, no_value) {
 }
 
 TEST_F(Lex_Env_File, multiline_value) {
-    const auto token = tokens.at(3);
+    const auto token = file_tokens.at(3);
     EXPECT_EQ(token.key, "MULTI_LINE_KEY");
     EXPECT_EQ(token.file, "simple.env");
     EXPECT_EQ(token.values.size(), 5);
@@ -79,7 +82,7 @@ TEST_F(Lex_Env_File, multiline_value) {
 }
 
 TEST_F(Lex_Env_File, interp_value) {
-    const auto token = tokens.at(4);
+    const auto token = file_tokens.at(4);
     EXPECT_EQ(token.key, "INTERP_VALUE");
     EXPECT_EQ(token.file, "simple.env");
     EXPECT_EQ(token.values.size(), 2);
@@ -96,7 +99,7 @@ TEST_F(Lex_Env_File, interp_value) {
 }
 
 TEST_F(Lex_Env_File, multi_interp_value) {
-    const auto token = tokens.at(10);
+    const auto token = file_tokens.at(10);
     EXPECT_EQ(token.key, "MONGOLAB_URI");
     EXPECT_EQ(token.file, "simple.env");
     EXPECT_EQ(token.values.size(), 10);
@@ -150,4 +153,38 @@ TEST_F(Lex_Env_File, multi_interp_value) {
     EXPECT_EQ(vt.value.value(), "MONGOLAB_DATABASE");
     EXPECT_EQ(vt.line, 18);
     EXPECT_EQ(vt.byte, 117);
+}
+
+TEST(Lex_Response_Env, consistent_response_lex_size) {
+    std::stringstream envs;
+    envs << "API_KEY_1=sdfksdfj"
+         << "\n";
+    envs << "API_KEY_2=${API_KEY_1}"
+         << "\n";
+    envs << "API_KEY_3=ssh-rsa BBBB\\"
+         << "\n";
+    envs << "Pl1P1\\"
+         << "\n";
+    envs << "A\\"
+         << "\n";
+    envs << "D+jk/3\\"
+         << "\n";
+    envs << "Lf3Dw== test@example.com"
+         << "\n";
+    envs << "API_KEY_4='  SINGLE QUOTES  '"
+         << "\n";
+    envs << "API_KEY_5=\"  DOUBLE QUOTES  \""
+         << "\n";
+
+    nvi::Lexer lexer({/* commands */ {},
+                      /* config */ "",
+                      /* debug */ false,
+                      /* dir */ "",
+                      /* environment */ "",
+                      /* files */ {},
+                      /* project */ "",
+                      /* required_envs */ {}});
+    nvi::tokens_t res_tokens = lexer.parse_api_response(envs.str())->get_tokens();
+
+    EXPECT_EQ(res_tokens.size(), 5);
 }

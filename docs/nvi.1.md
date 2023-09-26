@@ -1,6 +1,6 @@
-% nvi(1) CLI Documentation v0.0.1 
+% nvi(1) CLI Documentation v0.0.2 
 % Matt Carlotta
-% 07-31-2023
+% 09-26-2023
 
 # NAME
 
@@ -38,9 +38,9 @@ directory will be parsed and printed to standard out.
 
 :   Specifies which directory path the .env files are located within. The [path]{.underline} will be relative to the current directory.
 
--x, \--exec [command]{.underline}
+\-- [command]{.underline}
 
-:   A command to run in a forked child process that has been assigned with the parsed ENVs.
+:   A system command to run in a forked child process that has been assigned with the parsed ENVs. This should be last flag defined, therefore anything placed after it will be consumed as part of the system command.
 
 -e  \--env [environment]{.underline}
 
@@ -94,7 +94,7 @@ $ nvi --config standard
 
 Parsing a local `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
 ```bash
-$ nvi --files .env --exec npm run dev --required KEY1 KEY2
+$ nvi --files .env --required KEY1 KEY2 -- npm run dev
 ```
 
 To retrieve remote ENVs from the nvi API, you must first register and verify your email using the [front-facing application](https://github.com/mattcarlotta/nvi-app). 
@@ -103,13 +103,13 @@ To retrieve remote ENVs from the nvi API, you must first register and verify you
 - Using the nvi CLI tool, input the following flags:
     - "-p" | "--project" followed by a space and then the name of the project you've created
     - "-e" | "--env" followed by a space and then the name of the environment you've created
-    - "-x" | "--exec" followed by a space and then a system command to run 
+    - "--" followed by a space and then a system command to run 
 - Prss the "Enter" key and nvi will prompt you for your unique API key
 - Input the API key and nvi will attempt to retrieve and assign remote ENVs from the selected project and environment to the command (if no command is provided then nvi will just print the parsed and interpolated envs to standard out)
 
 Retrieving remote ENVs:
 ```bash
-$ nvi -p my_project -e development -x cargo run
+$ nvi -p my_project -e development -- cargo run
 ```
 
 Then, you'll be asked for your API key:

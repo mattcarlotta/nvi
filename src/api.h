@@ -18,7 +18,7 @@ namespace nvi {
     class API {
         public:
             API(const options_t &options);
-            API *get_api_key_from_cli() noexcept;
+            API *get_key_from_input() noexcept;
             const std::string &fetch_envs() noexcept;
 
             ~API() {

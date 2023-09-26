@@ -13,7 +13,7 @@
 namespace nvi {
     API::API(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
 
-    API *API::get_api_key_from_cli() noexcept {
+    API *API::get_key_from_input() noexcept {
         std::string api_key;
         std::clog << "[nvi] Please enter your unique API key: ";
         std::getline(std::cin, api_key);

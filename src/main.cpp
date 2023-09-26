@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     std::string api_envs;
     if (options.project.length()) {
         API api(options);
-        api_envs = api.get_api_key_from_cli()->fetch_envs();
+        api_envs = api.get_key_from_input()->fetch_envs();
     }
 
     Lexer lexer(options);

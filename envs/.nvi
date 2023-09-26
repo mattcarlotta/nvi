@@ -28,9 +28,11 @@ required=["TEST1","TEST2","TEST3"]
         # valid comment
         dir = "custom/directory"
             files = [ "test1.env", "test2.env", "test3.env" ]
-                exec = "bin test"
-                    # valid comment
-                    required = [ "TEST1", "TEST2", "TEST3" ]
+                env = "my_env"
+                    exec = "bin test"
+                        project = "my_project"
+                            # valid comment
+                            required = [ "TEST1", "TEST2", "TEST3" ]
 
 
                 [wacky_indentations]

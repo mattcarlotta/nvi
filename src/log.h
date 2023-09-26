@@ -45,9 +45,11 @@ namespace nvi {
         FILE_PARSE_ERROR,
         DEBUG_ARG_ERROR,
         DIR_ARG_ERROR,
+        ENV_ARG_ERROR,
         FILES_ARG_ERROR,
         EMPTY_FILES_ARG_ERROR,
         EXEC_ARG_ERROR,
+        PROJECT_ARG_ERROR,
         REQUIRED_ARG_ERROR,
         INVALID_PROPERTY_WARNING,
         // parser
@@ -110,12 +112,16 @@ namespace nvi {
             return "DEBUG_ARG_ERROR";
         case DIR_ARG_ERROR:
             return "DIR_ARG_ERROR";
+        case ENV_ARG_ERROR:
+            return "ENV_ARG_ERROR";
         case FILES_ARG_ERROR:
             return "FILES_ARG_ERROR";
         case EMPTY_FILES_ARG_ERROR:
             return "EMPTY_FILES_ARG_ERROR";
         case EXEC_ARG_ERROR:
             return "EXEC_ARG_ERROR";
+        case PROJECT_ARG_ERROR:
+            return "PROJECT_ARG_ERROR";
         case REQUIRED_ARG_ERROR:
             return "REQUIRED_ARG_ERROR";
         case INVALID_PROPERTY_WARNING:
