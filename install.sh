@@ -23,6 +23,7 @@ blue=$($tput_bin setaf 4)
 
 cmake_bin=$(which cmake)
 make_bin=$(which make)
+curl_bin=$(which curl-config)
 
 log_error() {
     echo -e "\n❌ ${bold}${red}ERROR: $1 ${normal}"
@@ -99,6 +100,12 @@ check_system_requirements() {
     then
         log_error "make $install_message"
     fi
+
+    if [ -z "$curl_bin" ];
+    then
+        log_error "curl $install_message"
+    fi
+
 }
 
 
