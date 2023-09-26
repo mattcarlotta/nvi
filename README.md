@@ -1,6 +1,6 @@
 # NVI
 
-A stand-alone .env file parser for interpolating and assigning multiple .env files into a process.
+A stand-alone .env file parser for interpolating and assigning ENVs into a process locally or remotely.
 
 ## Quick Links
 
@@ -16,6 +16,8 @@ A stand-alone .env file parser for interpolating and assigning multiple .env fil
 [Flags](#flags)
 
 [Configuration File](#configuration-file)
+
+[Remote ENVs](#remote-envs)
 
 [Man Documenation](docs/README.md)
 
@@ -40,6 +42,7 @@ The following requirements should be present in order to build from source:
 - clang or clang++ v14.0.x
 - cmake v3.26.3+
 - make v3.8.x+
+- libcurl v8.3.x+
 - clangd v14.0.x (optional for linting)
 - clang-format v14.0.x (optional for formatting)
 
@@ -78,6 +81,7 @@ The following custom compile flags can be set for `cmake`:
 - `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` binary (default: OFF)
 - `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 - `-DINSTALL_MAN_DIR=/path/to/man/man1` this will automatically install the nvi man [documentation](docs#README) to the specified directory when running `sudo make install` (default: OFF)
+- `-DUSE_LOCALHOST_API=ON|OFF` this specifies to use a localhost nvi API when retrieving remote ENVs (default: OFF)
 
 The following represents the default `cmake` settings:
 ```bash
@@ -95,15 +99,15 @@ cd src
 
 Then, pick one of the following compiler commands:
 ```bash
-clang -x c++ -lstdc++ -std=c++17 *.cpp -o nvi
+clang -x c++ -lstdc++ -std=c++17 -lcurl *.cpp -o nvi
 ```
 or
 ```bash
-clang++ -std=c++17 *.cpp -o nvi
+clang++ -std=c++17 -lcurl *.cpp -o nvi
 ```
 or
 ```bash
-g++ -std=c++17 *.cpp -o nvi
+g++ -std=c++17 -lcurl *.cpp -o nvi
 ```
 
 To install the compiled binary as a system binary, you'll need to select a path recognized by your shell's `PATH` variable:
@@ -149,13 +153,17 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 - `-c` | `--config`: Specifies which environment config to load from the .nvi file. (ex: --config dev)‡
 - `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
 - `-d` | `--dir`: Specifies which directory the .env files are located within. (ex: --dir path/to/envs)
-- `-e` | `--exec`: Specifies which command to run in a separate process with parsed ENVs. (ex: --exec node index.js)
+- `-e` | `--env`: Specifies which environment config to use within a remote project. (ex: --env dev)‡‡
+- `--`: Specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)‡‡‡
 - `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
+- `-p` | `--project`: Specifies which remote project to select from the nvi API. (ex: --project my_project)‡‡
 - `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)
 - `-h` | `--help`: Displays this help information.
 - `-v` | `--version`: Displays binary information.
 
 ‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within a [configuration file](#configuration-file).
+‡‡ When pulling remote ENVs from the nvi API, the "project" and "environment" flags must both be defined. 
+‡‡‡ The "--" (execute) flag should be the last defined flag. Any flags after it will be consumed as part of the system command. 
 
 
 ## Configuration File
@@ -182,9 +190,15 @@ required = [ "TEST1", "TEST2", "TEST3" ]
 [staging]
 files = [ ".env" ]
 required = [ "TEST1" ]
+
+[remote_dev]
+project = "my_project"
+env = "development"
+exec = "bin dev"
+required = [ "TEST1", "TEST2", "TEST3" ]
 ```
 
-To target an environment within the configuration file, simply use the `-c` or `--config` flag followed by the environment name:
+To target a configuration within the .nvi config file, simply use the `-c` or `--config` flag followed by the config name:
 ```bash
 nvi -c dev
 # or
@@ -209,8 +223,37 @@ nvi --config standard
 
 Parsing an `.env` file, checking the parsed ENVs for required keys, and then, if good, applying those ENVs to a spawned "npm" child process:
 ```bash
-nvi --files .env --exec npm run dev --required KEY1 KEY2
+nvi --files .env --required KEY1 KEY2 -- npm run dev
 ```
+
+## Remote ENVs
+
+To retrieve remote ENVs from the nvi API, you must first register and verify your email using the [front-facing application](https://github.com/mattcarlotta/nvi-app). 
+- Once registered and verified, create a project, an environment and at least 1 ENV secret within the environment
+- Navigate to your account settings page, locate your unique API key and click the copy to clipboard button
+- Using the nvi CLI tool, input the following flags:
+    - "-p" | "--project" followed by a space and then the name of the project you've created
+    - "-e" | "--env" followed by a space and then the name of the environment you've created
+    - "--" followed by a space and then a system command to run 
+- Press the "Enter" key and nvi will prompt you for your unique API key
+- Input the API key and nvi will attempt to retrieve and assign remote ENVs from the selected project and environment to the command (if no command is provided then nvi will just print the parsed and interpolated envs to standard out)
+
+Retrieving remote ENVs:
+```bash
+nvi -p my_project -e development -- cargo run
+```
+
+Then, you'll be asked for your API key:
+```bash
+$ [nvi] Please enter your unique API key: 
+```
+
+Input your API key and press the "Enter" key:
+```bash
+$ [nvi] Please enter your unique API key: abcdefhijkhijklo0123456789
+```
+
+If no error is displayed in the terminal, then a child process should be spawned with the command OR ENVs will be printed to standard out as stringified JSON.
 
 ## FAQs
 
@@ -266,7 +309,7 @@ Click [here](envs/.nvi) to view valid and invalid formatting configurations.
 
 ### Can I manually assign parsed ENVs to a process?
 
-Yes! If you don't use an `-e` or `--exec` or an `execute` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
+Yes! If you don't use a `--` or an `exec` command in a configuration file, then nvi will print out a stringified JSON result of ENVs to [stdout](https://www.computerhope.com/jargon/s/stdout.htm). 
 
 Unfortunately, this means you'll have to manually pipe and parse stringified JSON from `stdin`, and then assign them to the process for whatever language or framework that you're using. As such, this feature is available to you, but there are expected drawbacks:
 - requires language or framework specific code (what this project aims to mitigate)

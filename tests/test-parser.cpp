@@ -13,7 +13,9 @@ class Parse_Env_File : public testing::Test {
                                       /* config */ "",
                                       /* debug */ false,
                                       /* dir */ "../envs",
+                                      /* environment */ "",
                                       /* files */ {".env", "base.env", "reference.env"},
+                                      /* project */ "",
                                       /* required_envs */ {"BASIC_ENV"}};
             nvi::Lexer lexer(options);
             lexer.parse_files();

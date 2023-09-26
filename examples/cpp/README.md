@@ -15,5 +15,5 @@ Example usage:
 # assigning ENVs via .nvi
 nvi -c release
 # assigning ENVs via execute command
-nvi -e ./cpp_example
+nvi -- ./cpp_example
 ```

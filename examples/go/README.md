@@ -8,5 +8,5 @@ Example usage:
 # assigning ENVs via .nvi
 nvi -c development
 # assigning ENVs via execute command
-nvi -e go main.go
+nvi -- go main.go
 ```

@@ -68,6 +68,8 @@ namespace nvi {
 
         if (not _env_map.size()) {
             log(EMPTY_ENVS_ERROR);
+        } else if (_options.debug && _options.project.length()) {
+            log(DEBUG_RESPONSE_PROCESSED);
         } else if (_options.debug) {
             log(DEBUG_FILE_PROCESSED);
         }
@@ -90,6 +92,13 @@ namespace nvi {
                 DEBUG,
                 R"([%s:%d:%d] Set key "%s" to equal value "%s".)",
                 _token.file.c_str(), _value_token.line, _value_token.byte, _key.c_str(), _value.c_str());
+            break;
+        }
+        case DEBUG_RESPONSE_PROCESSED: {
+            NVI_LOG_DEBUG(
+                DEBUG_RESPONSE_PROCESSED,
+                "Successfully parsed the remote \"%s\" project's \"%s\" environment ENVs!\n",
+                _options.project.c_str(), _options.environment.c_str())
             break;
         }
         case DEBUG_FILE_PROCESSED: {
