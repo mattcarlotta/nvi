@@ -161,8 +161,10 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 - `-h` | `--help`: Displays this help information.
 - `-v` | `--version`: Displays binary information.
 
-‡ When a "-c" or "--config" flag is present, then "debug", "dir", "exec", "files", and "required" flags are ignored as they should be defined within a [configuration file](#configuration-file).
+‡ When a "-c" or "--config" flag is present, then all the other flags are ignored as they should be defined within a [configuration file](#configuration-file).
+
 ‡‡ When pulling remote ENVs from the nvi API, the "project" and "environment" flags must both be defined. 
+
 ‡‡‡ The "--" (execute) flag should be the last defined flag. Any flags after it will be consumed as part of the system command. 
 
 
