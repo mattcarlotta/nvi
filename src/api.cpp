@@ -18,10 +18,9 @@ namespace nvi {
         std::clog << "[nvi] Please enter your unique API key: ";
         std::getline(std::cin, api_key);
 
-        const bool api_key_is_valid =
-            std::all_of(api_key.begin(), api_key.end(), [](char c) { return std::isalnum(c); });
+        const bool valid_api_key = std::all_of(api_key.begin(), api_key.end(), [](char c) { return std::isalnum(c); });
 
-        if (api_key.size() == 0 || not api_key_is_valid) {
+        if (api_key.size() == 0 || not valid_api_key) {
             log(INVALID_INPUT_KEY);
         }
 
@@ -33,9 +32,9 @@ namespace nvi {
     }
 
     static size_t write_response(char *data, size_t size, size_t nmemb, std::string *output) {
-        size_t totalSize = size * nmemb;
-        output->append(static_cast<char *>(data), totalSize);
-        return totalSize;
+        size_t total_size = size * nmemb;
+        output->append(static_cast<char *>(data), total_size);
+        return total_size;
     }
 
     const std::string &API::fetch_envs() noexcept {
@@ -65,29 +64,29 @@ namespace nvi {
         case INVALID_INPUT_KEY: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_INPUT_KEY,
-                R"(The supplied input is not a valid API key. Please enter a valid API key (aAzZ0-9).)", 
+                "The supplied input is not a valid API key. Please enter a valid API key with aA,zZ,0-9 characters.", 
                 NULL);
             break;
         }
         case REQUEST_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUEST_ERROR,
-                R"(The cURL command failed. Reason: %s.)", 
+                "The cURL command failed: %s.", 
                 curl_easy_strerror(_res));
             break;
         }
         case RESPONSE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 RESPONSE_ERROR,
-                R"(The nvi API responded with a %d. Reason: %s.)", 
+                "The nvi API responded with a %d: %s.", 
                 _res_status_code, _res_data.c_str());
             break;
         }
         case CURL_FAILED_TO_INIT: {
             NVI_LOG_ERROR_AND_EXIT(
                 CURL_FAILED_TO_INIT,
-                R"("Failed to initialize cURL. Are you sure it's installed?)", 
-                _res_status_code, _res_data.c_str());
+                "Failed to initialize cURL. Are you sure it's installed?", 
+                NULL);
             break;
         }
         default:
