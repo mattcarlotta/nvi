@@ -1,6 +1,6 @@
 # NVI
 
-A stand-alone .env file parser for interpolating and assigning multiple .env files into a process.
+A stand-alone .env file parser for interpolating and assigning ENVs into a process locally or remotely.
 
 ## Quick Links
 
