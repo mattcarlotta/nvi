@@ -53,13 +53,10 @@ namespace nvi {
 
         std::string line;
         while (std::getline(config_iss, line)) {
-            if (line.length() == 0) {
-                continue;
-            }
             line = trim_surrounding_spaces(line);
 
-            // skip comments in config options
-            if (line[0] == COMMENT) {
+            // skip empty lines or lines that begin with comments
+            if (line.length() == 0 || line[0] == COMMENT) {
                 continue;
             }
 
@@ -115,6 +112,10 @@ namespace nvi {
     const options_t &Config::get_options() const noexcept { return _options; }
 
     const std::string Config::trim_surrounding_spaces(const std::string &val) const noexcept {
+        if (val.length() == 0) {
+            return val;
+        }
+
         size_t begin = 0;
         size_t end = val.length() - 1;
         while (begin < end) {
@@ -260,9 +261,9 @@ namespace nvi {
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(Successfully parsed the "%s" environment configuration and the folowing options were set: debug="true", dir="%s", execute="%s", files="%s", required="%s".)",
-                _env.c_str(), _options.dir.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
-                fmt::join(_options.required_envs, ", ").c_str());
+                R"(Successfully parsed the "%s" configuration from the .nvi file and the folowing options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
+                _env.c_str(), _options.dir.c_str(), _options.environment.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(), 
+                _options.project.c_str(), fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         default:
