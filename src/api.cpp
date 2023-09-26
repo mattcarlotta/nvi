@@ -1,4 +1,5 @@
 #include "api.h"
+#include "apiurl.h"
 #include "log.h"
 #include "options.h"
 #include <algorithm>
@@ -24,9 +25,8 @@ namespace nvi {
             log(INVALID_INPUT_KEY);
         }
 
-        // TODO(carlotta): this needs to be dynamic for dev and prod compilations
-        _api_url = "http://127.0.0.1:5000/cli/secrets/?project=" + _options.project +
-                   "&environment=" + _options.environment + "&apiKey=" + api_key;
+        _api_url = API_URL "/cli/secrets/?project=" + _options.project + "&environment=" + _options.environment +
+                   "&apiKey=" + api_key;
 
         return this;
     }

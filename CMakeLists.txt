@@ -11,6 +11,8 @@ option(COMPILE_SRC "Compile source" ON)
 option(COMPILE_TESTS "Compile tests" OFF)
 option(INSTALL_BIN_DIR "Binary installation directory" OFF)
 option(INSTALL_MAN_DIR "Install man documentation" OFF)
+option(USE_LOCALHOST_API "Use localhost API" OFF)
+
 set(SRC_FOLDER ${CMAKE_SOURCE_DIR}/src)
 file(STRINGS "version" NVI_LIB_VERSION)
 configure_file(${SRC_FOLDER}/version.h.in ${SRC_FOLDER}/version.h @ONLY)

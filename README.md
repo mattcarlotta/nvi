@@ -81,6 +81,7 @@ The following custom compile flags can be set for `cmake`:
 - `-DCOMPILE_TESTS=ON|OFF` this compiles the source files within `tests` to a `tests` binary (default: OFF)
 - `-DINSTALL_BIN_DIR=/custom/directory/path` this will override the binary installation directory when running `sudo make install` (default: /usr/local/bin)
 - `-DINSTALL_MAN_DIR=/path/to/man/man1` this will automatically install the nvi man [documentation](docs#README) to the specified directory when running `sudo make install` (default: OFF)
+- `-DUSE_LOCALHOST_API=ON|OFF` this specifies to use a localhost nvi API when retrieving remote ENVs (default: OFF)
 
 The following represents the default `cmake` settings:
 ```bash
