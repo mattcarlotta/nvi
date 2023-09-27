@@ -210,10 +210,10 @@ namespace nvi {
 │ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │
 │ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │
 │ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                   │
-│ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)        │
 │ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │
 │ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                │
 │ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │
+│ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)        │
 └─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
 For additional information, please see the man documentation or README.)"
                 "\n",
