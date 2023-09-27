@@ -17,25 +17,25 @@ namespace nvi {
      */
     class API {
         public:
-            API(const options_t &options);
-            API *get_key_from_input() noexcept;
-            const std::string &fetch_envs() noexcept;
+        API(const options_t &options);
+        API *get_key_from_input() noexcept;
+        const std::string &fetch_envs() noexcept;
 
-            ~API() {
-                if (_curl) {
-                    curl_easy_cleanup(_curl);
-                }
+        ~API() {
+            if (_curl) {
+                curl_easy_cleanup(_curl);
             }
+        }
 
         private:
-            void log(const messages_t &code) const noexcept;
+        void log(const messages_t &code) const noexcept;
 
-            CURL *_curl;
-            options_t _options;
-            CURLcode _res;
-            std::string _res_data;
-            unsigned int _res_status_code = 0;
-            std::string _api_url;
+        CURL *_curl;
+        options_t _options;
+        CURLcode _res;
+        std::string _res_data;
+        unsigned int _res_status_code = 0;
+        std::string _api_url;
     };
 }; // namespace nvi
 #endif

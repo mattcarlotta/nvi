@@ -1,13 +1,16 @@
 #include "config.h"
 #include "format.h"
 #include "log.h"
+#include <cctype>
+#include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <sstream>
+#include <optional>
 #include <string>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 namespace nvi {
@@ -41,66 +44,196 @@ namespace nvi {
         }
 
         _file = std::string{std::istreambuf_iterator<char>(config_file), std::istreambuf_iterator<char>()};
-        const int config_index = _file.find(OPEN_BRACKET + environment + CLOSE_BRACKET);
-        if (config_index < 0) {
+        _byte = _file.find(OPEN_BRACKET + environment + CLOSE_BRACKET);
+        if (_byte == 0) {
             log(FILE_PARSE_ERROR);
         }
 
-        std::string config{_file.substr(config_index, _file.length())};
-        const int env_eol_index = config.find_first_of(LINE_DELIMITER);
-        // remove environment name line
-        std::istringstream config_iss{config.substr(env_eol_index + 1, _file.length())};
+        const size_t eol_index = _file.substr(_byte, _file.length()).find_first_of(LINE_DELIMITER);
+        if (eol_index == 0) {
+            std::cerr << "Empty config" << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        // remove config name line: [example_config]
+        _byte += eol_index;
+        _config = _file.substr(_byte, _file.length());
 
-        std::string line;
-        while (std::getline(config_iss, line)) {
-            line = trim_surrounding_spaces(line);
+        while (_byte < _config.length()) {
+            std::optional<char> current_char = peek();
+            std::clog << "CURRENT_CHAR: " << current_char.value() << std::endl;
 
-            // skip empty lines or lines that begin with comments
-            if (line.length() == 0 || line[0] == COMMENT) {
+            // skip empty spaces and new lines
+            if (not current_char.has_value() || std::isspace(current_char.value())) {
+                skip();
                 continue;
             }
 
-            // ensure current line is a key = value
-            const int assignment_index = line.find(ASSIGN_OP);
-            if (assignment_index < 0) {
+            // stop parsing if another config is found
+            if (current_char.value() == OPEN_BRACKET) {
                 break;
             }
 
-            _key = trim_surrounding_spaces(line.substr(0, assignment_index));
-            _value = trim_surrounding_spaces(line.substr(assignment_index + 1, line.length() - 1));
+            // skip lines with comments
+            if (current_char.value() == COMMENT) {
+                const size_t eol_index = find_eol();
 
-            if (_key == DEBUG_PROP) {
-                _options.debug = parse_bool_arg(DEBUG_ARG_ERROR);
-            } else if (_key == DIR_PROP) {
-                _options.dir = parse_string_arg(DIR_ARG_ERROR);
-            } else if (_key == FILES_PROP) {
-                _options.files.clear();
-                _options.files = parse_vector_arg(FILES_ARG_ERROR);
-
-                if (not _options.files.size()) {
-                    log(EMPTY_FILES_ARG_ERROR);
-                }
-            } else if (_key == ENV_PROP) {
-                _options.environment = parse_string_arg(ENV_ARG_ERROR);
-            } else if (_key == EXEC_PROP) {
-                _command = parse_string_arg(EXEC_ARG_ERROR);
-                std::stringstream command_iss{_command};
-                std::string arg;
-
-                while (command_iss >> arg) {
-                    char *arg_cstr = new char[arg.length() + 1];
-                    _options.commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
+                if (eol_index == 0) {
+                    break;
                 }
 
-                _options.commands.push_back(nullptr);
-            } else if (_key == PROJECT_PROP) {
-                _options.project = parse_string_arg(PROJECT_ARG_ERROR);
-            } else if (_key == REQUIRED_PROP) {
-                _options.required_envs = parse_vector_arg(REQUIRED_ARG_ERROR);
-            } else {
-                log(INVALID_PROPERTY_WARNING);
+                _byte += eol_index + 1;
+                continue;
+            }
+
+            if (std::isalpha(current_char.value())) {
+                ConfigToken token;
+                // parse and assign token key
+                while (current_char.value() != ASSIGN_OP && _byte < _config.length()) {
+                    current_char = peek();
+                    if (not current_char.has_value() || not std::isalpha(current_char.value())) {
+                        skip();
+                        continue;
+                    }
+                    token.key += commit();
+                }
+
+                // parse and assign value
+                while (_byte < _config.length()) {
+                    current_char = peek();
+
+                    // skip empty spaces and new lines
+                    if (not current_char.has_value() || std::isblank(current_char.value())) {
+                        skip();
+                        continue;
+                    }
+
+                    if (current_char.value() == LINE_DELIMITER) {
+                        skip();
+                        break;
+                    }
+
+                    // most likely a boolean value
+                    if (std::isalpha(current_char.value())) {
+                        token.type = ConfigValueType::boolean;
+
+                        std::string value = get_string_value(LINE_DELIMITER);
+
+                        token.value = value;
+                        std::clog << "VALUE: " << value << std::endl;
+                        _config_tokens.push_back(token);
+
+                        // skip new line
+                        skip();
+                        break;
+                    }
+
+                    if (current_char.value() == DOUBLE_QUOTE) {
+                        token.type = ConfigValueType::string;
+                        // skip over quote
+                        skip();
+                        std::string value = get_string_value(DOUBLE_QUOTE);
+                        token.value = value;
+                        std::clog << "VALUE: " << value << std::endl;
+                        _config_tokens.push_back(token);
+                        // skip over quote
+                        skip();
+                        break;
+                    }
+
+                    if (current_char.value() == OPEN_BRACKET) {
+                        // skip over "["
+                        skip();
+
+                        std::vector<std::string> values;
+                        while (current_char.value() != CLOSE_BRACKET && _byte < _config.length()) {
+                            std::clog << "CURRENT ARRAY CHAR: " << current_char.value() << std::endl;
+                            if (not current_char.has_value() || std::isblank(current_char.value()) ||
+                                current_char.value() == COMMA) {
+                                skip();
+                                continue;
+                            } else if (current_char.value() == DOUBLE_QUOTE) {
+                                std::clog << "CURRENT ARRAY CHAR: " << current_char.value() << std::endl;
+                                // skip double quote
+                                skip();
+                                std::string value = get_string_value(DOUBLE_QUOTE);
+                                // std::clog << "ARRAY VALUE: " << value << std::endl;
+                                values.push_back(value);
+
+                                // skip double quote
+                                skip();
+                                continue;
+                            }
+                            skip();
+                            current_char = peek();
+                        }
+
+                        // skip over "]"
+                        skip();
+                        break;
+                    }
+
+                    break;
+                }
             }
         }
+
+        for (auto &t : _config_tokens) {
+            std::clog << "TOKEN TYPE: " << static_cast<int>(t.type) << ", KEY: " << t.key;
+            std::clog << '\n';
+        }
+
+        std::exit(0);
+
+        // std::string line;
+        // while (std::getline(config_iss, line)) {
+        //     line = trim_surrounding_spaces(line);
+
+        //     // skip empty lines or lines that begin with comments
+        //     if (line.length() == 0 || line[0] == COMMENT) {
+        //         continue;
+        //     }
+
+        //     // ensure current line is a key = value
+        //     const int assignment_index = line.find(ASSIGN_OP);
+        //     if (assignment_index < 0) {
+        //         break;
+        //     }
+
+        //     _key = trim_surrounding_spaces(line.substr(0, assignment_index));
+        //     _value = trim_surrounding_spaces(line.substr(assignment_index + 1, line.length() - 1));
+
+        //     if (_key == DEBUG_PROP) {
+        //         _options.debug = parse_bool_arg(DEBUG_ARG_ERROR);
+        //     } else if (_key == DIR_PROP) {
+        //         _options.dir = parse_string_arg(DIR_ARG_ERROR);
+        //     } else if (_key == FILES_PROP) {
+        //         _options.files.clear();
+        //         _options.files = parse_vector_arg(FILES_ARG_ERROR);
+
+        //         if (not _options.files.size()) {
+        //             log(EMPTY_FILES_ARG_ERROR);
+        //         }
+        //     } else if (_key == ENV_PROP) {
+        //         _options.environment = parse_string_arg(ENV_ARG_ERROR);
+        //     } else if (_key == EXEC_PROP) {
+        //         _command = parse_string_arg(EXEC_ARG_ERROR);
+        //         std::stringstream command_iss{_command};
+        //         std::string arg;
+
+        //         while (command_iss >> arg) {
+        //             char *arg_cstr = new char[arg.length() + 1];
+        //             _options.commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
+        //         }
+
+        //         _options.commands.push_back(nullptr);
+        //     } else if (_key == PROJECT_PROP) {
+        //         _options.project = parse_string_arg(PROJECT_ARG_ERROR);
+        //     } else if (_key == REQUIRED_PROP) {
+        //         _options.required_envs = parse_vector_arg(REQUIRED_ARG_ERROR);
+        //     } else {
+        //         log(INVALID_PROPERTY_WARNING);
+        //     }
+        // }
 
         if (_options.debug) {
             log(DEBUG);
@@ -108,6 +241,39 @@ namespace nvi {
 
         config_file.close();
     };
+
+    size_t Config::find_eol() const noexcept {
+        const std::string line = _config.substr(_byte, _config.length());
+        return _config.find_first_of(LINE_DELIMITER);
+    }
+
+    std::optional<char> Config::peek(int offset) const noexcept {
+        if (_byte + offset >= _config.length()) {
+            return std::nullopt;
+        } else {
+            return _config.at(_byte + offset);
+        }
+    }
+
+    char Config::commit() noexcept { return _config.at(_byte++); }
+
+    void Config::skip(int offset) noexcept { _byte += offset; }
+
+    const std::string Config::get_string_value(char delimiter) noexcept {
+        std::string value;
+        std::optional<char> current_char = peek();
+        while (current_char.value() != delimiter && _byte < _config.length()) {
+            // if (not current_char.has_value() || std::isblank(current_char.value())) {
+            //     skip();
+            //     continue;
+            // }
+
+            value += commit();
+            current_char = peek();
+        }
+
+        return value;
+    }
 
     const options_t &Config::get_options() const noexcept { return _options; }
 
