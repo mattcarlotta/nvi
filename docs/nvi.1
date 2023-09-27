@@ -54,12 +54,6 @@ Specifies whether or not to log debug details.
 Specifies which directory path the .env files are located within.
 The \f[I]path\f[R] will be relative to the current directory.
 .TP
--- \f[I]command\f[R]
-A system command to run in a forked child process that has been assigned
-with the parsed ENVs.
-This should be last flag defined, therefore anything placed after it
-will be consumed as part of the system command.
-.TP
 -e --env \f[I]environment\f[R]
 Specifies which environment config to use within a remote project.
 Remote environments are created via the front-facing web application.
@@ -81,6 +75,12 @@ Each specified \f[I]KEY\f[R] needs to be separated by a space.
 .TP
 -v, --version
 Prints the current version number.
+.TP
+-- \f[I]command\f[R]
+A system command to run in a forked child process that has been assigned
+with the parsed ENVs.
+This should be last flag defined, therefore anything placed after it
+will be consumed as part of the system command.
 .SH EXIT STATUS
 .PP
 nvi exits\ 0 on success, and\ 1 if an error occurs.
@@ -195,9 +195,9 @@ files = [ \[dq].env\[dq] ]
 required = [ \[dq]TEST1\[dq] ]
 
 [remote_dev]
-project = \[dq]my_project\[dq]
 env = \[dq]development\[dq]
 exec = \[dq]bin dev\[dq]
+project = \[dq]my_project\[dq]
 required = [ \[dq]TEST1\[dq], \[dq]TEST2\[dq], \[dq]TEST3\[dq] ]
 \f[R]
 .fi

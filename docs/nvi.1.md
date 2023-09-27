@@ -38,10 +38,6 @@ directory will be parsed and printed to standard out.
 
 :   Specifies which directory path the .env files are located within. The [path]{.underline} will be relative to the current directory.
 
-\-- [command]{.underline}
-
-:   A system command to run in a forked child process that has been assigned with the parsed ENVs. This should be last flag defined, therefore anything placed after it will be consumed as part of the system command.
-
 -e  \--env [environment]{.underline}
 
 :   Specifies which environment config to use within a remote project. Remote environments are created via the front-facing web application.
@@ -65,6 +61,10 @@ directory will be parsed and printed to standard out.
 -v, \--version
 
 :   Prints the current version number.
+
+\-- [command]{.underline}
+
+:   A system command to run in a forked child process that has been assigned with the parsed ENVs. This should be last flag defined, therefore anything placed after it will be consumed as part of the system command.
 
 # EXIT STATUS
 
@@ -139,9 +139,9 @@ files = [ ".env" ]
 required = [ "TEST1" ]
 
 [remote_dev]
-project = "my_project"
 env = "development"
 exec = "bin dev"
+project = "my_project"
 required = [ "TEST1", "TEST2", "TEST3" ]
 ```
 

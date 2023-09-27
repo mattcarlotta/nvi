@@ -176,8 +176,10 @@ The configuration file is a [TOML](https://toml.io/en/)-like formatted file that
 - An `[environment]` name that defines the following optional properties: 
   - **debug**: boolean (default: `false`) 
   - **dir**: string (default: `""`)
+  - **env**: string (default: `""`)
   - **exec**: string (default: `""`)
   - **files**: string[] (default `[".env"]`) 
+  - **project**: string (default: `""`)
   - **required**: string[] (default `[]`)
 
 The following represents an example `.nvi` configuration:
@@ -194,9 +196,9 @@ files = [ ".env" ]
 required = [ "TEST1" ]
 
 [remote_dev]
-project = "my_project"
 env = "development"
 exec = "bin dev"
+project = "my_project"
 required = [ "TEST1", "TEST2", "TEST3" ]
 ```
 
