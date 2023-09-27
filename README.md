@@ -85,7 +85,7 @@ The following custom compile flags can be set for `cmake`:
 
 The following represents the default `cmake` settings:
 ```bash
-cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin -DINSTALL_MAN_DIR=OFF .
+cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=OFF -DINSTALL_BIN_DIR=/usr/local/bin -DINSTALL_MAN_DIR=OFF -DUSE_LOCALHOST_API=OFF .
 ```
 
 ## Custom Installations
@@ -154,12 +154,12 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 - `-de` | `--debug`: Specifies whether or not to log debug details. (ex: --debug)
 - `-d` | `--dir`: Specifies which directory the .env files are located within. (ex: --dir path/to/envs)
 - `-e` | `--env`: Specifies which environment config to use within a remote project. (ex: --env dev)‡‡
-- `--`: Specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)‡‡‡
 - `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
 - `-p` | `--project`: Specifies which remote project to select from the nvi API. (ex: --project my_project)‡‡
 - `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)
 - `-h` | `--help`: Displays this help information.
 - `-v` | `--version`: Displays binary information.
+- `--`: Specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)‡‡‡
 
 ‡ When a "-c" or "--config" flag is present, then all the other flags are ignored as they should be defined within a [configuration file](#configuration-file).
 
