@@ -21,7 +21,7 @@ namespace nvi {
      * const string::string env = "development";
      * const std::string dir = "custom/path/to/envs";
      * nvi::Config config(env, dir);
-     * nvi::options_t options = config.get_options();
+     * nvi::options_t options = config.generate_options->get_options();
      */
     enum class ConfigValueType { array, boolean, string };
 
@@ -43,10 +43,6 @@ namespace nvi {
         const options_t &get_options() const noexcept;
 
         private:
-        // const std::string trim_surrounding_spaces(const std::string &val) const noexcept;
-        // bool parse_bool_arg(const messages_t &code) const noexcept;
-        // const std::vector<std::string> parse_vector_arg(const messages_t &code) const noexcept;
-        // const std::string parse_string_arg(const messages_t &code) const noexcept;
         const std::string extract_value_within(char delimiter) noexcept;
         std::optional<char> peek(int offset = 0) const noexcept;
         char commit() noexcept;
