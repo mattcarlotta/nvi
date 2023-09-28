@@ -39,6 +39,7 @@ namespace nvi {
     class Config {
         public:
         Config(const std::string &environment, const std::string env_dir = "");
+        Config *generate_options() noexcept;
         const options_t &get_options() const noexcept;
 
         private:
@@ -57,13 +58,13 @@ namespace nvi {
         options_t _options;
         std::string _file;
         std::string _config;
-        std::string _command;
         size_t _byte = 0;
         std::vector<ConfigToken> _config_tokens;
         const std::string _env;
         std::filesystem::path _file_path;
+        std::string _command;
         std::string _key;
-        std::string _value;
+        std::string _value_type;
     };
 }; // namespace nvi
 

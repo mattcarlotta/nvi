@@ -166,6 +166,7 @@ namespace nvi {
             skip();
         }
 
+        // TODO(carlotta): add debug log here
         for (const auto &ct : _config_tokens) {
             std::clog << "TOKEN TYPE: " << get_value_type_string(ct.type) << ", KEY: " << ct.key;
             if (ct.value.has_value()) {
@@ -174,67 +175,81 @@ namespace nvi {
         }
         std::clog << std::endl;
 
-        std::exit(0);
+        config_file.close();
+    };
 
-        // std::string line;
-        // while (std::getline(config_iss, line)) {
-        //     line = trim_surrounding_spaces(line);
+    const options_t &Config::get_options() const noexcept { return _options; }
 
-        //     // skip empty lines or lines that begin with comments
-        //     if (line.length() == 0 || line[0] == COMMENT) {
-        //         continue;
-        //     }
+    Config *Config::generate_options() noexcept {
+        for (const auto &ct : _config_tokens) {
+            _key = ct.key;
+            _value_type = get_value_type_string(ct.type);
+            if (not ct.value.has_value()) {
+                continue;
+            } else if (ct.key == DEBUG_PROP) {
+                if (ct.type != ConfigValueType::boolean) {
+                    // TODO(carlotta): add error message log here
+                    std::cerr << "debug is not a valid type." << std::endl;
+                    std::exit(EXIT_FAILURE);
+                }
+                _options.debug = std::get<std::string>(ct.value.value()).find("true") != std::string::npos;
+            } else if (_key == DIR_PROP) {
+                if (ct.type != ConfigValueType::string) {
+                    log(DIR_ARG_ERROR);
+                }
+                _options.dir = std::move(std::get<std::string>(ct.value.value()));
+            } else if (_key == FILES_PROP) {
+                if (ct.type != ConfigValueType::array) {
+                    log(FILES_ARG_ERROR);
+                }
 
-        //     // ensure current line is a key = value
-        //     const int assignment_index = line.find(ASSIGN_OP);
-        //     if (assignment_index < 0) {
-        //         break;
-        //     }
+                _options.files.clear();
+                _options.files = std::move(std::get<std::vector<std::string>>(ct.value.value()));
 
-        //     _key = trim_surrounding_spaces(line.substr(0, assignment_index));
-        //     _value = trim_surrounding_spaces(line.substr(assignment_index + 1, line.length() - 1));
+                if (not _options.files.size()) {
+                    log(EMPTY_FILES_ARG_ERROR);
+                }
+            } else if (_key == ENV_PROP) {
+                if (ct.type != ConfigValueType::string) {
+                    log(ENV_ARG_ERROR);
+                }
+                _options.environment = std::move(std::get<std::string>(ct.value.value()));
+            } else if (_key == EXEC_PROP) {
+                if (ct.type != ConfigValueType::string) {
+                    log(EXEC_ARG_ERROR);
+                }
 
-        //     if (_key == DEBUG_PROP) {
-        //         _options.debug = parse_bool_arg(DEBUG_ARG_ERROR);
-        //     } else if (_key == DIR_PROP) {
-        //         _options.dir = parse_string_arg(DIR_ARG_ERROR);
-        //     } else if (_key == FILES_PROP) {
-        //         _options.files.clear();
-        //         _options.files = parse_vector_arg(FILES_ARG_ERROR);
+                _command = std::move(std::get<std::string>(ct.value.value()));
+                std::stringstream command_iss{_command};
+                std::string arg;
 
-        //         if (not _options.files.size()) {
-        //             log(EMPTY_FILES_ARG_ERROR);
-        //         }
-        //     } else if (_key == ENV_PROP) {
-        //         _options.environment = parse_string_arg(ENV_ARG_ERROR);
-        //     } else if (_key == EXEC_PROP) {
-        //         _command = parse_string_arg(EXEC_ARG_ERROR);
-        //         std::stringstream command_iss{_command};
-        //         std::string arg;
+                while (command_iss >> arg) {
+                    char *arg_cstr = new char[arg.length() + 1];
+                    _options.commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
+                }
 
-        //         while (command_iss >> arg) {
-        //             char *arg_cstr = new char[arg.length() + 1];
-        //             _options.commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
-        //         }
-
-        //         _options.commands.push_back(nullptr);
-        //     } else if (_key == PROJECT_PROP) {
-        //         _options.project = parse_string_arg(PROJECT_ARG_ERROR);
-        //     } else if (_key == REQUIRED_PROP) {
-        //         _options.required_envs = parse_vector_arg(REQUIRED_ARG_ERROR);
-        //     } else {
-        //         log(INVALID_PROPERTY_WARNING);
-        //     }
-        // }
+                _options.commands.push_back(nullptr);
+            } else if (_key == PROJECT_PROP) {
+                if (ct.type != ConfigValueType::string) {
+                    log(PROJECT_ARG_ERROR);
+                }
+                _options.project = std::move(std::get<std::string>(ct.value.value()));
+            } else if (_key == REQUIRED_PROP) {
+                if (ct.type != ConfigValueType::array) {
+                    log(REQUIRED_ARG_ERROR);
+                }
+                _options.required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
+            } else {
+                log(INVALID_PROPERTY_WARNING);
+            }
+        }
 
         if (_options.debug) {
             log(DEBUG);
         }
 
-        config_file.close();
-    };
-
-    const options_t &Config::get_options() const noexcept { return _options; }
+        return this;
+    }
 
     void Config::skip_to_eol() noexcept {
         while (peek().has_value() && peek().value() != LINE_DELIMITER) {
@@ -277,66 +292,6 @@ namespace nvi {
         }
     }
 
-    // const std::string Config::trim_surrounding_spaces(const std::string &val) const noexcept {
-    //     if (val.length() == 0) {
-    //         return val;
-    //     }
-
-    //     size_t begin = 0;
-    //     size_t end = val.length() - 1;
-    //     while (begin < end) {
-    //         if (val[begin] != SPACE && val[end] != SPACE) {
-    //             break;
-    //         }
-    //         if (val[begin] == SPACE) {
-    //             ++begin;
-    //         }
-    //         if (val[end] == SPACE) {
-    //             --end;
-    //         }
-    //     }
-
-    //     return val.substr(begin, end - begin + 1);
-    // }
-
-    // bool Config::parse_bool_arg(const messages_t &code) const noexcept {
-    //     if (_value != "true" && _value != "false") {
-    //         log(code);
-    //     }
-
-    //     return _value == "true";
-    // }
-
-    // const std::string Config::parse_string_arg(const messages_t &code) const noexcept {
-    //     if (_value[0] != DOUBLE_QUOTE || _value[_value.length() - 1] != DOUBLE_QUOTE) {
-    //         log(code);
-    //     }
-
-    //     return _value.substr(1, _value.length() - 2);
-    // }
-
-    // const std::vector<std::string> Config::parse_vector_arg(const messages_t &code) const noexcept {
-    //     if (_value[0] != OPEN_BRACKET || _value[_value.length() - 1] != CLOSE_BRACKET) {
-    //         log(code);
-    //     }
-
-    //     static const std::unordered_set<char> SPECIAL_CHARS{OPEN_BRACKET, CLOSE_BRACKET, DOUBLE_QUOTE, COMMA, SPACE};
-    //     std::string temp_val;
-    //     std::vector<std::string> arg;
-    //     for (const char &c : _value) {
-    //         if (SPECIAL_CHARS.find(c) == SPECIAL_CHARS.end()) {
-    //             temp_val += c;
-    //             continue;
-    //         } else if (temp_val.length()) {
-    //             arg.push_back(temp_val);
-    //         }
-
-    //         temp_val.clear();
-    //     }
-
-    //     return arg;
-    // }
-
     void Config::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
@@ -365,28 +320,28 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 DEBUG_ARG_ERROR,
                 R"(The "debug" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
-                _value.c_str());
+                _value_type.c_str());
             break;
         }
         case DIR_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DIR_ARG_ERROR,
                 R"(The "dir" property contains an invalid value. Expected a string value, but instead received: %s.)",
-                _value.c_str());
+                _value_type.c_str());
             break;
         }
         case ENV_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 ENV_ARG_ERROR,
                 R"(The "env" property contains an invalid value. Expected a string value, but instead received: %s.)",
-                _value.c_str());
+                _value_type.c_str());
             break;
         }
         case FILES_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILES_ARG_ERROR,
-                R"(The "files" property contains an invalid value. Expected a vector of strings, but instead received: %s.)",
-                _value.c_str());
+                R"(The "files" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
+                _value_type.c_str());
             break;
         }
         case EMPTY_FILES_ARG_ERROR: {
@@ -400,21 +355,21 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 EXEC_ARG_ERROR,
                 R"(The "exec" property contains an invalid value. Expected a string value, but instead received: %s.)",
-                _value.c_str());
+                _value_type.c_str());
             break;
         }
         case PROJECT_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 PROJECT_ARG_ERROR,
                 R"(The "project" property contains an invalid value. Expected a string value, but instead received: %s.)",
-                _value.c_str());
+                _value_type.c_str());
             break;
         }
         case REQUIRED_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_ARG_ERROR,
                 R"(The "required" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
-                _value.c_str());
+                _value_type.c_str());
             break;
         }
         case INVALID_PROPERTY_WARNING: {
@@ -428,8 +383,13 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 DEBUG,
                 R"(Successfully parsed the "%s" configuration from the .nvi file and the folowing options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
-                _env.c_str(), _options.dir.c_str(), _options.environment.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(), 
-                _options.project.c_str(), fmt::join(_options.required_envs, ", ").c_str());
+                _env.c_str(), 
+                _options.dir.c_str(), 
+                _options.environment.c_str(), 
+                _command.c_str(), 
+                fmt::join(_options.files, ", ").c_str(), 
+                _options.project.c_str(), 
+                fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         default:
