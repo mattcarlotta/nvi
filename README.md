@@ -297,7 +297,7 @@ Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17
 
 ### What are the nvi configuration file specs?
 
-This `.nvi` configuration file gives you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
+The `.nvi` configuration file gives you the flexibility and ease-of-use of defining flags and arguments within an environment configuration. 
 
 Therefore, while the config file parser is flexible, it is **NOT** a [TOML](https://toml.io/en/)-complaint parser and has some rules.
 
