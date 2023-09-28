@@ -1,6 +1,7 @@
 #include "config.h"
 #include "format.h"
 #include "log.h"
+// TODO(carlotta): remove this once "EXIT_FAILURE" logs have been created
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -115,7 +116,7 @@ namespace nvi {
                         break;
                     }
 
-                    // parse and extract a string valud
+                    // parse and extract a string value
                     if (current_char.value() == DOUBLE_QUOTE) {
                         token.type = ConfigValueType::string;
                         // skip over double quote
