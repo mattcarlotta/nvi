@@ -36,22 +36,22 @@ namespace nvi {
         const options_t &get_options() const noexcept;
 
         private:
-        const std::string trim_surrounding_spaces(const std::string &val) const noexcept;
-        bool parse_bool_arg(const messages_t &code) const noexcept;
-        const std::vector<std::string> parse_vector_arg(const messages_t &code) const noexcept;
-        const std::string parse_string_arg(const messages_t &code) const noexcept;
-        const std::string get_string_value(char delimiter) noexcept;
+        // const std::string trim_surrounding_spaces(const std::string &val) const noexcept;
+        // bool parse_bool_arg(const messages_t &code) const noexcept;
+        // const std::vector<std::string> parse_vector_arg(const messages_t &code) const noexcept;
+        // const std::string parse_string_arg(const messages_t &code) const noexcept;
+        const std::string extract_value_within(char delimiter) noexcept;
         std::optional<char> peek(int offset = 0) const noexcept;
         char commit() noexcept;
         void skip(int offset = 1) noexcept;
-        size_t find_eol() const noexcept;
+        void skip_to_eol() noexcept;
         void log(const messages_t &code) const noexcept;
 
         options_t _options;
         std::string _file;
         std::string _config;
         std::string _command;
-        size_t _byte;
+        size_t _byte = 0;
         std::vector<ConfigToken> _config_tokens;
         const std::string _env;
         std::filesystem::path _file_path;
