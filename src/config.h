@@ -32,8 +32,8 @@ namespace nvi {
     };
 
     struct ConfigTokenToString {
-        std::string operator()(const std::string &x) const { return x; }
-        std::string operator()(const std::vector<std::string> x) const { return (x.size() ? fmt::join(x, ", ") : ""); }
+        std::string operator()(const std::string &s) const { return s; }
+        std::string operator()(const std::vector<std::string> v) const { return (v.size() ? fmt::join(v, ", ") : ""); }
     };
 
     class Config {
@@ -41,6 +41,7 @@ namespace nvi {
         Config(const std::string &environment, const std::string env_dir = "");
         Config *generate_options() noexcept;
         const options_t &get_options() const noexcept;
+        const std::vector<ConfigToken> &get_tokens() const noexcept;
 
         private:
         const std::string extract_value_within(char delimiter) noexcept;

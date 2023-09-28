@@ -180,6 +180,8 @@ namespace nvi {
 
     const options_t &Config::get_options() const noexcept { return _options; }
 
+    const std::vector<ConfigToken> &Config::get_tokens() const noexcept { return _config_tokens; }
+
     Config *Config::generate_options() noexcept {
         for (const auto &ct : _config_tokens) {
             _key = ct.key;
