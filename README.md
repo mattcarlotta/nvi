@@ -297,7 +297,7 @@ Currently, GNU/Linux and Mac OS (v13+ although older versions that support C++17
 
 ### What are the nvi configuration file specs?
 
-This `.nvi` configuration file attempts to give you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
+This `.nvi` configuration file gives you the flexibility and ease-of-use of defining flags and arguments under an environment configuration. 
 
 Therefore, while the config file parser is flexible, it is **NOT** a [TOML](https://toml.io/en/)-complaint parser and has some rules.
 
@@ -305,9 +305,6 @@ The configuration file must:
 - be named `.nvi`
 - not contain spaces within the `[environment]`'s name
 - not contain spaces within a `files` .env name nor within the `required` keys; instead, files/keys should use underscores: `example_1`
-- not contain comments after a configuration `key = value # comment` option
-- not contain empty lines between a configuration `key = value` option; empty lines after the last config option are okay
-- not contain multi-line arguments
 
 Click [here](envs/.nvi) to view valid and invalid formatting configurations.
 

@@ -43,6 +43,7 @@ namespace nvi {
         NVI_VERSION,
         // config
         FILE_PARSE_ERROR,
+        SELECTED_CONFIG_EMPTY_ERROR,
         DEBUG_ARG_ERROR,
         DIR_ARG_ERROR,
         ENV_ARG_ERROR,
@@ -52,6 +53,9 @@ namespace nvi {
         PROJECT_ARG_ERROR,
         REQUIRED_ARG_ERROR,
         INVALID_PROPERTY_WARNING,
+        INVALID_ARRAY_VALUE,
+        INVALID_BOOLEAN_VALUE,
+        INVALID_STRING_VALUE,
         // parser
         EMPTY_KEY_WARNING,
         INTERPOLATION_WARNING,
@@ -108,6 +112,8 @@ namespace nvi {
             return "INVALID_FLAG_WARNING";
         case FILE_PARSE_ERROR:
             return "FILE_PARSE_ERROR";
+        case SELECTED_CONFIG_EMPTY_ERROR:
+            return "SELECTED_CONFIG_EMPTY_ERROR";
         case DEBUG_ARG_ERROR:
             return "DEBUG_ARG_ERROR";
         case DIR_ARG_ERROR:
@@ -126,6 +132,12 @@ namespace nvi {
             return "REQUIRED_ARG_ERROR";
         case INVALID_PROPERTY_WARNING:
             return "INVALID_PROPERTY_WARNING";
+        case INVALID_ARRAY_VALUE:
+            return "INVALID_ARRAY_VALUE";
+        case INVALID_BOOLEAN_VALUE:
+            return "INVALID_BOOLEAN_VALUE";
+        case INVALID_STRING_VALUE:
+            return "INVALID_STRING_VALUE";
         case EMPTY_KEY_WARNING:
             return "EMPTY_KEY_WARNING";
         case INTERPOLATION_WARNING:

@@ -1,10 +1,13 @@
 #ifndef NVI_ENV_CONFIG_H
 #define NVI_ENV_CONFIG_H
 
+#include "format.h"
 #include "log.h"
 #include "options.h"
 #include <filesystem>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace nvi {
@@ -18,27 +21,48 @@ namespace nvi {
      * const string::string env = "development";
      * const std::string dir = "custom/path/to/envs";
      * nvi::Config config(env, dir);
-     * nvi::options_t options = config.get_options();
+     * nvi::options_t options = config.generate_options->get_options();
      */
+    enum class ConfigValueType { array, boolean, string };
+
+    struct ConfigToken {
+        ConfigValueType type;
+        std::string key = "";
+        std::optional<std::variant<bool, std::string, std::vector<std::string>>> value{};
+    };
+
+    struct ConfigTokenToString {
+        std::string operator()(const bool &b) const { return b > 0 ? "true" : "false"; }
+        std::string operator()(const std::string &s) const { return s; }
+        std::string operator()(const std::vector<std::string> &v) const { return (v.size() ? fmt::join(v, ", ") : ""); }
+    };
+
     class Config {
         public:
-            Config(const std::string &environment, const std::string env_dir = "");
-            const options_t &get_options() const noexcept;
+        Config(const std::string &environment, const std::string env_dir = "");
+        Config *generate_options() noexcept;
+        const options_t &get_options() const noexcept;
+        const std::vector<ConfigToken> &get_tokens() const noexcept;
 
         private:
-            const std::string trim_surrounding_spaces(const std::string &val) const noexcept;
-            bool parse_bool_arg(const messages_t &code) const noexcept;
-            const std::vector<std::string> parse_vector_arg(const messages_t &code) const noexcept;
-            const std::string parse_string_arg(const messages_t &code) const noexcept;
-            void log(const messages_t &code) const noexcept;
+        const std::string extract_value_within(char delimiter, bool error_at_new_line = false) noexcept;
+        std::optional<char> peek(int offset = 0) const noexcept;
+        char commit() noexcept;
+        void skip(int offset = 1) noexcept;
+        void skip_to_eol() noexcept;
+        std::string get_value_type_string(const ConfigValueType &cvt) const noexcept;
+        void log(const messages_t &code) const noexcept;
 
-            options_t _options;
-            std::string _file;
-            std::string _command;
-            const std::string _env;
-            std::filesystem::path _file_path;
-            std::string _key;
-            std::string _value;
+        options_t _options;
+        std::string _file;
+        std::string _config;
+        size_t _byte = 0;
+        std::vector<ConfigToken> _config_tokens;
+        const std::string _env;
+        std::filesystem::path _file_path;
+        std::string _command;
+        std::string _key;
+        std::string _value_type;
     };
 }; // namespace nvi
 
