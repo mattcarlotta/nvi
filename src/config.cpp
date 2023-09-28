@@ -106,11 +106,20 @@ namespace nvi {
                         continue;
                     }
 
-                    // most likely a boolean value
+                    // parse and extract a boolean value
                     if (std::isalpha(current_char.value())) {
                         token.type = ConfigValueType::boolean;
 
-                        token.value = extract_value_within(LINE_DELIMITER);
+                        std::string extracted_value = extract_value_within(LINE_DELIMITER);
+                        const bool a_true_value = extracted_value.find("true") != std::string::npos;
+                        const bool a_false_value = extracted_value.find("false") != std::string::npos;
+
+                        if (not a_true_value && not a_false_value) {
+                            _key = token.key;
+                            log(INVALID_BOOLEAN_VALUE);
+                        }
+
+                        token.value = a_true_value;
                         _config_tokens.push_back(token);
 
                         break;
@@ -122,7 +131,15 @@ namespace nvi {
                         // skip over double quote
                         skip();
 
-                        token.value = extract_value_within(DOUBLE_QUOTE);
+                        std::string value = extract_value_within(DOUBLE_QUOTE, true);
+
+                        // ensure a value exists to prevent consuming other properties
+                        if (value.length() == 0) {
+                            _key = token.key;
+                            log(INVALID_STRING_VALUE);
+                        }
+
+                        token.value = value;
                         _config_tokens.push_back(token);
 
                         // skip over double quote
@@ -138,21 +155,25 @@ namespace nvi {
                         skip();
 
                         std::vector<std::string> values;
-                        while (current_char.has_value() && current_char.value() != CLOSE_BRACKET) {
+                        while (_byte < _config.length()) {
                             current_char = peek();
-                            if (current_char.value() == ASSIGN_OP) {
-                                // TODO(carlotta): add error message log here
-                                std::clog << "ERROR: The key \"" << token.key
-                                          << "\" appears to be missing a closing \"]\"!" << std::endl;
-                                std::exit(EXIT_FAILURE);
+                            if (not current_char.has_value() || current_char.value() == ASSIGN_OP ||
+                                current_char.value() == OPEN_BRACKET) {
+                                _key = token.key;
+                                log(INVALID_ARRAY_VALUE);
+                            } else if (current_char.value() == CLOSE_BRACKET) {
+                                break;
                             } else if (current_char.value() == DOUBLE_QUOTE) {
                                 // skip over double quote
                                 skip();
-
                                 values.push_back(extract_value_within(DOUBLE_QUOTE));
                             }
-
                             skip();
+                        }
+
+                        if (current_char.has_value() && current_char.value() != CLOSE_BRACKET) {
+                            _key = token.key;
+                            log(INVALID_ARRAY_VALUE);
                         }
 
                         token.value = values;
@@ -195,7 +216,7 @@ namespace nvi {
                     std::cerr << "debug is not a valid type." << std::endl;
                     std::exit(EXIT_FAILURE);
                 }
-                _options.debug = std::get<std::string>(ct.value.value()).find("true") != std::string::npos;
+                _options.debug = std::get<bool>(ct.value.value());
             } else if (_key == DIR_PROP) {
                 if (ct.type != ConfigValueType::string) {
                     log(DIR_ARG_ERROR);
@@ -272,10 +293,12 @@ namespace nvi {
 
     void Config::skip(int offset) noexcept { _byte += offset; }
 
-    const std::string Config::extract_value_within(char delimiter) noexcept {
+    const std::string Config::extract_value_within(char delimiter, bool error_at_new_line) noexcept {
         std::string value;
         while (peek().has_value() && peek().value() != delimiter) {
-            if (peek().value() == COMMENT) {
+            if (error_at_new_line && peek().value() == LINE_DELIMITER) {
+                return "";
+            } else if (peek().value() == COMMENT) {
                 skip_to_eol();
             } else {
                 value += commit();
@@ -317,6 +340,27 @@ namespace nvi {
                 FILE_PARSE_ERROR,
                 R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified environment doesn't appear to exist!)",
                 _env.c_str(), _file_path.c_str());
+            break;
+        }
+        case INVALID_ARRAY_VALUE: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_ARRAY_VALUE,
+                R"(The "%s" property within the "%s" config is not a valid array. It appears to be missing a closing bracket "]".)",
+                _key.c_str(), _env.c_str());
+            break;
+        }
+        case INVALID_BOOLEAN_VALUE: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_BOOLEAN_VALUE,
+                R"(The "%s" property within the "%s" config contains an invalid boolean value. Expected the value to match true or false.)",
+                _key.c_str(), _env.c_str());
+            break;
+        }
+        case INVALID_STRING_VALUE: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_STRING_VALUE,
+                R"(The "%s" property within the "%s" config contains an invalid string value. It appears to be empty or is missing a closing double quote.)",
+                _key.c_str(), _env.c_str());
             break;
         }
         case DEBUG_ARG_ERROR: {

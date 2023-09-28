@@ -28,12 +28,13 @@ namespace nvi {
     struct ConfigToken {
         ConfigValueType type;
         std::string key = "";
-        std::optional<std::variant<std::string, std::vector<std::string>>> value{};
+        std::optional<std::variant<bool, std::string, std::vector<std::string>>> value{};
     };
 
     struct ConfigTokenToString {
+        std::string operator()(const bool &b) const { return b > 0 ? "true" : "false"; }
         std::string operator()(const std::string &s) const { return s; }
-        std::string operator()(const std::vector<std::string> v) const { return (v.size() ? fmt::join(v, ", ") : ""); }
+        std::string operator()(const std::vector<std::string> &v) const { return (v.size() ? fmt::join(v, ", ") : ""); }
     };
 
     class Config {
@@ -44,7 +45,7 @@ namespace nvi {
         const std::vector<ConfigToken> &get_tokens() const noexcept;
 
         private:
-        const std::string extract_value_within(char delimiter) noexcept;
+        const std::string extract_value_within(char delimiter, bool error_at_new_line = false) noexcept;
         std::optional<char> peek(int offset = 0) const noexcept;
         char commit() noexcept;
         void skip(int offset = 1) noexcept;

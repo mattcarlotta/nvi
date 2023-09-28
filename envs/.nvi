@@ -7,7 +7,11 @@ debug = true
 dir = "path/to/custom/dir"
 exec = "bin test"
 files = [ ".env", "base.env", "reference.env" ]
-required = [ "TEST1", "TEST2", "TEST3" ]
+required = [ 
+    "TEST1", 
+    "TEST2", 
+    "TEST3"
+]
 
 [comments]
 # comment
@@ -17,12 +21,16 @@ dir = "path/to/custom/dir" # comment
 # comment
 exec = "bin test" # comment
 # comment
-files = [ ".env", "base.env", "reference.env" ] # comment
+files = [ 
+    ".env", # comment
+    "base.env", # comment
+    "reference.env" # comment
+] # comment
 # comment
 required = [ 
-    "TEST1", 
-    "TEST2", 
-    "TEST3" 
+    "TEST1", # comment
+    "TEST2", # comment
+    "TEST3"  # comment
 ] # comment
 # comment
 

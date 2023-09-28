@@ -52,6 +52,9 @@ namespace nvi {
         PROJECT_ARG_ERROR,
         REQUIRED_ARG_ERROR,
         INVALID_PROPERTY_WARNING,
+        INVALID_ARRAY_VALUE,
+        INVALID_BOOLEAN_VALUE,
+        INVALID_STRING_VALUE,
         // parser
         EMPTY_KEY_WARNING,
         INTERPOLATION_WARNING,
@@ -126,6 +129,12 @@ namespace nvi {
             return "REQUIRED_ARG_ERROR";
         case INVALID_PROPERTY_WARNING:
             return "INVALID_PROPERTY_WARNING";
+        case INVALID_ARRAY_VALUE:
+            return "INVALID_ARRAY_VALUE";
+        case INVALID_BOOLEAN_VALUE:
+            return "INVALID_BOOLEAN_VALUE";
+        case INVALID_STRING_VALUE:
+            return "INVALID_STRING_VALUE";
         case EMPTY_KEY_WARNING:
             return "EMPTY_KEY_WARNING";
         case INTERPOLATION_WARNING:
