@@ -1,8 +1,6 @@
 #include "config.h"
 #include "format.h"
 #include "log.h"
-#include <cctype>
-#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -10,7 +8,6 @@
 #include <iostream>
 #include <optional>
 #include <string>
-#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -55,19 +52,20 @@ namespace nvi {
             log(FILE_PARSE_ERROR);
         }
 
-        // remove config name line: [example_config]
+        // remove config name line: [environment]
         _config = _file.substr(eol_index + 1, _file.length());
 
+        // TODO(carlotta): add log error message here
         if (_config.length() == 0) {
             std::cerr << "Invalid config file" << std::endl;
             std::exit(EXIT_FAILURE);
         }
 
-        while (_byte < _config.length()) {
+        while (peek().has_value()) {
             std::optional<char> current_char = peek();
 
             // stop parsing if another config is found
-            if (not current_char.has_value() || current_char.value() == OPEN_BRACKET) {
+            if (current_char.value() == OPEN_BRACKET) {
                 break;
             }
 
@@ -88,21 +86,21 @@ namespace nvi {
                 ConfigToken token;
 
                 // parse and assign token key
-                while (current_char.value() != ASSIGN_OP && _byte < _config.length()) {
+                while (current_char.has_value() && current_char.value() != ASSIGN_OP) {
                     current_char = peek();
-                    if (not current_char.has_value() || not std::isalpha(current_char.value())) {
+                    if (not std::isalpha(current_char.value())) {
                         skip();
-                        continue;
+                    } else {
+                        token.key += commit();
                     }
-                    token.key += commit();
                 }
 
                 // parse and assign value
-                while (_byte < _config.length()) {
+                while (current_char.has_value()) {
                     current_char = peek();
 
                     // skip empty spaces and new lines
-                    if (not current_char.has_value() || std::isblank(current_char.value())) {
+                    if (std::isblank(current_char.value())) {
                         skip();
                         continue;
                     }
@@ -111,9 +109,7 @@ namespace nvi {
                     if (std::isalpha(current_char.value())) {
                         token.type = ConfigValueType::boolean;
 
-                        auto value = extract_value_within(LINE_DELIMITER);
-                        token.value = value;
-                        std::clog << "KEY: " << token.key << ", BOOL VALUE: " << value << std::endl;
+                        token.value = extract_value_within(LINE_DELIMITER);
                         _config_tokens.push_back(token);
 
                         break;
@@ -122,16 +118,13 @@ namespace nvi {
                     // parse and extract a string valud
                     if (current_char.value() == DOUBLE_QUOTE) {
                         token.type = ConfigValueType::string;
-                        // skip over quote
+                        // skip over double quote
                         skip();
 
-                        auto value = extract_value_within(DOUBLE_QUOTE);
-
-                        std::clog << "KEY: " << token.key << ", STRING VALUE: " << value << std::endl;
-                        token.value = value;
+                        token.value = extract_value_within(DOUBLE_QUOTE);
                         _config_tokens.push_back(token);
 
-                        // skip over quote
+                        // skip over double quote
                         skip();
                         break;
                     }
@@ -139,14 +132,20 @@ namespace nvi {
                     // parse and extract an array of values
                     if (current_char.value() == OPEN_BRACKET) {
                         token.type = ConfigValueType::array;
+
                         // skip over "["
                         skip();
 
                         std::vector<std::string> values;
-                        while (current_char.value() != CLOSE_BRACKET && _byte < _config.length()) {
+                        while (current_char.has_value() && current_char.value() != CLOSE_BRACKET) {
                             current_char = peek();
-                            if (current_char.has_value() && current_char.value() == DOUBLE_QUOTE) {
-                                // skip double quote
+                            if (current_char.value() == ASSIGN_OP) {
+                                // TODO(carlotta): add error message log here
+                                std::clog << "ERROR: The key \"" << token.key
+                                          << "\" appears to be missing a closing \"]\"!" << std::endl;
+                                std::exit(EXIT_FAILURE);
+                            } else if (current_char.value() == DOUBLE_QUOTE) {
+                                // skip over double quote
                                 skip();
 
                                 values.push_back(extract_value_within(DOUBLE_QUOTE));
@@ -155,9 +154,6 @@ namespace nvi {
                             skip();
                         }
 
-                        for (auto &t : values) {
-                            std::clog << "KEY: " << token.key << ", ARRAY VALUE: " << t << std::endl;
-                        }
                         token.value = values;
                         _config_tokens.push_back(token);
 
@@ -170,10 +166,13 @@ namespace nvi {
             skip();
         }
 
-        for (auto &t : _config_tokens) {
-            std::clog << "TOKEN TYPE: " << static_cast<int>(t.type) << ", KEY: " << t.key;
-            std::clog << '\n';
+        for (const auto &ct : _config_tokens) {
+            std::clog << "TOKEN TYPE: " << get_value_type_string(ct.type) << ", KEY: " << ct.key;
+            if (ct.value.has_value()) {
+                std::cout << ", VALUE: " << std::visit(ConfigTokenToString(), ct.value.value()) << "\n";
+            }
         }
+        std::clog << std::endl;
 
         std::exit(0);
 
@@ -235,11 +234,10 @@ namespace nvi {
         config_file.close();
     };
 
+    const options_t &Config::get_options() const noexcept { return _options; }
+
     void Config::skip_to_eol() noexcept {
-        while (_byte < _config.length()) {
-            if (peek().has_value() && peek().value() == LINE_DELIMITER) {
-                break;
-            }
+        while (peek().has_value() && peek().value() != LINE_DELIMITER) {
             skip();
         }
     }
@@ -258,16 +256,26 @@ namespace nvi {
 
     const std::string Config::extract_value_within(char delimiter) noexcept {
         std::string value;
-        std::optional<char> current_char = peek();
-        while (current_char.value() != delimiter && _byte < _config.length()) {
-            value += commit();
-            current_char = peek();
+        while (peek().has_value() && peek().value() != delimiter) {
+            if (peek().value() == COMMENT) {
+                skip_to_eol();
+            } else {
+                value += commit();
+            }
         }
-
         return value;
     }
 
-    const options_t &Config::get_options() const noexcept { return _options; }
+    std::string Config::get_value_type_string(const ConfigValueType &cvt) const noexcept {
+        switch (cvt) {
+        case ConfigValueType::array:
+            return "array";
+        case ConfigValueType::boolean:
+            return "boolean";
+        default:
+            return "string";
+        }
+    }
 
     // const std::string Config::trim_surrounding_spaces(const std::string &val) const noexcept {
     //     if (val.length() == 0) {
