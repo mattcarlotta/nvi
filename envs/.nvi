@@ -13,6 +13,13 @@ required = [
     "TEST3"
 ]
 
+[condensed]
+debug=true
+dir="path/to/custom/dir"
+exec="bin test"
+files=[".env","base.env","reference.env"]
+required=["TEST1","TEST2","TEST3"]
+
 [comments]
 # comment
 debug = true # comment
@@ -33,13 +40,6 @@ required = [
     "TEST3"  # comment
 ] # comment
 # comment
-
-[condensed]
-debug=true
-dir="path/to/custom/dir"
-exec="bin test"
-files=[".env","base.env","reference.env"]
-required=["TEST1","TEST2","TEST3"]
 
 
 [indented]     
@@ -68,14 +68,26 @@ dir=   "path/to/custom/dir"
 required=[       "TEST1",    "TEST2",  "TEST3"]                
 
 
+[contains_ignored_properties]
+# while the first 2 keys/values below are valid and tokenized,
+# they'll still be skipped when the config options are generated
+key = "skipped" 
+ignoredoption = true
+debug = true
+dir = "path/to/custom/dir" 
+
+
 # --------------------------------------------- #
 # The examples below represent invalid formats  #
 # --------------------------------------------- #
 
+# a config without properties
+[empty]
+
 # spaces within an environment name
-[invalid environment 1]
+[invalid environment 1] # use underscores instead: [valid_envirnoment_1]
+debug = true
 
-# spaces within an array's string
+# spaces within an array's string 
 [invalid_environment_2]
-files = [ "test     example         123.env" ]
-
+files = [ "test     example         123.env" ] # use underscores instead: "test_example_123.env"

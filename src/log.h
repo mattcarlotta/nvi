@@ -43,6 +43,7 @@ namespace nvi {
         NVI_VERSION,
         // config
         FILE_PARSE_ERROR,
+        SELECTED_CONFIG_EMPTY_ERROR,
         DEBUG_ARG_ERROR,
         DIR_ARG_ERROR,
         ENV_ARG_ERROR,
@@ -111,6 +112,8 @@ namespace nvi {
             return "INVALID_FLAG_WARNING";
         case FILE_PARSE_ERROR:
             return "FILE_PARSE_ERROR";
+        case SELECTED_CONFIG_EMPTY_ERROR:
+            return "SELECTED_CONFIG_EMPTY_ERROR";
         case DEBUG_ARG_ERROR:
             return "DEBUG_ARG_ERROR";
         case DIR_ARG_ERROR:

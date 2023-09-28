@@ -255,7 +255,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following options were set: config="%s", debug="true", dir="%s", execute="%s", files="%s", required="%s".)",
+                R"(The following arg options were set: config="%s", debug="true", dir="%s", execute="%s", files="%s", required="%s".)",
                 _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
                 fmt::join(_options.files, ", ").c_str(),
                 fmt::join(_options.required_envs, ", ").c_str());

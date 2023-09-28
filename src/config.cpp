@@ -1,8 +1,6 @@
 #include "config.h"
 #include "format.h"
 #include "log.h"
-// TODO(carlotta): remove this once "EXIT_FAILURE" logs have been created
-#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -56,10 +54,8 @@ namespace nvi {
         // remove config name line: [environment]
         _config = _file.substr(eol_index + 1, _file.length());
 
-        // TODO(carlotta): add log error message here
-        if (_config.length() == 0) {
-            std::cerr << "Invalid config file" << std::endl;
-            std::exit(EXIT_FAILURE);
+        if (not peek().has_value()) {
+            log(SELECTED_CONFIG_EMPTY_ERROR);
         }
 
         while (peek().has_value()) {
@@ -114,6 +110,7 @@ namespace nvi {
                         const bool a_true_value = extracted_value.find("true") != std::string::npos;
                         const bool a_false_value = extracted_value.find("false") != std::string::npos;
 
+                        // ensure value is a bool
                         if (not a_true_value && not a_false_value) {
                             _key = token.key;
                             log(INVALID_BOOLEAN_VALUE);
@@ -157,6 +154,8 @@ namespace nvi {
                         std::vector<std::string> values;
                         while (_byte < _config.length()) {
                             current_char = peek();
+
+                            // running into an assignment or open bracket means a closing bracket is missing
                             if (not current_char.has_value() || current_char.value() == ASSIGN_OP ||
                                 current_char.value() == OPEN_BRACKET) {
                                 _key = token.key;
@@ -166,11 +165,16 @@ namespace nvi {
                             } else if (current_char.value() == DOUBLE_QUOTE) {
                                 // skip over double quote
                                 skip();
+
                                 values.push_back(extract_value_within(DOUBLE_QUOTE));
                             }
+
+                            // skip characters not within quotes
                             skip();
                         }
 
+                        // ensure the current character is a closing bracket, otherwise it's missing,
+                        // therefore the extracted values aren't correct
                         if (current_char.has_value() && current_char.value() != CLOSE_BRACKET) {
                             _key = token.key;
                             log(INVALID_ARRAY_VALUE);
@@ -178,6 +182,9 @@ namespace nvi {
 
                         token.value = values;
                         _config_tokens.push_back(token);
+
+                        // skip over "]"
+                        skip();
 
                         break;
                     }
@@ -188,14 +195,9 @@ namespace nvi {
             skip();
         }
 
-        // TODO(carlotta): add debug log here
-        for (const auto &ct : _config_tokens) {
-            std::clog << "TOKEN TYPE: " << get_value_type_string(ct.type) << ", KEY: " << ct.key;
-            if (ct.value.has_value()) {
-                std::cout << ", VALUE: " << std::visit(ConfigTokenToString(), ct.value.value()) << "\n";
-            }
+        if (_config_tokens.size() == 0) {
+            log(SELECTED_CONFIG_EMPTY_ERROR);
         }
-        std::clog << std::endl;
 
         config_file.close();
     };
@@ -205,22 +207,23 @@ namespace nvi {
     const std::vector<ConfigToken> &Config::get_tokens() const noexcept { return _config_tokens; }
 
     Config *Config::generate_options() noexcept {
-        for (const auto &ct : _config_tokens) {
+        for (const ConfigToken &ct : _config_tokens) {
             _key = ct.key;
             _value_type = get_value_type_string(ct.type);
+
             if (not ct.value.has_value()) {
                 continue;
             } else if (ct.key == DEBUG_PROP) {
                 if (ct.type != ConfigValueType::boolean) {
-                    // TODO(carlotta): add error message log here
-                    std::cerr << "debug is not a valid type." << std::endl;
-                    std::exit(EXIT_FAILURE);
+                    log(DEBUG_ARG_ERROR);
                 }
+
                 _options.debug = std::get<bool>(ct.value.value());
             } else if (_key == DIR_PROP) {
                 if (ct.type != ConfigValueType::string) {
                     log(DIR_ARG_ERROR);
                 }
+
                 _options.dir = std::move(std::get<std::string>(ct.value.value()));
             } else if (_key == FILES_PROP) {
                 if (ct.type != ConfigValueType::array) {
@@ -237,6 +240,7 @@ namespace nvi {
                 if (ct.type != ConfigValueType::string) {
                     log(ENV_ARG_ERROR);
                 }
+
                 _options.environment = std::move(std::get<std::string>(ct.value.value()));
             } else if (_key == EXEC_PROP) {
                 if (ct.type != ConfigValueType::string) {
@@ -257,11 +261,13 @@ namespace nvi {
                 if (ct.type != ConfigValueType::string) {
                     log(PROJECT_ARG_ERROR);
                 }
+
                 _options.project = std::move(std::get<std::string>(ct.value.value()));
             } else if (_key == REQUIRED_PROP) {
                 if (ct.type != ConfigValueType::array) {
                     log(REQUIRED_ARG_ERROR);
                 }
+
                 _options.required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
             } else {
                 log(INVALID_PROPERTY_WARNING);
@@ -297,6 +303,7 @@ namespace nvi {
         std::string value;
         while (peek().has_value() && peek().value() != delimiter) {
             if (error_at_new_line && peek().value() == LINE_DELIMITER) {
+                // handle values missing closing tags
                 return "";
             } else if (peek().value() == COMMENT) {
                 skip_to_eol();
@@ -310,11 +317,11 @@ namespace nvi {
     std::string Config::get_value_type_string(const ConfigValueType &cvt) const noexcept {
         switch (cvt) {
         case ConfigValueType::array:
-            return "array";
+            return "an array";
         case ConfigValueType::boolean:
-            return "boolean";
+            return "a boolean";
         default:
-            return "string";
+            return "a string";
         }
     }
 
@@ -339,6 +346,13 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_PARSE_ERROR,
                 R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified environment doesn't appear to exist!)",
+                _env.c_str(), _file_path.c_str());
+            break;
+        }
+        case SELECTED_CONFIG_EMPTY_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                SELECTED_CONFIG_EMPTY_ERROR,
+                R"(While the "%s" configuration exists within the .nvi file (%s), the configuration appears to be empty.)",
                 _env.c_str(), _file_path.c_str());
             break;
         }
@@ -427,10 +441,27 @@ namespace nvi {
             break;
         }
         case DEBUG: {
+            for (size_t index = 0; index < _config_tokens.size(); ++index) {
+                const ConfigToken &token = _config_tokens.at(index);
+
+                std::stringstream ss;
+                ss << "Created " << get_value_type_string(token.type) << " token with a key of " << std::quoted(token.key);
+                ss << " and a value of " << std::quoted(std::visit(ConfigTokenToString(), token.value.value())) << ".";
+                if(index == _config_tokens.size()) {
+                    ss << '\n';
+                }
+
+                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
+            }
+
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(Successfully parsed the "%s" configuration from the .nvi file and the folowing options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
-                _env.c_str(), 
+                R"(Successfully parsed the "%s" configuration from the .nvi file.)",
+                _env.c_str());
+
+            NVI_LOG_DEBUG(
+                DEBUG,
+                R"(The following config options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
                 _command.c_str(), 
