@@ -234,7 +234,7 @@ namespace nvi {
             if (not _env_file.is_open()) {
                 log(FILE_ERROR);
             }
-            _file = std::string{std::istreambuf_iterator<char>(_env_file), std::istreambuf_iterator<char>()};
+            _file = std::string{std::istreambuf_iterator{_env_file}, {}};
             if (not _file.length()) {
                 log(EMPTY_ENVS_ERROR);
             }

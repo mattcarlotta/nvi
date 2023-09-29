@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "nvi" "1" "09-26-2023" "CLI Documentation v0.0.2" ""
+.TH "nvi" "1" "09-29-2023" "CLI Documentation v0.0.4" ""
 .hy
 .SH NAME
 .PP
@@ -144,12 +144,17 @@ of the environment you\[cq]ve created
 .RE
 .IP "4." 3
 Press the \[lq]Enter\[rq] key and nvi will prompt you for your unique
-API key
+API key‡
 .IP "5." 3
 Input the API key and nvi will attempt to retrieve and assign remote
 ENVs from the selected project and environment to the command (if no
 command is provided then nvi will just print the parsed and interpolated
 envs to standard out)
+.PP
+‡ You can bypass this step by creating a \f[V].nvi-key\f[R] file at the
+project root directory that includes your unique API key.
+Be mindful, that this file \f[B]MUST\f[R] be added to your
+\f[V].gitignore\f[R]!
 .PP
 Retrieving remote ENVs:
 .IP

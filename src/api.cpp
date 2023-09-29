@@ -8,21 +8,36 @@
 #include <cstdlib>
 #include <curl/curl.h>
 #include <curl/easy.h>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 namespace nvi {
     API::API(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
 
-    API *API::get_key_from_input() noexcept {
+    static bool filter_non_alphanum_char(const char &c) { return not std::isalnum(c); }
+
+    API *API::get_key_from_file_or_input() noexcept {
         std::string api_key;
-        std::clog << "[nvi] Please enter your unique API key: ";
-        std::getline(std::cin, api_key);
 
-        const bool valid_api_key = std::all_of(api_key.begin(), api_key.end(), [](char c) { return std::isalnum(c); });
+        const std::string api_key_file = std::filesystem::current_path() / ".nvi-key";
+        if (std::filesystem::exists(api_key_file)) {
+            std::ifstream api_file{api_key_file, std::ios_base::in};
 
-        if (api_key.size() == 0 || not valid_api_key) {
-            log(INVALID_INPUT_KEY);
+            api_key = std::string{std::istreambuf_iterator{api_file}, {}};
+            api_key.erase(std::remove_if(api_key.begin(), api_key.end(), filter_non_alphanum_char), api_key.end());
+        } else {
+            std::clog << "[nvi] Please enter your unique API key: ";
+            std::getline(std::cin, api_key);
+
+            const bool valid_api_key =
+                std::all_of(api_key.begin(), api_key.end(), [](char c) { return std::isalnum(c); });
+
+            if (api_key.size() == 0 || not valid_api_key) {
+                log(INVALID_INPUT_KEY);
+            }
         }
 
         _api_url = API_URL "/cli/secrets/?project=" + _options.project + "&environment=" + _options.environment +

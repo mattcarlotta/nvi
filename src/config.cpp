@@ -40,7 +40,7 @@ namespace nvi {
             log(FILE_ERROR);
         }
 
-        _file = std::string{std::istreambuf_iterator<char>(config_file), std::istreambuf_iterator<char>()};
+        _file = std::string{std::istreambuf_iterator{config_file}, {}};
         _byte = _file.find(OPEN_BRACKET + environment + CLOSE_BRACKET);
         if (_byte == std::string::npos) {
             log(FILE_PARSE_ERROR);

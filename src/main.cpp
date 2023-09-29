@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     std::string api_envs;
     if (options.project.length()) {
         nvi::API api(options);
-        api_envs = api.get_key_from_input()->fetch_envs();
+        api_envs = api.get_key_from_file_or_input()->fetch_envs();
     }
 
     nvi::Lexer lexer(options);
