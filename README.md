@@ -251,12 +251,12 @@ nvi -p my_project -e development -- cargo run
 
 Then, you'll be asked for your API key:
 ```bash
-$ [nvi] Please enter your unique API key: 
+[nvi] Please enter your unique API key: 
 ```
 
 Input your API key and press the "Enter" key:
 ```bash
-$ [nvi] Please enter your unique API key: abcdefhijkhijklo0123456789
+[nvi] Please enter your unique API key: abcdefhijkhijklo0123456789
 ```
 
 If no error is displayed in the terminal, then a child process should be spawned with the command OR ENVs will be printed to standard out as stringified JSON.
