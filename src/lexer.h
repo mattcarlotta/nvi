@@ -14,16 +14,16 @@ namespace nvi {
     enum class ValueType { normal, interpolated, multiline };
 
     struct ValueToken {
-            ValueType type;
-            std::optional<std::string> value{};
-            size_t byte = 0;
-            size_t line = 0;
+        ValueType type;
+        std::optional<std::string> value{};
+        size_t byte = 0;
+        size_t line = 0;
     };
 
     struct Token {
-            std::optional<std::string> key = "";
-            std::vector<ValueToken> values{};
-            std::string file;
+        std::optional<std::string> key = "";
+        std::vector<ValueToken> values{};
+        std::string file;
     };
 
     typedef std::vector<Token> tokens_t;
@@ -31,7 +31,7 @@ namespace nvi {
     /**
      * @detail Lexes one or many .env files into tokens.
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
-     * `dir`, `required_envs`, and `debug`.
+     * `dir`, `debug`, `env`, `project` and `required_envs`.
      * @example Initializing a lexer and lexing .env files
      *
      * nvi::options_t options;
@@ -44,32 +44,32 @@ namespace nvi {
      */
     class Lexer {
         public:
-            Lexer(const options_t &options);
-            Lexer *parse_api_response(const std::string &envs) noexcept;
-            Lexer *parse_files() noexcept;
-            tokens_t get_tokens() const noexcept;
+        Lexer(const options_t &options);
+        Lexer *parse_api_response(const std::string &envs) noexcept;
+        Lexer *parse_files() noexcept;
+        tokens_t get_tokens() const noexcept;
 
         private:
-            void parse_file() noexcept;
-            std::optional<char> peek(int offset = 0) const noexcept;
-            char commit() noexcept;
-            void skip(int offset = 1) noexcept;
-            void log(const messages_t &code) const noexcept;
-            std::string get_value_type_string(const ValueType &vt) const noexcept;
-            void reset_byte_count() noexcept;
-            void increase_byte_count(size_t offset = 1) noexcept;
-            void increase_line_count() noexcept;
+        void parse_file() noexcept;
+        std::optional<char> peek(int offset = 0) const noexcept;
+        char commit() noexcept;
+        void skip(int offset = 1) noexcept;
+        void log(const messages_t &code) const noexcept;
+        std::string get_value_type_string(const ValueType &vt) const noexcept;
+        void reset_byte_count() noexcept;
+        void increase_byte_count(size_t offset = 1) noexcept;
+        void increase_line_count() noexcept;
 
-            options_t _options;
-            size_t _index;
-            size_t _byte;
-            size_t _line;
-            std::ifstream _env_file;
-            std::string _file;
-            std::string _file_name;
-            std::filesystem::path _file_path;
-            std::vector<Token> _tokens;
-            std::string _token_key;
+        options_t _options;
+        size_t _index;
+        size_t _byte;
+        size_t _line;
+        std::ifstream _env_file;
+        std::string _file;
+        std::string _file_name;
+        std::filesystem::path _file_path;
+        std::vector<Token> _tokens;
+        std::string _token_key;
     };
 }; // namespace nvi
 #endif

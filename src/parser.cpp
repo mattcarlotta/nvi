@@ -3,6 +3,8 @@
 #include "lexer.h"
 #include "log.h"
 #include "options.h"
+#include <cstdlib>
+#include <string>
 
 namespace nvi {
     inline constexpr char NULL_CHAR = '\0'; // 0x00

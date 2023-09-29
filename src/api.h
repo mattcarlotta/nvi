@@ -11,9 +11,16 @@ namespace nvi {
     /**
      * @detail Retrieves ENVs from the NVI API via an API key
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
-     * `dir`, `required_envs`, and `debug`.
+     * `dir`, `debug`, `env`, `project` and `required_envs`.
      * @example Fetching ENVs via project and environment
      *
+     * nvi::options_t options;
+     * options.debug = false;
+     * options.dir = "custom/path/to/envs";
+     * options.files = {".env", "base.env", ...etc};
+     * optons.required_envs = {"KEY1", "KEY2", ...etc};
+     * nvi::API api(options);
+     * std::string api_envs = api.get_key_from_file_or_input()->fetch_envs();
      */
     class API {
         public:

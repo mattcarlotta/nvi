@@ -24,7 +24,7 @@ A clear and concise description of what the bug is.
 5. See error
 
 ## Debug logs
-Run the binary with the `-d` or `--debug` flag and please provide any applicable debug logs.
+Run the binary with the `-de` or `--debug` flag and please provide any applicable debug logs.
 
 ## Expected behavior
 A clear and concise description of what you expected to happen.
