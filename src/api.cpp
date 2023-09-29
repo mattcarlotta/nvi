@@ -13,6 +13,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <termios.h>
+#include <unistd.h>
 
 namespace nvi {
     API::API(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
@@ -27,17 +29,30 @@ namespace nvi {
             std::ifstream api_file{api_key_file, std::ios_base::in};
 
             api_key = std::string{std::istreambuf_iterator{api_file}, {}};
-            api_key.erase(std::remove_if(api_key.begin(), api_key.end(), filter_non_alphanum_char), api_key.end());
+
+            api_file.close();
         } else {
             std::clog << "[nvi] Please enter your unique API key: ";
+
+            // disable echo input
+            termios term;
+            tcgetattr(STDIN_FILENO, &term);
+            term.c_lflag &= ~ECHO;
+            tcsetattr(STDIN_FILENO, TCSANOW, &term);
+
+            // get api key from user input
             std::getline(std::cin, api_key);
+            std::clog << '\n';
 
-            const bool valid_api_key =
-                std::all_of(api_key.begin(), api_key.end(), [](char c) { return std::isalnum(c); });
+            // enable echo input
+            term.c_lflag |= ECHO;
+            tcsetattr(STDIN_FILENO, TCSANOW, &term);
+        }
 
-            if (api_key.size() == 0 || not valid_api_key) {
-                log(INVALID_INPUT_KEY);
-            }
+        api_key.erase(std::remove_if(api_key.begin(), api_key.end(), filter_non_alphanum_char), api_key.end());
+
+        if (api_key.length() == 0 || api_key.length() > 50) {
+            log(INVALID_INPUT_KEY);
         }
 
         _api_url = API_URL "/cli/secrets/?project=" + _options.project + "&environment=" + _options.environment +

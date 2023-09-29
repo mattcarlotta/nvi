@@ -5,20 +5,20 @@
 
 class Lex_Env_File : public testing::Test {
     protected:
-        static nvi::tokens_t file_tokens;
+    static nvi::tokens_t file_tokens;
 
     public:
-        static void SetUpTestSuite() {
-            nvi::Lexer lexer({/* commands */ {},
-                              /* config */ "",
-                              /* debug */ false,
-                              /* dir */ "../envs",
-                              /* environment */ "",
-                              /* files */ {"simple.env"},
-                              /* project */ "",
-                              /* required_envs */ {}});
-            file_tokens = lexer.parse_files()->get_tokens();
-        }
+    static void SetUpTestSuite() {
+        nvi::Lexer lexer({/* commands */ {},
+                          /* config */ "",
+                          /* debug */ false,
+                          /* dir */ "../envs",
+                          /* environment */ "",
+                          /* files */ {"simple.env"},
+                          /* project */ "",
+                          /* required_envs */ {}});
+        file_tokens = lexer.parse_files()->get_tokens();
+    }
 };
 
 nvi::tokens_t Lex_Env_File::file_tokens;
@@ -157,24 +157,15 @@ TEST_F(Lex_Env_File, multi_interp_value) {
 
 TEST(Lex_Response_Env, consistent_response_lex_size) {
     std::stringstream envs;
-    envs << "API_KEY_1=sdfksdfj"
-         << "\n";
-    envs << "API_KEY_2=${API_KEY_1}"
-         << "\n";
-    envs << "API_KEY_3=ssh-rsa BBBB\\"
-         << "\n";
-    envs << "Pl1P1\\"
-         << "\n";
-    envs << "A\\"
-         << "\n";
-    envs << "D+jk/3\\"
-         << "\n";
-    envs << "Lf3Dw== test@example.com"
-         << "\n";
-    envs << "API_KEY_4='  SINGLE QUOTES  '"
-         << "\n";
-    envs << "API_KEY_5=\"  DOUBLE QUOTES  \""
-         << "\n";
+    envs << "API_KEY_1=sdfksdfj" << '\n';
+    envs << "API_KEY_2=${API_KEY_1}" << '\n';
+    envs << "API_KEY_3=ssh-rsa BBBB\\" << '\n';
+    envs << "Pl1P1\\" << '\n';
+    envs << "A\\" << '\n';
+    envs << "D+jk/3\\" << '\n';
+    envs << "Lf3Dw== test@example.com" << '\n';
+    envs << "API_KEY_4='  SINGLE QUOTES  '" << '\n';
+    envs << "API_KEY_5=\"  DOUBLE QUOTES  \"" << '\n';
 
     nvi::Lexer lexer({/* commands */ {},
                       /* config */ "",
