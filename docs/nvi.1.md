@@ -106,9 +106,9 @@ To retrieve remote ENVs from the nvi API, you must first register and verify you
 1. Once registered and verified, create a project, an environment and at least 1 ENV secret within the environment
 2. Navigate to your account settings page, locate your unique API key and click the copy to clipboard button
 3. Using the nvi CLI tool, input the following flags:
-    a. "-p" | "--project" followed by a space and then the name of the project you've created
-    b. "-e" | "--env" followed by a space and then the name of the environment you've created
-    c. "--" followed by a space and then a system command to run 
+    a. "-p" | "\--project" followed by a space and then the name of the project you've created
+    b. "-e" | "\--env" followed by a space and then the name of the environment you've created
+    c. "\--" followed by a space and then a system command to run 
 4. Press the "Enter" key and nvi will prompt you for your unique API key‡
 5. Input the API key and nvi will attempt to retrieve and assign remote ENVs from the selected project and environment to the command (if no command is provided then nvi will just print the parsed and interpolated envs to standard out)
 
