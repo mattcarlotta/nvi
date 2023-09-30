@@ -3,7 +3,9 @@
 #include "log.h"
 #include "options.h"
 #include "version.h"
+#include <cstdlib>
 #include <ctime>
+#include <iostream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -224,17 +226,11 @@ For additional information, please see the man documentation or README.)"
             std::time_t current_time{std::time(nullptr)};
             std::tm const *time_stamp{std::localtime(&current_time)};
 
-            NVI_LOG_AND_EXIT(
-                NVI_VERSION,
-                "\n"
-                R"(
-nvi %s
-Copyright (C) %d Matt Carlotta.
-This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.
-There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.)"
-                "\n",
-                NVI_LIB_VERSION,
-                time_stamp->tm_year + 1900);
+            std::clog << "nvi " << NVI_LIB_VERSION << '\n';
+            std::clog << "Copyright (C) " << time_stamp->tm_year + 1900 << " Matt Carlotta." << '\n';
+            std::clog << "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions." << '\n';
+            std::clog << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl;
+            std::exit(EXIT_SUCCESS);
             break;
         }
         case PROJECT_FLAG_ERROR: {
@@ -255,9 +251,13 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following arg options were set: config="%s", debug="true", dir="%s", execute="%s", files="%s", required="%s".)",
-                _options.config.c_str(), _options.dir.c_str(), _command.c_str(),
+                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
+                _options.config.c_str(), 
+                _options.dir.c_str(), 
+                _options.environment.c_str(), 
+                _command.c_str(),
                 fmt::join(_options.files, ", ").c_str(),
+                _options.project.c_str(), 
                 fmt::join(_options.required_envs, ", ").c_str());
 
             if (_options.config.length() && 

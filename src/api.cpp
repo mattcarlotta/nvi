@@ -17,11 +17,11 @@
 #include <unistd.h>
 
 namespace nvi {
-    API::API(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
+    Api::Api(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
 
     static bool filter_non_alphanum_char(const char &c) { return not std::isalnum(c); }
 
-    API *API::get_key_from_file_or_input() noexcept {
+    Api *Api::get_key_from_file_or_input() noexcept {
         std::string api_key;
 
         const std::string api_key_file = std::filesystem::current_path() / ".nvi-key";
@@ -67,7 +67,7 @@ namespace nvi {
         return total_size;
     }
 
-    const std::string &API::fetch_envs() noexcept {
+    const std::string &Api::fetch_envs() noexcept {
         if (_curl == nullptr) {
             log(CURL_FAILED_TO_INIT);
         }
@@ -83,12 +83,14 @@ namespace nvi {
             log(REQUEST_ERROR);
         } else if (_res_status_code >= 400) {
             log(RESPONSE_ERROR);
+        } else if (_options.debug) {
+            log(RESPONSE_SUCCESS);
         }
 
         return _res_data;
     }
 
-    void API::log(const messages_t &code) const noexcept {
+    void Api::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
         case INVALID_INPUT_KEY: {
@@ -110,6 +112,13 @@ namespace nvi {
                 RESPONSE_ERROR,
                 "The nvi API responded with a %d: %s.", 
                 _res_status_code, _res_data.c_str());
+            break;
+        }
+        case RESPONSE_SUCCESS: {
+            NVI_LOG_DEBUG(
+                RESPONSE_SUCCESS,
+                "Successfully retrieved the %s ENVs from the nvi API.", 
+                _options.environment.c_str());
             break;
         }
         case CURL_FAILED_TO_INIT: {

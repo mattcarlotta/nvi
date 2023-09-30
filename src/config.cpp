@@ -88,7 +88,7 @@ namespace nvi {
                     if (not std::isalpha(current_char.value())) {
                         skip();
                     } else {
-                        token.key += commit();
+                        token.key.push_back(commit());
                     }
                 }
 
@@ -308,7 +308,7 @@ namespace nvi {
             } else if (peek().value() == COMMENT) {
                 skip_to_eol();
             } else {
-                value += commit();
+                value.push_back(commit());
             }
         }
         return value;

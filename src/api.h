@@ -19,16 +19,16 @@ namespace nvi {
      * options.dir = "custom/path/to/envs";
      * options.files = {".env", "base.env", ...etc};
      * optons.required_envs = {"KEY1", "KEY2", ...etc};
-     * nvi::API api(options);
+     * nvi::Api api(options);
      * std::string api_envs = api.get_key_from_file_or_input()->fetch_envs();
      */
-    class API {
+    class Api {
         public:
-        API(const options_t &options);
-        API *get_key_from_file_or_input() noexcept;
+        Api(const options_t &options);
+        Api *get_key_from_file_or_input() noexcept;
         const std::string &fetch_envs() noexcept;
 
-        ~API() {
+        ~Api() {
             if (_curl) {
                 curl_easy_cleanup(_curl);
             }

@@ -29,6 +29,7 @@ namespace nvi {
         INVALID_INPUT_KEY,
         REQUEST_ERROR,
         RESPONSE_ERROR,
+        RESPONSE_SUCCESS,
         CURL_FAILED_TO_INIT,
         // arg
         CONFIG_FLAG_ERROR,
@@ -90,6 +91,8 @@ namespace nvi {
             return "REQUEST_ERROR";
         case RESPONSE_ERROR:
             return "RESPONSE_ERROR";
+        case RESPONSE_SUCCESS:
+            return "RESPONSE_SUCCESS";
         case CURL_FAILED_TO_INIT:
             return "CURL_FAILED_TO_INIT";
         case CONFIG_FLAG_ERROR:
