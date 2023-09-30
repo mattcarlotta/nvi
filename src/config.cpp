@@ -19,6 +19,7 @@ namespace nvi {
     inline constexpr char FILES_PROP[] = "files";
     inline constexpr char PROJECT_PROP[] = "project";
     inline constexpr char REQUIRED_PROP[] = "required";
+    inline constexpr char SAVE_PROP[] = "save";
 
     inline constexpr char COMMENT = '#';         // 0x23
     inline constexpr char SPACE = ' ';           // 0x20
@@ -269,6 +270,12 @@ namespace nvi {
                 }
 
                 _options.required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
+            } else if (ct.key == SAVE_PROP) {
+                if (ct.type != ConfigValueType::boolean) {
+                    log(SAVE_ARG_ERROR);
+                }
+
+                _options.save = std::get<bool>(ct.value.value());
             } else {
                 log(INVALID_PROPERTY_WARNING);
             }
@@ -433,6 +440,13 @@ namespace nvi {
                 _value_type.c_str());
             break;
         }
+        case SAVE_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                SAVE_ARG_ERROR,
+                R"(The "save" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
         case INVALID_PROPERTY_WARNING: {
             NVI_LOG_DEBUG(
                 INVALID_PROPERTY_WARNING,
@@ -461,13 +475,14 @@ namespace nvi {
 
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following config options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
+                R"(The following config options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s", save="%s".)",
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
                 _command.c_str(), 
                 fmt::join(_options.files, ", ").c_str(), 
                 _options.project.c_str(), 
-                fmt::join(_options.required_envs, ", ").c_str());
+                fmt::join(_options.required_envs, ", ").c_str(),
+                (_options.save ? "true": "false"));
             break;
         }
         default:

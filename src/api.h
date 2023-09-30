@@ -5,6 +5,7 @@
 #include "options.h"
 #include <cstddef>
 #include <curl/curl.h>
+#include <filesystem>
 #include <string>
 
 namespace nvi {
@@ -36,11 +37,13 @@ namespace nvi {
 
         private:
         void log(const messages_t &code) const noexcept;
+        void save_envs_to_disk() noexcept;
 
         CURL *_curl;
         options_t _options;
         CURLcode _res;
         std::string _res_data;
+        std::filesystem::path _env_file_path;
         unsigned int _res_status_code = 0;
         std::string _api_url;
     };

@@ -5,23 +5,24 @@
 
 class Parse_Env_File : public testing::Test {
     protected:
-        static nvi::env_map_t env_map;
+    static nvi::env_map_t env_map;
 
     public:
-        static void SetUpTestSuite() {
-            nvi::options_t options = {/* commands */ {},
-                                      /* config */ "",
-                                      /* debug */ false,
-                                      /* dir */ "../envs",
-                                      /* environment */ "",
-                                      /* files */ {".env", "base.env", "reference.env"},
-                                      /* project */ "",
-                                      /* required_envs */ {"BASIC_ENV"}};
-            nvi::Lexer lexer(options);
-            lexer.parse_files();
-            nvi::Parser parser(lexer.get_tokens(), options);
-            env_map = parser.parse_tokens()->check_envs()->get_env_map();
-        }
+    static void SetUpTestSuite() {
+        nvi::options_t options = {/* commands */ {},
+                                  /* config */ "",
+                                  /* debug */ false,
+                                  /* dir */ "../envs",
+                                  /* environment */ "",
+                                  /* files */ {".env", "base.env", "reference.env"},
+                                  /* project */ "",
+                                  /* required_envs */ {"BASIC_ENV"},
+                                  /* save */ false};
+        nvi::Lexer lexer(options);
+        lexer.parse_files();
+        nvi::Parser parser(lexer.get_tokens(), options);
+        env_map = parser.parse_tokens()->check_envs()->get_env_map();
+    }
 };
 
 nvi::env_map_t Parse_Env_File::env_map;

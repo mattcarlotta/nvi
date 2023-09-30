@@ -24,7 +24,7 @@ namespace nvi {
     Api *Api::get_key_from_file_or_input() noexcept {
         std::string api_key;
 
-        const std::string api_key_file = std::filesystem::current_path() / ".nvi-key";
+        const std::filesystem::path api_key_file = std::filesystem::current_path() / ".nvi-key";
         if (std::filesystem::exists(api_key_file)) {
             std::ifstream api_file{api_key_file, std::ios_base::in};
 
@@ -42,7 +42,7 @@ namespace nvi {
 
             // get api key from user input
             std::getline(std::cin, api_key);
-            std::clog << std::endl;
+            std::clog << '\n';
 
             // enable echo input
             term.c_lflag |= ECHO;
@@ -87,7 +87,41 @@ namespace nvi {
             log(RESPONSE_SUCCESS);
         }
 
+        if (_options.save) {
+            save_envs_to_disk();
+        }
+
         return _res_data;
+    }
+
+    void Api::save_envs_to_disk() noexcept {
+        const std::string env_name = _options.environment + ".env";
+        _env_file_path = std::filesystem::current_path() / env_name;
+        if (std::filesystem::exists(_env_file_path)) {
+            std::clog << "[nvi] WARNING: A file named \"" << env_name << "\" already exists at the current path ("
+                      << std::filesystem::current_path() << "). " << '\n'
+                      << "[nvi] Are you sure you want to save and overwrite it? (y|N): ";
+
+            std::string save_file;
+            std::getline(std::cin, save_file);
+
+            if (save_file != "y" && save_file != "Y" && save_file == "yes" && save_file == "Yes") {
+                return;
+            }
+        }
+
+        std::ofstream env_file{_env_file_path};
+        if (not env_file.is_open()) {
+            log(FILE_ERROR);
+        }
+
+        env_file << _res_data;
+
+        if (_options.debug) {
+            log(SAVED_ENV_FILE);
+        }
+
+        env_file.close();
     }
 
     void Api::log(const messages_t &code) const noexcept {
@@ -126,6 +160,20 @@ namespace nvi {
                 CURL_FAILED_TO_INIT,
                 "Failed to initialize cURL. Are you sure it's installed?", 
                 NULL);
+            break;
+        }
+        case FILE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ERROR,
+                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
+                _env_file_path.c_str());
+            break;
+        }
+        case SAVED_ENV_FILE: {
+            NVI_LOG_DEBUG(
+                SAVED_ENV_FILE,
+                R"(Successfully saved the "%s.env" file to disk (%s).)", 
+                _options.environment.c_str(), _env_file_path.c_str());
             break;
         }
         default:

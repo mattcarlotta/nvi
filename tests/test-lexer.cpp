@@ -16,7 +16,8 @@ class Lex_Env_File : public testing::Test {
                           /* environment */ "",
                           /* files */ {"simple.env"},
                           /* project */ "",
-                          /* required_envs */ {}});
+                          /* required_envs */ {},
+                          /* save */ false});
         file_tokens = lexer.parse_files()->get_tokens();
     }
 };

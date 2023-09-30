@@ -31,6 +31,7 @@ namespace nvi {
         RESPONSE_ERROR,
         RESPONSE_SUCCESS,
         CURL_FAILED_TO_INIT,
+        SAVED_ENV_FILE,
         // arg
         CONFIG_FLAG_ERROR,
         DIR_FLAG_ERROR,
@@ -53,6 +54,7 @@ namespace nvi {
         EXEC_ARG_ERROR,
         PROJECT_ARG_ERROR,
         REQUIRED_ARG_ERROR,
+        SAVE_ARG_ERROR,
         INVALID_PROPERTY_WARNING,
         INVALID_ARRAY_VALUE,
         INVALID_BOOLEAN_VALUE,
@@ -95,6 +97,8 @@ namespace nvi {
             return "RESPONSE_SUCCESS";
         case CURL_FAILED_TO_INIT:
             return "CURL_FAILED_TO_INIT";
+        case SAVED_ENV_FILE:
+            return "SAVED_ENV_FILE";
         case CONFIG_FLAG_ERROR:
             return "CONFIG_FLAG_ERROR";
         case DIR_FLAG_ERROR:
@@ -133,6 +137,8 @@ namespace nvi {
             return "PROJECT_ARG_ERROR";
         case REQUIRED_ARG_ERROR:
             return "REQUIRED_ARG_ERROR";
+        case SAVE_ARG_ERROR:
+            return "SAVE_ARG_ERROR";
         case INVALID_PROPERTY_WARNING:
             return "INVALID_PROPERTY_WARNING";
         case INVALID_ARRAY_VALUE:
@@ -183,7 +189,7 @@ namespace nvi {
         buf.reserve(size + 1);
         buf.resize(size);
         snprintf(&buf[0], size + 1, fmt, args...);
-        ostr << "[nvi] (" << filename << "::" << _get_string_from_code(code) << ") " << buf << std::endl;
+        ostr << "[nvi] (" << filename << "::" << _get_string_from_code(code) << ") " << buf << '\n';
     }
 
     template <typename... A>

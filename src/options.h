@@ -14,6 +14,7 @@ namespace nvi {
         std::vector<std::string> files{".env"};
         std::string project;
         std::vector<std::string> required_envs;
+        bool save = false;
     } options_t;
 }; // namespace nvi
 

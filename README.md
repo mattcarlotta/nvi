@@ -18,6 +18,7 @@ A stand-alone .env file parser for interpolating and assigning ENVs into a proce
 [Configuration File](#configuration-file)
 
 [Remote ENVs](#remote-envs)
+  - [How do I save remote ENVs?](#how-do-i-save-remote-envs)
 
 [Man Documenation](docs/README.md)
 
@@ -157,13 +158,14 @@ If no flags are assigned, then an `.env` (that is named ".env") located at the r
 - `-f` | `--files`: Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)
 - `-p` | `--project`: Specifies which remote project to select from the nvi API. (ex: --project my_project)‡‡
 - `-r` | `--required`: Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)
+- `-s` | `--save`: Specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save)‡‡
 - `-h` | `--help`: Displays this help information.
 - `-v` | `--version`: Displays binary information.
 - `--`: Specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)‡‡‡
 
 ‡ When a "-c" or "--config" flag is present, then all the other flags are ignored as they should be defined within a [configuration file](#configuration-file).
 
-‡‡ When pulling remote ENVs from the nvi API, the "project" and "environment" flags must both be defined. 
+‡‡ When retrieving and saving remote ENVs from the nvi API, the "project" and "environment" flags must both be defined. 
 
 ‡‡‡ The "--" (execute) flag should be the last defined flag. Any flags after it will be consumed as part of the system command. 
 
@@ -181,6 +183,7 @@ The configuration file is a [TOML](https://toml.io/en/)-like formatted file that
   - **files**: string[] (default `[".env"]`) 
   - **project**: string (default: `""`)
   - **required**: string[] (default `[]`)
+  - **save**: boolean (default `false`)
 
 The following represents an example `.nvi` configuration:
 ```toml
@@ -196,10 +199,12 @@ files = [ ".env" ]
 required = [ "TEST1" ]
 
 [remote_dev]
+debug = true
 env = "development"
 exec = "bin dev"
 project = "my_project"
 required = [ "TEST1", "TEST2", "TEST3" ]
+save = true
 ```
 
 To target a configuration within the .nvi config file, simply use the `-c` or `--config` flag followed by the config name:
@@ -260,6 +265,47 @@ Input your API key and press the "Enter" key:
 ```
 
 If no error is displayed in the terminal, then a child process should be spawned with the command OR ENVs will be printed to standard out as stringified JSON.
+
+### How do I save remote ENVs?
+
+To save remote ENVs from the nvi API, you must first register and verify your email using the [front-facing application](https://github.com/mattcarlotta/nvi-app). 
+- Once registered and verified, create a project, an environment and at least 1 ENV secret within the environment
+- Navigate to your account settings page, locate your unique API key and click the copy to clipboard button
+- Using the nvi CLI tool, input the following flags:
+    - "-p" | "--project" followed by a space and then the name of the project you've created
+    - "-e" | "--env" followed by a space and then the name of the environment you've created
+    - "-s" | "--save"
+    - "--" followed by a space and then a system command to run 
+- Press the "Enter" key and nvi will prompt you for your unique API key‡
+- Input the API key and nvi will attempt to retrieve, save and assign remote ENVs from the selected project and environment to the command (if no command is provided then nvi will just print the parsed and interpolated envs to standard out)
+
+‡ You can bypass this step by creating a `.nvi-key` file at the project root directory that includes your unique API key. Be mindful, that this file **MUST** be added to your `.gitignore`!
+
+Retrieving and saving remote ENVs:
+```bash
+nvi -p my_project -e development -s -- cargo run
+```
+
+Then, you'll be asked for your API key:
+```bash
+[nvi] Please enter your unique API key: 
+```
+
+Input your API key and press the "Enter" key:
+```bash
+[nvi] Please enter your unique API key: abcdefhijkhijklo0123456789
+```
+
+If an .env file already exists with that environment name, then you'll be greeted with a prompt:
+```bash
+[nvi] WARNING: A file named "development.env" already exists at the current path ("/home/[user]/[current_directory]").
+[nvi] Are you sure you want to save and overwrite it? (y|N): 
+```
+
+If you insert `y`, `Y`, `yes` or `Yes` and press the "Enter" key OR the file doesn't exist, then it'll save (and overwrite) the file:
+```bash
+[nvi] (Api::log::SAVED_ENV_FILE) Successfully saved the "development.env" file to disk (/home/[user]/[current_directory]/development.env).
+```
 
 ## FAQs
 

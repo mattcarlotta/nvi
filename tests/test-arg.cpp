@@ -7,8 +7,9 @@ char *argv[] = {(char *)"tests",      (char *)"--config",   (char *)"test",     
                 (char *)"--dir",      (char *)"tests",      (char *)"--env",     (char *)"my_env",
                 (char *)"--files",    (char *)"test.env",   (char *)"test2.env", (char *)"--project",
                 (char *)"my_project", (char *)"--required", (char *)"KEY1",      (char *)"KEY2",
-                (char *)"--",         (char *)"bin",        (char *)"test",      (char *)NULL};
-int argc = 20;
+                (char *)"--save",     (char *)"--",         (char *)"bin",       (char *)"test",
+                (char *)NULL};
+int argc = 21;
 
 nvi::Arg args(argc, argv);
 
@@ -33,3 +34,5 @@ TEST(Arg, parseable_required_envs) {
     const std::vector<std::string> required_envs = {"KEY1", "KEY2"};
     EXPECT_EQ(args.get_options().required_envs, required_envs);
 }
+
+TEST(Arg, parseable_save) { EXPECT_EQ(args.get_options().save, true); }

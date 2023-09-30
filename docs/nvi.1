@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "nvi" "1" "09-29-2023" "CLI Documentation v0.0.4" ""
+.TH "nvi" "1" "09-30-2023" "CLI Documentation v0.0.5" ""
 .hy
 .SH NAME
 .PP
@@ -72,6 +72,10 @@ Remote projects are created via the front-facing web application.
 -r, --required \f[I]KEY\f[R]
 A list of ENV keys are that required to exist after parsing.
 Each specified \f[I]KEY\f[R] needs to be separated by a space.
+.TP
+-s, --save
+Specifies whether or not to save remote ENVs to disk with the selected
+environment name.
 .TP
 -v, --version
 Prints the current version number.
@@ -200,10 +204,12 @@ files = [ \[dq].env\[dq] ]
 required = [ \[dq]TEST1\[dq] ]
 
 [remote_dev]
+debug = true
 env = \[dq]development\[dq]
 exec = \[dq]bin dev\[dq]
 project = \[dq]my_project\[dq]
 required = [ \[dq]TEST1\[dq], \[dq]TEST2\[dq], \[dq]TEST3\[dq] ]
+save = true
 \f[R]
 .fi
 .PP

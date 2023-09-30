@@ -8,7 +8,7 @@ nvi::Config config("staggered_with_comments", "../envs");
 nvi::options_t opts = config.generate_options()->get_options();
 std::vector<nvi::ConfigToken> tokens = config.get_tokens();
 
-TEST(Config, generate_tokens) { EXPECT_EQ(tokens.size(), 7); }
+TEST(Config, generate_tokens) { EXPECT_EQ(tokens.size(), 8); }
 
 TEST(Config, parseable_debug) {
     const nvi::ConfigToken token = tokens.at(0);
@@ -60,4 +60,11 @@ TEST(Config, parseable_required_envs) {
 
     const std::vector<std::string> envs = {"TEST1", "TEST2", "TEST3"};
     EXPECT_EQ(opts.required_envs, envs);
+}
+
+TEST(Config, parseable_save) {
+    const nvi::ConfigToken token = tokens.at(7);
+    EXPECT_EQ(token.type, nvi::ConfigValueType::boolean);
+    EXPECT_EQ(token.key, "save");
+    EXPECT_EQ(opts.debug, true);
 }

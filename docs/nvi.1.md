@@ -1,6 +1,6 @@
-% nvi(1) CLI Documentation v0.0.4 
+% nvi(1) CLI Documentation v0.0.5
 % Matt Carlotta
-% 09-29-2023
+% 09-30-2023
 
 # NAME
 
@@ -57,6 +57,10 @@ directory will be parsed and printed to standard out.
 -r, \--required [KEY]{.underline}
 
 :   A list of ENV keys are that required to exist after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
+
+-s, \--save
+
+:   Specifies whether or not to save remote ENVs to disk with the selected environment name.
 
 -v, \--version
 
@@ -141,10 +145,12 @@ files = [ ".env" ]
 required = [ "TEST1" ]
 
 [remote_dev]
+debug = true
 env = "development"
 exec = "bin dev"
 project = "my_project"
 required = [ "TEST1", "TEST2", "TEST3" ]
+save = true
 ```
 
 To target a configuration within the .nvi config file, simply use the `-c` or `--config` flag followed by the config name:

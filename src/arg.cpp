@@ -29,6 +29,8 @@ namespace nvi {
     inline constexpr char PROJECT_LONG[] = "--project";
     inline constexpr char REQUIRED_SHORT[] = "-r";
     inline constexpr char REQUIRED_LONG[] = "--required";
+    inline constexpr char SAVE_SHORT[] = "-s";
+    inline constexpr char SAVE_LONG[] = "--save";
     inline constexpr char VERSION_SHORT[] = "-v";
     inline constexpr char VERSION_LONG[] = "--version";
 
@@ -54,6 +56,8 @@ namespace nvi {
                 _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
             } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
                 _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
+            } else if (arg == SAVE_SHORT || arg == SAVE_LONG) {
+                _options.save = true;
             } else if (arg == VERSION_SHORT || arg == VERSION_LONG) {
                 log(NVI_VERSION);
             } else {
@@ -203,20 +207,21 @@ namespace nvi {
                 HELP_DOC,
                 "\n"
                 R"(
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ NVI CLI Documentation                                                                                                  │
-├─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ flag            │ description                                                                                          │
-├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)             │
-│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                         │
-│ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                │
-│ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                   │
-│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)           │
-│ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                │
-│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)               │
-│ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)        │
-└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ NVI CLI Documentation                                                                                                   │
+├─────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ flag            │ description                                                                                           │
+├─────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
+│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                          │
+│ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                 │
+│ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                    │
+│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
+│ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
+│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
+│ -s, --save      │ Specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
+│ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)         │
+└─────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 For additional information, please see the man documentation or README.)"
                 "\n",
                 NULL);
@@ -251,14 +256,16 @@ For additional information, please see the man documentation or README.)"
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s".)",
+                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s", save="%s".)",
                 _options.config.c_str(), 
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
                 _command.c_str(),
                 fmt::join(_options.files, ", ").c_str(),
                 _options.project.c_str(), 
-                fmt::join(_options.required_envs, ", ").c_str());
+                fmt::join(_options.required_envs, ", ").c_str(),
+                (_options.save ? "true": "false"));
+
 
             if (_options.config.length() && 
                     (_options.dir.length() || 
