@@ -90,7 +90,7 @@ compile_for_gnu_linux() {
 }
 
 check_system_requirements() {
-    local install_message="doesn't appear to be installed on the system. You must install it before using this script. Optionally you can manually build and install nvi by reading the Custom Installations section in the README."
+    local install_message="doesn't appear to be installed on the system. You must install it before using this script. Optionally you can manually build and install nvi by reading the Custom Installations section in the GitHub wiki."
     if [ -z "$cmake_bin" ];
     then
         log_error "cmake $install_message"
@@ -103,11 +103,10 @@ check_system_requirements() {
 
     if [ -z "$curl_bin" ];
     then
-        log_error "curl $install_message"
+        log_error "curl doesn't appear to be installed on the system. You must install it before compiling the source."
     fi
 
 }
-
 
 main() {
     check_system_requirements

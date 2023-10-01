@@ -93,6 +93,9 @@ namespace nvi {
                     }
                 }
 
+                // assign current token.key to _key just for logging errors
+                _key = token.key;
+
                 // parse and assign value
                 while (current_char.has_value()) {
                     current_char = peek();
@@ -113,7 +116,6 @@ namespace nvi {
 
                         // ensure value is a bool
                         if (not a_true_value && not a_false_value) {
-                            _key = token.key;
                             log(INVALID_BOOLEAN_VALUE);
                         }
 
@@ -133,7 +135,6 @@ namespace nvi {
 
                         // ensure a value exists to prevent consuming other properties
                         if (value.length() == 0) {
-                            _key = token.key;
                             log(INVALID_STRING_VALUE);
                         }
 
@@ -159,7 +160,6 @@ namespace nvi {
                             // running into an assignment or open bracket means a closing bracket is missing
                             if (not current_char.has_value() || current_char.value() == ASSIGN_OP ||
                                 current_char.value() == OPEN_BRACKET) {
-                                _key = token.key;
                                 log(INVALID_ARRAY_VALUE);
                             } else if (current_char.value() == CLOSE_BRACKET) {
                                 break;
@@ -177,7 +177,6 @@ namespace nvi {
                         // ensure the current character is a closing bracket, otherwise it's missing,
                         // therefore the extracted values aren't correct
                         if (current_char.has_value() && current_char.value() != CLOSE_BRACKET) {
-                            _key = token.key;
                             log(INVALID_ARRAY_VALUE);
                         }
 
