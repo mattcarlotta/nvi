@@ -52,6 +52,7 @@ namespace nvi {
         FILES_ARG_ERROR,
         EMPTY_FILES_ARG_ERROR,
         EXEC_ARG_ERROR,
+        PRINT_ARG_ERROR,
         PROJECT_ARG_ERROR,
         REQUIRED_ARG_ERROR,
         SAVE_ARG_ERROR,
@@ -69,8 +70,10 @@ namespace nvi {
         FILE_EXTENSION_ERROR,
         EMPTY_ENVS_ERROR,
         EMPTY_RESPONSE_ENVS_ERROR,
+        // generator
         COMMAND_ENOENT_ERROR,
         COMMAND_FAILED_TO_RUN,
+        NO_ACTION_ERROR,
         // shared
         FILE_ERROR,
         FILE_ENOENT_ERROR,
@@ -133,6 +136,8 @@ namespace nvi {
             return "EMPTY_FILES_ARG_ERROR";
         case EXEC_ARG_ERROR:
             return "EXEC_ARG_ERROR";
+        case PRINT_ARG_ERROR:
+            return "PRINT_ARG_ERROR";
         case PROJECT_ARG_ERROR:
             return "PROJECT_ARG_ERROR";
         case REQUIRED_ARG_ERROR:
@@ -169,6 +174,8 @@ namespace nvi {
             return "COMMAND_ENOENT_ERROR";
         case COMMAND_FAILED_TO_RUN:
             return "COMMAND_FAILED_TO_RUN";
+        case NO_ACTION_ERROR:
+            return "NO_ACTION_ERROR";
         case FILE_ERROR:
             return "FILE_ERROR";
         case FILE_ENOENT_ERROR:

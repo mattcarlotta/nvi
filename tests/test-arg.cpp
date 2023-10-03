@@ -3,13 +3,13 @@
 #include <string>
 #include <vector>
 
-char *argv[] = {(char *)"tests",      (char *)"--config",   (char *)"test",      (char *)"--debug",
-                (char *)"--dir",      (char *)"tests",      (char *)"--env",     (char *)"my_env",
-                (char *)"--files",    (char *)"test.env",   (char *)"test2.env", (char *)"--project",
-                (char *)"my_project", (char *)"--required", (char *)"KEY1",      (char *)"KEY2",
-                (char *)"--save",     (char *)"--",         (char *)"bin",       (char *)"test",
-                (char *)NULL};
-int argc = 21;
+char *argv[] = {(char *)"tests",     (char *)"--config",   (char *)"test",       (char *)"--debug",
+                (char *)"--dir",     (char *)"tests",      (char *)"--env",      (char *)"my_env",
+                (char *)"--files",   (char *)"test.env",   (char *)"test2.env",  (char *)"--print",
+                (char *)"--project", (char *)"my_project", (char *)"--required", (char *)"KEY1",
+                (char *)"KEY2",      (char *)"--save",     (char *)"--",         (char *)"bin",
+                (char *)"test",      (char *)NULL};
+int argc = 22;
 
 nvi::Arg args(argc, argv);
 
@@ -27,6 +27,8 @@ TEST(Arg, parseable_files) {
     const std::vector<std::string> files = {"test.env", "test2.env"};
     EXPECT_EQ(args.get_options().files, files);
 }
+
+TEST(Arg, parseable_print) { EXPECT_EQ(args.get_options().print, true); }
 
 TEST(Arg, parseable_project) { EXPECT_EQ(args.get_options().project, "my_project"); }
 

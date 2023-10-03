@@ -17,6 +17,7 @@ namespace nvi {
     inline constexpr char ENV_PROP[] = "env";
     inline constexpr char EXEC_PROP[] = "exec";
     inline constexpr char FILES_PROP[] = "files";
+    inline constexpr char PRINT_PROP[] = "print";
     inline constexpr char PROJECT_PROP[] = "project";
     inline constexpr char REQUIRED_PROP[] = "required";
     inline constexpr char SAVE_PROP[] = "save";
@@ -257,6 +258,12 @@ namespace nvi {
                 }
 
                 _options.commands.push_back(nullptr);
+            } else if (ct.key == PRINT_PROP) {
+                if (ct.type != ConfigValueType::boolean) {
+                    log(PRINT_ARG_ERROR);
+                }
+
+                _options.print = std::get<bool>(ct.value.value());
             } else if (_key == PROJECT_PROP) {
                 if (ct.type != ConfigValueType::string) {
                     log(PROJECT_ARG_ERROR);
@@ -282,6 +289,10 @@ namespace nvi {
 
         if (_options.debug) {
             log(DEBUG);
+        }
+
+        if (not _options.config.length() && _options.commands.size() == 0 && not _options.print) {
+            log(NO_ACTION_ERROR);
         }
 
         return this;
@@ -425,6 +436,13 @@ namespace nvi {
                 _value_type.c_str());
             break;
         }
+        case PRINT_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                PRINT_ARG_ERROR,
+                R"(The "print" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
         case PROJECT_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 PROJECT_ARG_ERROR,
@@ -472,16 +490,31 @@ namespace nvi {
                 R"(Successfully parsed the "%s" configuration from the .nvi file.)",
                 _env.c_str());
 
+            if (_options.commands.size() && _options.print) {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
+                    NULL);
+            }
+
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following config options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s", save="%s".)",
+                R"(The following config options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
                 _command.c_str(), 
                 fmt::join(_options.files, ", ").c_str(), 
+                (_options.print ? "true": "false"),
                 _options.project.c_str(), 
                 fmt::join(_options.required_envs, ", ").c_str(),
                 (_options.save ? "true": "false"));
+            break;
+        }
+        case NO_ACTION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                NO_ACTION_ERROR,
+                R"(Running the CLI tool without any system commands nor a "print" flag won't do anything. Use flag "-h" or "--help" for more information.)",
+                NULL);
             break;
         }
         default:

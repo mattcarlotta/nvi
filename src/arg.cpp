@@ -27,6 +27,8 @@ namespace nvi {
     inline constexpr char HELP_LONG[] = "--help";
     inline constexpr char PROJECT_SHORT[] = "-p";
     inline constexpr char PROJECT_LONG[] = "--project";
+    inline constexpr char PRINT_SHORT[] = "-pr";
+    inline constexpr char PRINT_LONG[] = "--print";
     inline constexpr char REQUIRED_SHORT[] = "-r";
     inline constexpr char REQUIRED_LONG[] = "--required";
     inline constexpr char SAVE_SHORT[] = "-s";
@@ -52,6 +54,8 @@ namespace nvi {
                 _options.files = parse_multi_arg(FILES_FLAG_ERROR);
             } else if (arg == HELP_SHORT || arg == HELP_LONG) {
                 log(HELP_DOC);
+            } else if (arg == PRINT_SHORT || arg == PRINT_LONG) {
+                _options.print = true;
             } else if (arg == PROJECT_SHORT || arg == PROJECT_LONG) {
                 _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
             } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
@@ -67,6 +71,10 @@ namespace nvi {
 
         if (_options.debug) {
             log(DEBUG);
+        }
+
+        if (not _options.config.length() && _options.commands.size() == 0 && not _options.print) {
+            log(NO_ACTION_ERROR);
         }
     };
 
@@ -218,6 +226,7 @@ namespace nvi {
 │ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                    │
 │ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
 │ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
+│ -pr, --print    │ Specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
 │ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
 │ -s, --save      │ Specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
 │ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)         │
@@ -256,28 +265,42 @@ For additional information, please see the man documentation or README.)"
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", project="%s", required="%s", save="%s".)",
+                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
                 _options.config.c_str(), 
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
                 _command.c_str(),
                 fmt::join(_options.files, ", ").c_str(),
+                (_options.print ? "true": "false"),
                 _options.project.c_str(), 
                 fmt::join(_options.required_envs, ", ").c_str(),
                 (_options.save ? "true": "false"));
 
 
+            if (_options.commands.size() && _options.print) {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
+                    NULL);
+            }
+
             if (_options.config.length() && 
                     (_options.dir.length() || 
                      _options.commands.size() ||
                      _options.files.size() > 1 || 
-                     _options.required_envs.size())) 
-            {
+                     _options.required_envs.size())) {
                 NVI_LOG_DEBUG(
                     DEBUG,
-                    R"(Found conflicting flags. When the "config" flag has been set, then "dir", "exec", "files", and "required" flags are ignored.)",
+                    R"(Found conflicting flags. When the "config" flag has been set, then "environment", dir", "exec", "files", "project", and "required" flags are ignored.)",
                     NULL);
             }
+            break;
+        }
+        case NO_ACTION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                NO_ACTION_ERROR,
+                R"(Running the CLI tool without any system commands nor a "print" flag won't do anything. Use flag "-h" or "--help" for more information.)",
+                NULL);
             break;
         }
         default:

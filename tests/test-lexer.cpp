@@ -15,6 +15,7 @@ class Lex_Env_File : public testing::Test {
                           /* dir */ "../envs",
                           /* environment */ "",
                           /* files */ {"simple.env"},
+                          /* print */ false,
                           /* project */ "",
                           /* required_envs */ {},
                           /* save */ false});
@@ -174,6 +175,7 @@ TEST(Lex_Response_Env, consistent_response_lex_size) {
                       /* dir */ "",
                       /* environment */ "",
                       /* files */ {},
+                      /* print */ false,
                       /* project */ "",
                       /* required_envs */ {}});
     nvi::tokens_t res_tokens = lexer.parse_api_response(envs.str())->get_tokens();

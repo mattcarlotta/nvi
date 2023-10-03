@@ -1,6 +1,6 @@
-% nvi(1) CLI Documentation v0.0.5
+% nvi(1) CLI Documentation v0.0.6
 % Matt Carlotta
-% 09-30-2023
+% 10-03-2023
 
 # NAME
 
@@ -42,7 +42,7 @@ directory will be parsed and printed to standard out.
 
 :   Specifies which environment config to use within a remote project. Remote environments are created via the front-facing web application.
 
--f, \--files [file]{.underline}
+-f, \--files [file1.env]{.underline} [file2.env]{.underline} [file3.env]{.underline} ...etc
 
 :   A list of .env files to parse. Each specified [file]{.underline} needs to be separated by a space.
 
@@ -54,9 +54,13 @@ directory will be parsed and printed to standard out.
 
 :   Specifies which remote project to select from the nvi API. Remote projects are created via the front-facing web application.
 
--r, \--required [KEY]{.underline}
+-pr, \--print
 
-:   A list of ENV keys are that required to exist after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
+:   Specifies whether or not to print ENVs to standard out. This flag will be ignored if a system command is defined.
+
+-r, \--required [KEY_1]{.underline} [KEY_2]{.underline} [KEY_3]{.underline} ...etc
+
+:   A list of ENV keys that are required to exist after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
 
 -s, \--save
 

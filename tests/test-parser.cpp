@@ -15,6 +15,7 @@ class Parse_Env_File : public testing::Test {
                                   /* dir */ "../envs",
                                   /* environment */ "",
                                   /* files */ {".env", "base.env", "reference.env"},
+                                  /* print */ false,
                                   /* project */ "",
                                   /* required_envs */ {"BASIC_ENV"},
                                   /* save */ false};

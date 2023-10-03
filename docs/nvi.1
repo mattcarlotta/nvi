@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "nvi" "1" "09-30-2023" "CLI Documentation v0.0.5" ""
+.TH "nvi" "1" "10-03-2023" "CLI Documentation v0.0.6" ""
 .hy
 .SH NAME
 .PP
@@ -58,7 +58,7 @@ The \f[I]path\f[R] will be relative to the current directory.
 Specifies which environment config to use within a remote project.
 Remote environments are created via the front-facing web application.
 .TP
--f, --files \f[I]file\f[R]
+-f, --files \f[I]file1.env\f[R] \f[I]file2.env\f[R] \f[I]file3.env\f[R] \&...etc
 A list of .env files to parse.
 Each specified \f[I]file\f[R] needs to be separated by a space.
 .TP
@@ -69,8 +69,12 @@ Prints brief CLI flag usage information.
 Specifies which remote project to select from the nvi API.
 Remote projects are created via the front-facing web application.
 .TP
--r, --required \f[I]KEY\f[R]
-A list of ENV keys are that required to exist after parsing.
+-pr, --print
+Specifies whether or not to print ENVs to standard out.
+This flag will be ignored if a system command is defined.
+.TP
+-r, --required \f[I]KEY_1\f[R] \f[I]KEY_2\f[R] \f[I]KEY_3\f[R] \&...etc
+A list of ENV keys that are required to exist after parsing.
 Each specified \f[I]KEY\f[R] needs to be separated by a space.
 .TP
 -s, --save

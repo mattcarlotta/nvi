@@ -37,7 +37,7 @@ namespace nvi {
             } else {
                 log(COMMAND_FAILED_TO_RUN);
             }
-        } else {
+        } else if (_options.print) {
             // print ENVs as a JSON formatted string to stdout
             const std::string last_key = std::prev(_env_map.end())->first;
             std::cout << OPEN_BRACE;
