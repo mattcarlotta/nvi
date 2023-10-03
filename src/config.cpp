@@ -291,10 +291,6 @@ namespace nvi {
             log(DEBUG);
         }
 
-        if (not _options.config.length() && _options.commands.size() == 0 && not _options.print) {
-            log(NO_ACTION_ERROR);
-        }
-
         return this;
     }
 
@@ -508,13 +504,6 @@ namespace nvi {
                 _options.project.c_str(), 
                 fmt::join(_options.required_envs, ", ").c_str(),
                 (_options.save ? "true": "false"));
-            break;
-        }
-        case NO_ACTION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                NO_ACTION_ERROR,
-                R"(Running the CLI tool without any system commands nor a "print" flag won't do anything. Use flag "-h" or "--help" for more information.)",
-                NULL);
             break;
         }
         default:

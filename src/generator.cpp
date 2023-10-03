@@ -45,6 +45,8 @@ namespace nvi {
                 std::cout << std::quoted(key) << ": " << std::quoted(value) << (key != last_key ? "," : "");
             }
             std::cout << CLOSE_BRACE << std::endl;
+        } else if (not _options.save) {
+            log(NO_ACTION_ERROR);
         }
     }
 
@@ -62,6 +64,13 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 COMMAND_FAILED_TO_RUN,
                 "Unable to run the specified command. See terminal logs for more information.",
+                NULL);
+            break;
+        }
+        case NO_ACTION_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                NO_ACTION_ERROR,
+                R"(Running the CLI tool without any system commands nor a "print" or "save" flag won't do anything. Use flag "-h" or "--help" for more information.)",
                 NULL);
             break;
         }

@@ -72,10 +72,6 @@ namespace nvi {
         if (_options.debug) {
             log(DEBUG);
         }
-
-        if (not _options.config.length() && _options.commands.size() == 0 && not _options.print) {
-            log(NO_ACTION_ERROR);
-        }
     };
 
     const options_t &Arg::get_options() const noexcept { return _options; }
@@ -294,13 +290,6 @@ For additional information, please see the man documentation or README.)"
                     R"(Found conflicting flags. When the "config" flag has been set, then "environment", dir", "exec", "files", "project", and "required" flags are ignored.)",
                     NULL);
             }
-            break;
-        }
-        case NO_ACTION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                NO_ACTION_ERROR,
-                R"(Running the CLI tool without any system commands nor a "print" flag won't do anything. Use flag "-h" or "--help" for more information.)",
-                NULL);
             break;
         }
         default:
