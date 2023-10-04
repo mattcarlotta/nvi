@@ -10,6 +10,10 @@ man ./nvi.1
 
 # System Installation
 
+You can either set the [-DINSTALL_MAN_DIR cmake flag](https://github.com/mattcarlotta/nvi/wiki/Quick-Installation#custom-cmake-compile-flags) before running the install script.
+
+OR
+
 Locate directory paths that `man` searches within by running one of the commands below (directories are separated by colons `:`):
 
 GNU/Linux:
