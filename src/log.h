@@ -27,6 +27,7 @@ namespace nvi {
     typedef enum MESSAGES {
         // api
         INVALID_INPUT_KEY,
+        INVALID_INPUT_SELECTION,
         REQUEST_ERROR,
         RESPONSE_ERROR,
         RESPONSE_SUCCESS,
@@ -46,6 +47,7 @@ namespace nvi {
         // config
         FILE_PARSE_ERROR,
         SELECTED_CONFIG_EMPTY_ERROR,
+        API_ARG_ERROR,
         DEBUG_ARG_ERROR,
         DIR_ARG_ERROR,
         ENV_ARG_ERROR,
@@ -92,6 +94,8 @@ namespace nvi {
         switch (error) {
         case INVALID_INPUT_KEY:
             return "INVALID_INPUT_KEY";
+        case INVALID_INPUT_SELECTION:
+            return "INVALID_INPUT_SELECTION";
         case REQUEST_ERROR:
             return "REQUEST_ERROR";
         case RESPONSE_ERROR:
@@ -124,6 +128,8 @@ namespace nvi {
             return "FILE_PARSE_ERROR";
         case SELECTED_CONFIG_EMPTY_ERROR:
             return "SELECTED_CONFIG_EMPTY_ERROR";
+        case API_ARG_ERROR:
+            return "API_ARG_ERROR";
         case DEBUG_ARG_ERROR:
             return "DEBUG_ARG_ERROR";
         case DIR_ARG_ERROR:

@@ -1,5 +1,5 @@
 [release]
 debug = true
-exec = "./cpp_example"
+execute = "./cpp_example"
 files = [".env"]
 required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]

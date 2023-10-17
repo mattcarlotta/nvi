@@ -7,17 +7,17 @@ Requirements:
 Example usage:
 ```DOSINI
 # assigning ENVs via .nvi
-nvi -c build
+nvi --config build
 # assigning ENVs via execute command
 nvi -- cargo build --release
 
 # assigning ENVs via .nvi
-nvi -c debug
+nvi --config debug
 # assigning ENVs via execute command
 nvi -- cargo run
 
 # assigning ENVs via .nvi
-nvi -c release
+nvi --config release
 # assigning ENVs via execute command
 nvi -- cargo run --release
 ```

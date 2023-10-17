@@ -6,7 +6,7 @@ Requirements:
 Example usage:
 ```DOSINI
 # assigning ENVs via .nvi
-nvi -c development
+nvi --config development
 # assigning ENVs via execute command
 nvi -- go main.go
 ```

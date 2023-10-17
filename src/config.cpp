@@ -12,11 +12,11 @@
 
 namespace nvi {
 
-    // TODO(carlotta): add api option to config
+    inline constexpr char API_PROP[] = "api";
     inline constexpr char DEBUG_PROP[] = "debug";
-    inline constexpr char DIR_PROP[] = "dir";
-    inline constexpr char ENV_PROP[] = "env";
-    inline constexpr char EXEC_PROP[] = "exec";
+    inline constexpr char DIR_PROP[] = "directory";
+    inline constexpr char ENV_PROP[] = "environment";
+    inline constexpr char EXEC_PROP[] = "execute";
     inline constexpr char FILES_PROP[] = "files";
     inline constexpr char PRINT_PROP[] = "print";
     inline constexpr char PROJECT_PROP[] = "project";
@@ -215,6 +215,12 @@ namespace nvi {
 
             if (not ct.value.has_value()) {
                 continue;
+            } else if (ct.key == API_PROP) {
+                if (ct.type != ConfigValueType::boolean) {
+                    log(API_ARG_ERROR);
+                }
+
+                _options.api = std::get<bool>(ct.value.value());
             } else if (ct.key == DEBUG_PROP) {
                 if (ct.type != ConfigValueType::boolean) {
                     log(DEBUG_ARG_ERROR);
@@ -391,6 +397,13 @@ namespace nvi {
                 _key.c_str(), _env.c_str());
             break;
         }
+        case API_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                API_ARG_ERROR,
+                R"(The "api" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
         case DEBUG_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DEBUG_ARG_ERROR,
@@ -401,14 +414,14 @@ namespace nvi {
         case DIR_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DIR_ARG_ERROR,
-                R"(The "dir" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                R"(The "directory" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case ENV_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 ENV_ARG_ERROR,
-                R"(The "env" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                R"(The "environment" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
@@ -429,7 +442,7 @@ namespace nvi {
         case EXEC_ARG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 EXEC_ARG_ERROR,
-                R"(The "exec" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                R"(The "execute" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
@@ -496,7 +509,8 @@ namespace nvi {
 
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following config options were set: debug="true", dir="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true": "false"),
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
                 _command.c_str(), 

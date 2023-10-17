@@ -4,8 +4,8 @@
 
 [standard]
 debug = true
-dir = "path/to/custom/dir"
-exec = "bin test"
+directory = "path/to/custom/dir"
+execute = "bin test"
 files = [ ".env", "base.env", "reference.env" ]
 required = [ 
     "TEST1", 
@@ -15,8 +15,8 @@ required = [
 
 [condensed]
 debug=true
-dir="path/to/custom/dir"
-exec="bin test"
+directory="path/to/custom/dir"
+execute="bin test"
 files=[".env","base.env","reference.env"]
 required=["TEST1","TEST2","TEST3"]
 
@@ -24,9 +24,9 @@ required=["TEST1","TEST2","TEST3"]
 # comment
 debug = true # comment
 # comment
-dir = "path/to/custom/dir" # comment
+directory = "path/to/custom/dir" # comment
 # comment
-exec = "bin test" # comment
+execute = "bin test" # comment
 # comment
 files = [ 
     ".env", # comment
@@ -44,28 +44,29 @@ required = [
 
 [indented]     
     debug=true
-    dir="path/to/custom/dir"
-    exec="bin test"
+    directory="path/to/custom/dir"
+    execute="bin test"
     files=[".env", "base.env", "reference.env"]
     required=["TEST1", "TEST2", "TEST3"]
 [staggered_with_comments]
-    debug = true
-        # valid comment
-        dir = "path/to/custom/directory"
-            env = "my_env"
-                exec = "bin test"
-                    files = [ "test1.env", "test2.env", "test3.env" ]
-                        print = true
-                            project = "my_project"
-                                # valid comment
-                                required = [ "TEST1", "TEST2", "TEST3" ]
-                                    save = true
+    api = true
+        debug = true
+            # valid comment
+            directory = "path/to/custom/directory"
+                environment = "my_env"
+                    execute = "bin test"
+                        files = [ "test1.env", "test2.env", "test3.env" ]
+                            print = true
+                                project = "my_project"
+                                    # valid comment
+                                    required = [ "TEST1", "TEST2", "TEST3" ]
+                                        save = true
 
 
                 [wacky_indentations]
         debug   =   true            
-dir=   "path/to/custom/dir"
-        exec    =           "bin test"                                    
+directory=   "path/to/custom/dir"
+        execute    =           "bin test"                                    
     files       =[".env"]
 required=[       "TEST1",    "TEST2",  "TEST3"]                
 
@@ -76,7 +77,7 @@ required=[       "TEST1",    "TEST2",  "TEST3"]
 key = "skipped" 
 ignoredoption = true
 debug = true
-dir = "path/to/custom/dir" 
+directory = "path/to/custom/dir" 
 
 
 # --------------------------------------------- #

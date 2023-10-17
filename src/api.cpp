@@ -40,8 +40,7 @@ namespace nvi {
         std::clog << '\n';
 
         if (list.count(item_number) == 0) {
-            std::cerr << "Invalid " << type << " selection!" << std::endl;
-            std::exit(1);
+            log(INVALID_INPUT_SELECTION);
         };
 
         return list.at(item_number);
@@ -178,6 +177,13 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_INPUT_KEY,
                 "The supplied input is not a valid API key. Please enter a valid API key with aA,zZ,0-9 characters.", 
+                NULL);
+            break;
+        }
+        case INVALID_INPUT_SELECTION: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_INPUT_SELECTION,
+                "The supplied number input was not a valid selection. Please try again.", 
                 NULL);
             break;
         }

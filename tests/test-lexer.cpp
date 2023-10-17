@@ -9,7 +9,8 @@ class Lex_Env_File : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::Lexer lexer({/* commands */ {},
+        nvi::Lexer lexer({/* api */ false,
+                          /* commands */ {},
                           /* config */ "",
                           /* debug */ false,
                           /* dir */ "../envs",
@@ -169,7 +170,8 @@ TEST(Lex_Response_Env, consistent_response_lex_size) {
     envs << "API_KEY_4='  SINGLE QUOTES  '" << '\n';
     envs << "API_KEY_5=\"  DOUBLE QUOTES  \"" << '\n';
 
-    nvi::Lexer lexer({/* commands */ {},
+    nvi::Lexer lexer({/* api */ false,
+                      /* commands */ {},
                       /* config */ "",
                       /* debug */ false,
                       /* dir */ "",

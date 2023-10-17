@@ -12,7 +12,7 @@ pnpm i
 Example usage:
 ```DOSINI
 # assigning ENVs via .nvi
-nvi -c mjs
+nvi --config mjs
 # assigning ENVs via execute command
 nvi -- node index.mjs
 # assigning ENVs and running a script command within package.json
@@ -24,5 +24,5 @@ nvi -- ts
 nvi -- pnpm run ts
 
 # piping ENVs to node process.stdin, so they can be manually assigned to process.env
-nvi -pr | node stdin.mjs
+nvi --print | node stdin.mjs
 ```

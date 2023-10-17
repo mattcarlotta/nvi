@@ -11,7 +11,7 @@ namespace nvi {
      * @detail Parses flags and arguments from `argv` into `options`.
      * @param `argc` holds the number of arguments in `argv`.
      * @param `argv` contains flags and any arguments associated with them.
-     * @see `nvi -h` or `nvi --help` for more information about the flags and arguments.
+     * @see `nvi --help` for more information about the flags and arguments.
      * @example Parsing flags and arguments
      *
      * int argc = 5;

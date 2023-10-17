@@ -31,7 +31,7 @@ namespace nvi {
     /**
      * @detail Lexes one or many .env files into tokens.
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
-     * `api`, `debug`, `dir`, `env`, `project` and `required_envs`.
+     * `api`, `debug`, `dir`, `environment`, `project` and `required_envs`.
      * @example Initializing a lexer and lexing .env files
      *
      * nvi::options_t options;

@@ -6,7 +6,7 @@ Requirements:
 Example usage:
 ```DOSINI
 # assigning ENVs via .nvi
-nvi -c main
+nvi --config main
 # assigning ENVs via execute command
 nvi -- python3 main.py
 ```

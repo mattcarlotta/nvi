@@ -12,7 +12,7 @@ namespace nvi {
     /**
      * @detail Retrieves ENVs from the NVI API via an API key
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
-     * `api`, `debug`, `dir`, `env`, `project` and `required_envs`.
+     * `api`, `debug`, `dir`, `environment`, `project` and `required_envs`.
      * @example Fetching ENVs via project and environment
      *
      * nvi::options_t options;

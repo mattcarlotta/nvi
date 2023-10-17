@@ -3,15 +3,17 @@
 #include <string>
 #include <vector>
 
-char *argv[] = {(char *)"tests",     (char *)"--config",   (char *)"test",       (char *)"--debug",
-                (char *)"--dir",     (char *)"tests",      (char *)"--env",      (char *)"my_env",
-                (char *)"--files",   (char *)"test.env",   (char *)"test2.env",  (char *)"--print",
-                (char *)"--project", (char *)"my_project", (char *)"--required", (char *)"KEY1",
-                (char *)"KEY2",      (char *)"--save",     (char *)"--",         (char *)"bin",
-                (char *)"test",      (char *)NULL};
-int argc = 22;
+char *argv[] = {(char *)"tests",   (char *)"--api",       (char *)"--config",   (char *)"test",
+                (char *)"--debug", (char *)"--directory", (char *)"tests",      (char *)"--environment",
+                (char *)"my_env",  (char *)"--files",     (char *)"test.env",   (char *)"test2.env",
+                (char *)"--print", (char *)"--project",   (char *)"my_project", (char *)"--required",
+                (char *)"KEY1",    (char *)"KEY2",        (char *)"--save",     (char *)"--",
+                (char *)"bin",     (char *)"test",        (char *)NULL};
+int argc = 23;
 
 nvi::Arg args(argc, argv);
+
+TEST(Arg, parseable_api) { EXPECT_EQ(args.get_options().api, true); }
 
 TEST(Arg, parseable_config) { EXPECT_EQ(args.get_options().config, "test"); }
 
