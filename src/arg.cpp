@@ -219,31 +219,28 @@ namespace nvi {
             break;
         }
         case HELP_DOC: {
-            NVI_LOG_AND_EXIT(
-                HELP_DOC,
-                "\n"
-                R"(
+            const std::string help_doc = R"(
 ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ NVI CLI Documentation                                                                                                 │
+│ nvi cli documentation                                                                                                 │
 ├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ flag          │ description                                                                                           │
 ├───────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ --api         │ Specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
-│ --config      │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
-│ --debug       │ Specifies whether or not to log debug details. (ex: --debug)                                          │
-│ --directory   │ Specifies which directory the .env files are located within. (ex: --directory path/to/envs)           │
-│ --environment │ Specifies which environment config to use within a remote project. (ex: --environment dev)            │
-│ --files       │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
-│ --project     │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
-│ --print       │ Specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
-│ --required    │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
-│ --save        │ Specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
-│ --            │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)         │
+│ --api         │ specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
+│ --config      │ specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
+│ --debug       │ specifies whether or not to log debug details. (ex: --debug)                                          │
+│ --directory   │ specifies which directory the .env files are located within. (ex: --directory path/to/envs)           │
+│ --environment │ specifies which environment config to use within a remote project. (ex: --environment dev)            │
+│ --files       │ specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
+│ --project     │ specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
+│ --print       │ specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
+│ --required    │ specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
+│ --save        │ specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
+│ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)         │
 └───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
-For additional information, please see the man documentation or README.)"
-                "\n",
-                NULL);
-            break;
+
+for more detailed information, please see the man documentation or the README.)";
+            std::clog << help_doc << std::endl;
+            std::exit(EXIT_SUCCESS);
         }
         case NVI_VERSION: {
             std::time_t current_time{std::time(nullptr)};
@@ -254,7 +251,6 @@ For additional information, please see the man documentation or README.)"
             std::clog << "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions." << '\n';
             std::clog << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl;
             std::exit(EXIT_SUCCESS);
-            break;
         }
         case INVALID_FLAG_WARNING: {
             NVI_LOG_DEBUG(
