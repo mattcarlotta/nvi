@@ -12,10 +12,8 @@
 
 # DESCRIPTION
 
-nvi is a zero-dependency, stand-alone binary that parses and interpolates .env files.
-It will either print ENVs as stringified JSON to standard output or it will
-assign them to a forked child process. 
-
+A zero-dependency, stand-alone binary that can parse, interpolate and assign ENVs into a process locally or remotely.
+It will either print ENVs as stringified JSON to standard output or it will assign them to a forked child process. 
 All options below are optional. Only long form (\--) flags are supported.
 
 # OPTIONS
@@ -76,7 +74,7 @@ All options below are optional. Only long form (\--) flags are supported.
 
 # EXIT STATUS
 
-nvi exits 0 on success, and 1 if an error occurs.
+nvi exits with a 0 on success and 1 if there's an error.
 
 # FILES
 

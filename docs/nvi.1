@@ -25,11 +25,10 @@ assigning multiple .env files into a process.
 nvi [\f[B]options\f[R]]
 .SH DESCRIPTION
 .PP
-nvi is a zero-dependency, stand-alone binary that parses and
-interpolates .env files.
+A zero-dependency, stand-alone binary that can parse, interpolate and
+assign ENVs into a process locally or remotely.
 It will either print ENVs as stringified JSON to standard output or it
 will assign them to a forked child process.
-.PP
 All options below are optional.
 Only long form (--) flags are supported.
 .SH OPTIONS
@@ -89,7 +88,7 @@ This should be last flag defined, therefore anything placed after it
 will be consumed as part of the system command.
 .SH EXIT STATUS
 .PP
-nvi exits\ 0 on success, and\ 1 if an error occurs.
+nvi exits\ with a 0 on success and\ 1 if there\[cq]s an error.
 .SH FILES
 .TP
 \f[I]*/.nvi\f[R]
