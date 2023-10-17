@@ -39,7 +39,7 @@ namespace nvi {
         std::cin >> item_number;
         std::clog << '\n';
 
-        if (list.count(item_number) == 0) {
+        if (not list.count(item_number)) {
             log(INVALID_INPUT_SELECTION);
         };
 

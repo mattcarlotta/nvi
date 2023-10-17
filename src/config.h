@@ -7,10 +7,25 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
 namespace nvi {
+    enum class CONFIG_KEY {
+        API,
+        DEBUG,
+        DIRECTORY,
+        ENVIRONMENT,
+        EXECUTE,
+        FILES,
+        PRINT,
+        PROJECT,
+        REQUIRED,
+        SAVE,
+        UNKNOWN
+    };
     /**
      * @detail Reads an `.nvi` configuration file from the project root directory or a specified directory and
      * converts the selected environment into `options`.
@@ -53,6 +68,18 @@ namespace nvi {
         std::string get_value_type_string(const ConfigValueType &cvt) const noexcept;
         void log(const messages_t &code) const noexcept;
 
+        std::unordered_map<std::string_view, CONFIG_KEY> CONFIG_KEYS{
+            {"api", CONFIG_KEY::API},
+            {"debug", CONFIG_KEY::DEBUG},
+            {"directory", CONFIG_KEY::DIRECTORY},
+            {"environment", CONFIG_KEY::ENVIRONMENT},
+            {"execute", CONFIG_KEY::EXECUTE},
+            {"files", CONFIG_KEY::FILES},
+            {"print", CONFIG_KEY::PRINT},
+            {"project", CONFIG_KEY::PROJECT},
+            {"required", CONFIG_KEY::REQUIRED},
+            {"save", CONFIG_KEY::SAVE},
+        };
         options_t _options;
         std::string _file;
         std::string _config;

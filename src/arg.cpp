@@ -73,7 +73,7 @@ namespace nvi {
             };
         }
 
-    exit_flag_parsing:;
+    exit_flag_parsing:
         if (_options.debug) {
             log(DEBUG);
         }

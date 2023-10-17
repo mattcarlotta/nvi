@@ -3,7 +3,7 @@
 # --------------------------------------------- #
 
 [standard]
-debug = true
+debug = false
 directory = "path/to/custom/dir"
 execute = "bin test"
 files = [ ".env", "base.env", "reference.env" ]

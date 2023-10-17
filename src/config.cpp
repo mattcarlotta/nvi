@@ -12,17 +12,6 @@
 
 namespace nvi {
 
-    inline constexpr char API_PROP[] = "api";
-    inline constexpr char DEBUG_PROP[] = "debug";
-    inline constexpr char DIR_PROP[] = "directory";
-    inline constexpr char ENV_PROP[] = "environment";
-    inline constexpr char EXEC_PROP[] = "execute";
-    inline constexpr char FILES_PROP[] = "files";
-    inline constexpr char PRINT_PROP[] = "print";
-    inline constexpr char PROJECT_PROP[] = "project";
-    inline constexpr char REQUIRED_PROP[] = "required";
-    inline constexpr char SAVE_PROP[] = "save";
-
     inline constexpr char COMMENT = '#';         // 0x23
     inline constexpr char SPACE = ' ';           // 0x20
     inline constexpr char OPEN_BRACKET = '[';    // 0x5b
@@ -215,25 +204,34 @@ namespace nvi {
 
             if (not ct.value.has_value()) {
                 continue;
-            } else if (ct.key == API_PROP) {
+            }
+
+            switch (CONFIG_KEYS.count(ct.key) ? CONFIG_KEYS.at(ct.key) : CONFIG_KEY::UNKNOWN) {
+            case CONFIG_KEY::API: {
                 if (ct.type != ConfigValueType::boolean) {
                     log(API_ARG_ERROR);
                 }
 
                 _options.api = std::get<bool>(ct.value.value());
-            } else if (ct.key == DEBUG_PROP) {
+                break;
+            }
+            case CONFIG_KEY::DEBUG: {
                 if (ct.type != ConfigValueType::boolean) {
                     log(DEBUG_ARG_ERROR);
                 }
 
                 _options.debug = std::get<bool>(ct.value.value());
-            } else if (_key == DIR_PROP) {
+                break;
+            }
+            case CONFIG_KEY::DIRECTORY: {
                 if (ct.type != ConfigValueType::string) {
                     log(DIR_ARG_ERROR);
                 }
 
                 _options.dir = std::move(std::get<std::string>(ct.value.value()));
-            } else if (_key == FILES_PROP) {
+                break;
+            }
+            case CONFIG_KEY::FILES: {
                 if (ct.type != ConfigValueType::array) {
                     log(FILES_ARG_ERROR);
                 }
@@ -244,13 +242,17 @@ namespace nvi {
                 if (not _options.files.size()) {
                     log(EMPTY_FILES_ARG_ERROR);
                 }
-            } else if (_key == ENV_PROP) {
+                break;
+            }
+            case CONFIG_KEY::ENVIRONMENT: {
                 if (ct.type != ConfigValueType::string) {
                     log(ENV_ARG_ERROR);
                 }
 
                 _options.environment = std::move(std::get<std::string>(ct.value.value()));
-            } else if (_key == EXEC_PROP) {
+                break;
+            }
+            case CONFIG_KEY::EXECUTE: {
                 if (ct.type != ConfigValueType::string) {
                     log(EXEC_ARG_ERROR);
                 }
@@ -265,32 +267,44 @@ namespace nvi {
                 }
 
                 _options.commands.push_back(nullptr);
-            } else if (ct.key == PRINT_PROP) {
+                break;
+            }
+            case CONFIG_KEY::PRINT: {
                 if (ct.type != ConfigValueType::boolean) {
                     log(PRINT_ARG_ERROR);
                 }
 
                 _options.print = std::get<bool>(ct.value.value());
-            } else if (_key == PROJECT_PROP) {
+                break;
+            }
+            case CONFIG_KEY::PROJECT: {
                 if (ct.type != ConfigValueType::string) {
                     log(PROJECT_ARG_ERROR);
                 }
 
                 _options.project = std::move(std::get<std::string>(ct.value.value()));
-            } else if (_key == REQUIRED_PROP) {
+                break;
+            }
+            case CONFIG_KEY::REQUIRED: {
                 if (ct.type != ConfigValueType::array) {
                     log(REQUIRED_ARG_ERROR);
                 }
 
                 _options.required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
-            } else if (ct.key == SAVE_PROP) {
+                break;
+            }
+            case CONFIG_KEY::SAVE: {
                 if (ct.type != ConfigValueType::boolean) {
                     log(SAVE_ARG_ERROR);
                 }
 
                 _options.save = std::get<bool>(ct.value.value());
-            } else {
+                break;
+            }
+            default: {
                 log(INVALID_PROPERTY_WARNING);
+                break;
+            }
             }
         }
 
