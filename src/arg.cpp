@@ -7,60 +7,73 @@
 #include <ctime>
 #include <iostream>
 #include <string>
-#include <unordered_set>
+#include <string_view>
 #include <vector>
 
 namespace nvi {
-
-    inline constexpr char API_FLAG[] = "--api";
-    inline constexpr char CONFIG_FLAG[] = "--config";
-    inline constexpr char DEBUG_FLAG[] = "--debug";
-    inline constexpr char DIRECTORY_FLAG[] = "--directory";
-    inline constexpr char ENVIRONMENT_FLAG[] = "--environment";
-    inline constexpr char EXECUTE_FLAG[] = "--";
-    inline constexpr char FILES_FLAG[] = "--files";
-    inline constexpr char HELP_FLAG[] = "--help";
-    inline constexpr char PROJECT_FLAG[] = "--project";
-    inline constexpr char PRINT_FLAG[] = "--print";
-    inline constexpr char REQUIRED_FLAG[] = "--required";
-    inline constexpr char SAVE_FLAG[] = "--save";
-    inline constexpr char VERSION_FLAG[] = "--version";
-
     Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
         while (_index < _argc) {
-            const std::string arg{_argv[++_index]};
-            if (arg == API_FLAG) {
+            const std::string_view flag{_argv[++_index]};
+
+            switch (FLAGS.count(flag) ? FLAGS.at(flag) : FLAG::UNKNOWN) {
+            case FLAG::API: {
                 _options.api = true;
-            } else if (arg == CONFIG_FLAG) {
-                _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
-            } else if (arg == DEBUG_FLAG) {
-                _options.debug = true;
-            } else if (arg == DIRECTORY_FLAG) {
-                _options.dir = parse_single_arg(DIR_FLAG_ERROR);
-            } else if (arg == ENVIRONMENT_FLAG) {
-                _options.environment = parse_single_arg(ENV_FLAG_ERROR);
-            } else if (arg == EXECUTE_FLAG) {
-                parse_command_args();
                 break;
-            } else if (arg == FILES_FLAG) {
-                _options.files = parse_multi_arg(FILES_FLAG_ERROR);
-            } else if (arg == HELP_FLAG) {
-                log(HELP_DOC);
-            } else if (arg == PRINT_FLAG) {
-                _options.print = true;
-            } else if (arg == PROJECT_FLAG) {
-                _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
-            } else if (arg == REQUIRED_FLAG) {
-                _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
-            } else if (arg == SAVE_FLAG) {
-                _options.save = true;
-            } else if (arg == VERSION_FLAG) {
-                log(NVI_VERSION);
-            } else {
-                remove_invalid_flag();
             }
+            case FLAG::CONFIG: {
+                _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
+                break;
+            }
+            case FLAG::DEBUG: {
+                _options.debug = true;
+                break;
+            }
+            case FLAG::DIRECTORY: {
+                _options.dir = parse_single_arg(DIR_FLAG_ERROR);
+                break;
+            }
+            case FLAG::ENVIRONMENT: {
+                _options.environment = parse_single_arg(ENV_FLAG_ERROR);
+                break;
+            }
+            case FLAG::EXECUTE: {
+                parse_command_args();
+                goto exit_flag_parsing;
+            }
+            case FLAG::FILES: {
+                _options.files = parse_multi_arg(FILES_FLAG_ERROR);
+                break;
+            }
+            case FLAG::HELP: {
+                log(HELP_DOC);
+            }
+            case FLAG::PRINT: {
+                _options.print = true;
+                break;
+            }
+            case FLAG::PROJECT: {
+                _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
+                break;
+            }
+            case FLAG::REQUIRED: {
+                _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
+                break;
+            }
+            case FLAG::SAVE: {
+                _options.save = true;
+                break;
+            }
+            case FLAG::VERSION: {
+                log(NVI_VERSION);
+            }
+            default: {
+                remove_invalid_flag();
+                break;
+            }
+            };
         }
 
+    exit_flag_parsing:;
         if (_options.debug) {
             log(DEBUG);
         }
