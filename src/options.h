@@ -6,6 +6,7 @@
 
 namespace nvi {
     typedef struct Options {
+        bool api = false;
         std::vector<char *> commands;
         std::string config;
         bool debug = false;

@@ -18,14 +18,14 @@ int main(int argc, char *argv[]) {
     }
 
     std::string api_envs;
-    if (options.project.length()) {
+    if (options.api) {
         nvi::Api api(options);
-        api_envs = api.get_key_from_file_or_input()->fetch_envs();
+        api_envs = api.get_key_from_file_or_input()->fetch_envs()->get_envs();
     }
 
     nvi::Lexer lexer(options);
     nvi::tokens_t tokens =
-        options.project.length() ? lexer.parse_api_response(api_envs)->get_tokens() : lexer.parse_files()->get_tokens();
+        options.api ? lexer.parse_api_response(api_envs)->get_tokens() : lexer.parse_files()->get_tokens();
 
     nvi::Parser parser(std::move(tokens), options);
     nvi::env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();

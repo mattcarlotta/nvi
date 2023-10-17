@@ -12,6 +12,8 @@
 
 namespace nvi {
 
+    inline constexpr char API_SHORT[] = "-a";
+    inline constexpr char API_LONG[] = "--api";
     inline constexpr char CONFIG_SHORT[] = "-c";
     inline constexpr char CONFIG_LONG[] = "--config";
     inline constexpr char DEBUG_SHORT[] = "-de";
@@ -39,7 +41,9 @@ namespace nvi {
     Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
         while (_index < _argc) {
             const std::string arg{_argv[++_index]};
-            if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
+            if (arg == API_SHORT || arg == API_LONG) {
+                _options.api = true;
+            } else if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
                 _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
             } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
                 _options.debug = true;
@@ -216,6 +220,7 @@ namespace nvi {
 ├─────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ flag            │ description                                                                                           │
 ├─────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ -a, --api       │ Specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
 │ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
 │ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                          │
 │ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                 │
@@ -261,7 +266,8 @@ For additional information, please see the man documentation or README.)"
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                R"(The following arg options were set: api="%s", config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true": "false"),
                 _options.config.c_str(), 
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 

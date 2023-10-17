@@ -12,6 +12,7 @@
 
 namespace nvi {
 
+    // TODO(carlotta): add api option to config
     inline constexpr char DEBUG_PROP[] = "debug";
     inline constexpr char DIR_PROP[] = "dir";
     inline constexpr char ENV_PROP[] = "env";
