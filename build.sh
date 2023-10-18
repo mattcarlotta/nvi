@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Script to build nvi for GNU/Linux because I'm too lazy to
+# Script to build nvi for GNU/Linux or Mac OS because I'm too lazy to
 # remember cmake compile flags and to compile using all cpu cores
 #
 
@@ -12,9 +12,9 @@ green=$($tput_bin setaf 2)
 
 cmake_bin=$(which cmake)
 make_bin=$(which make)
-cpu_core_count=$(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //')
 use_localhost_api_flag=-DUSE_LOCALHOST_API=ON
 compile_tests_flag=-DCOMPILE_TESTS=ON
+sysctl_bin=$(which sysctl)
 
 log_error() {
     echo -e "\n❌ ${bold}${red}ERROR: $1 ${normal}"
@@ -45,6 +45,13 @@ compile_bin() {
     else
         log_success "Generated cmake cache!"
     fi
+
+    local cpu_core_count
+    case "$OSTYPE" in
+        darwin*)  cpu_core_count=$($sysctl_bin -n hw.ncpu);; 
+        linux*)   cpu_core_count=$(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //') ;;
+        *)        log_error "The following system is not supported by this script: $OSTYPE" ;;
+    esac
 
     local cmake_build_result=$($cmake_bin --build . -j $cpu_core_count 2>&1 1>/dev/null)
     if [[ ! -z "$cmake_build_result" ]];

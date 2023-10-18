@@ -15,20 +15,44 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
+#include <unordered_map>
 
 namespace nvi {
     Api::Api(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
 
+    std::string Api::get_input_selection_for(std::string type) noexcept {
+        std::clog << "[nvi] Retrieved the following " << type << "s from the nvi API..." << '\n';
+        std::unordered_map<int, std::string> list;
+        int index = 0;
+        std::string value;
+        std::istringstream iss{_res_data};
+        while (std::getline(iss, value)) {
+            if (value.length()) {
+                list[++index] = value;
+                std::clog << "[" << index << "]: " << value << '\n';
+            }
+        }
+
+        std::clog << '\n' << "Please select one of the " << type << "s by providing its corresponding [number]: ";
+        unsigned int item_number;
+        std::cin >> item_number;
+        std::clog << '\n';
+
+        if (not list.count(item_number)) {
+            log(INVALID_INPUT_SELECTION);
+        };
+
+        return list.at(item_number);
+    }
+
     static bool filter_non_alphanum_char(const char &c) { return not std::isalnum(c); }
 
     Api *Api::get_key_from_file_or_input() noexcept {
-        std::string api_key;
-
         const std::filesystem::path api_key_file = std::filesystem::current_path() / ".nvi-key";
         if (std::filesystem::exists(api_key_file)) {
             std::ifstream api_file{api_key_file, std::ios_base::in};
 
-            api_key = std::string{std::istreambuf_iterator{api_file}, {}};
+            _api_key = std::string{std::istreambuf_iterator{api_file}, {}};
 
             api_file.close();
         } else {
@@ -41,7 +65,7 @@ namespace nvi {
             tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
             // get api key from user input
-            std::getline(std::cin, api_key);
+            std::getline(std::cin, _api_key);
             std::clog << '\n';
 
             // enable echo input
@@ -49,14 +73,23 @@ namespace nvi {
             tcsetattr(STDIN_FILENO, TCSANOW, &term);
         }
 
-        api_key.erase(std::remove_if(api_key.begin(), api_key.end(), filter_non_alphanum_char), api_key.end());
+        _api_key.erase(std::remove_if(_api_key.begin(), _api_key.end(), filter_non_alphanum_char), _api_key.end());
 
-        if (api_key.length() == 0 || api_key.length() > 50) {
+        if (not _api_key.length()) {
             log(INVALID_INPUT_KEY);
         }
 
-        _api_url = API_URL "/cli/secrets/?project=" + _options.project + "&environment=" + _options.environment +
-                   "&apiKey=" + api_key;
+        // get projects from API and prompt for user selection
+        if (not _options.project.length()) {
+            fetch_data("/cli/projects/?apiKey=" + _api_key);
+            _options.project = get_input_selection_for("project");
+        }
+
+        // get environments from API and prompt for user selection
+        if (not _options.environment.length()) {
+            fetch_data("/cli/environments/?apiKey=" + _api_key + "&project=" + _options.project);
+            _options.environment = get_input_selection_for("environment");
+        }
 
         return this;
     }
@@ -67,10 +100,13 @@ namespace nvi {
         return total_size;
     }
 
-    const std::string &Api::fetch_envs() noexcept {
+    void Api::fetch_data(std::string REQ_URL) noexcept {
         if (_curl == nullptr) {
             log(CURL_FAILED_TO_INIT);
         }
+
+        _res_data.clear();
+        _api_url = API_URL + REQ_URL;
 
         curl_easy_setopt(_curl, CURLOPT_URL, _api_url.c_str());
         curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_response);
@@ -83,15 +119,7 @@ namespace nvi {
             log(REQUEST_ERROR);
         } else if (_res_status_code >= 400) {
             log(RESPONSE_ERROR);
-        } else if (_options.debug) {
-            log(RESPONSE_SUCCESS);
         }
-
-        if (_options.save) {
-            save_envs_to_disk();
-        }
-
-        return _res_data;
     }
 
     void Api::save_envs_to_disk() noexcept {
@@ -124,6 +152,23 @@ namespace nvi {
         env_file.close();
     }
 
+    Api *Api::fetch_envs() noexcept {
+        fetch_data("/cli/secrets/?apiKey=" + _api_key + "&project=" + _options.project +
+                   "&environment=" + _options.environment);
+
+        if (_options.debug) {
+            log(RESPONSE_SUCCESS);
+        }
+
+        if (_options.save) {
+            save_envs_to_disk();
+        }
+
+        return this;
+    }
+
+    const std::string &Api::get_envs() noexcept { return _res_data; }
+
     void Api::log(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
@@ -131,6 +176,13 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_INPUT_KEY,
                 "The supplied input is not a valid API key. Please enter a valid API key with aA,zZ,0-9 characters.", 
+                NULL);
+            break;
+        }
+        case INVALID_INPUT_SELECTION: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_INPUT_SELECTION,
+                "The supplied number input was not a valid selection. Please try again.", 
                 NULL);
             break;
         }

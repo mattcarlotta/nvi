@@ -70,7 +70,7 @@ namespace nvi {
 
         if (not _env_map.size()) {
             log(EMPTY_ENVS_ERROR);
-        } else if (_options.debug && _options.project.length()) {
+        } else if (_options.debug && _options.api) {
             log(DEBUG_RESPONSE_PROCESSED);
         } else if (_options.debug) {
             log(DEBUG_FILE_PROCESSED);

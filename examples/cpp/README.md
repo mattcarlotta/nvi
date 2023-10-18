@@ -13,7 +13,7 @@ make
 Example usage:
 ```DOSINI
 # assigning ENVs via .nvi
-nvi -c release
+nvi --config release
 # assigning ENVs via execute command
 nvi -- ./cpp_example
 ```

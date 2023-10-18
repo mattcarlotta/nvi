@@ -9,7 +9,8 @@ class Parse_Env_File : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::options_t options = {/* commands */ {},
+        nvi::options_t options = {/* api */ false,
+                                  /* commands */ {},
                                   /* config */ "",
                                   /* debug */ false,
                                   /* dir */ "../envs",

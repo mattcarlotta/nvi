@@ -12,22 +12,23 @@ namespace nvi {
     /**
      * @detail Retrieves ENVs from the NVI API via an API key
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
-     * `dir`, `debug`, `env`, `project` and `required_envs`.
+     * `api`, `debug`, `dir`, `environment`, `project` and `required_envs`.
      * @example Fetching ENVs via project and environment
      *
      * nvi::options_t options;
+     * options.api = true;
      * options.debug = false;
      * options.dir = "custom/path/to/envs";
-     * options.files = {".env", "base.env", ...etc};
      * optons.required_envs = {"KEY1", "KEY2", ...etc};
      * nvi::Api api(options);
-     * std::string api_envs = api.get_key_from_file_or_input()->fetch_envs();
+     * std::string api_envs = api.get_key_from_file_or_input()->fetch_envs()->get_envs();
      */
     class Api {
         public:
         Api(const options_t &options);
         Api *get_key_from_file_or_input() noexcept;
-        const std::string &fetch_envs() noexcept;
+        Api *fetch_envs() noexcept;
+        const std::string &get_envs() noexcept;
 
         ~Api() {
             if (_curl) {
@@ -38,11 +39,14 @@ namespace nvi {
         private:
         void log(const messages_t &code) const noexcept;
         void save_envs_to_disk() noexcept;
+        void fetch_data(std::string REQ_URL) noexcept;
+        std::string get_input_selection_for(std::string type) noexcept;
 
         CURL *_curl;
         options_t _options;
         CURLcode _res;
         std::string _res_data;
+        std::string _api_key;
         std::filesystem::path _env_file_path;
         unsigned int _res_status_code = 0;
         std::string _api_url;

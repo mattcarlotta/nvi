@@ -1,6 +1,6 @@
-% nvi(1) CLI Documentation v0.0.6
+% nvi(1) CLI Documentation v0.1.0
 % Matt Carlotta
-% 10-03-2023
+% 10-17-2023
 
 # NAME
 
@@ -12,61 +12,59 @@
 
 # DESCRIPTION
 
-nvi is a zero-dependency, stand-alone binary that parses and interpolates .env files.
-It will either print ENVs as stringified JSON to standard output or it will
-assign them to a forked child process. 
-
-All options below are optional. Short form (-) and long form (\--) flags are supported 
-and can be mixed if desired.
-
-If no flags are assigned, then an .env (that is named ".env") located at the current 
-directory will be parsed and printed to standard out.
+A zero-dependency, stand-alone binary that can parse, interpolate and assign ENVs into a process locally or remotely.
+It will either print ENVs as stringified JSON to standard output or it will assign them to a forked child process. 
+All options below are optional. Only long form (\--) flags are supported.
 
 # OPTIONS
 
--c, \--config [environment]{.underline}
+\--api
+
+:   Specifies whether or not to retrieve ENVs from the remote API.
+
+\--config [environment]{.underline}
 
 :  Specifies which environment config to load from the .nvi file. 
 
     When this flag is present, then the options below are ignored as they should be defined within the .nvi configuration file.
 
--de, \--debug
+\--debug
 
 :   Specifies whether or not to log debug details.
 
--d, \--dir [path]{.underline}
+\--directory [path]{.underline}
 
 :   Specifies which directory path the .env files are located within. The [path]{.underline} will be relative to the current directory.
 
--e  \--env [environment]{.underline}
+\--environment [environment]{.underline}
 
 :   Specifies which environment config to use within a remote project. Remote environments are created via the front-facing web application.
 
--f, \--files [file1.env]{.underline} [file2.env]{.underline} [file3.env]{.underline} ...etc
+\--files [file1.env]{.underline} [file2.env]{.underline} [file3.env]{.underline} ...etc
 
 :   A list of .env files to parse. Each specified [file]{.underline} needs to be separated by a space.
 
--h, \--help
+\--help
 
-:   Prints brief CLI flag usage information.
+:   Prints a table CLI flag usage information.
 
--p, \--project [project]{.underline}
+\--project [project]{.underline}
 
 :   Specifies which remote project to select from the nvi API. Remote projects are created via the front-facing web application.
 
--pr, \--print
+\--print
 
 :   Specifies whether or not to print ENVs to standard out. This flag will be ignored if a system command is defined.
 
--r, \--required [KEY_1]{.underline} [KEY_2]{.underline} [KEY_3]{.underline} ...etc
+\--required [KEY_1]{.underline} [KEY_2]{.underline} [KEY_3]{.underline} ...etc
 
 :   A list of ENV keys that are required to exist after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
 
--s, \--save
+\--save
 
 :   Specifies whether or not to save remote ENVs to disk with the selected environment name.
 
--v, \--version
+\--version
 
 :   Prints the current version number.
 
@@ -76,7 +74,7 @@ directory will be parsed and printed to standard out.
 
 # EXIT STATUS
 
-nvi exits 0 on success, and 1 if an error occurs.
+nvi exits with a 0 on success and 1 if there's an error.
 
 # FILES
 
@@ -109,10 +107,11 @@ To retrieve remote ENVs from the nvi API, you must first register and verify you
 
 1. Once registered and verified, create a project, an environment and at least 1 ENV secret within the environment
 2. Navigate to your account settings page, locate your unique API key and click the copy to clipboard button
-3. Using the nvi CLI tool, input the following flags:
-    a. "-p" | "\--project" followed by a space and then the name of the project you've created
-    b. "-e" | "\--env" followed by a space and then the name of the environment you've created
-    c. "\--" followed by a space and then a system command to run 
+3. Using the nvi CLI tool, input the following:
+    a. "\--api" flag followed by a space 
+    b. optional "\--project" flag followed by a space and then the name of the project you've created
+    c. optional "\--environment" flag followed by a space and then the name of the environment you've created
+    d. a "\--print" flag or a \--" flag followed by a space and then a system command to run 
 4. Press the "Enter" key and nvi will prompt you for your unique API key‡
 5. Input the API key and nvi will attempt to retrieve and assign remote ENVs from the selected project and environment to the command (if no command is provided then nvi will just print the parsed and interpolated envs to standard out)
 
@@ -120,17 +119,12 @@ To retrieve remote ENVs from the nvi API, you must first register and verify you
 
 Retrieving remote ENVs:
 ```bash
-$ nvi -p my_project -e development -- cargo run
+$ nvi --api --project my_project --environment development -- cargo run
 ```
 
-Then, you'll be asked for your API key:
+Then, you'll be asked for your API key. Input your API key and press the "Enter" key:
 ```bash
 $ [nvi] Please enter your unique API key: 
-```
-
-Input your API key and press the "Enter" key:
-```bash
-$ [nvi] Please enter your unique API key: abcdefhijkhijklo0123456789
 ```
 
 If no error is displayed in the terminal, then a child process should be spawned with the command OR ENVs will be printed to standard out as stringified JSON.
@@ -139,9 +133,9 @@ The following represents an example `.nvi` configuration:
 ```toml
 [dev]
 debug = true
-dir = "path/to/custom/dir"
+directory = "path/to/custom/dir"
 files = [ ".env", "base.env", "reference.env" ]
-exec = "bin dev"
+execute = "bin dev"
 required = [ "TEST1", "TEST2", "TEST3" ]
 
 [staging]
@@ -149,19 +143,16 @@ files = [ ".env" ]
 required = [ "TEST1" ]
 
 [remote_dev]
+api = true
 debug = true
-env = "development"
-exec = "bin dev"
+environment = "development"
+execute = "bin dev"
 project = "my_project"
 required = [ "TEST1", "TEST2", "TEST3" ]
 save = true
 ```
 
-To target a configuration within the .nvi config file, simply use the `-c` or `--config` flag followed by the config name:
-```bash
-$ nvi -c dev
-```
-or
+To target a configuration within the .nvi config file, simply use the `--config` flag followed by the config name:
 ```bash
 $ nvi --config dev
 ```

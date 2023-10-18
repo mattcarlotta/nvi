@@ -7,68 +7,73 @@
 #include <ctime>
 #include <iostream>
 #include <string>
-#include <unordered_set>
+#include <string_view>
 #include <vector>
 
 namespace nvi {
-
-    inline constexpr char CONFIG_SHORT[] = "-c";
-    inline constexpr char CONFIG_LONG[] = "--config";
-    inline constexpr char DEBUG_SHORT[] = "-de";
-    inline constexpr char DEBUG_LONG[] = "--debug";
-    inline constexpr char DIRECTORY_SHORT[] = "-d";
-    inline constexpr char DIRECTORY_LONG[] = "--dir";
-    inline constexpr char ENVIRONMENT_SHORT[] = "-e";
-    inline constexpr char ENVIRONMENT_LONG[] = "--env";
-    inline constexpr char EXECUTE_LONG[] = "--";
-    inline constexpr char FILES_SHORT[] = "-f";
-    inline constexpr char FILES_LONG[] = "--files";
-    inline constexpr char HELP_SHORT[] = "-h";
-    inline constexpr char HELP_LONG[] = "--help";
-    inline constexpr char PROJECT_SHORT[] = "-p";
-    inline constexpr char PROJECT_LONG[] = "--project";
-    inline constexpr char PRINT_SHORT[] = "-pr";
-    inline constexpr char PRINT_LONG[] = "--print";
-    inline constexpr char REQUIRED_SHORT[] = "-r";
-    inline constexpr char REQUIRED_LONG[] = "--required";
-    inline constexpr char SAVE_SHORT[] = "-s";
-    inline constexpr char SAVE_LONG[] = "--save";
-    inline constexpr char VERSION_SHORT[] = "-v";
-    inline constexpr char VERSION_LONG[] = "--version";
-
     Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
         while (_index < _argc) {
-            const std::string arg{_argv[++_index]};
-            if (arg == CONFIG_SHORT || arg == CONFIG_LONG) {
-                _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
-            } else if (arg == DEBUG_SHORT || arg == DEBUG_LONG) {
-                _options.debug = true;
-            } else if (arg == DIRECTORY_SHORT || arg == DIRECTORY_LONG) {
-                _options.dir = parse_single_arg(DIR_FLAG_ERROR);
-            } else if (arg == ENVIRONMENT_SHORT || arg == ENVIRONMENT_LONG) {
-                _options.environment = parse_single_arg(ENV_FLAG_ERROR);
-            } else if (arg == EXECUTE_LONG) {
-                parse_command_args();
+            const std::string_view flag{_argv[++_index]};
+
+            switch (FLAGS.count(flag) ? FLAGS.at(flag) : FLAG::UNKNOWN) {
+            case FLAG::API: {
+                _options.api = true;
                 break;
-            } else if (arg == FILES_SHORT || arg == FILES_LONG) {
-                _options.files = parse_multi_arg(FILES_FLAG_ERROR);
-            } else if (arg == HELP_SHORT || arg == HELP_LONG) {
-                log(HELP_DOC);
-            } else if (arg == PRINT_SHORT || arg == PRINT_LONG) {
-                _options.print = true;
-            } else if (arg == PROJECT_SHORT || arg == PROJECT_LONG) {
-                _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
-            } else if (arg == REQUIRED_SHORT || arg == REQUIRED_LONG) {
-                _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
-            } else if (arg == SAVE_SHORT || arg == SAVE_LONG) {
-                _options.save = true;
-            } else if (arg == VERSION_SHORT || arg == VERSION_LONG) {
-                log(NVI_VERSION);
-            } else {
-                remove_invalid_flag();
             }
+            case FLAG::CONFIG: {
+                _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
+                break;
+            }
+            case FLAG::DEBUG: {
+                _options.debug = true;
+                break;
+            }
+            case FLAG::DIRECTORY: {
+                _options.dir = parse_single_arg(DIR_FLAG_ERROR);
+                break;
+            }
+            case FLAG::ENVIRONMENT: {
+                _options.environment = parse_single_arg(ENV_FLAG_ERROR);
+                break;
+            }
+            case FLAG::EXECUTE: {
+                parse_command_args();
+                goto exit_flag_parsing;
+            }
+            case FLAG::FILES: {
+                _options.files = parse_multi_arg(FILES_FLAG_ERROR);
+                break;
+            }
+            case FLAG::HELP: {
+                log(HELP_DOC);
+            }
+            case FLAG::PRINT: {
+                _options.print = true;
+                break;
+            }
+            case FLAG::PROJECT: {
+                _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
+                break;
+            }
+            case FLAG::REQUIRED: {
+                _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
+                break;
+            }
+            case FLAG::SAVE: {
+                _options.save = true;
+                break;
+            }
+            case FLAG::VERSION: {
+                log(NVI_VERSION);
+            }
+            default: {
+                remove_invalid_flag();
+                break;
+            }
+            };
         }
 
+    exit_flag_parsing:
         if (_options.debug) {
             log(DEBUG);
         }
@@ -167,70 +172,75 @@ namespace nvi {
         case CONFIG_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 CONFIG_FLAG_ERROR,
-                R"(The "-c" or "--config" flag must contain an environment name from the .nvi configuration file. Use flag "-h" or "--help" for more information.)", 
+                R"(The "--config" flag must contain an environment name from the .nvi configuration file. Use flag "--help" for more information.)", 
                 NULL);
             break;
         }
         case DIR_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 DIR_FLAG_ERROR,
-                R"(The "-d" or "--dir" flag must contain a valid directory path. Use flag "-h" or "--help" for more information.)",
+                R"(The "--directory" flag must contain a valid directory path. Use flag "--help" for more information.)",
                 NULL);
             break;
         }
         case COMMAND_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 COMMAND_FLAG_ERROR,
-                R"(The "--" (execute) flag must contain at least 1 system command. Use flag "-h" or "--help" for more information.)",
+                R"(The "--" (execute) flag must contain at least 1 system command. Use flag "--help" for more information.)",
                 NULL);
             break;
         }
         case ENV_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 ENV_FLAG_ERROR,
-                R"(The "-e" or "--env" flag must contain a valid environment name. Use flag "-h" or "--help" for more information.)",
+                R"(The "--environment" flag must contain a valid environment name. Use flag "--help" for more information.)",
                 NULL);
             break;
         }
         case FILES_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILES_FLAG_ERROR,
-                R"(The "-f" or "--files" flag must contain at least 1 .env file. Use flag "-h" or "--help" for more information.)",
+                R"(The "--files" flag must contain at least 1 .env file. Use flag "--help" for more information.)",
+                NULL);
+            break;
+        }
+        case PROJECT_FLAG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                PROJECT_FLAG_ERROR,
+                R"(The "--project" flag must contain a valid project name. Use flag "--help" for more information.)",
                 NULL);
             break;
         }
         case REQUIRED_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_FLAG_ERROR,
-                R"(The "-r" or "--required" flag must contain at least 1 ENV key. Use flag "-h" or "--help" for more information.)",
+                R"(The "--required" flag must contain at least 1 ENV key. Use flag "--help" for more information.)",
                 NULL);
             break;
         }
         case HELP_DOC: {
-            NVI_LOG_AND_EXIT(
-                HELP_DOC,
-                "\n"
-                R"(
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ NVI CLI Documentation                                                                                                   │
-├─────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ flag            │ description                                                                                           │
-├─────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ -c, --config    │ Specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
-│ -de, --debug    │ Specifies whether or not to log debug details. (ex: --debug)                                          │
-│ -d, --dir       │ Specifies which directory the .env files are located within. (ex: --dir path/to/envs)                 │
-│ -e, --env       │ Specifies which environment config to use within a remote project. (ex: --env dev)                    │
-│ -f, --files     │ Specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
-│ -p, --project   │ Specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
-│ -pr, --print    │ Specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
-│ -r, --required  │ Specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
-│ -s, --save      │ Specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
-│ --              │ Specifies which system command to run in a child process with parsed ENVS. (ex: -- cargo run)         │
-└─────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
-For additional information, please see the man documentation or README.)"
-                "\n",
-                NULL);
-            break;
+            const std::string help_doc = R"(
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ nvi cli documentation                                                                                                 │
+├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ flag          │ description                                                                                           │
+├───────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ --api         │ specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
+│ --config      │ specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
+│ --debug       │ specifies whether or not to log debug details. (ex: --debug)                                          │
+│ --directory   │ specifies which directory the .env files are located within. (ex: --directory path/to/envs)           │
+│ --environment │ specifies which environment config to use within a remote project. (ex: --environment dev)            │
+│ --files       │ specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
+│ --project     │ specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
+│ --print       │ specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
+│ --required    │ specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
+│ --save        │ specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
+│ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)         │
+└───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+for more detailed information, please see the man documentation or the README.)";
+            std::clog << help_doc << std::endl;
+            std::exit(EXIT_SUCCESS);
         }
         case NVI_VERSION: {
             std::time_t current_time{std::time(nullptr)};
@@ -241,14 +251,6 @@ For additional information, please see the man documentation or README.)"
             std::clog << "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions." << '\n';
             std::clog << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl;
             std::exit(EXIT_SUCCESS);
-            break;
-        }
-        case PROJECT_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                PROJECT_FLAG_ERROR,
-                R"(The "-p" or "--project" flag must contain a valid project name. Use flag "-h" or "--help" for more information.)",
-                NULL);
-            break;
         }
         case INVALID_FLAG_WARNING: {
             NVI_LOG_DEBUG(
@@ -261,7 +263,8 @@ For additional information, please see the man documentation or README.)"
         case DEBUG: {
             NVI_LOG_DEBUG(
                 DEBUG,
-                R"(The following arg options were set: config="%s", debug="true", dir="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true": "false"),
                 _options.config.c_str(), 
                 _options.dir.c_str(), 
                 _options.environment.c_str(), 
@@ -287,7 +290,7 @@ For additional information, please see the man documentation or README.)"
                      _options.required_envs.size())) {
                 NVI_LOG_DEBUG(
                     DEBUG,
-                    R"(Found conflicting flags. When the "config" flag has been set, then "environment", dir", "exec", "files", "project", and "required" flags are ignored.)",
+                    R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)",
                     NULL);
             }
             break;
