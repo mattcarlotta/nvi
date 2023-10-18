@@ -11,26 +11,25 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <sstream>
 #include <string>
 #include <termios.h>
 #include <unistd.h>
+#include <unordered_map>
 
 namespace nvi {
     Api::Api(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
 
     std::string Api::get_input_selection_for(std::string type) noexcept {
         std::clog << "[nvi] Retrieved the following " << type << "s from the nvi API..." << '\n';
-        std::map<int, std::string> list;
+        std::unordered_map<int, std::string> list;
         int index = 0;
-        std::string line;
-        std::istringstream ss{_res_data};
-        while (std::getline(ss, line)) {
-            if (line.length()) {
-                ++index;
-                list[index] = line;
-                std::clog << "[" << index << "]: " << line << '\n';
+        std::string value;
+        std::istringstream iss{_res_data};
+        while (std::getline(iss, value)) {
+            if (value.length()) {
+                list[++index] = value;
+                std::clog << "[" << index << "]: " << value << '\n';
             }
         }
 
@@ -76,7 +75,7 @@ namespace nvi {
 
         _api_key.erase(std::remove_if(_api_key.begin(), _api_key.end(), filter_non_alphanum_char), _api_key.end());
 
-        if (_api_key.length() == 0 || _api_key.length() > 50) {
+        if (not _api_key.length()) {
             log(INVALID_INPUT_KEY);
         }
 
