@@ -1,6 +1,8 @@
 #include "config.h"
 #include "format.h"
 #include "log.h"
+#include "options.h"
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -21,8 +23,8 @@ namespace nvi {
     inline constexpr char LINE_DELIMITER = '\n'; // 0x0a
     inline constexpr char ASSIGN_OP = '=';       // 0x3d
 
-    Config::Config(const std::string &environment, const std::string _envdir) : _env(environment) {
-        _file_path = std::filesystem::current_path() / _envdir / ".nvi";
+    Config::Config(options_t &options) : _options(options) {
+        _file_path = std::filesystem::current_path() / _options.dir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
             log(FILE_ENOENT_ERROR);
         }
@@ -33,7 +35,7 @@ namespace nvi {
         }
 
         _file = std::string{std::istreambuf_iterator{config_file}, {}};
-        _byte = _file.find(OPEN_BRACKET + environment + CLOSE_BRACKET);
+        _byte = _file.find(OPEN_BRACKET + _options.config + CLOSE_BRACKET);
         if (_byte == std::string::npos) {
             log(FILE_PARSE_ERROR);
         }
@@ -158,7 +160,12 @@ namespace nvi {
                                 // skip over double quote
                                 skip();
 
-                                values.push_back(extract_value_within(DOUBLE_QUOTE));
+                                const std::string next_value = extract_value_within(DOUBLE_QUOTE);
+
+                                // prevent duplicate values
+                                if (std::find(values.begin(), values.end(), next_value) == values.end()) {
+                                    values.push_back(next_value);
+                                }
                             }
 
                             // skip characters not within quotes
@@ -192,8 +199,6 @@ namespace nvi {
 
         config_file.close();
     };
-
-    const options_t &Config::get_options() const noexcept { return _options; }
 
     const std::vector<ConfigToken> &Config::get_tokens() const noexcept { return _config_tokens; }
 
@@ -380,35 +385,35 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_PARSE_ERROR,
                 R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified environment doesn't appear to exist!)",
-                _env.c_str(), _file_path.c_str());
+                _options.config.c_str(), _file_path.c_str());
             break;
         }
         case SELECTED_CONFIG_EMPTY_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 SELECTED_CONFIG_EMPTY_ERROR,
                 R"(While the "%s" configuration exists within the .nvi file (%s), the configuration appears to be empty.)",
-                _env.c_str(), _file_path.c_str());
+                _options.config.c_str(), _file_path.c_str());
             break;
         }
         case INVALID_ARRAY_VALUE: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_ARRAY_VALUE,
                 R"(The "%s" property within the "%s" config is not a valid array. It appears to be missing a closing bracket "]".)",
-                _key.c_str(), _env.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_BOOLEAN_VALUE: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_BOOLEAN_VALUE,
                 R"(The "%s" property within the "%s" config contains an invalid boolean value. Expected the value to match true or false.)",
-                _key.c_str(), _env.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_STRING_VALUE: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_STRING_VALUE,
                 R"(The "%s" property within the "%s" config contains an invalid string value. It appears to be empty or is missing a closing double quote.)",
-                _key.c_str(), _env.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case API_ARG_ERROR: {
@@ -450,7 +455,7 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_FILES_ARG_ERROR,
                 R"(The "files" property within the "%s" environment configuration (%s) appears to be empty. You must specify at least 1 .env file to load!)",
-                _env.c_str(), _file_path.c_str());
+                _options.config.c_str(), _file_path.c_str());
             break;
         }
         case EXEC_ARG_ERROR: {
@@ -492,7 +497,7 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 INVALID_PROPERTY_WARNING,
                 R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
-                _key.c_str(), _env.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case DEBUG: {
@@ -512,7 +517,7 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 DEBUG,
                 R"(Successfully parsed the "%s" configuration from the .nvi file.)",
-                _env.c_str());
+                _options.config.c_str());
 
             if (_options.commands.size() && _options.print) {
                 NVI_LOG_DEBUG(

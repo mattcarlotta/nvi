@@ -4,81 +4,95 @@
 #include <string>
 #include <vector>
 
-nvi::Config config("staggered_with_comments", "../envs");
-nvi::options_t opts = config.generate_options()->get_options();
-std::vector<nvi::ConfigToken> tokens = config.get_tokens();
+class Parse_Config_File : public testing::Test {
+    protected:
+    static nvi::options_t config_options;
+    static std::vector<nvi::ConfigToken> tokens;
 
-TEST(Config, generate_tokens) { EXPECT_EQ(tokens.size(), 10); }
+    public:
+    static void SetUpTestSuite() {
+        config_options.config = "staggered_with_comments";
+        config_options.dir = "../envs";
+        nvi::Config config(config_options);
+        config.generate_options();
+        tokens = config.get_tokens();
+    }
+};
 
-TEST(Config, parseable_api) {
+nvi::options_t Parse_Config_File::config_options;
+std::vector<nvi::ConfigToken> Parse_Config_File::tokens;
+
+TEST_F(Parse_Config_File, generate_tokens) { EXPECT_EQ(tokens.size(), 10); }
+
+TEST_F(Parse_Config_File, parseable_api) {
     const nvi::ConfigToken token = tokens.at(0);
     EXPECT_EQ(token.type, nvi::ConfigValueType::boolean);
     EXPECT_EQ(token.key, "api");
-    EXPECT_EQ(opts.api, true);
+    EXPECT_EQ(config_options.api, true);
 }
 
-TEST(Config, parseable_debug) {
+TEST_F(Parse_Config_File, parseable_debug) {
     const nvi::ConfigToken token = tokens.at(1);
     EXPECT_EQ(token.type, nvi::ConfigValueType::boolean);
     EXPECT_EQ(token.key, "debug");
-    EXPECT_EQ(opts.debug, true);
+    EXPECT_EQ(config_options.debug, true);
 }
 
-TEST(Config, parseable_directory) {
+TEST_F(Parse_Config_File, parseable_directory) {
     const nvi::ConfigToken token = tokens.at(2);
     EXPECT_EQ(token.type, nvi::ConfigValueType::string);
     EXPECT_EQ(token.key, "directory");
-    EXPECT_EQ(opts.dir, "path/to/custom/directory");
+    EXPECT_EQ(config_options.dir, "path/to/custom/directory");
 }
 
-TEST(Config, parseable_env) {
+TEST_F(Parse_Config_File, parseable_env) {
     const nvi::ConfigToken token = tokens.at(3);
     EXPECT_EQ(token.type, nvi::ConfigValueType::string);
     EXPECT_EQ(token.key, "environment");
-    EXPECT_EQ(opts.environment, "my_env");
+    EXPECT_EQ(config_options.environment, "my_env");
 }
 
-TEST(Config, parseable_execute) {
+TEST_F(Parse_Config_File, parseable_execute) {
     const nvi::ConfigToken token = tokens.at(4);
     EXPECT_EQ(token.type, nvi::ConfigValueType::string);
     EXPECT_EQ(token.key, "execute");
-    EXPECT_EQ(opts.commands.size(), 3);
+    EXPECT_EQ(config_options.commands.size(), 3);
 }
 
-TEST(Config, parseable_files) {
+TEST_F(Parse_Config_File, parseable_files) {
     const nvi::ConfigToken token = tokens.at(5);
     EXPECT_EQ(token.type, nvi::ConfigValueType::array);
     EXPECT_EQ(token.key, "files");
     const std::vector<std::string> files = {"test1.env", "test2.env", "test3.env"};
-    EXPECT_EQ(opts.files, files);
+    EXPECT_EQ(config_options.files, files);
 }
 
-TEST(Config, parseable_print) {
+TEST_F(Parse_Config_File, parseable_print) {
     const nvi::ConfigToken token = tokens.at(6);
     EXPECT_EQ(token.type, nvi::ConfigValueType::boolean);
     EXPECT_EQ(token.key, "print");
-    EXPECT_EQ(opts.print, true);
+    EXPECT_EQ(config_options.print, true);
 }
 
-TEST(Config, parseable_project) {
+TEST_F(Parse_Config_File, parseable_project) {
     const nvi::ConfigToken token = tokens.at(7);
     EXPECT_EQ(token.type, nvi::ConfigValueType::string);
     EXPECT_EQ(token.key, "project");
-    EXPECT_EQ(opts.project, "my_project");
+    EXPECT_EQ(config_options.project, "my_project");
 }
 
-TEST(Config, parseable_required_envs) {
+TEST_F(Parse_Config_File, parseable_required_envs) {
     const nvi::ConfigToken token = tokens.at(8);
     EXPECT_EQ(token.type, nvi::ConfigValueType::array);
     EXPECT_EQ(token.key, "required");
 
     const std::vector<std::string> envs = {"TEST1", "TEST2", "TEST3"};
-    EXPECT_EQ(opts.required_envs, envs);
+    EXPECT_EQ(config_options.required_envs, envs);
 }
 
-TEST(Config, parseable_save) {
+TEST_F(Parse_Config_File, parseable_save) {
     const nvi::ConfigToken token = tokens.at(9);
     EXPECT_EQ(token.type, nvi::ConfigValueType::boolean);
     EXPECT_EQ(token.key, "save");
-    EXPECT_EQ(opts.debug, true);
+    EXPECT_EQ(config_options.debug, true);
 }

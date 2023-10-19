@@ -33,10 +33,10 @@ namespace nvi {
      * @param `dir` is an optional argument to specify where the .nvi file resides according to current directory
      * @example Initializing a config
      *
-     * const string::string env = "development";
-     * const std::string dir = "custom/path/to/envs";
-     * nvi::Config config(env, dir);
-     * nvi::options_t options = config.generate_options->get_options();
+     * nvi::options_t options;
+     * options.config = "development";
+     * options.dir = "custom/path/to/envs";
+     * nvi::Config config(options);
      */
     enum class ConfigValueType { array, boolean, string };
 
@@ -54,9 +54,8 @@ namespace nvi {
 
     class Config {
         public:
-        Config(const std::string &environment, const std::string env_dir = "");
+        Config(options_t &options);
         Config *generate_options() noexcept;
-        const options_t &get_options() const noexcept;
         const std::vector<ConfigToken> &get_tokens() const noexcept;
 
         private:
@@ -68,6 +67,7 @@ namespace nvi {
         std::string get_value_type_string(const ConfigValueType &cvt) const noexcept;
         void log(const messages_t &code) const noexcept;
 
+        options_t &_options;
         std::unordered_map<std::string_view, CONFIG_KEY> CONFIG_KEYS{
             {"api", CONFIG_KEY::API},
             {"debug", CONFIG_KEY::DEBUG},
@@ -80,12 +80,10 @@ namespace nvi {
             {"required", CONFIG_KEY::REQUIRED},
             {"save", CONFIG_KEY::SAVE},
         };
-        options_t _options;
         std::string _file;
         std::string _config;
         size_t _byte = 0;
         std::vector<ConfigToken> _config_tokens;
-        const std::string _env;
         std::filesystem::path _file_path;
         std::string _command;
         std::string _key;

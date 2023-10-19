@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "options.h"
 #include "parser.h"
 #include "gtest/gtest.h"
 #include <sstream>
@@ -9,17 +10,18 @@ class Lex_Env_File : public testing::Test {
 
     public:
     static void SetUpTestSuite() {
-        nvi::Lexer lexer({/* api */ false,
-                          /* commands */ {},
-                          /* config */ "",
-                          /* debug */ false,
-                          /* dir */ "../envs",
-                          /* environment */ "",
-                          /* files */ {"simple.env"},
-                          /* print */ false,
-                          /* project */ "",
-                          /* required_envs */ {},
-                          /* save */ false});
+        nvi::options_t options{/* api */ false,
+                               /* commands */ {},
+                               /* config */ "",
+                               /* debug */ false,
+                               /* dir */ "../envs",
+                               /* environment */ "",
+                               /* files */ {"simple.env"},
+                               /* print */ false,
+                               /* project */ "",
+                               /* required_envs */ {},
+                               /* save */ false};
+        nvi::Lexer lexer(options);
         file_tokens = lexer.parse_files()->get_tokens();
     }
 };
@@ -169,17 +171,19 @@ TEST(Lex_Response_Env, consistent_response_lex_size) {
     envs << "Lf3Dw== test@example.com" << '\n';
     envs << "API_KEY_4='  SINGLE QUOTES  '" << '\n';
     envs << "API_KEY_5=\"  DOUBLE QUOTES  \"" << '\n';
+    nvi::options_t options{/* api */ false,
+                           /* commands */ {},
+                           /* config */ "",
+                           /* debug */ false,
+                           /* dir */ "",
+                           /* environment */ "",
+                           /* files */ {},
+                           /* print */ false,
+                           /* project */ "",
+                           /* required_envs */ {},
+                           /* save */ false};
 
-    nvi::Lexer lexer({/* api */ false,
-                      /* commands */ {},
-                      /* config */ "",
-                      /* debug */ false,
-                      /* dir */ "",
-                      /* environment */ "",
-                      /* files */ {},
-                      /* print */ false,
-                      /* project */ "",
-                      /* required_envs */ {}});
+    nvi::Lexer lexer(options);
     nvi::tokens_t res_tokens = lexer.parse_api_response(envs.str())->get_tokens();
 
     EXPECT_EQ(res_tokens.size(), 5);

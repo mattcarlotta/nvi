@@ -18,7 +18,7 @@
 #include <unordered_map>
 
 namespace nvi {
-    Api::Api(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
+    Api::Api(options_t &options) : _options(options), _curl(curl_easy_init()) {}
 
     std::string Api::get_input_selection_for(std::string type) noexcept {
         std::clog << "[nvi] Retrieved the following " << type << "s from the nvi API..." << '\n';
@@ -48,7 +48,7 @@ namespace nvi {
     static bool filter_non_alphanum_char(const char &c) { return not std::isalnum(c); }
 
     Api *Api::get_key_from_file_or_input() noexcept {
-        const std::filesystem::path api_key_file = std::filesystem::current_path() / ".nvi-key";
+        const std::filesystem::path api_key_file = std::filesystem::current_path() / _options.dir / ".nvi-key";
         if (std::filesystem::exists(api_key_file)) {
             std::ifstream api_file{api_key_file, std::ios_base::in};
 
@@ -124,7 +124,7 @@ namespace nvi {
 
     void Api::save_envs_to_disk() noexcept {
         const std::string env_name = _options.environment + ".env";
-        _env_file_path = std::filesystem::current_path() / env_name;
+        _env_file_path = std::filesystem::current_path() / _options.dir / env_name;
         if (std::filesystem::exists(_env_file_path)) {
             std::clog << "[nvi] WARNING: A file named \"" << env_name << "\" already exists at the current path ("
                       << std::filesystem::current_path() << "). " << '\n'

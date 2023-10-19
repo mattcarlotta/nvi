@@ -3,6 +3,7 @@
 #include "log.h"
 #include "options.h"
 #include "version.h"
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -11,7 +12,7 @@
 #include <vector>
 
 namespace nvi {
-    Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
+    Arg::Arg(int &argc, char *argv[], options_t &options) : _argc(argc - 1), _argv(argv), _options(options) {
         while (_index < _argc) {
             const std::string_view flag{_argv[++_index]};
 
@@ -79,8 +80,6 @@ namespace nvi {
         }
     };
 
-    const options_t &Arg::get_options() const noexcept { return _options; }
-
     std::string Arg::parse_single_arg(const messages_t &code) noexcept {
         ++_index;
         if (_argv[_index] == nullptr) {
@@ -96,7 +95,7 @@ namespace nvi {
     }
 
     std::vector<std::string> Arg::parse_multi_arg(const messages_t &code) noexcept {
-        std::vector<std::string> arg;
+        std::vector<std::string> args;
         while (_index < _argc) {
             ++_index;
 
@@ -110,14 +109,16 @@ namespace nvi {
                 break;
             }
 
-            arg.push_back(next_arg);
+            if (std::find(args.begin(), args.end(), next_arg) == args.end()) {
+                args.push_back(next_arg);
+            }
         }
 
-        if (not arg.size()) {
+        if (not args.size()) {
             log(code);
         }
 
-        return arg;
+        return args;
     }
 
     void Arg::parse_command_args() noexcept {
