@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
         options.api ? lexer.parse_api_response(api_envs)->get_tokens() : lexer.parse_files()->get_tokens();
 
     nvi::Parser parser(std::move(tokens), options);
-    nvi::env_map_t env_map = parser.parse_tokens()->check_envs()->get_env_map();
+    nvi::env_map_t env_map = parser.parse_tokens()->get_env_map();
 
     nvi::Generator generator(std::move(env_map), std::move(options));
     generator.set_or_print_envs();

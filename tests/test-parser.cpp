@@ -23,7 +23,7 @@ class Parse_Env_File : public testing::Test {
         nvi::Lexer lexer(options);
         lexer.parse_files();
         nvi::Parser parser(lexer.get_tokens(), options);
-        env_map = parser.parse_tokens()->check_envs()->get_env_map();
+        env_map = parser.parse_tokens()->get_env_map();
     }
 };
 

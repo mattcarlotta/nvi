@@ -30,12 +30,11 @@ namespace nvi {
      * nvi::Lexer lexer(options);
      * nvi::tokens_t tokens = lexer.parse_files()->get_tokens();
      * nvi::Parser parser(tokens, options);
-     * parser.parse_envs()->check_envs();
+     * parser.parse_envs();
      */
     class Parser {
         public:
         Parser(tokens_t tokens, const options_t &options);
-        Parser *check_envs() noexcept;
         const env_map_t &get_env_map() const noexcept;
         Parser *parse_tokens() noexcept;
 
@@ -43,7 +42,7 @@ namespace nvi {
         void log(const messages_t &code) const noexcept;
 
         tokens_t _tokens;
-        const options_t _options;
+        options_t _options;
         Token _token;
         ValueToken _value_token;
         std::string _key;

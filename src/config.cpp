@@ -1,6 +1,7 @@
 #include "config.h"
 #include "format.h"
 #include "log.h"
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -158,7 +159,12 @@ namespace nvi {
                                 // skip over double quote
                                 skip();
 
-                                values.push_back(extract_value_within(DOUBLE_QUOTE));
+                                const std::string next_value = extract_value_within(DOUBLE_QUOTE);
+
+                                // prevent duplicate values
+                                if (std::find(values.begin(), values.end(), next_value) == values.end()) {
+                                    values.push_back(next_value);
+                                }
                             }
 
                             // skip characters not within quotes
