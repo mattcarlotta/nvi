@@ -34,8 +34,8 @@ namespace nvi {
      * @example Parsing flags and arguments
      *
      * int argc = 5;
-     * nvi::options_t options;
      * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", (char *)NULL };
+     * nvi::options_t options;
      * nvi::Arg args(argc, argv, &options);
      */
     class Arg {

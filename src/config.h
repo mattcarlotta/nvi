@@ -34,7 +34,7 @@ namespace nvi {
      * @example Initializing a config
      *
      * nvi::options_t options;
-     * options.environment = "development";
+     * options.config = "development";
      * options.dir = "custom/path/to/envs";
      * nvi::Config config(&options);
      */
