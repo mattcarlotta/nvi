@@ -39,12 +39,12 @@ namespace nvi {
      * options.dir = "custom/path/to/envs";
      * options.files = {".env", "base.env", ...etc};
      * optons.required_envs = {"KEY1", "KEY2", ...etc};
-     * nvi::Lexer lexer(options);
+     * nvi::Lexer lexer(&options);
      * lexer.parse_files();
      */
     class Lexer {
         public:
-        Lexer(const options_t &options);
+        Lexer(const options_t *options);
         Lexer *parse_api_response(const std::string &envs) noexcept;
         Lexer *parse_files() noexcept;
         tokens_t get_tokens() const noexcept;
@@ -60,7 +60,7 @@ namespace nvi {
         void increase_byte_count(size_t offset = 1) noexcept;
         void increase_line_count() noexcept;
 
-        options_t _options;
+        const options_t *_options;
         size_t _index;
         size_t _byte;
         size_t _line;

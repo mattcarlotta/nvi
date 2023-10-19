@@ -12,29 +12,29 @@
 #include <vector>
 
 namespace nvi {
-    Arg::Arg(int &argc, char *argv[]) : _argc(argc - 1), _argv(argv) {
+    Arg::Arg(int &argc, char *argv[], options_t *options) : _argc(argc - 1), _argv(argv), _options(options) {
         while (_index < _argc) {
             const std::string_view flag{_argv[++_index]};
 
             switch (FLAGS.count(flag) ? FLAGS.at(flag) : FLAG::UNKNOWN) {
             case FLAG::API: {
-                _options.api = true;
+                _options->api = true;
                 break;
             }
             case FLAG::CONFIG: {
-                _options.config = parse_single_arg(CONFIG_FLAG_ERROR);
+                _options->config = parse_single_arg(CONFIG_FLAG_ERROR);
                 break;
             }
             case FLAG::DEBUG: {
-                _options.debug = true;
+                _options->debug = true;
                 break;
             }
             case FLAG::DIRECTORY: {
-                _options.dir = parse_single_arg(DIR_FLAG_ERROR);
+                _options->dir = parse_single_arg(DIR_FLAG_ERROR);
                 break;
             }
             case FLAG::ENVIRONMENT: {
-                _options.environment = parse_single_arg(ENV_FLAG_ERROR);
+                _options->environment = parse_single_arg(ENV_FLAG_ERROR);
                 break;
             }
             case FLAG::EXECUTE: {
@@ -42,26 +42,26 @@ namespace nvi {
                 goto exit_flag_parsing;
             }
             case FLAG::FILES: {
-                _options.files = parse_multi_arg(FILES_FLAG_ERROR);
+                _options->files = parse_multi_arg(FILES_FLAG_ERROR);
                 break;
             }
             case FLAG::HELP: {
                 log(HELP_DOC);
             }
             case FLAG::PRINT: {
-                _options.print = true;
+                _options->print = true;
                 break;
             }
             case FLAG::PROJECT: {
-                _options.project = parse_single_arg(PROJECT_FLAG_ERROR);
+                _options->project = parse_single_arg(PROJECT_FLAG_ERROR);
                 break;
             }
             case FLAG::REQUIRED: {
-                _options.required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
+                _options->required_envs = parse_multi_arg(REQUIRED_FLAG_ERROR);
                 break;
             }
             case FLAG::SAVE: {
-                _options.save = true;
+                _options->save = true;
                 break;
             }
             case FLAG::VERSION: {
@@ -75,12 +75,10 @@ namespace nvi {
         }
 
     exit_flag_parsing:
-        if (_options.debug) {
+        if (_options->debug) {
             log(DEBUG);
         }
     };
-
-    const options_t &Arg::get_options() const noexcept { return _options; }
 
     std::string Arg::parse_single_arg(const messages_t &code) noexcept {
         ++_index;
@@ -132,19 +130,19 @@ namespace nvi {
             }
 
             std::string next_arg{_argv[_index]};
-            if (not _options.commands.size()) {
+            if (not _options->commands.size()) {
                 _bin_name = next_arg;
             }
 
             _command += _command.length() > 0 ? " " + next_arg : next_arg;
-            _options.commands.push_back(std::move(_argv[_index]));
+            _options->commands.push_back(std::move(_argv[_index]));
         }
 
-        if (not _options.commands.size()) {
+        if (not _options->commands.size()) {
             log(COMMAND_FLAG_ERROR);
         }
 
-        _options.commands.push_back(nullptr);
+        _options->commands.push_back(nullptr);
     }
 
     void Arg::remove_invalid_flag() noexcept {
@@ -267,30 +265,30 @@ for more detailed information, please see the man documentation or the README.)"
             NVI_LOG_DEBUG(
                 DEBUG,
                 R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
-                (_options.api ? "true": "false"),
-                _options.config.c_str(), 
-                _options.dir.c_str(), 
-                _options.environment.c_str(), 
+                (_options->api ? "true": "false"),
+                _options->config.c_str(), 
+                _options->dir.c_str(), 
+                _options->environment.c_str(), 
                 _command.c_str(),
-                fmt::join(_options.files, ", ").c_str(),
-                (_options.print ? "true": "false"),
-                _options.project.c_str(), 
-                fmt::join(_options.required_envs, ", ").c_str(),
-                (_options.save ? "true": "false"));
+                fmt::join(_options->files, ", ").c_str(),
+                (_options->print ? "true": "false"),
+                _options->project.c_str(), 
+                fmt::join(_options->required_envs, ", ").c_str(),
+                (_options->save ? "true": "false"));
 
 
-            if (_options.commands.size() && _options.print) {
+            if (_options->commands.size() && _options->print) {
                 NVI_LOG_DEBUG(
                     DEBUG,
                     R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
                     NULL);
             }
 
-            if (_options.config.length() && 
-                    (_options.dir.length() || 
-                     _options.commands.size() ||
-                     _options.files.size() > 1 || 
-                     _options.required_envs.size())) {
+            if (_options->config.length() && 
+                    (_options->dir.length() || 
+                     _options->commands.size() ||
+                     _options->files.size() > 1 || 
+                     _options->required_envs.size())) {
                 NVI_LOG_DEBUG(
                     DEBUG,
                     R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)",

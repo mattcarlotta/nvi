@@ -18,7 +18,7 @@
 #include <unordered_map>
 
 namespace nvi {
-    Api::Api(const options_t &options) : _curl(curl_easy_init()), _options(options) {}
+    Api::Api(options_t *options) : _options(options), _curl(curl_easy_init()) {}
 
     std::string Api::get_input_selection_for(std::string type) noexcept {
         std::clog << "[nvi] Retrieved the following " << type << "s from the nvi API..." << '\n';
@@ -80,15 +80,15 @@ namespace nvi {
         }
 
         // get projects from API and prompt for user selection
-        if (not _options.project.length()) {
+        if (not _options->project.length()) {
             fetch_data("/cli/projects/?apiKey=" + _api_key);
-            _options.project = get_input_selection_for("project");
+            _options->project = get_input_selection_for("project");
         }
 
         // get environments from API and prompt for user selection
-        if (not _options.environment.length()) {
-            fetch_data("/cli/environments/?apiKey=" + _api_key + "&project=" + _options.project);
-            _options.environment = get_input_selection_for("environment");
+        if (not _options->environment.length()) {
+            fetch_data("/cli/environments/?apiKey=" + _api_key + "&project=" + _options->project);
+            _options->environment = get_input_selection_for("environment");
         }
 
         return this;
@@ -123,7 +123,7 @@ namespace nvi {
     }
 
     void Api::save_envs_to_disk() noexcept {
-        const std::string env_name = _options.environment + ".env";
+        const std::string env_name = _options->environment + ".env";
         _env_file_path = std::filesystem::current_path() / env_name;
         if (std::filesystem::exists(_env_file_path)) {
             std::clog << "[nvi] WARNING: A file named \"" << env_name << "\" already exists at the current path ("
@@ -145,7 +145,7 @@ namespace nvi {
 
         env_file << _res_data;
 
-        if (_options.debug) {
+        if (_options->debug) {
             log(SAVED_ENV_FILE);
         }
 
@@ -153,14 +153,14 @@ namespace nvi {
     }
 
     Api *Api::fetch_envs() noexcept {
-        fetch_data("/cli/secrets/?apiKey=" + _api_key + "&project=" + _options.project +
-                   "&environment=" + _options.environment);
+        fetch_data("/cli/secrets/?apiKey=" + _api_key + "&project=" + _options->project +
+                   "&environment=" + _options->environment);
 
-        if (_options.debug) {
+        if (_options->debug) {
             log(RESPONSE_SUCCESS);
         }
 
-        if (_options.save) {
+        if (_options->save) {
             save_envs_to_disk();
         }
 
@@ -204,7 +204,7 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 RESPONSE_SUCCESS,
                 "Successfully retrieved the %s ENVs from the nvi API.", 
-                _options.environment.c_str());
+                _options->environment.c_str());
             break;
         }
         case CURL_FAILED_TO_INIT: {
@@ -225,7 +225,7 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 SAVED_ENV_FILE,
                 R"(Successfully saved the "%s.env" file to disk (%s).)", 
-                _options.environment.c_str(), _env_file_path.c_str());
+                _options->environment.c_str(), _env_file_path.c_str());
             break;
         }
         default:

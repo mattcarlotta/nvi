@@ -34,21 +34,20 @@ namespace nvi {
      * @example Parsing flags and arguments
      *
      * int argc = 5;
+     * nvi::options_t options;
      * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", (char *)NULL };
-     * nvi::Arg args(argc, argv);
-     * nvi::options_t options = args.get_options();
+     * nvi::Arg args(argc, argv, &options);
      */
     class Arg {
         public:
-        Arg(int &argc, char *argv[]);
-        const options_t &get_options() const noexcept;
+        Arg(int &argc, char *argv[], options_t *options);
 
         private:
-        options_t _options;
-        int _index = 0;
         int _argc;
-        std::string _bin_name;
         char **_argv;
+        options_t *_options;
+        int _index = 0;
+        std::string _bin_name;
         std::string _invalid_flag;
         std::string _invalid_args;
         std::string _command;
