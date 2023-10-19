@@ -36,16 +36,16 @@ namespace nvi {
      * int argc = 5;
      * char *argv[] = {(char *)"nvi", (char *)"--config",  (char *)"test", (char *)"--debug", (char *)NULL };
      * nvi::options_t options;
-     * nvi::Arg args(argc, argv, &options);
+     * nvi::Arg args(argc, argv, options);
      */
     class Arg {
         public:
-        Arg(int &argc, char *argv[], options_t *options);
+        Arg(int &argc, char *argv[], options_t &options);
 
         private:
         int _argc;
         char **_argv;
-        options_t *_options;
+        options_t &_options;
         int _index = 0;
         std::string _bin_name;
         std::string _invalid_flag;

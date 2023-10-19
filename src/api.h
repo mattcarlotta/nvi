@@ -25,7 +25,7 @@ namespace nvi {
      */
     class Api {
         public:
-        Api(options_t *options);
+        Api(options_t &options);
         Api *get_key_from_file_or_input() noexcept;
         Api *fetch_envs() noexcept;
         const std::string &get_envs() noexcept;
@@ -42,7 +42,7 @@ namespace nvi {
         void fetch_data(std::string REQ_URL) noexcept;
         std::string get_input_selection_for(std::string type) noexcept;
 
-        options_t *_options;
+        options_t &_options;
         CURL *_curl;
         CURLcode _res;
         std::string _res_data;

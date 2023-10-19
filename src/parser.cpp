@@ -8,11 +8,9 @@
 #include <string>
 
 namespace nvi {
-    using std::find;
-
     inline constexpr char NULL_CHAR = '\0'; // 0x00
 
-    Parser::Parser(tokens_t tokens, options_t *options) : _tokens(tokens), _options(options) {}
+    Parser::Parser(tokens_t tokens, options_t &options) : _tokens(tokens), _options(options) {}
 
     const env_map_t &Parser::get_env_map() const noexcept { return _env_map; }
 
@@ -39,7 +37,7 @@ namespace nvi {
                             _value += val_from_env;
                         } else if (_env_map.count(_interp_key)) {
                             _value += _env_map.at(_interp_key);
-                        } else if (_options->debug) {
+                        } else if (_options.debug) {
                             log(INTERPOLATION_WARNING);
                         }
                     } else {
@@ -50,15 +48,15 @@ namespace nvi {
                 _env_map[_key] = _value;
 
                 // remove keys from required envs list
-                if (_options->required_envs.size() && _key.length()) {
-                    auto key = find(_options->required_envs.begin(), _options->required_envs.end(), _key);
+                if (_options.required_envs.size() && _key.length()) {
+                    auto key = std::find(_options.required_envs.begin(), _options.required_envs.end(), _key);
 
-                    if (key != _options->required_envs.end()) {
-                        _options->required_envs.erase(key);
+                    if (key != _options.required_envs.end()) {
+                        _options.required_envs.erase(key);
                     }
                 }
 
-                if (_options->debug) {
+                if (_options.debug) {
                     log(DEBUG);
                 }
             }
@@ -66,11 +64,11 @@ namespace nvi {
 
         if (not _env_map.size()) {
             log(EMPTY_ENVS_ERROR);
-        } else if (_options->required_envs.size()) {
+        } else if (_options.required_envs.size()) {
             log(REQUIRED_ENV_ERROR);
-        } else if (_options->debug && _options->api) {
+        } else if (_options.debug && _options.api) {
             log(DEBUG_RESPONSE_PROCESSED);
-        } else if (_options->debug) {
+        } else if (_options.debug) {
             log(DEBUG_FILE_PROCESSED);
         }
 
@@ -98,21 +96,21 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 DEBUG_RESPONSE_PROCESSED,
                 "Successfully parsed the remote \"%s\" project's \"%s\" environment ENVs!\n",
-                _options->project.c_str(), _options->environment.c_str())
+                _options.project.c_str(), _options.environment.c_str())
             break;
         }
         case DEBUG_FILE_PROCESSED: {
             NVI_LOG_DEBUG(
                 DEBUG_FILE_PROCESSED,
                 "Successfully parsed the %s file%s!\n",
-                fmt::join(_options->files, ", ").c_str(), (_options->files.size() > 1 ? "s" : ""))
+                fmt::join(_options.files, ", ").c_str(), (_options.files.size() > 1 ? "s" : ""))
             break;
         }
         case REQUIRED_ENV_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 REQUIRED_ENV_ERROR,
                 R"(The following ENV keys were marked as required: "%s", but they were undefined after the list of .env files were parsed.)",
-                fmt::join(_options->required_envs, ", ").c_str());
+                fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         case EMPTY_ENVS_ERROR: {

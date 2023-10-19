@@ -23,8 +23,8 @@ namespace nvi {
     inline constexpr char LINE_DELIMITER = '\n'; // 0x0a
     inline constexpr char ASSIGN_OP = '=';       // 0x3d
 
-    Config::Config(options_t *options) : _options(options) {
-        _file_path = std::filesystem::current_path() / _options->dir / ".nvi";
+    Config::Config(options_t &options) : _options(options) {
+        _file_path = std::filesystem::current_path() / _options.dir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
             log(FILE_ENOENT_ERROR);
         }
@@ -35,7 +35,7 @@ namespace nvi {
         }
 
         _file = std::string{std::istreambuf_iterator{config_file}, {}};
-        _byte = _file.find(OPEN_BRACKET + _options->config + CLOSE_BRACKET);
+        _byte = _file.find(OPEN_BRACKET + _options.config + CLOSE_BRACKET);
         if (_byte == std::string::npos) {
             log(FILE_PARSE_ERROR);
         }
@@ -217,7 +217,7 @@ namespace nvi {
                     log(API_ARG_ERROR);
                 }
 
-                _options->api = std::get<bool>(ct.value.value());
+                _options.api = std::get<bool>(ct.value.value());
                 break;
             }
             case CONFIG_KEY::DEBUG: {
@@ -225,7 +225,7 @@ namespace nvi {
                     log(DEBUG_ARG_ERROR);
                 }
 
-                _options->debug = std::get<bool>(ct.value.value());
+                _options.debug = std::get<bool>(ct.value.value());
                 break;
             }
             case CONFIG_KEY::DIRECTORY: {
@@ -233,7 +233,7 @@ namespace nvi {
                     log(DIR_ARG_ERROR);
                 }
 
-                _options->dir = std::move(std::get<std::string>(ct.value.value()));
+                _options.dir = std::move(std::get<std::string>(ct.value.value()));
                 break;
             }
             case CONFIG_KEY::FILES: {
@@ -241,10 +241,10 @@ namespace nvi {
                     log(FILES_ARG_ERROR);
                 }
 
-                _options->files.clear();
-                _options->files = std::move(std::get<std::vector<std::string>>(ct.value.value()));
+                _options.files.clear();
+                _options.files = std::move(std::get<std::vector<std::string>>(ct.value.value()));
 
-                if (not _options->files.size()) {
+                if (not _options.files.size()) {
                     log(EMPTY_FILES_ARG_ERROR);
                 }
                 break;
@@ -254,7 +254,7 @@ namespace nvi {
                     log(ENV_ARG_ERROR);
                 }
 
-                _options->environment = std::move(std::get<std::string>(ct.value.value()));
+                _options.environment = std::move(std::get<std::string>(ct.value.value()));
                 break;
             }
             case CONFIG_KEY::EXECUTE: {
@@ -268,10 +268,10 @@ namespace nvi {
 
                 while (command_iss >> arg) {
                     char *arg_cstr = new char[arg.length() + 1];
-                    _options->commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
+                    _options.commands.push_back(std::strcpy(arg_cstr, arg.c_str()));
                 }
 
-                _options->commands.push_back(nullptr);
+                _options.commands.push_back(nullptr);
                 break;
             }
             case CONFIG_KEY::PRINT: {
@@ -279,7 +279,7 @@ namespace nvi {
                     log(PRINT_ARG_ERROR);
                 }
 
-                _options->print = std::get<bool>(ct.value.value());
+                _options.print = std::get<bool>(ct.value.value());
                 break;
             }
             case CONFIG_KEY::PROJECT: {
@@ -287,7 +287,7 @@ namespace nvi {
                     log(PROJECT_ARG_ERROR);
                 }
 
-                _options->project = std::move(std::get<std::string>(ct.value.value()));
+                _options.project = std::move(std::get<std::string>(ct.value.value()));
                 break;
             }
             case CONFIG_KEY::REQUIRED: {
@@ -295,7 +295,7 @@ namespace nvi {
                     log(REQUIRED_ARG_ERROR);
                 }
 
-                _options->required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
+                _options.required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
                 break;
             }
             case CONFIG_KEY::SAVE: {
@@ -303,7 +303,7 @@ namespace nvi {
                     log(SAVE_ARG_ERROR);
                 }
 
-                _options->save = std::get<bool>(ct.value.value());
+                _options.save = std::get<bool>(ct.value.value());
                 break;
             }
             default: {
@@ -313,7 +313,7 @@ namespace nvi {
             }
         }
 
-        if (_options->debug) {
+        if (_options.debug) {
             log(DEBUG);
         }
 
@@ -385,35 +385,35 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_PARSE_ERROR,
                 R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified environment doesn't appear to exist!)",
-                _options->config.c_str(), _file_path.c_str());
+                _options.config.c_str(), _file_path.c_str());
             break;
         }
         case SELECTED_CONFIG_EMPTY_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 SELECTED_CONFIG_EMPTY_ERROR,
                 R"(While the "%s" configuration exists within the .nvi file (%s), the configuration appears to be empty.)",
-                _options->config.c_str(), _file_path.c_str());
+                _options.config.c_str(), _file_path.c_str());
             break;
         }
         case INVALID_ARRAY_VALUE: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_ARRAY_VALUE,
                 R"(The "%s" property within the "%s" config is not a valid array. It appears to be missing a closing bracket "]".)",
-                _key.c_str(), _options->config.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_BOOLEAN_VALUE: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_BOOLEAN_VALUE,
                 R"(The "%s" property within the "%s" config contains an invalid boolean value. Expected the value to match true or false.)",
-                _key.c_str(), _options->config.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_STRING_VALUE: {
             NVI_LOG_ERROR_AND_EXIT(
                 INVALID_STRING_VALUE,
                 R"(The "%s" property within the "%s" config contains an invalid string value. It appears to be empty or is missing a closing double quote.)",
-                _key.c_str(), _options->config.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case API_ARG_ERROR: {
@@ -455,7 +455,7 @@ namespace nvi {
             NVI_LOG_ERROR_AND_EXIT(
                 EMPTY_FILES_ARG_ERROR,
                 R"(The "files" property within the "%s" environment configuration (%s) appears to be empty. You must specify at least 1 .env file to load!)",
-                _options->config.c_str(), _file_path.c_str());
+                _options.config.c_str(), _file_path.c_str());
             break;
         }
         case EXEC_ARG_ERROR: {
@@ -497,7 +497,7 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 INVALID_PROPERTY_WARNING,
                 R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
-                _key.c_str(), _options->config.c_str());
+                _key.c_str(), _options.config.c_str());
             break;
         }
         case DEBUG: {
@@ -517,9 +517,9 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 DEBUG,
                 R"(Successfully parsed the "%s" configuration from the .nvi file.)",
-                _options->config.c_str());
+                _options.config.c_str());
 
-            if (_options->commands.size() && _options->print) {
+            if (_options.commands.size() && _options.print) {
                 NVI_LOG_DEBUG(
                     DEBUG,
                     R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
@@ -529,15 +529,15 @@ namespace nvi {
             NVI_LOG_DEBUG(
                 DEBUG,
                 R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
-                (_options->api ? "true": "false"),
-                _options->dir.c_str(), 
-                _options->environment.c_str(), 
+                (_options.api ? "true": "false"),
+                _options.dir.c_str(), 
+                _options.environment.c_str(), 
                 _command.c_str(), 
-                fmt::join(_options->files, ", ").c_str(), 
-                (_options->print ? "true": "false"),
-                _options->project.c_str(), 
-                fmt::join(_options->required_envs, ", ").c_str(),
-                (_options->save ? "true": "false"));
+                fmt::join(_options.files, ", ").c_str(), 
+                (_options.print ? "true": "false"),
+                _options.project.c_str(), 
+                fmt::join(_options.required_envs, ", ").c_str(),
+                (_options.save ? "true": "false"));
             break;
         }
         default:

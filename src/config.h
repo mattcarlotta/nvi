@@ -36,7 +36,7 @@ namespace nvi {
      * nvi::options_t options;
      * options.config = "development";
      * options.dir = "custom/path/to/envs";
-     * nvi::Config config(&options);
+     * nvi::Config config(options);
      */
     enum class ConfigValueType { array, boolean, string };
 
@@ -54,7 +54,7 @@ namespace nvi {
 
     class Config {
         public:
-        Config(options_t *options);
+        Config(options_t &options);
         Config *generate_options() noexcept;
         const std::vector<ConfigToken> &get_tokens() const noexcept;
 
@@ -67,7 +67,7 @@ namespace nvi {
         std::string get_value_type_string(const ConfigValueType &cvt) const noexcept;
         void log(const messages_t &code) const noexcept;
 
-        options_t *_options;
+        options_t &_options;
         std::unordered_map<std::string_view, CONFIG_KEY> CONFIG_KEYS{
             {"api", CONFIG_KEY::API},
             {"debug", CONFIG_KEY::DEBUG},

@@ -21,7 +21,7 @@ namespace nvi {
     inline constexpr char OPEN_BRACE = '{';      // 0x7b
     inline constexpr char CLOSE_BRACE = '}';     // 0x7d
 
-    Lexer::Lexer(const options_t *options) : _options(options) {}
+    Lexer::Lexer(const options_t &options) : _options(options) {}
 
     std::vector<Token> Lexer::get_tokens() const noexcept { return _tokens; }
 
@@ -194,8 +194,8 @@ namespace nvi {
         _index = 0;
         _byte = 1;
         _line = 1;
-        _file_name = _options->environment;
-        _file_path = _options->project;
+        _file_name = _options.environment;
+        _file_path = _options.project;
 
         _file = envs;
         if (not _file.length()) {
@@ -204,7 +204,7 @@ namespace nvi {
 
         parse_file();
 
-        if (_options->debug) {
+        if (_options.debug) {
             log(DEBUG);
         }
 
@@ -212,7 +212,7 @@ namespace nvi {
     }
 
     Lexer *Lexer::parse_files() noexcept {
-        for (const std::string &env : _options->files) {
+        for (const std::string &env : _options.files) {
             _index = 0;
             _byte = 1;
             _line = 1;
@@ -220,7 +220,7 @@ namespace nvi {
             _file.clear();
             _file_path.clear();
 
-            _file_path = std::filesystem::current_path() / _options->dir / _file_name;
+            _file_path = std::filesystem::current_path() / _options.dir / _file_name;
             if (not std::filesystem::exists(_file_path)) {
                 log(FILE_ENOENT_ERROR);
             }
@@ -244,7 +244,7 @@ namespace nvi {
             _env_file.close();
         }
 
-        if (_options->debug) {
+        if (_options.debug) {
             log(DEBUG);
         }
 

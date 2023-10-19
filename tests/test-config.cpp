@@ -13,7 +13,7 @@ class Parse_Config_File : public testing::Test {
     static void SetUpTestSuite() {
         config_options.config = "staggered_with_comments";
         config_options.dir = "../envs";
-        nvi::Config config(&config_options);
+        nvi::Config config(config_options);
         config.generate_options();
         tokens = config.get_tokens();
     }

@@ -21,7 +21,7 @@ class Lex_Env_File : public testing::Test {
                                /* project */ "",
                                /* required_envs */ {},
                                /* save */ false};
-        nvi::Lexer lexer(&options);
+        nvi::Lexer lexer(options);
         file_tokens = lexer.parse_files()->get_tokens();
     }
 };
@@ -183,7 +183,7 @@ TEST(Lex_Response_Env, consistent_response_lex_size) {
                            /* required_envs */ {},
                            /* save */ false};
 
-    nvi::Lexer lexer(&options);
+    nvi::Lexer lexer(options);
     nvi::tokens_t res_tokens = lexer.parse_api_response(envs.str())->get_tokens();
 
     EXPECT_EQ(res_tokens.size(), 5);

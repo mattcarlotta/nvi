@@ -13,7 +13,7 @@ char *argv[] = {(char *)"tests",   (char *)"--api",       (char *)"--config",   
 int argc = 23;
 
 nvi::options_t opts;
-nvi::Arg args(argc, argv, &opts);
+nvi::Arg args(argc, argv, opts);
 
 TEST(Arg, parseable_api) { EXPECT_EQ(opts.api, true); }
 

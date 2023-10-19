@@ -20,9 +20,9 @@ class Parse_Env_File : public testing::Test {
                                   /* project */ "",
                                   /* required_envs */ {"BASIC_ENV"},
                                   /* save */ false};
-        nvi::Lexer lexer(&options);
+        nvi::Lexer lexer(options);
         lexer.parse_files();
-        nvi::Parser parser(lexer.get_tokens(), &options);
+        nvi::Parser parser(lexer.get_tokens(), options);
         env_map = parser.parse_tokens()->get_env_map();
     }
 };
