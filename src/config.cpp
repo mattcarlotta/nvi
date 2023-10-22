@@ -384,7 +384,7 @@ namespace nvi {
         case FILE_PARSE_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_PARSE_ERROR,
-                R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified environment doesn't appear to exist!)",
+                R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified config doesn't appear to exist!)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
