@@ -57,7 +57,7 @@ install_bin() {
 }
 
 generate_cmake_cache() {
-    local cmake_result=$($cmake_bin . 2>&1)
+    local cmake_result=$($cmake_bin -DCMAKE_BUILD_TYPE=Release . 2>&1)
     if [[ "$cmake_result" =~ "CMake Error" ]] || [[ "$cmake_result" =~ "CMake Warning" ]];
     then
         log_error "Failed to generate cmake cache. Ensure you're within the root level of the nvi project directory.\n$cmake_result"
