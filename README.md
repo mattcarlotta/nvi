@@ -1,6 +1,6 @@
 # NVI
 
-Pronounced "en-vee," it is a stand-alone .env file parser for interpolating and assigning ENVs into a process locally or remotely.
+nvi, pronounced "en-vee," is a stand-alone .env file parser for interpolating and assigning ENVs into a process locally or remotely.
 
 ## Wiki
 
