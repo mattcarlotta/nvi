@@ -1,13 +1,19 @@
 cmake_minimum_required(VERSION 3.26.3)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "release")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-std=c++17 -Werror -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 project(
     nvi 
     DESCRIPTION "A stand-alone .env file parser for interpolating and assigning multiple .env files into a process"
 )
 
-add_compile_options(-std=c++17 -Werror -Wall -Wextra -Wpedantic)
 option(COMPILE_SRC "Compile source" ON)
 option(COMPILE_TESTS "Compile tests" OFF)
 option(INSTALL_BIN_DIR "Binary installation directory" OFF)

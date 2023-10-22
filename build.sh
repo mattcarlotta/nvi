@@ -14,6 +14,7 @@ cmake_bin=$(which cmake)
 make_bin=$(which make)
 use_localhost_api_flag=-DUSE_LOCALHOST_API=ON
 compile_tests_flag=-DCOMPILE_TESTS=ON
+debug_flag=-DCMAKE_BUILD_TYPE=DEBUG 
 sysctl_bin=$(which sysctl)
 
 log_error() {
@@ -36,6 +37,11 @@ compile_bin() {
         flags="${compile_tests_flag}"
     else
         flags="${use_localhost_api_flag} ${compile_tests_flag}"
+    fi
+
+    if [[ "$2" == "debug" ]];
+    then
+        flags="${flags} ${debug_flag}"
     fi
 
     local cmake_result=$($cmake_bin -DCMAKE_BUILD_TYPE=Release ${flags} . 2>&1)
@@ -64,11 +70,11 @@ compile_bin() {
 
 main() {
     case "$1" in
-        local*)  compile_bin "local" ;;
-        test*)   compile_bin "test" ;;
+        local*)  compile_bin "local" $2 ;;
+        test*)   compile_bin "test" $2 ;;
         *)       compile_bin     ;;
     esac
 }
 
 trap '{ exit 1; }' INT
-main $1
+main $1 $2
