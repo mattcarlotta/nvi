@@ -10,6 +10,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace nvi {
@@ -190,7 +191,7 @@ namespace nvi {
         };
     }
 
-    Lexer *Lexer::parse_api_response(std::string envs) noexcept {
+    Lexer *Lexer::parse_api_response(std::string &&envs) noexcept {
         _index = 0;
         _byte = 1;
         _line = 1;
