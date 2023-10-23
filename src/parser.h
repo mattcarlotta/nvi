@@ -34,14 +34,14 @@ namespace nvi {
      */
     class Parser {
         public:
-        Parser(tokens_t &&tokens, options_t &options);
+        Parser(const tokens_t &&tokens, options_t &options);
         const env_map_t &get_env_map() const noexcept;
         Parser *parse_tokens() noexcept;
 
         private:
         void log(const messages_t &code) const noexcept;
 
-        tokens_t _tokens;
+        const tokens_t _tokens;
         options_t &_options;
         Token _token;
         ValueToken _value_token;
