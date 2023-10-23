@@ -43,15 +43,15 @@ namespace nvi {
         Arg(int &argc, char *argv[], options_t &options);
 
         private:
+        std::string parse_single_arg(const messages_t &code) noexcept;
+        std::vector<std::string> parse_multi_arg(const messages_t &code) noexcept;
+        void parse_command_args() noexcept;
+        void remove_invalid_flag() noexcept;
+        void log(const messages_t &code) const noexcept;
+
         int _argc;
         char **_argv;
         options_t &_options;
-        int _index = 0;
-        std::string _bin_name;
-        std::string _invalid_flag;
-        std::string _invalid_args;
-        std::string _command;
-
         std::unordered_map<std::string_view, FLAG> FLAGS{
             {"--api", FLAG::API},
             {"--config", FLAG::CONFIG},
@@ -67,11 +67,11 @@ namespace nvi {
             {"--save", FLAG::SAVE},
             {"--version", FLAG::VERSION},
         };
-        std::string parse_single_arg(const messages_t &code) noexcept;
-        std::vector<std::string> parse_multi_arg(const messages_t &code) noexcept;
-        void parse_command_args() noexcept;
-        void remove_invalid_flag() noexcept;
-        void log(const messages_t &code) const noexcept;
+        int _index = 0;
+        std::string _bin_name;
+        std::string _invalid_flag;
+        std::string _invalid_args;
+        std::string _command;
     };
 } // namespace nvi
 
