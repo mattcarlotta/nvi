@@ -45,7 +45,7 @@ namespace nvi {
     class Lexer {
         public:
         Lexer(const options_t &options);
-        Lexer *parse_api_response(const std::string &envs) noexcept;
+        Lexer *parse_api_response(std::string envs) noexcept;
         Lexer *parse_files() noexcept;
         tokens_t get_tokens() const noexcept;
 
