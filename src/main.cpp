@@ -5,7 +5,6 @@
 #include "lexer.h"
 #include "options.h"
 #include "parser.h"
-#include <cstdlib>
 #include <string>
 #include <utility>
 
@@ -35,5 +34,5 @@ int main(int argc, char *argv[]) {
     nvi::Generator generator(std::move(env_map), std::move(options));
     generator.set_or_print_envs();
 
-    std::exit(EXIT_SUCCESS);
+    return 0;
 }
