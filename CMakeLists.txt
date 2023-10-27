@@ -26,6 +26,19 @@ configure_file(${SRC_FOLDER}/version.h.in ${SRC_FOLDER}/version.h @ONLY)
 file(GLOB SRC_FILES ${SRC_FOLDER}/*.cpp)
 list(REMOVE_ITEM SRC_FILES ${SRC_FOLDER}/main.cpp)
 
+if(NOT TARGET uninstall)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY
+  )
+
+  add_custom_target(
+    uninstall 
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+  )
+endif()
+
 if(COMPILE_SRC MATCHES ON)
     add_subdirectory(${SRC_FOLDER})
     if(NOT INSTALL_MAN_DIR MATCHES OFF)
