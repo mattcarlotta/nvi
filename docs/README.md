@@ -25,12 +25,12 @@ MAC OS:
 cat /private/etc/manpaths
 ```
 
-Select a directory path and run the following command below (must be located within this `/docs` directory):
+Select a directory path, add `man1` to the end of the path, and run the following command below (must be located within this `/docs` directory):
 
 GNU/LINUX (typically installed in `/usr/share/man/man1`)
 MAC OS (typically installed in `/usr/local/share/man/man1`)
 ```bash
-sudo cp nvi.1 <MANPATH_DIRECTORY>
+sudo cp nvi.1 <MANPATH_DIRECTORY/man1>
 ```
 
 To view installed documentation:
@@ -41,7 +41,7 @@ man nvi
 # Uninstallation
 
 ```bash
-sudo rm <MANPATH_DIRECTORY>/nvi.1
+sudo rm <MANPATH_DIRECTORY/man1>/nvi.1
 ```
 
 # Build
