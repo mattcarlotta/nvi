@@ -1,8 +1,10 @@
 #ifndef NVI_ENV_CONFIG_H
 #define NVI_ENV_CONFIG_H
 
+#include "config_token.h"
 #include "format.h"
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include <filesystem>
 #include <optional>
@@ -13,19 +15,6 @@
 #include <vector>
 
 namespace nvi {
-    enum class CONFIG_KEY {
-        API,
-        DEBUG,
-        DIRECTORY,
-        ENVIRONMENT,
-        EXECUTE,
-        FILES,
-        PRINT,
-        PROJECT,
-        REQUIRED,
-        SAVE,
-        UNKNOWN
-    };
     /**
      * @detail Reads an `.nvi` configuration file from the project root directory or a specified directory and
      * converts the selected environment into `options`.
@@ -38,20 +27,6 @@ namespace nvi {
      * options.dir = "custom/path/to/envs";
      * nvi::Config config(options);
      */
-    enum class ConfigValueType { array, boolean, string };
-
-    struct ConfigToken {
-        ConfigValueType type;
-        std::string key = "";
-        std::optional<std::variant<bool, std::string, std::vector<std::string>>> value{};
-    };
-
-    struct ConfigTokenToString {
-        std::string operator()(const bool &b) const { return b > 0 ? "true" : "false"; }
-        std::string operator()(const std::string &s) const { return s; }
-        std::string operator()(const std::vector<std::string> &v) const { return (v.size() ? fmt::join(v, ", ") : ""); }
-    };
-
     class Config {
         public:
         Config(options_t &options);
@@ -64,10 +39,9 @@ namespace nvi {
         char commit() noexcept;
         void skip(int offset = 1) noexcept;
         void skip_to_eol() noexcept;
-        std::string get_value_type_string(const ConfigValueType &cvt) const noexcept;
-        void log(const messages_t &code) const noexcept;
 
         options_t &_options;
+        Logger logger;
         std::unordered_map<std::string_view, CONFIG_KEY> CONFIG_KEYS{
             {"api", CONFIG_KEY::API},
             {"debug", CONFIG_KEY::DEBUG},

@@ -1,15 +1,23 @@
 #include "logger.h"
+#include "config_token.h"
 #include "format.h"
 #include "log.h"
 #include "version.h"
 
 namespace nvi {
     Logger::Logger(const options_t &options)
-        : _options(options), _command(empty_string), _invalid_args(empty_string), _invalid_flag(empty_string) {}
+        : _options(options), _command(empty_string), _invalid_args(empty_string), _invalid_flag(empty_string),
+          _config_tokens(empty_config_token), _file_path(empty_path), _key(empty_string), _value_type(empty_string) {}
 
     Logger::Logger(const options_t &options, const std::string &command, const std::string &invalid_args,
                    const std::string &invalid_flag)
-        : _options(options), _command(command), _invalid_args(invalid_args), _invalid_flag(invalid_flag) {}
+        : _options(options), _command(command), _invalid_args(invalid_args), _invalid_flag(invalid_flag),
+          _config_tokens(empty_config_token), _file_path(empty_path), _key(empty_string), _value_type(empty_string) {}
+
+    Logger::Logger(const options_t &options, const std::string &command, const std::vector<ConfigToken> &config_tokens,
+                   const std::filesystem::path &file_path, const std::string &key, const std::string &value_type)
+        : _options(options), _command(command), _invalid_args(empty_string), _invalid_flag(empty_string),
+          _config_tokens(config_tokens), _file_path(file_path), _key(key), _value_type(value_type) {}
 
     void Logger::Arg(const messages_t &code) const noexcept {
         // clang-format off
@@ -138,6 +146,188 @@ for more detailed information, please see the man documentation or the README.)"
                     R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)",
                     NULL);
             }
+            break;
+        }
+        default:
+            break;
+        }
+        // clang-format on
+    }
+
+    void Logger::Config(const messages_t &code) const noexcept {
+        // clang-format off
+        switch (code) {
+        case FILE_ENOENT_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ENOENT_ERROR,
+                R"(Unable to locate "%s". The .nvi configuration file doesn't appear to exist at this path!)",
+                _file_path.c_str());
+            break;
+        }
+        case FILE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_ERROR,
+                R"(Unable to open "%s". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.)",
+                _file_path.c_str());
+            break;
+        }
+        case FILE_PARSE_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILE_PARSE_ERROR,
+                R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified config doesn't appear to exist!)",
+                _options.config.c_str(), _file_path.c_str());
+            break;
+        }
+        case SELECTED_CONFIG_EMPTY_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                SELECTED_CONFIG_EMPTY_ERROR,
+                R"(While the "%s" configuration exists within the .nvi file (%s), the configuration appears to be empty.)",
+                _options.config.c_str(), _file_path.c_str());
+            break;
+        }
+        case INVALID_ARRAY_VALUE: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_ARRAY_VALUE,
+                R"(The "%s" property within the "%s" config is not a valid array. It appears to be missing a closing bracket "]".)",
+                _key.c_str(), _options.config.c_str());
+            break;
+        }
+        case INVALID_BOOLEAN_VALUE: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_BOOLEAN_VALUE,
+                R"(The "%s" property within the "%s" config contains an invalid boolean value. Expected the value to match true or false.)",
+                _key.c_str(), _options.config.c_str());
+            break;
+        }
+        case INVALID_STRING_VALUE: {
+            NVI_LOG_ERROR_AND_EXIT(
+                INVALID_STRING_VALUE,
+                R"(The "%s" property within the "%s" config contains an invalid string value. It appears to be empty or is missing a closing double quote.)",
+                _key.c_str(), _options.config.c_str());
+            break;
+        }
+        case API_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                API_ARG_ERROR,
+                R"(The "api" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case DEBUG_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                DEBUG_ARG_ERROR,
+                R"(The "debug" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case DIR_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                DIR_ARG_ERROR,
+                R"(The "directory" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case ENV_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                ENV_ARG_ERROR,
+                R"(The "environment" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case FILES_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                FILES_ARG_ERROR,
+                R"(The "files" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case EMPTY_FILES_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                EMPTY_FILES_ARG_ERROR,
+                R"(The "files" property within the "%s" environment configuration (%s) appears to be empty. You must specify at least 1 .env file to load!)",
+                _options.config.c_str(), _file_path.c_str());
+            break;
+        }
+        case EXEC_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                EXEC_ARG_ERROR,
+                R"(The "execute" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case PRINT_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                PRINT_ARG_ERROR,
+                R"(The "print" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case PROJECT_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                PROJECT_ARG_ERROR,
+                R"(The "project" property contains an invalid value. Expected a string value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case REQUIRED_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                REQUIRED_ARG_ERROR,
+                R"(The "required" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case SAVE_ARG_ERROR: {
+            NVI_LOG_ERROR_AND_EXIT(
+                SAVE_ARG_ERROR,
+                R"(The "save" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
+                _value_type.c_str());
+            break;
+        }
+        case INVALID_PROPERTY_WARNING: {
+            NVI_LOG_DEBUG(
+                INVALID_PROPERTY_WARNING,
+                R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
+                _key.c_str(), _options.config.c_str());
+            break;
+        }
+        case DEBUG: {
+            for (size_t index = 0; index < _config_tokens.size(); ++index) {
+                const ConfigToken &token = _config_tokens.at(index);
+
+                std::stringstream ss;
+                ss << "Created " << get_value_type_string(token.type) << " token with a key of " << std::quoted(token.key);
+                ss << " and a value of " << std::quoted(std::visit(ConfigTokenToString(), token.value.value())) << ".";
+                if(index == _config_tokens.size()) {
+                    ss << '\n';
+                }
+
+                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
+            }
+
+            NVI_LOG_DEBUG(
+                DEBUG,
+                R"(Successfully parsed the "%s" configuration from the .nvi file.)",
+                _options.config.c_str());
+
+            if (_options.commands.size() && _options.print) {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
+                    NULL);
+            }
+
+            NVI_LOG_DEBUG(
+                DEBUG,
+                R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true": "false"),
+                _options.dir.c_str(),
+                _options.environment.c_str(),
+                _command.c_str(),
+                fmt::join(_options.files, ", ").c_str(),
+                (_options.print ? "true": "false"),
+                _options.project.c_str(),
+                fmt::join(_options.required_envs, ", ").c_str(),
+                (_options.save ? "true": "false"));
             break;
         }
         default:
