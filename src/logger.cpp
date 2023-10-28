@@ -5,19 +5,16 @@
 #include "version.h"
 
 namespace nvi {
-    Logger::Logger(const options_t &options)
-        : _options(options), _command(empty_string), _invalid_args(empty_string), _invalid_flag(empty_string),
-          _config_tokens(empty_config_token), _file_path(empty_path), _key(empty_string), _value_type(empty_string) {}
+    Logger::Logger(const options_t &options) : _options(options) {}
 
     Logger::Logger(const options_t &options, const std::string &command, const std::string &invalid_args,
                    const std::string &invalid_flag)
-        : _options(options), _command(command), _invalid_args(invalid_args), _invalid_flag(invalid_flag),
-          _config_tokens(empty_config_token), _file_path(empty_path), _key(empty_string), _value_type(empty_string) {}
+        : _options(options), _command(command), _invalid_args(invalid_args), _invalid_flag(invalid_flag) {}
 
     Logger::Logger(const options_t &options, const std::string &command, const std::vector<ConfigToken> &config_tokens,
                    const std::filesystem::path &file_path, const std::string &key, const std::string &value_type)
-        : _options(options), _command(command), _invalid_args(empty_string), _invalid_flag(empty_string),
-          _config_tokens(config_tokens), _file_path(file_path), _key(key), _value_type(value_type) {}
+        : _options(options), _command(command), _config_tokens(config_tokens), _file_path(file_path), _key(key),
+          _value_type(value_type) {}
 
     void Logger::Arg(const messages_t &code) const noexcept {
         // clang-format off
