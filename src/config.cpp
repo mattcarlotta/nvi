@@ -28,30 +28,30 @@ namespace nvi {
         : _options(options), logger(options, _command, _config_tokens, _file_path, _key, _value_type) {
         _file_path = std::filesystem::current_path() / _options.dir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
-            logger.Config(FILE_ENOENT_ERROR);
+            logger.fatal(FILE_ENOENT_ERROR);
         }
 
         std::ifstream config_file{_file_path, std::ios_base::in};
         if (not config_file.is_open()) {
-            logger.Config(FILE_ERROR);
+            logger.fatal(FILE_ERROR);
         }
 
         _file = std::string{std::istreambuf_iterator{config_file}, {}};
         _byte = _file.find(OPEN_BRACKET + _options.config + CLOSE_BRACKET);
         if (_byte == std::string::npos) {
-            logger.Config(FILE_PARSE_ERROR);
+            logger.fatal(FILE_PARSE_ERROR);
         }
 
         const size_t eol_index = _file.substr(_byte, _file.length()).find_first_of(LINE_DELIMITER);
         if (eol_index == std::string::npos) {
-            logger.Config(FILE_PARSE_ERROR);
+            logger.fatal(FILE_PARSE_ERROR);
         }
 
         // remove config name line: [environment]
         _config = _file.substr(eol_index + 1, _file.length());
 
         if (not peek().has_value()) {
-            logger.Config(SELECTED_CONFIG_EMPTY_ERROR);
+            logger.fatal(SELECTED_CONFIG_EMPTY_ERROR);
         }
 
         while (peek().has_value()) {
@@ -111,7 +111,7 @@ namespace nvi {
 
                         // ensure value is a bool
                         if (not a_true_value && not a_false_value) {
-                            logger.Config(INVALID_BOOLEAN_VALUE);
+                            logger.fatal(INVALID_BOOLEAN_VALUE);
                         }
 
                         token.value = a_true_value;
@@ -130,7 +130,7 @@ namespace nvi {
 
                         // ensure a value exists to prevent consuming other properties
                         if (value.length() == 0) {
-                            logger.Config(INVALID_STRING_VALUE);
+                            logger.fatal(INVALID_STRING_VALUE);
                         }
 
                         token.value = value;
@@ -155,7 +155,7 @@ namespace nvi {
                             // running into an assignment or open bracket means a closing bracket is missing
                             if (not current_char.has_value() || current_char.value() == ASSIGN_OP ||
                                 current_char.value() == OPEN_BRACKET) {
-                                logger.Config(INVALID_ARRAY_VALUE);
+                                logger.fatal(INVALID_ARRAY_VALUE);
                             } else if (current_char.value() == CLOSE_BRACKET) {
                                 break;
                             } else if (current_char.value() == DOUBLE_QUOTE) {
@@ -177,7 +177,7 @@ namespace nvi {
                         // ensure the current character is a closing bracket, otherwise it's missing,
                         // therefore the extracted values aren't correct
                         if (current_char.has_value() && current_char.value() != CLOSE_BRACKET) {
-                            logger.Config(INVALID_ARRAY_VALUE);
+                            logger.fatal(INVALID_ARRAY_VALUE);
                         }
 
                         token.value = values;
@@ -196,7 +196,7 @@ namespace nvi {
         }
 
         if (_config_tokens.size() == 0) {
-            logger.Config(SELECTED_CONFIG_EMPTY_ERROR);
+            logger.fatal(SELECTED_CONFIG_EMPTY_ERROR);
         }
 
         config_file.close();
@@ -216,7 +216,7 @@ namespace nvi {
             switch (CONFIG_KEYS.count(ct.key) ? CONFIG_KEYS.at(ct.key) : CONFIG_KEY::UNKNOWN) {
             case CONFIG_KEY::API: {
                 if (ct.type != ConfigValueType::boolean) {
-                    logger.Config(API_ARG_ERROR);
+                    logger.fatal(API_ARG_ERROR);
                 }
 
                 _options.api = std::get<bool>(ct.value.value());
@@ -224,7 +224,7 @@ namespace nvi {
             }
             case CONFIG_KEY::DEBUG: {
                 if (ct.type != ConfigValueType::boolean) {
-                    logger.Config(DEBUG_ARG_ERROR);
+                    logger.fatal(DEBUG_ARG_ERROR);
                 }
 
                 _options.debug = std::get<bool>(ct.value.value());
@@ -232,7 +232,7 @@ namespace nvi {
             }
             case CONFIG_KEY::DIRECTORY: {
                 if (ct.type != ConfigValueType::string) {
-                    logger.Config(DIR_ARG_ERROR);
+                    logger.fatal(DIR_ARG_ERROR);
                 }
 
                 _options.dir = std::move(std::get<std::string>(ct.value.value()));
@@ -240,20 +240,20 @@ namespace nvi {
             }
             case CONFIG_KEY::FILES: {
                 if (ct.type != ConfigValueType::array) {
-                    logger.Config(FILES_ARG_ERROR);
+                    logger.fatal(FILES_ARG_ERROR);
                 }
 
                 _options.files.clear();
                 _options.files = std::move(std::get<std::vector<std::string>>(ct.value.value()));
 
                 if (not _options.files.size()) {
-                    logger.Config(EMPTY_FILES_ARG_ERROR);
+                    logger.fatal(EMPTY_FILES_ARG_ERROR);
                 }
                 break;
             }
             case CONFIG_KEY::ENVIRONMENT: {
                 if (ct.type != ConfigValueType::string) {
-                    logger.Config(ENV_ARG_ERROR);
+                    logger.fatal(ENV_ARG_ERROR);
                 }
 
                 _options.environment = std::move(std::get<std::string>(ct.value.value()));
@@ -261,7 +261,7 @@ namespace nvi {
             }
             case CONFIG_KEY::EXECUTE: {
                 if (ct.type != ConfigValueType::string) {
-                    logger.Config(EXEC_ARG_ERROR);
+                    logger.fatal(EXEC_ARG_ERROR);
                 }
 
                 _command = std::move(std::get<std::string>(ct.value.value()));
@@ -278,7 +278,7 @@ namespace nvi {
             }
             case CONFIG_KEY::PRINT: {
                 if (ct.type != ConfigValueType::boolean) {
-                    logger.Config(PRINT_ARG_ERROR);
+                    logger.fatal(PRINT_ARG_ERROR);
                 }
 
                 _options.print = std::get<bool>(ct.value.value());
@@ -286,7 +286,7 @@ namespace nvi {
             }
             case CONFIG_KEY::PROJECT: {
                 if (ct.type != ConfigValueType::string) {
-                    logger.Config(PROJECT_ARG_ERROR);
+                    logger.fatal(PROJECT_ARG_ERROR);
                 }
 
                 _options.project = std::move(std::get<std::string>(ct.value.value()));
@@ -294,7 +294,7 @@ namespace nvi {
             }
             case CONFIG_KEY::REQUIRED: {
                 if (ct.type != ConfigValueType::array) {
-                    logger.Config(REQUIRED_ARG_ERROR);
+                    logger.fatal(REQUIRED_ARG_ERROR);
                 }
 
                 _options.required_envs = std::move(std::get<std::vector<std::string>>(ct.value.value()));
@@ -302,21 +302,21 @@ namespace nvi {
             }
             case CONFIG_KEY::SAVE: {
                 if (ct.type != ConfigValueType::boolean) {
-                    logger.Config(SAVE_ARG_ERROR);
+                    logger.fatal(SAVE_ARG_ERROR);
                 }
 
                 _options.save = std::get<bool>(ct.value.value());
                 break;
             }
             default: {
-                logger.Config(INVALID_PROPERTY_WARNING);
+                logger.debug(INVALID_PROPERTY_WARNING);
                 break;
             }
             }
         }
 
         if (_options.debug) {
-            logger.Config(DEBUG);
+            logger.debug(DEBUG_CONFIG);
         }
 
         return this;

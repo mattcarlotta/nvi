@@ -22,9 +22,8 @@ namespace nvi {
         Logger(const options_t &options, const std::string &command, const std::vector<ConfigToken> &config_tokens,
                const std::filesystem::path &file_path, const std::string &key, const std::string &value_type);
 
-        void Arg(const messages_t &code) const noexcept;
-        void Config(const messages_t &code) const noexcept;
-        void Generator(const messages_t &code) const noexcept;
+        void fatal(const messages_t &code) const noexcept;
+        void debug(const messages_t &code) const noexcept;
 
         private:
         const std::string empty_string = "";

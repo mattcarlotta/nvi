@@ -24,6 +24,8 @@
 #define NVI_LOG_ERROR_AND_EXIT(...) _log_and_exit(std::cerr, EXIT_FAILURE, __CLASS__, __VA_ARGS__);
 
 namespace nvi {
+    typedef enum LOGGER { API, ARG, CONFIG, GENERATOR, LEXER, PARSER } logger_t;
+
     typedef enum MESSAGES {
         // api
         INVALID_INPUT_KEY,
@@ -44,6 +46,7 @@ namespace nvi {
         HELP_DOC,
         INVALID_FLAG_WARNING,
         NVI_VERSION,
+        DEBUG_ARG,
         // config
         FILE_PARSE_ERROR,
         SELECTED_CONFIG_EMPTY_ERROR,
@@ -62,6 +65,7 @@ namespace nvi {
         INVALID_ARRAY_VALUE,
         INVALID_BOOLEAN_VALUE,
         INVALID_STRING_VALUE,
+        DEBUG_CONFIG,
         // parser
         EMPTY_KEY_WARNING,
         INTERPOLATION_WARNING,
@@ -88,6 +92,25 @@ namespace nvi {
         size_t end = class_name.rfind("(") - begin;
         // remove namespace "nvi::"
         return class_name.substr(begin + 5, end - 5);
+    }
+
+    inline const std::string _get_logger_from_code(const unsigned int &log) {
+        switch (log) {
+        case API:
+            return "API";
+        case ARG:
+            return "ARG";
+        case CONFIG:
+            return "CONFIG";
+        case GENERATOR:
+            return "GENERATOR";
+        case LEXER:
+            return "LEXER";
+        case PARSER:
+            return "PARSER";
+        default:
+            return "UNKNOWN";
+        }
     }
 
     inline const std::string _get_string_from_code(const unsigned int &error) {
@@ -158,6 +181,8 @@ namespace nvi {
             return "INVALID_BOOLEAN_VALUE";
         case INVALID_STRING_VALUE:
             return "INVALID_STRING_VALUE";
+        case DEBUG_CONFIG:
+            return "DEBUG_CONFIG";
         case EMPTY_KEY_WARNING:
             return "EMPTY_KEY_WARNING";
         case INTERPOLATION_WARNING:
@@ -190,6 +215,8 @@ namespace nvi {
             return "DEBUG";
         case NVI_VERSION:
             return "NVI_VERSION";
+        case DEBUG_ARG:
+            return "DEBUG_ARG";
         default:
             return "UNKNOWN_MESSAGE_TYPE";
         }

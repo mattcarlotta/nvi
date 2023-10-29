@@ -48,7 +48,7 @@ namespace nvi {
                 break;
             }
             case FLAG::HELP: {
-                logger.Arg(HELP_DOC);
+                logger.fatal(HELP_DOC);
             }
             case FLAG::PRINT: {
                 _options.print = true;
@@ -67,7 +67,7 @@ namespace nvi {
                 break;
             }
             case FLAG::VERSION: {
-                logger.Arg(NVI_VERSION);
+                logger.fatal(NVI_VERSION);
             }
             default: {
                 remove_invalid_flag();
@@ -78,19 +78,19 @@ namespace nvi {
 
     exit_flag_parsing:
         if (_options.debug) {
-            logger.Arg(DEBUG);
+            logger.debug(DEBUG_ARG);
         }
     };
 
     std::string Arg::parse_single_arg(const messages_t &code) noexcept {
         ++_index;
         if (_argv[_index] == nullptr) {
-            logger.Arg(code);
+            logger.fatal(code);
         }
 
         const std::string arg{_argv[_index]};
         if (arg.find("-") != std::string::npos) {
-            logger.Arg(code);
+            logger.fatal(code);
         }
 
         return arg;
@@ -117,7 +117,7 @@ namespace nvi {
         }
 
         if (not args.size()) {
-            logger.Arg(code);
+            logger.fatal(code);
         }
 
         return args;
@@ -141,7 +141,7 @@ namespace nvi {
         }
 
         if (not _options.commands.size()) {
-            logger.Arg(COMMAND_FLAG_ERROR);
+            logger.fatal(COMMAND_FLAG_ERROR);
         }
 
         _options.commands.push_back(nullptr);
@@ -166,6 +166,6 @@ namespace nvi {
             _invalid_args += _invalid_args.length() ? " " + arg : arg;
         }
 
-        logger.Arg(INVALID_FLAG_WARNING);
+        logger.debug(INVALID_FLAG_WARNING);
     }
 } // namespace nvi

@@ -31,14 +31,14 @@ namespace nvi {
                 // for example: "npm run dev" won't work because "npm" can't find "node"
                 execvp(_options.commands[0], _options.commands.data());
                 if (errno == ENOENT) {
-                    logger.Generator(COMMAND_ENOENT_ERROR);
+                    logger.fatal(COMMAND_ENOENT_ERROR);
                     _exit(-1);
                 }
             } else if (pid > 0) {
                 int status;
                 wait(&status);
             } else {
-                logger.Generator(COMMAND_FAILED_TO_RUN);
+                logger.fatal(COMMAND_FAILED_TO_RUN);
             }
         } else if (_options.print) {
             // print ENVs as a JSON formatted string to stdout
@@ -49,7 +49,7 @@ namespace nvi {
             }
             std::cout << CLOSE_BRACE << std::endl;
         } else if (not _options.save) {
-            logger.Generator(NO_ACTION_ERROR);
+            logger.fatal(NO_ACTION_ERROR);
         }
     }
 } // namespace nvi

@@ -16,9 +16,111 @@ namespace nvi {
         : _options(options), _command(command), _config_tokens(config_tokens), _file_path(file_path), _key(key),
           _value_type(value_type) {}
 
-    void Logger::Arg(const messages_t &code) const noexcept {
+    void Logger::debug(const messages_t &code) const noexcept {
         // clang-format off
         switch (code) {
+        // ARG
+        case INVALID_FLAG_WARNING: {
+            NVI_LOG_DEBUG(
+                INVALID_FLAG_WARNING,
+                R"(The flag "%s"%s is not recognized. Skipping.)",
+                _invalid_flag.c_str(), 
+                (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
+            break;
+        }
+        case DEBUG_ARG: {
+            NVI_LOG_DEBUG(
+                DEBUG_ARG,
+                R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true": "false"),
+                _options.config.c_str(), 
+                _options.dir.c_str(), 
+                _options.environment.c_str(), 
+                _command.c_str(),
+                fmt::join(_options.files, ", ").c_str(),
+                (_options.print ? "true": "false"),
+                _options.project.c_str(), 
+                fmt::join(_options.required_envs, ", ").c_str(),
+                (_options.save ? "true": "false"));
+
+
+            if (_options.commands.size() && _options.print) {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
+                    NULL);
+            }
+
+            if (_options.config.length() && 
+                    (_options.dir.length() || 
+                     _options.commands.size() ||
+                     _options.files.size() > 1 || 
+                     _options.required_envs.size())) {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)",
+                    NULL);
+            }
+            break;
+        }
+        // CONFIG
+        case INVALID_PROPERTY_WARNING: {
+            NVI_LOG_DEBUG(
+                INVALID_PROPERTY_WARNING,
+                R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
+                _key.c_str(), _options.config.c_str());
+            break;
+        }
+        case DEBUG_CONFIG: {
+            for (size_t index = 0; index < _config_tokens.size(); ++index) {
+                const ConfigToken &token = _config_tokens.at(index);
+
+                std::stringstream ss;
+                ss << "Created " << get_value_type_string(token.type) << " token with a key of " << std::quoted(token.key);
+                ss << " and a value of " << std::quoted(std::visit(ConfigTokenToString(), token.value.value())) << ".";
+                if(index == _config_tokens.size()) {
+                    ss << '\n';
+                }
+
+                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
+            }
+
+            NVI_LOG_DEBUG(
+                DEBUG_CONFIG,
+                R"(Successfully parsed the "%s" configuration from the .nvi file.)",
+                _options.config.c_str());
+
+            if (_options.commands.size() && _options.print) {
+                NVI_LOG_DEBUG(
+                    DEBUG,
+                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
+                    NULL);
+            }
+
+            NVI_LOG_DEBUG(
+                DEBUG_CONFIG,
+                R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true": "false"),
+                _options.dir.c_str(),
+                _options.environment.c_str(),
+                _command.c_str(),
+                fmt::join(_options.files, ", ").c_str(),
+                (_options.print ? "true": "false"),
+                _options.project.c_str(),
+                fmt::join(_options.required_envs, ", ").c_str(),
+                (_options.save ? "true": "false"));
+            break;
+        }
+        default:
+            break;
+        }
+        // clang-format on
+    }
+
+    void Logger::fatal(const messages_t &code) const noexcept {
+        // clang-format off
+        switch (code) {
+        // ARG
         case CONFIG_FLAG_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 CONFIG_FLAG_ERROR,
@@ -102,58 +204,7 @@ for more detailed information, please see the man documentation or the README.)"
             std::clog << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl;
             std::exit(EXIT_SUCCESS);
         }
-        case INVALID_FLAG_WARNING: {
-            NVI_LOG_DEBUG(
-                INVALID_FLAG_WARNING,
-                R"(The flag "%s"%s is not recognized. Skipping.)",
-                _invalid_flag.c_str(), 
-                (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
-            break;
-        }
-        case DEBUG: {
-            NVI_LOG_DEBUG(
-                DEBUG,
-                R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
-                (_options.api ? "true": "false"),
-                _options.config.c_str(), 
-                _options.dir.c_str(), 
-                _options.environment.c_str(), 
-                _command.c_str(),
-                fmt::join(_options.files, ", ").c_str(),
-                (_options.print ? "true": "false"),
-                _options.project.c_str(), 
-                fmt::join(_options.required_envs, ", ").c_str(),
-                (_options.save ? "true": "false"));
-
-
-            if (_options.commands.size() && _options.print) {
-                NVI_LOG_DEBUG(
-                    DEBUG,
-                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
-                    NULL);
-            }
-
-            if (_options.config.length() && 
-                    (_options.dir.length() || 
-                     _options.commands.size() ||
-                     _options.files.size() > 1 || 
-                     _options.required_envs.size())) {
-                NVI_LOG_DEBUG(
-                    DEBUG,
-                    R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)",
-                    NULL);
-            }
-            break;
-        }
-        default:
-            break;
-        }
-        // clang-format on
-    }
-
-    void Logger::Config(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
+        // CONFIG 
         case FILE_ENOENT_ERROR: {
             NVI_LOG_ERROR_AND_EXIT(
                 FILE_ENOENT_ERROR,
@@ -280,64 +331,9 @@ for more detailed information, please see the man documentation or the README.)"
                 _value_type.c_str());
             break;
         }
-        case INVALID_PROPERTY_WARNING: {
-            NVI_LOG_DEBUG(
-                INVALID_PROPERTY_WARNING,
-                R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
-                _key.c_str(), _options.config.c_str());
-            break;
-        }
-        case DEBUG: {
-            for (size_t index = 0; index < _config_tokens.size(); ++index) {
-                const ConfigToken &token = _config_tokens.at(index);
-
-                std::stringstream ss;
-                ss << "Created " << get_value_type_string(token.type) << " token with a key of " << std::quoted(token.key);
-                ss << " and a value of " << std::quoted(std::visit(ConfigTokenToString(), token.value.value())) << ".";
-                if(index == _config_tokens.size()) {
-                    ss << '\n';
-                }
-
-                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
-            }
-
-            NVI_LOG_DEBUG(
-                DEBUG,
-                R"(Successfully parsed the "%s" configuration from the .nvi file.)",
-                _options.config.c_str());
-
-            if (_options.commands.size() && _options.print) {
-                NVI_LOG_DEBUG(
-                    DEBUG,
-                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
-                    NULL);
-            }
-
-            NVI_LOG_DEBUG(
-                DEBUG,
-                R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
-                (_options.api ? "true": "false"),
-                _options.dir.c_str(),
-                _options.environment.c_str(),
-                _command.c_str(),
-                fmt::join(_options.files, ", ").c_str(),
-                (_options.print ? "true": "false"),
-                _options.project.c_str(),
-                fmt::join(_options.required_envs, ", ").c_str(),
-                (_options.save ? "true": "false"));
-            break;
-        }
-        default:
-            break;
-        }
-        // clang-format on
-    }
-
-    void Logger::Generator(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
+        // GENERATOR
         case COMMAND_ENOENT_ERROR: {
-            NVI_LOG_DEBUG(
+            NVI_LOG_AND_EXIT(
                 COMMAND_ENOENT_ERROR,
                 R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
                 _options.commands[0]);
