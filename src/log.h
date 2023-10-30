@@ -6,25 +6,29 @@
 #include <sstream>
 #include <string>
 
+// TODO(carlotta): REMOVE THIS
 #define __CLASS__ _get_class_name(__PRETTY_FUNCTION__)
 
+// TODO(carlotta): REMOVE THIS
 /**
  * @detail Logs a message to stdlog (stderr).
  */
 #define NVI_LOG_DEBUG(...) _log(std::clog, __CLASS__, __VA_ARGS__);
 
+// TODO(carlotta): REMOVE THIS
 /**
  * @detail Logs a message to stdlog (stderr) and exits.
  */
 #define NVI_LOG_AND_EXIT(...) _log_and_exit(std::clog, EXIT_SUCCESS, __CLASS__, __VA_ARGS__);
 
+// TODO(carlotta): REMOVE THIS
 /**
  * @detail Logs an error to stderr and then exits the process.
  */
 #define NVI_LOG_ERROR_AND_EXIT(...) _log_and_exit(std::cerr, EXIT_FAILURE, __CLASS__, __VA_ARGS__);
 
 namespace nvi {
-    typedef enum LOGGER { API, ARG, CONFIG, GENERATOR, LEXER, PARSER } logger_t;
+    typedef enum LOGGER { API, ARG, CONFIG, GENERATOR, LEXER, PARSER, UNKNOWN_LOG } logger_t;
 
     typedef enum MESSAGES {
         // api
@@ -35,6 +39,8 @@ namespace nvi {
         RESPONSE_SUCCESS,
         CURL_FAILED_TO_INIT,
         SAVED_ENV_FILE,
+        INVALID_ENV_FILE,
+
         // arg
         CONFIG_FLAG_ERROR,
         DIR_FLAG_ERROR,
@@ -65,6 +71,7 @@ namespace nvi {
         INVALID_ARRAY_VALUE,
         INVALID_BOOLEAN_VALUE,
         INVALID_STRING_VALUE,
+        DEBUG_CONFIG_TOKENS,
         DEBUG_CONFIG,
         // parser
         EMPTY_KEY_WARNING,
@@ -94,22 +101,22 @@ namespace nvi {
         return class_name.substr(begin + 5, end - 5);
     }
 
-    inline const std::string _get_logger_from_code(const unsigned int &log) {
-        switch (log) {
+    inline const std::string _get_logger_from_code(const unsigned int &log_code) {
+        switch (log_code) {
         case API:
-            return "API";
+            return "Api";
         case ARG:
-            return "ARG";
+            return "Arg";
         case CONFIG:
-            return "CONFIG";
+            return "Config";
         case GENERATOR:
-            return "GENERATOR";
+            return "Generator";
         case LEXER:
-            return "LEXER";
+            return "Lexer";
         case PARSER:
-            return "PARSER";
+            return "Parser";
         default:
-            return "UNKNOWN";
+            return "Unknown";
         }
     }
 
@@ -129,6 +136,8 @@ namespace nvi {
             return "CURL_FAILED_TO_INIT";
         case SAVED_ENV_FILE:
             return "SAVED_ENV_FILE";
+        case INVALID_ENV_FILE:
+            return "INVALID_ENV_FILE";
         case CONFIG_FLAG_ERROR:
             return "CONFIG_FLAG_ERROR";
         case DIR_FLAG_ERROR:
@@ -181,6 +190,8 @@ namespace nvi {
             return "INVALID_BOOLEAN_VALUE";
         case INVALID_STRING_VALUE:
             return "INVALID_STRING_VALUE";
+        case DEBUG_CONFIG_TOKENS:
+            return "DEBUG_CONFIG_TOKENS";
         case DEBUG_CONFIG:
             return "DEBUG_CONFIG";
         case EMPTY_KEY_WARNING:
@@ -222,6 +233,16 @@ namespace nvi {
         }
     }
 
+    template <typename... A> std::string _format(const char *fmt, A... args) {
+        size_t size = snprintf(nullptr, 0, fmt, args...);
+        std::string buf;
+        buf.reserve(size + 1);
+        buf.resize(size);
+        snprintf(&buf[0], size + 1, fmt, args...);
+        return buf;
+    }
+
+    // TODO(carlotta): REMOVE THIS
     template <typename... A>
     void _log(std::ostream &ostr, const std::string &filename, const messages_t &code, const char *fmt, A... args) {
         size_t size = snprintf(nullptr, 0, fmt, args...);
@@ -232,6 +253,7 @@ namespace nvi {
         ostr << "[nvi] (" << filename << "::" << _get_string_from_code(code) << ") " << buf << '\n';
     }
 
+    // TODO(carlotta): REMOVE THIS
     template <typename... A>
     void _log_and_exit(std::ostream &ostr, const int &exit_code, const std::string &filename, const messages_t &error,
                        const char *fmt, A... args) {

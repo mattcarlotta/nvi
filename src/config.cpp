@@ -25,7 +25,7 @@ namespace nvi {
     inline constexpr char ASSIGN_OP = '=';       // 0x3d
 
     Config::Config(options_t &options)
-        : _options(options), logger(options, _command, _config_tokens, _file_path, _key, _value_type) {
+        : _options(options), logger(LOGGER::CONFIG, options, _command, _config_tokens, _file_path, _key, _value_type) {
         _file_path = std::filesystem::current_path() / _options.dir / ".nvi";
         if (not std::filesystem::exists(_file_path)) {
             logger.fatal(FILE_ENOENT_ERROR);
@@ -316,6 +316,7 @@ namespace nvi {
         }
 
         if (_options.debug) {
+            logger.debug(DEBUG_CONFIG_TOKENS);
             logger.debug(DEBUG_CONFIG);
         }
 

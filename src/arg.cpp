@@ -14,7 +14,8 @@
 
 namespace nvi {
     Arg::Arg(int &argc, char *argv[], options_t &options)
-        : _argc(argc - 1), _argv(argv), _options(options), logger(_options, _command, _invalid_args, _invalid_flag) {
+        : _argc(argc - 1), _argv(argv), _options(options),
+          logger(LOGGER::ARG, _options, _command, _invalid_args, _invalid_flag) {
         while (_index < _argc) {
             const std::string_view flag{_argv[++_index]};
 

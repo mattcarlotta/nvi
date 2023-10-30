@@ -14,7 +14,7 @@ namespace nvi {
     inline constexpr char CLOSE_BRACE = '}'; // 0x7d
 
     Generator::Generator(const env_map_t &&env_map, const options_t &&options)
-        : _env_map(std::move(env_map)), _options(std::move(options)), logger(_options) {}
+        : _env_map(std::move(env_map)), _options(std::move(options)), logger(LOGGER::GENERATOR, _options) {}
 
     void Generator::set_or_print_envs() const noexcept {
         if (_options.commands.size()) {

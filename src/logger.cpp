@@ -3,175 +3,175 @@
 #include "format.h"
 #include "log.h"
 #include "version.h"
+#include <cstdlib>
+#include <ctime>
+#include <curl/curl.h>
+#include <curl/easy.h>
+#include <iostream>
 
 namespace nvi {
-    Logger::Logger(const options_t &options) : _options(options) {}
+    // generator
+    Logger::Logger(logger_t code, const options_t &options) : _code(code), _options(options) {}
 
-    Logger::Logger(const options_t &options, const std::string &command, const std::string &invalid_args,
+    // arg
+    Logger::Logger(logger_t code, const options_t &options, const std::string &command, const std::string &invalid_args,
                    const std::string &invalid_flag)
-        : _options(options), _command(command), _invalid_args(invalid_args), _invalid_flag(invalid_flag) {}
+        : _code(code), _options(options), _command(command), _invalid_args(invalid_args), _invalid_flag(invalid_flag) {}
 
-    Logger::Logger(const options_t &options, const std::string &command, const std::vector<ConfigToken> &config_tokens,
-                   const std::filesystem::path &file_path, const std::string &key, const std::string &value_type)
-        : _options(options), _command(command), _config_tokens(config_tokens), _file_path(file_path), _key(key),
-          _value_type(value_type) {}
+    // config
+    Logger::Logger(logger_t code, const options_t &options, const std::string &command,
+                   const std::vector<ConfigToken> &config_tokens, const std::filesystem::path &file_path,
+                   const std::string &key, const std::string &value_type)
+        : _code(code), _options(options), _command(command), _config_tokens(config_tokens), _file_path(file_path),
+          _key(key), _value_type(value_type) {}
 
-    void Logger::debug(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
+    // api
+    Logger::Logger(logger_t code, const options_t &options, const CURLcode &res, const std::string &res_data,
+                   const std::filesystem::path &env_file_path, const unsigned int &res_status_code)
+        : _code(code), _options(options), _res(res), _res_data(res_data), _env_file_path(env_file_path),
+          _res_status_code(res_status_code) {}
+
+    void Logger::log_debug(const messages_t &message_code, const std::string &message) const noexcept {
+        std::clog << "[nvi] (Logger::" << _get_logger_from_code(_code) << "::" << _get_string_from_code(message_code)
+                  << ") " << message << '\n';
+    }
+
+    void Logger::log_error(const messages_t &message_code, const std::string &message) const noexcept {
+        std::cerr << "[nvi] (Logger::" << _get_logger_from_code(_code) << "::" << _get_string_from_code(message_code)
+                  << ") " << message << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    void Logger::debug(const messages_t &message_code) const noexcept {
+        std::string message;
+
+        switch (message_code) {
         // ARG
         case INVALID_FLAG_WARNING: {
-            NVI_LOG_DEBUG(
-                INVALID_FLAG_WARNING,
-                R"(The flag "%s"%s is not recognized. Skipping.)",
-                _invalid_flag.c_str(), 
-                (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
+            message = _format(R"(The flag "%s"%s is not recognized. Skipping.)", _invalid_flag.c_str(),
+                              (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
             break;
         }
         case DEBUG_ARG: {
-            NVI_LOG_DEBUG(
-                DEBUG_ARG,
-                R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
-                (_options.api ? "true": "false"),
-                _options.config.c_str(), 
-                _options.dir.c_str(), 
-                _options.environment.c_str(), 
-                _command.c_str(),
-                fmt::join(_options.files, ", ").c_str(),
-                (_options.print ? "true": "false"),
-                _options.project.c_str(), 
-                fmt::join(_options.required_envs, ", ").c_str(),
-                (_options.save ? "true": "false"));
-
-
             if (_options.commands.size() && _options.print) {
-                NVI_LOG_DEBUG(
-                    DEBUG,
-                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
-                    NULL);
+                log_debug(message_code,
+                          R"(Found conflicting flags: When commands are present, then the "print" flag is ignored.)");
             }
 
-            if (_options.config.length() && 
-                    (_options.dir.length() || 
-                     _options.commands.size() ||
-                     _options.files.size() > 1 || 
-                     _options.required_envs.size())) {
-                NVI_LOG_DEBUG(
-                    DEBUG,
-                    R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)",
-                    NULL);
+            if (_options.config.length() && (_options.dir.length() || _options.commands.size() ||
+                                             _options.files.size() > 1 || _options.required_envs.size())) {
+                log_debug(
+                    message_code,
+                    R"(Found conflicting flags: When the "config" flag has been set, then other flags are ignored.)");
             }
+
+            message = _format(
+                R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
+                (_options.api ? "true" : "false"), _options.config.c_str(), _options.dir.c_str(),
+                _options.environment.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
+                (_options.print ? "true" : "false"), _options.project.c_str(),
+                fmt::join(_options.required_envs, ", ").c_str(), (_options.save ? "true" : "false"));
             break;
         }
         // CONFIG
         case INVALID_PROPERTY_WARNING: {
-            NVI_LOG_DEBUG(
-                INVALID_PROPERTY_WARNING,
-                R"(Found an invalid property: "%s" within the "%s" config. Skipping.)",
-                _key.c_str(), _options.config.c_str());
+            message = _format(R"(Found an invalid property: "%s" within the "%s" config. Skipping.)", _key.c_str(),
+                              _options.config.c_str());
             break;
         }
-        case DEBUG_CONFIG: {
+        case DEBUG_CONFIG_TOKENS: {
             for (size_t index = 0; index < _config_tokens.size(); ++index) {
                 const ConfigToken &token = _config_tokens.at(index);
 
                 std::stringstream ss;
-                ss << "Created " << get_value_type_string(token.type) << " token with a key of " << std::quoted(token.key);
+                ss << "Created " << get_value_type_string(token.type) << " token with a key of "
+                   << std::quoted(token.key);
                 ss << " and a value of " << std::quoted(std::visit(ConfigTokenToString(), token.value.value())) << ".";
-                if(index == _config_tokens.size()) {
+                if (index == _config_tokens.size()) {
                     ss << '\n';
                 }
 
-                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
+                log_debug(message_code, ss.str());
             }
-
-            NVI_LOG_DEBUG(
-                DEBUG_CONFIG,
-                R"(Successfully parsed the "%s" configuration from the .nvi file.)",
-                _options.config.c_str());
+            break;
+        }
+        case DEBUG_CONFIG: {
+            log_debug(message_code, _format(R"(Successfully parsed the "%s" configuration from the .nvi file.)",
+                                            _options.config.c_str()));
 
             if (_options.commands.size() && _options.print) {
-                NVI_LOG_DEBUG(
-                    DEBUG,
-                    R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)",
-                    NULL);
+                log_debug(message_code,
+                          R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)");
             }
 
-            NVI_LOG_DEBUG(
-                DEBUG_CONFIG,
+            message = _format(
                 R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
-                (_options.api ? "true": "false"),
-                _options.dir.c_str(),
-                _options.environment.c_str(),
-                _command.c_str(),
-                fmt::join(_options.files, ", ").c_str(),
-                (_options.print ? "true": "false"),
-                _options.project.c_str(),
-                fmt::join(_options.required_envs, ", ").c_str(),
-                (_options.save ? "true": "false"));
+                (_options.api ? "true" : "false"), _options.dir.c_str(), _options.environment.c_str(), _command.c_str(),
+                fmt::join(_options.files, ", ").c_str(), (_options.print ? "true" : "false"), _options.project.c_str(),
+                fmt::join(_options.required_envs, ", ").c_str(), (_options.save ? "true" : "false"));
+            break;
+        }
+        // API
+        case RESPONSE_SUCCESS: {
+            message = _format("Successfully retrieved the %s ENVs from the nvi API.", _options.environment.c_str());
+            break;
+        }
+        case SAVED_ENV_FILE: {
+            message = _format(R"(Successfully saved the "%s.env" file to disk (%s).)", _options.environment.c_str(),
+                              _env_file_path.c_str());
             break;
         }
         default:
             break;
         }
-        // clang-format on
+
+        if (message.length()) {
+            log_debug(message_code, message);
+        }
     }
 
-    void Logger::fatal(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
+    void Logger::fatal(const messages_t &message_code) const noexcept {
+        std::string message;
+
+        switch (message_code) {
         // ARG
         case CONFIG_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                CONFIG_FLAG_ERROR,
-                R"(The "--config" flag must contain an environment name from the .nvi configuration file. Use flag "--help" for more information.)", 
-                NULL);
+            message =
+                R"(The "--config" flag must contain an environment name from the .nvi configuration file. Use flag "--help" for more information.)";
             break;
         }
         case DIR_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                DIR_FLAG_ERROR,
-                R"(The "--directory" flag must contain a valid directory path. Use flag "--help" for more information.)",
-                NULL);
+            message =
+                R"(The "--directory" flag must contain a valid directory path. Use flag "--help" for more information.)";
             break;
         }
         case COMMAND_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                COMMAND_FLAG_ERROR,
-                R"(The "--" (execute) flag must contain at least 1 system command. Use flag "--help" for more information.)",
-                NULL);
+            message =
+                R"(The "--" (execute) flag must contain at least 1 system command. Use flag "--help" for more information.)";
             break;
         }
         case ENV_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                ENV_FLAG_ERROR,
-                R"(The "--environment" flag must contain a valid environment name. Use flag "--help" for more information.)",
-                NULL);
+            message =
+                R"(The "--environment" flag must contain a valid environment name. Use flag "--help" for more information.)";
             break;
         }
         case FILES_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILES_FLAG_ERROR,
-                R"(The "--files" flag must contain at least 1 .env file. Use flag "--help" for more information.)",
-                NULL);
+            message =
+                R"(The "--files" flag must contain at least 1 .env file. Use flag "--help" for more information.)";
             break;
         }
         case PROJECT_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                PROJECT_FLAG_ERROR,
-                R"(The "--project" flag must contain a valid project name. Use flag "--help" for more information.)",
-                NULL);
+            message =
+                R"(The "--project" flag must contain a valid project name. Use flag "--help" for more information.)";
             break;
         }
         case REQUIRED_FLAG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                REQUIRED_FLAG_ERROR,
-                R"(The "--required" flag must contain at least 1 ENV key. Use flag "--help" for more information.)",
-                NULL);
+            message =
+                R"(The "--required" flag must contain at least 1 ENV key. Use flag "--help" for more information.)";
             break;
         }
         case HELP_DOC: {
-            const std::string help_doc = R"(
+            message = R"(
 ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ nvi cli documentation                                                                                                 │
 ├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -191,171 +191,178 @@ namespace nvi {
 └───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 for more detailed information, please see the man documentation or the README.)";
-            std::clog << help_doc << std::endl;
-            std::exit(EXIT_SUCCESS);
+            break;
         }
         case NVI_VERSION: {
             std::time_t current_time{std::time(nullptr)};
             std::tm const *time_stamp{std::localtime(&current_time)};
+            message = _format("nvi %s"
+                              "Copyright (C) %d Matt Carlotta."
+                              "This is free software licensed under the GPL-3.0 license; see the source LICENSE for "
+                              "copying conditions."
+                              "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+                              NVI_VERSION, time_stamp->tm_year + 1900);
 
-            std::clog << "nvi " << NVI_LIB_VERSION << '\n';
-            std::clog << "Copyright (C) " << time_stamp->tm_year + 1900 << " Matt Carlotta." << '\n';
-            std::clog << "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions." << '\n';
-            std::clog << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl;
-            std::exit(EXIT_SUCCESS);
+            break;
         }
-        // CONFIG 
+        // CONFIG
         case FILE_ENOENT_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ENOENT_ERROR,
-                R"(Unable to locate "%s". The .nvi configuration file doesn't appear to exist at this path!)",
-                _file_path.c_str());
+            message =
+                _format(R"(Unable to locate "%s". The .nvi configuration file doesn't appear to exist at this path!)",
+                        _file_path.c_str());
             break;
         }
         case FILE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ERROR,
+            message = _format(
                 R"(Unable to open "%s". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.)",
                 _file_path.c_str());
             break;
         }
         case FILE_PARSE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_PARSE_ERROR,
+            message = _format(
                 R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified config doesn't appear to exist!)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
         case SELECTED_CONFIG_EMPTY_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                SELECTED_CONFIG_EMPTY_ERROR,
+            message = _format(
                 R"(While the "%s" configuration exists within the .nvi file (%s), the configuration appears to be empty.)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
         case INVALID_ARRAY_VALUE: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INVALID_ARRAY_VALUE,
+            message = _format(
                 R"(The "%s" property within the "%s" config is not a valid array. It appears to be missing a closing bracket "]".)",
                 _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_BOOLEAN_VALUE: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INVALID_BOOLEAN_VALUE,
+            message = _format(
                 R"(The "%s" property within the "%s" config contains an invalid boolean value. Expected the value to match true or false.)",
                 _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_STRING_VALUE: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INVALID_STRING_VALUE,
+            message = _format(
                 R"(The "%s" property within the "%s" config contains an invalid string value. It appears to be empty or is missing a closing double quote.)",
                 _key.c_str(), _options.config.c_str());
             break;
         }
         case API_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                API_ARG_ERROR,
+            message = _format(
                 R"(The "api" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case DEBUG_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                DEBUG_ARG_ERROR,
+            message = _format(
                 R"(The "debug" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case DIR_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                DIR_ARG_ERROR,
+            message = _format(
                 R"(The "directory" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case ENV_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                ENV_ARG_ERROR,
+            message = _format(
                 R"(The "environment" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case FILES_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILES_ARG_ERROR,
+            message = _format(
                 R"(The "files" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case EMPTY_FILES_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                EMPTY_FILES_ARG_ERROR,
+            message = _format(
                 R"(The "files" property within the "%s" environment configuration (%s) appears to be empty. You must specify at least 1 .env file to load!)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
         case EXEC_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                EXEC_ARG_ERROR,
+            message = _format(
                 R"(The "execute" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case PRINT_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                PRINT_ARG_ERROR,
+            message = _format(
                 R"(The "print" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case PROJECT_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                PROJECT_ARG_ERROR,
+            message = _format(
                 R"(The "project" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case REQUIRED_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                REQUIRED_ARG_ERROR,
+            message = _format(
                 R"(The "required" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case SAVE_ARG_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                SAVE_ARG_ERROR,
+            message = _format(
                 R"(The "save" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         // GENERATOR
         case COMMAND_ENOENT_ERROR: {
-            NVI_LOG_AND_EXIT(
-                COMMAND_ENOENT_ERROR,
+            message = _format(
                 R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
                 _options.commands[0]);
             break;
         }
         case COMMAND_FAILED_TO_RUN: {
-            NVI_LOG_ERROR_AND_EXIT(
-                COMMAND_FAILED_TO_RUN,
-                "Unable to run the specified command. See terminal logs for more information.",
-                NULL);
+            message = "Unable to run the specified command. See terminal logs for more information.";
             break;
         }
         case NO_ACTION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                NO_ACTION_ERROR,
-                R"(Running the CLI tool without any system commands nor a "print" or "save" flag won't do anything. Use flag "-h" or "--help" for more information.)",
-                NULL);
+            message =
+                R"(Running the CLI tool without any system commands nor a "print" or "save" flag won't do anything. Use flag "-h" or "--help" for more information.)";
+            break;
+        }
+        // API
+        case INVALID_INPUT_KEY: {
+            message =
+                "The supplied input is not a valid API key. Please enter a valid API key with aA,zZ,0-9 characters.";
+            break;
+        }
+        case INVALID_INPUT_SELECTION: {
+            message = "The supplied number input was not a valid selection. Please try again.";
+            break;
+        }
+        case REQUEST_ERROR: {
+            message = _format("The cURL command failed: %s.", curl_easy_strerror(_res));
+            break;
+        }
+        case RESPONSE_ERROR: {
+            message = _format("The nvi API responded with a %d: %s.", _res_status_code, _res_data.c_str());
+            break;
+        }
+        case CURL_FAILED_TO_INIT: {
+            message = "Failed to initialize cURL. Are you sure it's installed?";
+            break;
+        }
+        case INVALID_ENV_FILE: {
+            message = _format(
+                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
+                _env_file_path.c_str());
             break;
         }
         default:
+            message = "Unknown error occured. This is probably a mistake.";
             break;
         }
-        // clang-format on
+
+        log_error(message_code, message);
     }
 } // namespace nvi

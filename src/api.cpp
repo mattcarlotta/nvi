@@ -18,7 +18,9 @@
 #include <unordered_map>
 
 namespace nvi {
-    Api::Api(options_t &options) : _options(options), _curl(curl_easy_init()) {}
+    Api::Api(options_t &options)
+        : _options(options), _curl(curl_easy_init()),
+          logger(LOGGER::API, options, _res, _res_data, _env_file_path, _res_status_code) {}
 
     std::string Api::get_input_selection_for(std::string type) noexcept {
         std::clog << "[nvi] Retrieved the following " << type << "s from the nvi API..." << '\n';
@@ -39,7 +41,7 @@ namespace nvi {
         std::clog << '\n';
 
         if (not list.count(item_number)) {
-            log(INVALID_INPUT_SELECTION);
+            logger.fatal(INVALID_INPUT_SELECTION);
         };
 
         return list.at(item_number);
@@ -76,7 +78,7 @@ namespace nvi {
         _api_key.erase(std::remove_if(_api_key.begin(), _api_key.end(), filter_non_alphanum_char), _api_key.end());
 
         if (not _api_key.length()) {
-            log(INVALID_INPUT_KEY);
+            logger.fatal(INVALID_INPUT_KEY);
         }
 
         // get projects from API and prompt for user selection
@@ -102,7 +104,7 @@ namespace nvi {
 
     void Api::fetch_data(std::string REQ_URL) noexcept {
         if (_curl == nullptr) {
-            log(CURL_FAILED_TO_INIT);
+            logger.fatal(CURL_FAILED_TO_INIT);
         }
 
         _res_data.clear();
@@ -116,9 +118,9 @@ namespace nvi {
         curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_res_status_code);
 
         if (_res != CURLE_OK) {
-            log(REQUEST_ERROR);
+            logger.fatal(REQUEST_ERROR);
         } else if (_res_status_code >= 400) {
-            log(RESPONSE_ERROR);
+            logger.fatal(RESPONSE_ERROR);
         }
     }
 
@@ -140,13 +142,13 @@ namespace nvi {
 
         std::ofstream env_file{_env_file_path};
         if (not env_file.is_open()) {
-            log(FILE_ERROR);
+            logger.fatal(INVALID_ENV_FILE);
         }
 
         env_file << _res_data;
 
         if (_options.debug) {
-            log(SAVED_ENV_FILE);
+            logger.debug(SAVED_ENV_FILE);
         }
 
         env_file.close();
@@ -157,7 +159,7 @@ namespace nvi {
                    "&environment=" + _options.environment);
 
         if (_options.debug) {
-            log(RESPONSE_SUCCESS);
+            logger.debug(RESPONSE_SUCCESS);
         }
 
         if (_options.save) {
@@ -168,68 +170,4 @@ namespace nvi {
     }
 
     const std::string &Api::get_envs() noexcept { return _res_data; }
-
-    void Api::log(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
-        case INVALID_INPUT_KEY: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INVALID_INPUT_KEY,
-                "The supplied input is not a valid API key. Please enter a valid API key with aA,zZ,0-9 characters.", 
-                NULL);
-            break;
-        }
-        case INVALID_INPUT_SELECTION: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INVALID_INPUT_SELECTION,
-                "The supplied number input was not a valid selection. Please try again.", 
-                NULL);
-            break;
-        }
-        case REQUEST_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                REQUEST_ERROR,
-                "The cURL command failed: %s.", 
-                curl_easy_strerror(_res));
-            break;
-        }
-        case RESPONSE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                RESPONSE_ERROR,
-                "The nvi API responded with a %d: %s.", 
-                _res_status_code, _res_data.c_str());
-            break;
-        }
-        case RESPONSE_SUCCESS: {
-            NVI_LOG_DEBUG(
-                RESPONSE_SUCCESS,
-                "Successfully retrieved the %s ENVs from the nvi API.", 
-                _options.environment.c_str());
-            break;
-        }
-        case CURL_FAILED_TO_INIT: {
-            NVI_LOG_ERROR_AND_EXIT(
-                CURL_FAILED_TO_INIT,
-                "Failed to initialize cURL. Are you sure it's installed?", 
-                NULL);
-            break;
-        }
-        case FILE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ERROR,
-                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
-                _env_file_path.c_str());
-            break;
-        }
-        case SAVED_ENV_FILE: {
-            NVI_LOG_DEBUG(
-                SAVED_ENV_FILE,
-                R"(Successfully saved the "%s.env" file to disk (%s).)", 
-                _options.environment.c_str(), _env_file_path.c_str());
-            break;
-        }
-        default:
-            break;
-        }
-    }
 }; // namespace nvi
