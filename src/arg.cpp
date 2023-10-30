@@ -88,8 +88,9 @@ namespace nvi {
         }
 
         // remove flags when a config flag is set
-        if (_options.config.length() && (_options.dir.length() || _options.commands.size() ||
-                                         _options.files.size() > 1 || _options.required_envs.size())) {
+        if (_options.config.length() && (_options.api || _options.dir.length() || _options.commands.size() ||
+                                         _options.environment.length() || _options.files.size() > 1 || _options.print ||
+                                         _options.project.length() || _options.required_envs.size() || _options.save)) {
             if (_options.debug) {
                 logger.debug(CONFLICTING_CONFIG_FLAG);
             }
