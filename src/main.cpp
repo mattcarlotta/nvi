@@ -14,7 +14,6 @@ int main(int argc, char *argv[]) {
 
     nvi::Arg arg(argc, argv, options);
 
-    // BUG(carlotta): this is not overriding options
     if (options.config.length()) {
         nvi::Config config(options);
         config.generate_options();

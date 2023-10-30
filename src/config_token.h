@@ -1,5 +1,6 @@
 #ifndef NVI_CONFIG_TOKEN_H
 #define NVI_CONFIG_TOKEN_H
+
 #include "format.h"
 #include <optional>
 #include <string>
@@ -20,18 +21,7 @@ namespace nvi {
         SAVE,
         UNKNOWN
     };
-    /**
-     * @detail Reads an `.nvi` configuration file from the project root directory or a specified directory and
-     * converts the selected environment into `options`.
-     * @param `env` contains the name of the environment to load from the configuration file.
-     * @param `dir` is an optional argument to specify where the .nvi file resides according to current directory
-     * @example Initializing a config
-     *
-     * nvi::options_t options;
-     * options.config = "development";
-     * options.dir = "custom/path/to/envs";
-     * nvi::Config config(options);
-     */
+
     enum class ConfigValueType { array, boolean, string };
 
     struct ConfigToken {
@@ -56,6 +46,5 @@ namespace nvi {
             return "a string";
         }
     }
-
 } // namespace nvi
 #endif
