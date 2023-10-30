@@ -173,6 +173,13 @@ namespace nvi {
             }
             break;
         }
+        // GENERATOR
+        case COMMAND_ENOENT: {
+            message = fmt::format(
+                R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
+                _options.commands[0]);
+            break;
+        }
         default:
             break;
         }
@@ -368,12 +375,6 @@ for more detailed information, please see the man documentation or the README.)"
             break;
         }
         // GENERATOR
-        case COMMAND_ENOENT_ERROR: {
-            message = fmt::format(
-                R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
-                _options.commands[0]);
-            break;
-        }
         case COMMAND_FAILED_TO_RUN: {
             message = "Unable to run the specified command. See terminal logs for more information.";
             break;

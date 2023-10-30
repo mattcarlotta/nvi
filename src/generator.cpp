@@ -31,7 +31,7 @@ namespace nvi {
                 // for example: "npm run dev" won't work because "npm" can't find "node"
                 execvp(_options.commands[0], _options.commands.data());
                 if (errno == ENOENT) {
-                    logger.fatal(COMMAND_ENOENT_ERROR);
+                    logger.debug(COMMAND_ENOENT);
                     _exit(-1);
                 }
             } else if (pid > 0) {

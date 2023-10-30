@@ -69,7 +69,7 @@ namespace nvi {
         DEBUG_PARSER,
 
         // generator
-        COMMAND_ENOENT_ERROR,
+        COMMAND_ENOENT,
         COMMAND_FAILED_TO_RUN,
         NO_ACTION_ERROR,
 
@@ -143,7 +143,7 @@ namespace nvi {
         case SELECTED_CONFIG_EMPTY_ERROR:
             return "SELECTED_CONFIG_EMPTY_ERROR";
         case DEBUG_PARSER:
-            return "DEBUG_PARSER";
+            return "DEBUG";
         case API_ARG_ERROR:
             return "API_ARG_ERROR";
         case DEBUG_ARG_ERROR:
@@ -175,9 +175,9 @@ namespace nvi {
         case INVALID_STRING_VALUE:
             return "INVALID_STRING_VALUE";
         case DEBUG_CONFIG_TOKENS:
-            return "DEBUG_CONFIG_TOKENS";
+            return "CONFIG_TOKENS";
         case DEBUG_CONFIG:
-            return "DEBUG_CONFIG";
+            return "DEBUG";
         case CONFIG_FILE_ERROR:
             return "CONFIG_FILE_ERROR";
         case EMPTY_KEY_WARNING:
@@ -198,14 +198,14 @@ namespace nvi {
             return "EMPTY_RESPONSE_ENVS_ERROR";
         case EMPTY_ENVS_ERROR:
             return "EMPTY_ENVS_ERROR";
-        case COMMAND_ENOENT_ERROR:
-            return "COMMAND_ENOENT_ERROR";
+        case COMMAND_ENOENT:
+            return "COMMAND_ENOENT";
         case COMMAND_FAILED_TO_RUN:
             return "COMMAND_FAILED_TO_RUN";
         case NO_ACTION_ERROR:
             return "NO_ACTION_ERROR";
         case DEBUG_LEXER:
-            return "DEBUG_LEXER";
+            return "DEBUG";
         case LEXER_FILE_ENOENT_ERROR:
             return "LEXER_FILE_ENOENT_ERROR";
         case LEXER_FILE_ERROR:
@@ -215,7 +215,7 @@ namespace nvi {
         case NVI_VERSION:
             return "NVI_VERSION";
         case DEBUG_ARG:
-            return "DEBUG_ARG";
+            return "DEBUG";
         case CONFLICTING_COMMAND_FLAG:
             return "CONFLICTING_COMMAND_FLAG";
         case CONFLICTING_CONFIG_FLAG:
