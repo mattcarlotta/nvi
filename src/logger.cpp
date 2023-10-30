@@ -62,8 +62,8 @@ namespace nvi {
         switch (message_code) {
         // ARG
         case INVALID_FLAG_WARNING: {
-            message = _format(R"(The flag "%s"%s is not recognized. Skipping.)", _invalid_flag.c_str(),
-                              (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
+            message = fmt::format(R"(The flag "%s"%s is not recognized. Skipping.)", _invalid_flag.c_str(),
+                                  (_invalid_args.length() ? " with \"" + _invalid_args + "\" arguments" : "").c_str());
             break;
         }
         case DEBUG_ARG: {
@@ -79,7 +79,7 @@ namespace nvi {
                     R"(Found conflicting flags: When the "config" flag has been set, then other flags are ignored.)");
             }
 
-            message = _format(
+            message = fmt::format(
                 R"(The following arg options were set: api="%s", config="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
                 (_options.api ? "true" : "false"), _options.config.c_str(), _options.dir.c_str(),
                 _options.environment.c_str(), _command.c_str(), fmt::join(_options.files, ", ").c_str(),
@@ -89,8 +89,8 @@ namespace nvi {
         }
         // CONFIG
         case INVALID_PROPERTY_WARNING: {
-            message = _format(R"(Found an invalid property: "%s" within the "%s" config. Skipping.)", _key.c_str(),
-                              _options.config.c_str());
+            message = fmt::format(R"(Found an invalid property: "%s" within the "%s" config. Skipping.)", _key.c_str(),
+                                  _options.config.c_str());
             break;
         }
         case DEBUG_CONFIG_TOKENS: {
@@ -110,15 +110,15 @@ namespace nvi {
             break;
         }
         case DEBUG_CONFIG: {
-            log_debug(message_code, _format(R"(Successfully parsed the "%s" configuration from the .nvi file.)",
-                                            _options.config.c_str()));
+            log_debug(message_code, fmt::format(R"(Successfully parsed the "%s" configuration from the .nvi file.)",
+                                                _options.config.c_str()));
 
             if (_options.commands.size() && _options.print) {
                 log_debug(message_code,
                           R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)");
             }
 
-            message = _format(
+            message = fmt::format(
                 R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",
                 (_options.api ? "true" : "false"), _options.dir.c_str(), _options.environment.c_str(), _command.c_str(),
                 fmt::join(_options.files, ", ").c_str(), (_options.print ? "true" : "false"), _options.project.c_str(),
@@ -127,34 +127,34 @@ namespace nvi {
         }
         // API
         case RESPONSE_SUCCESS: {
-            message = _format("Successfully retrieved the %s ENVs from the nvi API.", _options.environment.c_str());
+            message = fmt::format("Successfully retrieved the %s ENVs from the nvi API.", _options.environment.c_str());
             break;
         }
         case SAVED_ENV_FILE: {
-            message = _format(R"(Successfully saved the "%s.env" file to disk (%s).)", _options.environment.c_str(),
-                              _env_file_path.c_str());
+            message = fmt::format(R"(Successfully saved the "%s.env" file to disk (%s).)", _options.environment.c_str(),
+                                  _env_file_path.c_str());
             break;
         }
         // PARSER
         case INTERPOLATION_WARNING: {
-            message = _format(
+            message = fmt::format(
                 R"([%s:%d:%d] The key "%s" contains an invalid interpolated variable: "%s". Unable to locate a value that corresponds to this key.)",
                 _token.file.c_str(), _value_token.line, _value_token.byte, _token.key->c_str(), _interp_key.c_str());
             break;
         }
         case DEBUG_PARSER: {
-            message = _format(R"([%s:%d:%d] Set key "%s" to equal value "%s".)", _token.file.c_str(), _value_token.line,
-                              _value_token.byte, _key.c_str(), _value.c_str());
+            message = fmt::format(R"([%s:%d:%d] Set key "%s" to equal value "%s".)", _token.file.c_str(),
+                                  _value_token.line, _value_token.byte, _key.c_str(), _value.c_str());
             break;
         }
         case DEBUG_RESPONSE_PROCESSED: {
-            message = _format(R"(Successfully parsed the remote "%s" project's "%s" environment ENVs!)",
-                              _options.project.c_str(), _options.environment.c_str());
+            message = fmt::format(R"(Successfully parsed the remote "%s" project's "%s" environment ENVs!)",
+                                  _options.project.c_str(), _options.environment.c_str());
             break;
         }
         case DEBUG_FILE_PROCESSED: {
-            message = _format("Successfully parsed the %s file%s!\n", fmt::join(_options.files, ", ").c_str(),
-                              (_options.files.size() > 1 ? "s" : ""));
+            message = fmt::format("Successfully parsed the %s file%s!\n", fmt::join(_options.files, ", ").c_str(),
+                                  (_options.files.size() > 1 ? "s" : ""));
             break;
         }
         // LEXER
@@ -252,127 +252,128 @@ for more detailed information, please see the man documentation or the README.)"
         case NVI_VERSION: {
             std::time_t current_time{std::time(nullptr)};
             std::tm const *time_stamp{std::localtime(&current_time)};
-            message = _format("nvi %s"
-                              "Copyright (C) %d Matt Carlotta."
-                              "This is free software licensed under the GPL-3.0 license; see the source LICENSE for "
-                              "copying conditions."
-                              "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
-                              NVI_VERSION, time_stamp->tm_year + 1900);
+            message =
+                fmt::format("nvi %s"
+                            "Copyright (C) %d Matt Carlotta."
+                            "This is free software licensed under the GPL-3.0 license; see the source LICENSE for "
+                            "copying conditions."
+                            "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+                            NVI_VERSION, time_stamp->tm_year + 1900);
 
             break;
         }
         // CONFIG
         case FILE_ENOENT_ERROR: {
-            message =
-                _format(R"(Unable to locate "%s". The .nvi configuration file doesn't appear to exist at this path!)",
-                        _file_path.c_str());
+            message = fmt::format(
+                R"(Unable to locate "%s". The .nvi configuration file doesn't appear to exist at this path!)",
+                _file_path.c_str());
             break;
         }
         case CONFIG_FILE_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(Unable to open "%s". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.)",
                 _file_path.c_str());
             break;
         }
         case FILE_PARSE_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(Unable to load the "%s" configuration from the .nvi file (%s). The specified config doesn't appear to exist!)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
         case SELECTED_CONFIG_EMPTY_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(While the "%s" configuration exists within the .nvi file (%s), the configuration appears to be empty.)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
         case INVALID_ARRAY_VALUE: {
-            message = _format(
+            message = fmt::format(
                 R"(The "%s" property within the "%s" config is not a valid array. It appears to be missing a closing bracket "]".)",
                 _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_BOOLEAN_VALUE: {
-            message = _format(
+            message = fmt::format(
                 R"(The "%s" property within the "%s" config contains an invalid boolean value. Expected the value to match true or false.)",
                 _key.c_str(), _options.config.c_str());
             break;
         }
         case INVALID_STRING_VALUE: {
-            message = _format(
+            message = fmt::format(
                 R"(The "%s" property within the "%s" config contains an invalid string value. It appears to be empty or is missing a closing double quote.)",
                 _key.c_str(), _options.config.c_str());
             break;
         }
         case API_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "api" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case DEBUG_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "debug" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case DIR_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "directory" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case ENV_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "environment" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case FILES_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "files" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case EMPTY_FILES_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "files" property within the "%s" environment configuration (%s) appears to be empty. You must specify at least 1 .env file to load!)",
                 _options.config.c_str(), _file_path.c_str());
             break;
         }
         case EXEC_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "execute" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case PRINT_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "print" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case PROJECT_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "project" property contains an invalid value. Expected a string value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case REQUIRED_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "required" property contains an invalid value. Expected an array of strings, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         case SAVE_ARG_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The "save" property contains an invalid value. Expected a boolean value, but instead received: %s.)",
                 _value_type.c_str());
             break;
         }
         // GENERATOR
         case COMMAND_ENOENT_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
                 _options.commands[0]);
             break;
@@ -397,11 +398,11 @@ for more detailed information, please see the man documentation or the README.)"
             break;
         }
         case REQUEST_ERROR: {
-            message = _format("The cURL command failed: %s.", curl_easy_strerror(_res));
+            message = fmt::format("The cURL command failed: %s.", curl_easy_strerror(_res));
             break;
         }
         case RESPONSE_ERROR: {
-            message = _format("The nvi API responded with a %d: %s.", _res_status_code, _res_data.c_str());
+            message = fmt::format("The nvi API responded with a %d: %s.", _res_status_code, _res_data.c_str());
             break;
         }
         case CURL_FAILED_TO_INIT: {
@@ -409,7 +410,7 @@ for more detailed information, please see the man documentation or the README.)"
             break;
         }
         case INVALID_ENV_FILE: {
-            message = _format(
+            message = fmt::format(
                 R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
                 _env_file_path.c_str());
             break;
@@ -420,35 +421,35 @@ for more detailed information, please see the man documentation or the README.)"
             break;
         }
         case REQUIRED_ENV_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(The following ENV keys were marked as required: "%s", but they were undefined after the list of .env files were parsed.)",
                 fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         // LEXER
         case INTERPOLATION_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"([%s:%d:%d] The key "%s" contains an interpolated "{" operator, but appears to be missing a closing "}" operator.)",
                 _file_name.c_str(), _line, _byte, _token_key.c_str());
             break;
         }
         case LEXER_FILE_ENOENT_ERROR: {
-            message = _format(R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
-                              _file_path.c_str());
+            message = fmt::format(R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
+                                  _file_path.c_str());
             break;
         }
         case LEXER_FILE_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
                 _file_path.c_str());
             break;
         }
         case FILE_EXTENSION_ERROR: {
-            message = _format(R"(The "%s" file is not a valid ".env" file extension.)", _file_name.c_str());
+            message = fmt::format(R"(The "%s" file is not a valid ".env" file extension.)", _file_name.c_str());
             break;
         }
         case EMPTY_RESPONSE_ENVS_ERROR: {
-            message = _format(
+            message = fmt::format(
                 R"(Unable to parse any ENVs! Please ensure the "%s" project has a(n) "%s" environment with at least 1 ENV.)",
                 _file_path.c_str(), _file_name.c_str());
             break;

@@ -8,6 +8,21 @@
 namespace nvi {
     namespace fmt {
         /**
+         * @detail Formats a list of arguments into a single string using `sprintf`.
+         * @param `fmt` a pointer to a string with interpolations.
+         * @param `args` contains a list of arguments.
+         * @return a string buf.
+         */
+        template <typename... A> std::string format(const char *fmt, A... args) {
+            size_t size = snprintf(nullptr, 0, fmt, args...);
+            std::string buf;
+            buf.reserve(size + 1);
+            buf.resize(size);
+            snprintf(&buf[0], size + 1, fmt, args...);
+            return buf;
+        }
+
+        /**
          * @detail Joins a list of elements into a single string.
          * @param `elements` a list of elements to be combined.
          * @param `delimiter` a character to use to separate each item in the string.

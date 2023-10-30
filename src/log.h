@@ -6,27 +6,6 @@
 #include <sstream>
 #include <string>
 
-// TODO(carlotta): REMOVE THIS
-#define __CLASS__ _get_class_name(__PRETTY_FUNCTION__)
-
-// TODO(carlotta): REMOVE THIS
-/**
- * @detail Logs a message to stdlog (stderr).
- */
-#define NVI_LOG_DEBUG(...) _log(std::clog, __CLASS__, __VA_ARGS__);
-
-// TODO(carlotta): REMOVE THIS
-/**
- * @detail Logs a message to stdlog (stderr) and exits.
- */
-#define NVI_LOG_AND_EXIT(...) _log_and_exit(std::clog, EXIT_SUCCESS, __CLASS__, __VA_ARGS__);
-
-// TODO(carlotta): REMOVE THIS
-/**
- * @detail Logs an error to stderr and then exits the process.
- */
-#define NVI_LOG_ERROR_AND_EXIT(...) _log_and_exit(std::cerr, EXIT_FAILURE, __CLASS__, __VA_ARGS__);
-
 namespace nvi {
     typedef enum LOGGER { API, ARG, CONFIG, GENERATOR, LEXER, PARSER, UNKNOWN_LOG } logger_t;
 
@@ -53,6 +32,7 @@ namespace nvi {
         INVALID_FLAG_WARNING,
         NVI_VERSION,
         DEBUG_ARG,
+
         // config
         FILE_PARSE_ERROR,
         SELECTED_CONFIG_EMPTY_ERROR,
@@ -74,6 +54,7 @@ namespace nvi {
         DEBUG_CONFIG_TOKENS,
         DEBUG_CONFIG,
         CONFIG_FILE_ERROR,
+
         // parser
         EMPTY_KEY_WARNING,
         INTERPOLATION_WARNING,
@@ -84,26 +65,21 @@ namespace nvi {
         EMPTY_ENVS_ERROR,
         EMPTY_RESPONSE_ENVS_ERROR,
         DEBUG_PARSER,
+
         // generator
         COMMAND_ENOENT_ERROR,
         COMMAND_FAILED_TO_RUN,
         NO_ACTION_ERROR,
+
         // lexer,
         DEBUG_LEXER,
         LEXER_FILE_ERROR,
         LEXER_FILE_ENOENT_ERROR,
         FILE_EXTENSION_ERROR,
+
         // shared
         FILE_ENOENT_ERROR,
     } messages_t;
-
-    inline const std::string _get_class_name(const std::string &class_name) {
-        size_t colons = class_name.find("::");
-        size_t begin = class_name.substr(0, colons).rfind(" ") + 1;
-        size_t end = class_name.rfind("(") - begin;
-        // remove namespace "nvi::"
-        return class_name.substr(begin + 5, end - 5);
-    }
 
     inline const std::string _get_logger_from_code(const unsigned int &log_code) {
         switch (log_code) {
@@ -243,33 +219,6 @@ namespace nvi {
         }
     }
 
-    template <typename... A> std::string _format(const char *fmt, A... args) {
-        size_t size = snprintf(nullptr, 0, fmt, args...);
-        std::string buf;
-        buf.reserve(size + 1);
-        buf.resize(size);
-        snprintf(&buf[0], size + 1, fmt, args...);
-        return buf;
-    }
-
-    // TODO(carlotta): REMOVE THIS
-    template <typename... A>
-    void _log(std::ostream &ostr, const std::string &filename, const messages_t &code, const char *fmt, A... args) {
-        size_t size = snprintf(nullptr, 0, fmt, args...);
-        std::string buf;
-        buf.reserve(size + 1);
-        buf.resize(size);
-        snprintf(&buf[0], size + 1, fmt, args...);
-        ostr << "[nvi] (" << filename << "::" << _get_string_from_code(code) << ") " << buf << '\n';
-    }
-
-    // TODO(carlotta): REMOVE THIS
-    template <typename... A>
-    void _log_and_exit(std::ostream &ostr, const int &exit_code, const std::string &filename, const messages_t &error,
-                       const char *fmt, A... args) {
-        _log(ostr, filename, error, fmt, args...);
-        std::exit(exit_code);
-    }
 } // namespace nvi
 
 #endif
