@@ -109,14 +109,17 @@ namespace nvi {
             }
             break;
         }
+        case CONFLICTING_COMMAND_FLAG: {
+            message = R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)";
+            break;
+        }
+        case CONFLICTING_CONFIG_FLAG: {
+            message = R"(Found conflicting flags. When the "config" flag has been set, then other flags are ignored.)";
+            break;
+        }
         case DEBUG_CONFIG: {
             log_debug(message_code, fmt::format(R"(Successfully parsed the "%s" configuration from the .nvi file.)",
                                                 _options.config.c_str()));
-
-            if (_options.commands.size() && _options.print) {
-                log_debug(message_code,
-                          R"(Found conflicting flags. When commands are present, then the "print" flag is ignored.)");
-            }
 
             message = fmt::format(
                 R"(The following config options were set: api="%s", debug="true", directory="%s", environment="%s", execute="%s", files="%s", print="%s", project="%s", required="%s", save="%s".)",

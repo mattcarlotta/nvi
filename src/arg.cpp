@@ -41,8 +41,10 @@ namespace nvi {
                 break;
             }
             case FLAG::EXECUTE: {
-                parse_command_args();
-                goto exit_flag_parsing;
+                if (not _options.config.length()) {
+                    parse_command_args();
+                    goto exit_flag_parsing;
+                }
             }
             case FLAG::FILES: {
                 _options.files = parse_multi_arg(FILES_FLAG_ERROR);
@@ -78,6 +80,32 @@ namespace nvi {
         }
 
     exit_flag_parsing:
+        // remove print flag if commands are present
+        if (_options.commands.size() && _options.print) {
+            if (_options.debug) {
+                logger.debug(CONFLICTING_COMMAND_FLAG);
+            }
+
+            _options.print = false;
+        }
+
+        // remove flags when a config flag is set
+        if (_options.config.length() && (_options.dir.length() || _options.commands.size() ||
+                                         _options.files.size() > 1 || _options.required_envs.size())) {
+            if (_options.debug) {
+                logger.debug(CONFLICTING_CONFIG_FLAG);
+            }
+
+            _options.api = false;
+            _options.dir.clear();
+            _options.environment.clear();
+            _options.files.clear();
+            _options.print = false;
+            _options.project.clear();
+            _options.required_envs.clear();
+            _options.save = false;
+        }
+
         if (_options.debug) {
             logger.debug(DEBUG_ARG);
         }

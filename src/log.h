@@ -32,6 +32,8 @@ namespace nvi {
         INVALID_FLAG_WARNING,
         NVI_VERSION,
         DEBUG_ARG,
+        CONFLICTING_COMMAND_FLAG,
+        CONFLICTING_CONFIG_FLAG,
 
         // config
         FILE_PARSE_ERROR,
@@ -214,6 +216,10 @@ namespace nvi {
             return "NVI_VERSION";
         case DEBUG_ARG:
             return "DEBUG_ARG";
+        case CONFLICTING_COMMAND_FLAG:
+            return "CONFLICTING_COMMAND_FLAG";
+        case CONFLICTING_CONFIG_FLAG:
+            return "CONFLICTING_CONFIG_FLAG";
         default:
             return "UNKNOWN_MESSAGE_TYPE";
         }
