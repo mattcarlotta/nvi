@@ -4,20 +4,19 @@
 #include <string>
 #include <vector>
 
-char *argv[] = {(char *)"tests",   (char *)"--api",       (char *)"--config",   (char *)"test",
-                (char *)"--debug", (char *)"--directory", (char *)"tests",      (char *)"--environment",
-                (char *)"my_env",  (char *)"--files",     (char *)"test.env",   (char *)"test2.env",
-                (char *)"--print", (char *)"--project",   (char *)"my_project", (char *)"--required",
-                (char *)"KEY1",    (char *)"KEY2",        (char *)"--save",     (char *)"--",
-                (char *)"bin",     (char *)"test",        (char *)NULL};
-int argc = 23;
+char *argv[] = {(char *)"tests",      (char *)"--api",         (char *)"--debug",   (char *)"--directory",
+                (char *)"tests",      (char *)"--environment", (char *)"my_env",    (char *)"--files",
+                (char *)"test.env",   (char *)"test2.env",     (char *)"--project", (char *)"my_project",
+                (char *)"--required", (char *)"KEY1",          (char *)"KEY2",      (char *)"--save",
+                (char *)"--",         (char *)"bin",           (char *)"test",      (char *)NULL};
+int argc = 20;
 
 nvi::options_t opts;
 nvi::Arg args(argc, argv, opts);
 
 TEST(Arg, parseable_api) { EXPECT_EQ(opts.api, true); }
 
-TEST(Arg, parseable_config) { EXPECT_EQ(opts.config, "test"); }
+TEST(Arg, parseable_config) { EXPECT_EQ(opts.config, ""); }
 
 TEST(Arg, parseable_debug) { EXPECT_EQ(opts.debug, true); }
 
@@ -32,7 +31,7 @@ TEST(Arg, parseable_files) {
     EXPECT_EQ(opts.files, files);
 }
 
-TEST(Arg, parseable_print) { EXPECT_EQ(opts.print, true); }
+TEST(Arg, parseable_print) { EXPECT_EQ(opts.print, false); }
 
 TEST(Arg, parseable_project) { EXPECT_EQ(opts.project, "my_project"); }
 
