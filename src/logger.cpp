@@ -9,6 +9,8 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <iostream>
+#include <string>
+#include <vector>
 
 namespace nvi {
     // generator
@@ -229,42 +231,6 @@ namespace nvi {
                 R"(The "--required" flag must contain at least 1 ENV key. Use flag "--help" for more information.)";
             break;
         }
-        case HELP_DOC: {
-            message = R"(
-┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ nvi cli documentation                                                                                                 │
-├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ flag          │ description                                                                                           │
-├───────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ --api         │ specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
-│ --config      │ specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
-│ --debug       │ specifies whether or not to log debug details. (ex: --debug)                                          │
-│ --directory   │ specifies which directory the .env files are located within. (ex: --directory path/to/envs)           │
-│ --environment │ specifies which environment config to use within a remote project. (ex: --environment dev)            │
-│ --files       │ specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
-│ --project     │ specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
-│ --print       │ specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
-│ --required    │ specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
-│ --save        │ specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
-│ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)         │
-└───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-for more detailed information, please see the man documentation or the README.)";
-            break;
-        }
-        case NVI_VERSION: {
-            std::time_t current_time{std::time(nullptr)};
-            std::tm const *time_stamp{std::localtime(&current_time)};
-            message =
-                fmt::format("nvi %s"
-                            "Copyright (C) %d Matt Carlotta."
-                            "This is free software licensed under the GPL-3.0 license; see the source LICENSE for "
-                            "copying conditions."
-                            "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
-                            NVI_VERSION, time_stamp->tm_year + 1900);
-
-            break;
-        }
         // CONFIG
         case FILE_ENOENT_ERROR: {
             message = fmt::format(
@@ -458,4 +424,51 @@ for more detailed information, please see the man documentation or the README.)"
 
         log_error(message_code, message);
     }
+
+    void Logger::log_and_exit(const messages_t &message_code) const noexcept {
+        switch (message_code) {
+        case HELP_DOC: {
+            std::clog << R"(
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ nvi cli documentation                                                                                                 │
+├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ flag          │ description                                                                                           │
+├───────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ --api         │ specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
+│ --config      │ specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
+│ --debug       │ specifies whether or not to log debug details. (ex: --debug)                                          │
+│ --directory   │ specifies which directory the .env files are located within. (ex: --directory path/to/envs)           │
+│ --environment │ specifies which environment config to use within a remote project. (ex: --environment dev)            │
+│ --files       │ specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
+│ --project     │ specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
+│ --print       │ specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
+│ --required    │ specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
+│ --save        │ specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
+│ --version     │ prints out binary version. (ex: --version)                                                            │
+│ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)         │
+└───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+for more detailed information, please see the man documentation or the README.)"
+                      << std::endl;
+            break;
+        }
+        case NVI_VERSION: {
+            std::time_t current_time{std::time(nullptr)};
+            std::tm const *time_stamp{std::localtime(&current_time)};
+            std::clog << "nvi " << NVI_LIB_VERSION << '\n';
+            std::clog << "Copyright (C) " << 1900 + time_stamp->tm_year << " Matt Carlotta." << '\n';
+            std::clog << "This is free software licensed under the GPL-3.0 license; see the source LICENSE for copying "
+                         "conditions."
+                      << '\n';
+            std::clog << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+                      << std::endl;
+            break;
+        }
+
+        default:
+            break;
+        }
+        std::exit(EXIT_SUCCESS);
+    }
+
 } // namespace nvi

@@ -41,6 +41,7 @@ namespace nvi {
 
         void fatal(const messages_t &message_code) const noexcept;
         void debug(const messages_t &message_code) const noexcept;
+        void log_and_exit(const messages_t &message_code) const noexcept;
         void log_debug(const messages_t &message_code, const std::string &message) const noexcept;
 
         private:

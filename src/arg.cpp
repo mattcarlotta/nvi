@@ -5,8 +5,6 @@
 #include "version.h"
 #include <algorithm>
 #include <cstdlib>
-#include <ctime>
-#include <iostream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -51,7 +49,7 @@ namespace nvi {
                 break;
             }
             case FLAG::HELP: {
-                logger.fatal(HELP_DOC);
+                logger.log_and_exit(HELP_DOC);
             }
             case FLAG::PRINT: {
                 _options.print = true;
@@ -70,7 +68,7 @@ namespace nvi {
                 break;
             }
             case FLAG::VERSION: {
-                logger.fatal(NVI_VERSION);
+                logger.log_and_exit(NVI_VERSION);
             }
             default: {
                 remove_invalid_flag();
