@@ -11,13 +11,15 @@
 namespace nvi {
     inline constexpr char NULL_CHAR = '\0'; // 0x00
 
-    Parser::Parser(const tokens_t &&tokens, options_t &options) : _tokens(std::move(tokens)), _options(options) {}
+    Parser::Parser(const tokens_t &&tokens, options_t &options)
+        : _tokens(std::move(tokens)), _options(options),
+          logger(LOGGER::PARSER, _options, _key, _token, _value_token, _interp_key, _value) {}
 
     const env_map_t &Parser::get_env_map() const noexcept { return _env_map; }
 
     Parser *Parser::parse_tokens() noexcept {
         if (!_tokens.size()) {
-            log(EMPTY_ENVS_ERROR);
+            logger.fatal(EMPTY_ENVS_ERROR);
         }
 
         for (const Token &t : _tokens) {
@@ -39,7 +41,7 @@ namespace nvi {
                         } else if (_env_map.count(_interp_key)) {
                             _value += _env_map.at(_interp_key);
                         } else if (_options.debug) {
-                            log(INTERPOLATION_WARNING);
+                            logger.debug(INTERPOLATION_WARNING);
                         }
                     } else {
                         _value += _value_token.value.has_value() ? _value_token.value.value() : std::string{};
@@ -58,72 +60,21 @@ namespace nvi {
                 }
 
                 if (_options.debug) {
-                    log(DEBUG);
+                    logger.debug(DEBUG_PARSER);
                 }
             }
         }
 
         if (not _env_map.size()) {
-            log(EMPTY_ENVS_ERROR);
+            logger.fatal(EMPTY_ENVS_ERROR);
         } else if (_options.required_envs.size()) {
-            log(REQUIRED_ENV_ERROR);
+            logger.fatal(REQUIRED_ENV_ERROR);
         } else if (_options.debug && _options.api) {
-            log(DEBUG_RESPONSE_PROCESSED);
+            logger.debug(DEBUG_RESPONSE_PROCESSED);
         } else if (_options.debug) {
-            log(DEBUG_FILE_PROCESSED);
+            logger.debug(DEBUG_FILE_PROCESSED);
         }
 
         return this;
-    }
-
-    void Parser::log(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
-        case INTERPOLATION_WARNING: {
-            NVI_LOG_DEBUG(
-                INTERPOLATION_WARNING,
-                R"([%s:%d:%d] The key "%s" contains an invalid interpolated variable: "%s". Unable to locate a value that corresponds to this key.)",
-                _token.file.c_str(), _value_token.line, _value_token.byte, _token.key->c_str(), _interp_key.c_str());
-            break;
-        }
-        case DEBUG: {
-            NVI_LOG_DEBUG(
-                DEBUG,
-                R"([%s:%d:%d] Set key "%s" to equal value "%s".)",
-                _token.file.c_str(), _value_token.line, _value_token.byte, _key.c_str(), _value.c_str());
-            break;
-        }
-        case DEBUG_RESPONSE_PROCESSED: {
-            NVI_LOG_DEBUG(
-                DEBUG_RESPONSE_PROCESSED,
-                "Successfully parsed the remote \"%s\" project's \"%s\" environment ENVs!\n",
-                _options.project.c_str(), _options.environment.c_str())
-            break;
-        }
-        case DEBUG_FILE_PROCESSED: {
-            NVI_LOG_DEBUG(
-                DEBUG_FILE_PROCESSED,
-                "Successfully parsed the %s file%s!\n",
-                fmt::join(_options.files, ", ").c_str(), (_options.files.size() > 1 ? "s" : ""))
-            break;
-        }
-        case REQUIRED_ENV_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                REQUIRED_ENV_ERROR,
-                R"(The following ENV keys were marked as required: "%s", but they were undefined after the list of .env files were parsed.)",
-                fmt::join(_options.required_envs, ", ").c_str());
-            break;
-        }
-        case EMPTY_ENVS_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                EMPTY_ENVS_ERROR,
-                R"(Unable to parse any ENVs! Please ensure the provided .env files are not empty.)",
-                NULL);
-            break;
-        }
-        default:
-            break;
-        }
-        // clang-format on
     }
 } // namespace nvi

@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace nvi {
-    enum class ValueType { normal, interpolated, multiline };
+    enum class ValueType { normal, interpolated, multiline, unknown };
 
     struct ValueToken {
         ValueType type;

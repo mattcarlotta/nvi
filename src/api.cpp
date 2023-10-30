@@ -23,6 +23,7 @@ namespace nvi {
           logger(LOGGER::API, options, _res, _res_data, _env_file_path, _res_status_code) {}
 
     std::string Api::get_input_selection_for(std::string type) noexcept {
+        // TODO(carlotta): add this to logger?
         std::clog << "[nvi] Retrieved the following " << type << "s from the nvi API..." << '\n';
         std::unordered_map<int, std::string> list;
         int index = 0;
@@ -125,6 +126,7 @@ namespace nvi {
     }
 
     void Api::save_envs_to_disk() noexcept {
+        // TODO(carlotta): add this to logger?
         const std::string env_name = _options.environment + ".env";
         _env_file_path = std::filesystem::current_path() / _options.dir / env_name;
         if (std::filesystem::exists(_env_file_path)) {

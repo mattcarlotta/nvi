@@ -83,6 +83,7 @@ namespace nvi {
         FILE_EXTENSION_ERROR,
         EMPTY_ENVS_ERROR,
         EMPTY_RESPONSE_ENVS_ERROR,
+        DEBUG_PARSER,
         // generator
         COMMAND_ENOENT_ERROR,
         COMMAND_FAILED_TO_RUN,
@@ -160,6 +161,8 @@ namespace nvi {
             return "FILE_PARSE_ERROR";
         case SELECTED_CONFIG_EMPTY_ERROR:
             return "SELECTED_CONFIG_EMPTY_ERROR";
+        case DEBUG_PARSER:
+            return "DEBUG_PARSER";
         case API_ARG_ERROR:
             return "API_ARG_ERROR";
         case DEBUG_ARG_ERROR:

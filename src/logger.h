@@ -2,12 +2,14 @@
 #define NVI_LOGGER_H
 
 #include "config_token.h"
+#include "lexer.h"
 #include "log.h"
 #include "options.h"
 // #include <cstddef>
 #include <curl/curl.h>
 #include <filesystem>
 // #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,6 +31,10 @@ namespace nvi {
         Logger(logger_t code, const options_t &options, const CURLcode &res, const std::string &res_data,
                const std::filesystem::path &env_file_path, const unsigned int &res_status_code);
 
+        // parser
+        Logger(logger_t code, const options_t &options, const std::string &key, const Token &token,
+               const ValueToken &value_token, const std::string &interp_key, const std::string &value);
+
         void fatal(const messages_t &message_code) const noexcept;
         void debug(const messages_t &message_code) const noexcept;
 
@@ -42,6 +48,8 @@ namespace nvi {
         const std::vector<ConfigToken> empty_config_token = {};
         const std::filesystem::path empty_path = "";
         const CURLcode empty_curl = CURLE_UNSUPPORTED_PROTOCOL;
+        const Token empty_token = {std::optional<std::string>{}, std::vector<ValueToken>{}, ""};
+        const ValueToken empty_value_token = {ValueType::unknown, std::optional<std::string>{}, 0, 0};
 
         const logger_t _code = LOGGER::UNKNOWN_LOG;
         // arg/generator
@@ -63,6 +71,12 @@ namespace nvi {
         const std::string &_res_data = empty_string;
         const std::filesystem::path &_env_file_path = empty_path;
         const unsigned int &_res_status_code = empty_number;
+
+        // parser
+        const Token &_token = empty_token;
+        const ValueToken &_value_token = empty_value_token;
+        const std::string &_interp_key = empty_string;
+        const std::string &_value = empty_string;
     };
 }; // namespace nvi
 #endif

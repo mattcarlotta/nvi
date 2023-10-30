@@ -31,6 +31,12 @@ namespace nvi {
         : _code(code), _options(options), _res(res), _res_data(res_data), _env_file_path(env_file_path),
           _res_status_code(res_status_code) {}
 
+    // parser
+    Logger::Logger(logger_t code, const options_t &options, const std::string &key, const Token &token,
+                   const ValueToken &value_token, const std::string &interp_key, const std::string &value)
+        : _code(code), _options(options), _key(key), _token(token), _value_token(value_token), _interp_key(interp_key),
+          _value(value) {}
+
     void Logger::log_debug(const messages_t &message_code, const std::string &message) const noexcept {
         std::clog << "[nvi] (Logger::" << _get_logger_from_code(_code) << "::" << _get_string_from_code(message_code)
                   << ") " << message << '\n';
@@ -119,6 +125,28 @@ namespace nvi {
         case SAVED_ENV_FILE: {
             message = _format(R"(Successfully saved the "%s.env" file to disk (%s).)", _options.environment.c_str(),
                               _env_file_path.c_str());
+            break;
+        }
+        // PARSER
+        case INTERPOLATION_WARNING: {
+            message = _format(
+                R"([%s:%d:%d] The key "%s" contains an invalid interpolated variable: "%s". Unable to locate a value that corresponds to this key.)",
+                _token.file.c_str(), _value_token.line, _value_token.byte, _token.key->c_str(), _interp_key.c_str());
+            break;
+        }
+        case DEBUG_PARSER: {
+            message = _format(R"([%s:%d:%d] Set key "%s" to equal value "%s".)", _token.file.c_str(), _value_token.line,
+                              _value_token.byte, _key.c_str(), _value.c_str());
+            break;
+        }
+        case DEBUG_RESPONSE_PROCESSED: {
+            message = _format(R"(Successfully parsed the remote "%s" project's "%s" environment ENVs!)",
+                              _options.project.c_str(), _options.environment.c_str());
+            break;
+        }
+        case DEBUG_FILE_PROCESSED: {
+            message = _format("Successfully parsed the %s file%s!\n", fmt::join(_options.files, ", ").c_str(),
+                              (_options.files.size() > 1 ? "s" : ""));
             break;
         }
         default:
@@ -356,6 +384,17 @@ for more detailed information, please see the man documentation or the README.)"
             message = _format(
                 R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
                 _env_file_path.c_str());
+            break;
+        }
+        // PARSER
+        case EMPTY_ENVS_ERROR: {
+            message = R"(Unable to parse any ENVs! Please ensure the provided .env files are not empty.)";
+            break;
+        }
+        case REQUIRED_ENV_ERROR: {
+            message = _format(
+                R"(The following ENV keys were marked as required: "%s", but they were undefined after the list of .env files were parsed.)",
+                fmt::join(_options.required_envs, ", ").c_str());
             break;
         }
         default:
