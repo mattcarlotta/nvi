@@ -1,4 +1,5 @@
 #include "generator.h"
+#include "format.h"
 #include "log.h"
 #include "logger.h"
 #include "options.h"
@@ -23,6 +24,10 @@ namespace nvi {
             if (pid == 0) {
                 for (const auto &[key, value] : _env_map) {
                     setenv(key.c_str(), value.c_str(), 0);
+                    if (_options.debug) {
+                        logger.log_debug(DEBUG_GENERATOR_KEYVALUE, fmt::format(R"(Set process key "%s" to value "%s".)",
+                                                                               key.c_str(), value.c_str()));
+                    }
                 }
 
                 // NOTE: Unfortunately, have to set ENVs to the parent process because

@@ -68,7 +68,7 @@ namespace nvi {
 
             // get api key from user input
             std::getline(std::cin, _api_key);
-            std::clog << '\n';
+            std::clog << "\n\n";
 
             // enable echo input
             term.c_lflag |= ECHO;

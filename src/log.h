@@ -72,6 +72,7 @@ namespace nvi {
         COMMAND_ENOENT,
         COMMAND_FAILED_TO_RUN,
         NO_ACTION_ERROR,
+        DEBUG_GENERATOR_KEYVALUE,
 
         // lexer,
         DEBUG_LEXER,
@@ -204,6 +205,8 @@ namespace nvi {
             return "COMMAND_FAILED_TO_RUN";
         case NO_ACTION_ERROR:
             return "NO_ACTION_ERROR";
+        case DEBUG_GENERATOR_KEYVALUE:
+            return "DEBUG";
         case DEBUG_LEXER:
             return "DEBUG";
         case LEXER_FILE_ENOENT_ERROR:

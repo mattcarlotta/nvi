@@ -149,7 +149,7 @@ namespace nvi {
             break;
         }
         case DEBUG_FILE_PROCESSED: {
-            message = fmt::format("Successfully parsed the %s file%s!\n", fmt::join(_options.files, ", ").c_str(),
+            message = fmt::format("Successfully parsed the %s file%s!", fmt::join(_options.files, ", ").c_str(),
                                   (_options.files.size() > 1 ? "s" : ""));
             break;
         }
