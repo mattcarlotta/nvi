@@ -73,6 +73,7 @@ namespace nvi {
         INVALID_STRING_VALUE,
         DEBUG_CONFIG_TOKENS,
         DEBUG_CONFIG,
+        CONFIG_FILE_ERROR,
         // parser
         EMPTY_KEY_WARNING,
         INTERPOLATION_WARNING,
@@ -80,7 +81,6 @@ namespace nvi {
         DEBUG_FILE_PROCESSED,
         DEBUG_RESPONSE_PROCESSED,
         REQUIRED_ENV_ERROR,
-        FILE_EXTENSION_ERROR,
         EMPTY_ENVS_ERROR,
         EMPTY_RESPONSE_ENVS_ERROR,
         DEBUG_PARSER,
@@ -88,10 +88,13 @@ namespace nvi {
         COMMAND_ENOENT_ERROR,
         COMMAND_FAILED_TO_RUN,
         NO_ACTION_ERROR,
+        // lexer,
+        DEBUG_LEXER,
+        LEXER_FILE_ERROR,
+        LEXER_FILE_ENOENT_ERROR,
+        FILE_EXTENSION_ERROR,
         // shared
-        FILE_ERROR,
         FILE_ENOENT_ERROR,
-        DEBUG
     } messages_t;
 
     inline const std::string _get_class_name(const std::string &class_name) {
@@ -197,6 +200,8 @@ namespace nvi {
             return "DEBUG_CONFIG_TOKENS";
         case DEBUG_CONFIG:
             return "DEBUG_CONFIG";
+        case CONFIG_FILE_ERROR:
+            return "CONFIG_FILE_ERROR";
         case EMPTY_KEY_WARNING:
             return "EMPTY_KEY_WARNING";
         case INTERPOLATION_WARNING:
@@ -221,12 +226,14 @@ namespace nvi {
             return "COMMAND_FAILED_TO_RUN";
         case NO_ACTION_ERROR:
             return "NO_ACTION_ERROR";
-        case FILE_ERROR:
-            return "FILE_ERROR";
+        case DEBUG_LEXER:
+            return "DEBUG_LEXER";
+        case LEXER_FILE_ENOENT_ERROR:
+            return "LEXER_FILE_ENOENT_ERROR";
+        case LEXER_FILE_ERROR:
+            return "LEXER_FILE_ERROR";
         case FILE_ENOENT_ERROR:
             return "FILE_ENOENT_ERROR";
-        case DEBUG:
-            return "DEBUG";
         case NVI_VERSION:
             return "NVI_VERSION";
         case DEBUG_ARG:

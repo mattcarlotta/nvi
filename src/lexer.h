@@ -1,7 +1,9 @@
 #ifndef NVI_ENV_LEXER_H
 #define NVI_ENV_LEXER_H
 
+#include "lexer_token.h"
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include <cstddef>
 #include <filesystem>
@@ -11,23 +13,6 @@
 #include <vector>
 
 namespace nvi {
-    enum class ValueType { normal, interpolated, multiline, unknown };
-
-    struct ValueToken {
-        ValueType type;
-        std::optional<std::string> value{};
-        size_t byte = 0;
-        size_t line = 0;
-    };
-
-    struct Token {
-        std::optional<std::string> key = "";
-        std::vector<ValueToken> values{};
-        std::string file;
-    };
-
-    typedef std::vector<Token> tokens_t;
-
     /**
      * @detail Lexes one or many .env files into tokens.
      * @param `options` initialize parser with the following required option: `files`, followed by optional options:
@@ -54,8 +39,6 @@ namespace nvi {
         std::optional<char> peek(int offset = 0) const noexcept;
         char commit() noexcept;
         void skip(int offset = 1) noexcept;
-        void log(const messages_t &code) const noexcept;
-        std::string get_value_type_string(const ValueType &vt) const noexcept;
         void reset_byte_count() noexcept;
         void increase_byte_count(size_t offset = 1) noexcept;
         void increase_line_count() noexcept;
@@ -70,6 +53,7 @@ namespace nvi {
         std::filesystem::path _file_path;
         std::vector<Token> _tokens;
         std::string _token_key;
+        Logger logger;
     };
 }; // namespace nvi
 #endif

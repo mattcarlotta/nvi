@@ -33,7 +33,7 @@ namespace nvi {
 
         std::ifstream config_file{_file_path, std::ios_base::in};
         if (not config_file.is_open()) {
-            logger.fatal(FILE_ERROR);
+            logger.fatal(CONFIG_FILE_ERROR);
         }
 
         _file = std::string{std::istreambuf_iterator{config_file}, {}};

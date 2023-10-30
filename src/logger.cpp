@@ -1,6 +1,7 @@
 #include "logger.h"
 #include "config_token.h"
 #include "format.h"
+#include "lexer_token.h"
 #include "log.h"
 #include "version.h"
 #include <cstdlib>
@@ -36,6 +37,13 @@ namespace nvi {
                    const ValueToken &value_token, const std::string &interp_key, const std::string &value)
         : _code(code), _options(options), _key(key), _token(token), _value_token(value_token), _interp_key(interp_key),
           _value(value) {}
+
+    // lexer
+    Logger::Logger(logger_t code, const options_t &options, const std::filesystem::path &file_path,
+                   const std::vector<Token> &tokens, const size_t &line, const size_t &byte,
+                   const std::string &file_name, const std::string &token_key)
+        : _code(code), _options(options), _file_path(file_path), _tokens(tokens), _byte(byte), _line(line),
+          _file_name(file_name), _token_key(token_key) {}
 
     void Logger::log_debug(const messages_t &message_code, const std::string &message) const noexcept {
         std::clog << "[nvi] (Logger::" << _get_logger_from_code(_code) << "::" << _get_string_from_code(message_code)
@@ -149,6 +157,26 @@ namespace nvi {
                               (_options.files.size() > 1 ? "s" : ""));
             break;
         }
+        // LEXER
+        case DEBUG_LEXER: {
+            for (const Token &token : _tokens) {
+                std::stringstream ss;
+                ss << "Created a token key " << std::quoted(token.key.value());
+                ss << " with the following tokenized values(" << token.values.size() << "): \n";
+                for (size_t index = 0; index < token.values.size(); ++index) {
+                    const ValueToken &vt = token.values.at(index);
+                    ss << std::setw(4) << index + 1 << ": [" << token.file << "::" << vt.line << "::" << vt.byte
+                       << "] ";
+                    ss << "A token value of " << std::quoted((vt.value.has_value() ? vt.value.value() : ""));
+                    ss << " has been created as " << get_value_type_string(vt.type) << ".";
+                    if (index + 1 != token.values.size()) {
+                        ss << '\n';
+                    }
+                }
+                log_debug(message_code, ss.str());
+            }
+            break;
+        }
         default:
             break;
         }
@@ -240,7 +268,7 @@ for more detailed information, please see the man documentation or the README.)"
                         _file_path.c_str());
             break;
         }
-        case FILE_ERROR: {
+        case CONFIG_FILE_ERROR: {
             message = _format(
                 R"(Unable to open "%s". The .nvi configuration file is either invalid, has restricted access, or may be corrupted.)",
                 _file_path.c_str());
@@ -395,6 +423,34 @@ for more detailed information, please see the man documentation or the README.)"
             message = _format(
                 R"(The following ENV keys were marked as required: "%s", but they were undefined after the list of .env files were parsed.)",
                 fmt::join(_options.required_envs, ", ").c_str());
+            break;
+        }
+        // LEXER
+        case INTERPOLATION_ERROR: {
+            message = _format(
+                R"([%s:%d:%d] The key "%s" contains an interpolated "{" operator, but appears to be missing a closing "}" operator.)",
+                _file_name.c_str(), _line, _byte, _token_key.c_str());
+            break;
+        }
+        case LEXER_FILE_ENOENT_ERROR: {
+            message = _format(R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
+                              _file_path.c_str());
+            break;
+        }
+        case LEXER_FILE_ERROR: {
+            message = _format(
+                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
+                _file_path.c_str());
+            break;
+        }
+        case FILE_EXTENSION_ERROR: {
+            message = _format(R"(The "%s" file is not a valid ".env" file extension.)", _file_name.c_str());
+            break;
+        }
+        case EMPTY_RESPONSE_ENVS_ERROR: {
+            message = _format(
+                R"(Unable to parse any ENVs! Please ensure the "%s" project has a(n) "%s" environment with at least 1 ENV.)",
+                _file_path.c_str(), _file_name.c_str());
             break;
         }
         default:
