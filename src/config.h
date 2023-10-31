@@ -31,7 +31,7 @@ namespace nvi {
         public:
         Config(options_t &options);
         Config *generate_options() noexcept;
-        const std::vector<ConfigToken> &get_tokens() const noexcept;
+        const config_tokens_t &get_tokens() const noexcept;
 
         private:
         const std::string extract_value_within(char delimiter, bool error_at_new_line = false) noexcept;
@@ -41,7 +41,6 @@ namespace nvi {
         void skip_to_eol() noexcept;
 
         options_t &_options;
-        Logger logger;
         std::unordered_map<std::string_view, CONFIG_KEY> CONFIG_KEYS{
             {"api", CONFIG_KEY::API},
             {"debug", CONFIG_KEY::DEBUG},
@@ -57,11 +56,12 @@ namespace nvi {
         std::string _file;
         std::string _config;
         size_t _byte = 0;
-        std::vector<ConfigToken> _config_tokens;
+        config_tokens_t _config_tokens;
         std::filesystem::path _file_path;
         std::string _command;
         std::string _key;
         std::string _value_type;
+        Logger logger;
     };
 }; // namespace nvi
 

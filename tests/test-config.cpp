@@ -1,4 +1,5 @@
 #include "config.h"
+#include "config_token.h"
 #include "options.h"
 #include "gtest/gtest.h"
 #include <string>
@@ -7,7 +8,7 @@
 class Parse_Config_File : public testing::Test {
     protected:
     static nvi::options_t config_options;
-    static std::vector<nvi::ConfigToken> tokens;
+    static nvi::config_tokens_t tokens;
 
     public:
     static void SetUpTestSuite() {
@@ -20,7 +21,7 @@ class Parse_Config_File : public testing::Test {
 };
 
 nvi::options_t Parse_Config_File::config_options;
-std::vector<nvi::ConfigToken> Parse_Config_File::tokens;
+nvi::config_tokens_t Parse_Config_File::tokens;
 
 TEST_F(Parse_Config_File, generate_tokens) { EXPECT_EQ(tokens.size(), 10); }
 

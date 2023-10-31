@@ -23,8 +23,8 @@ namespace nvi {
 
     // config
     Logger::Logger(logger_t code, const options_t &options, const std::string &command,
-                   const std::vector<ConfigToken> &config_tokens, const std::filesystem::path &file_path,
-                   const std::string &key, const std::string &value_type)
+                   const config_tokens_t &config_tokens, const std::filesystem::path &file_path, const std::string &key,
+                   const std::string &value_type)
         : _code(code), _options(options), _command(command), _config_tokens(config_tokens), _file_path(file_path),
           _key(key), _value_type(value_type) {}
 
@@ -42,8 +42,8 @@ namespace nvi {
 
     // lexer
     Logger::Logger(logger_t code, const options_t &options, const std::filesystem::path &file_path,
-                   const std::vector<Token> &tokens, const size_t &line, const size_t &byte,
-                   const std::string &file_name, const std::string &token_key)
+                   const tokens_t &tokens, const size_t &line, const size_t &byte, const std::string &file_name,
+                   const std::string &token_key)
         : _code(code), _options(options), _file_path(file_path), _tokens(tokens), _byte(byte), _line(line),
           _file_name(file_name), _token_key(token_key) {}
 

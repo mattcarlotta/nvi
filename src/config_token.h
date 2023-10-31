@@ -30,6 +30,8 @@ namespace nvi {
         std::optional<std::variant<bool, std::string, std::vector<std::string>>> value{};
     };
 
+    typedef std::vector<ConfigToken> config_tokens_t;
+
     struct ConfigTokenToString {
         std::string operator()(const bool &b) const { return b > 0 ? "true" : "false"; }
         std::string operator()(const std::string &s) const { return s; }

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "config_token.h"
 #include "format.h"
 #include "log.h"
 #include "options.h"
@@ -201,7 +202,7 @@ namespace nvi {
         config_file.close();
     };
 
-    const std::vector<ConfigToken> &Config::get_tokens() const noexcept { return _config_tokens; }
+    const config_tokens_t &Config::get_tokens() const noexcept { return _config_tokens; }
 
     Config *Config::generate_options() noexcept {
         for (const ConfigToken &ct : _config_tokens) {

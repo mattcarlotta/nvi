@@ -23,8 +23,8 @@ namespace nvi {
                const std::string &invalid_flag);
         // config
         Logger(logger_t code, const options_t &options, const std::string &command,
-               const std::vector<ConfigToken> &config_tokens, const std::filesystem::path &file_path,
-               const std::string &key, const std::string &value_type);
+               const config_tokens_t &config_tokens, const std::filesystem::path &file_path, const std::string &key,
+               const std::string &value_type);
 
         // api
         Logger(logger_t code, const options_t &options, const CURLcode &res, const std::string &res_data,
@@ -50,11 +50,11 @@ namespace nvi {
         const std::string empty_string = "";
         const unsigned int empty_number = 0;
         const size_t empty_size_number = 0;
-        const std::vector<ConfigToken> empty_config_token = {};
+        const config_tokens_t empty_config_token = {};
         const std::filesystem::path empty_path = "";
         const CURLcode empty_curl = CURLE_UNSUPPORTED_PROTOCOL;
         const Token empty_token = {std::optional<std::string>{}, std::vector<ValueToken>{}, ""};
-        const std::vector<Token> empty_tokens = std::vector<Token>{empty_token};
+        const tokens_t empty_tokens = std::vector<Token>{empty_token};
         const ValueToken empty_value_token = {ValueType::unknown, std::optional<std::string>{}, 0, 0};
 
         const logger_t _code = LOGGER::UNKNOWN_LOG;
