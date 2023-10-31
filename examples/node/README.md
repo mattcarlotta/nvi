@@ -19,7 +19,7 @@ nvi -- node index.mjs
 nvi -- pnpm run mjs
 
 # assigning ENVs via .nvi
-nvi -- ts
+nvi --config ts
 # assigning ENVs and running a script command within package.json
 nvi -- pnpm run ts
 
