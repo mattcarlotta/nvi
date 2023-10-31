@@ -2,9 +2,9 @@
 #include <iostream>
 #include <string>
 
-void assert(std::string key, std::string value) {
+void assert(const std::string &key, const std::string &value) {
     const char *env_value = std::getenv(key.c_str());
-    const std::string expected_value = env_value != nullptr ? std::string{env_value} : "";
+    const std::string expected_value = (env_value != nullptr ? std::string(env_value) : "");
 
     if (expected_value == value) {
         return;
