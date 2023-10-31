@@ -1,6 +1,6 @@
-% nvi(1) CLI Documentation v0.1.2
+% nvi(1) CLI Documentation v0.2.0
 % Matt Carlotta
-% 10-22-2023
+% 10-27-2023
 
 # NAME
 

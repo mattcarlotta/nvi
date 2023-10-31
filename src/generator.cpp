@@ -1,5 +1,7 @@
 #include "generator.h"
+#include "format.h"
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include "parser.h"
 #include <cerrno>
@@ -13,7 +15,7 @@ namespace nvi {
     inline constexpr char CLOSE_BRACE = '}'; // 0x7d
 
     Generator::Generator(const env_map_t &&env_map, const options_t &&options)
-        : _env_map(std::move(env_map)), _options(std::move(options)) {}
+        : _env_map(std::move(env_map)), _options(std::move(options)), logger(LOGGER::GENERATOR, _options) {}
 
     void Generator::set_or_print_envs() const noexcept {
         if (_options.commands.size()) {
@@ -22,6 +24,10 @@ namespace nvi {
             if (pid == 0) {
                 for (const auto &[key, value] : _env_map) {
                     setenv(key.c_str(), value.c_str(), 0);
+                    if (_options.debug) {
+                        logger.log_debug(DEBUG_GENERATOR_KEYVALUE, fmt::format(R"(Set process key "%s" to value "%s".)",
+                                                                               key.c_str(), value.c_str()));
+                    }
                 }
 
                 // NOTE: Unfortunately, have to set ENVs to the parent process because
@@ -30,14 +36,14 @@ namespace nvi {
                 // for example: "npm run dev" won't work because "npm" can't find "node"
                 execvp(_options.commands[0], _options.commands.data());
                 if (errno == ENOENT) {
-                    log(COMMAND_ENOENT_ERROR);
+                    logger.debug(COMMAND_ENOENT);
                     _exit(-1);
                 }
             } else if (pid > 0) {
                 int status;
                 wait(&status);
             } else {
-                log(COMMAND_FAILED_TO_RUN);
+                logger.fatal(COMMAND_FAILED_TO_RUN);
             }
         } else if (_options.print) {
             // print ENVs as a JSON formatted string to stdout
@@ -48,37 +54,7 @@ namespace nvi {
             }
             std::cout << CLOSE_BRACE << std::endl;
         } else if (not _options.save) {
-            log(NO_ACTION_ERROR);
+            logger.fatal(NO_ACTION_ERROR);
         }
-    }
-
-    void Generator::log(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
-        case COMMAND_ENOENT_ERROR: {
-            NVI_LOG_DEBUG(
-                COMMAND_ENOENT_ERROR,
-                R"(The specified command encountered an error. The command "%s" doesn't appear to exist or may not reside in a directory within the shell PATH.)",
-                _options.commands[0]);
-            break;
-        }
-        case COMMAND_FAILED_TO_RUN: {
-            NVI_LOG_ERROR_AND_EXIT(
-                COMMAND_FAILED_TO_RUN,
-                "Unable to run the specified command. See terminal logs for more information.",
-                NULL);
-            break;
-        }
-        case NO_ACTION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                NO_ACTION_ERROR,
-                R"(Running the CLI tool without any system commands nor a "print" or "save" flag won't do anything. Use flag "-h" or "--help" for more information.)",
-                NULL);
-            break;
-        }
-        default:
-            break;
-        }
-        // clang-format on
     }
 } // namespace nvi

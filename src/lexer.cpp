@@ -22,7 +22,9 @@ namespace nvi {
     inline constexpr char OPEN_BRACE = '{';      // 0x7b
     inline constexpr char CLOSE_BRACE = '}';     // 0x7d
 
-    Lexer::Lexer(const options_t &options) : _options(options) {}
+    Lexer::Lexer(const options_t &options)
+        : _options(options), logger(LOGGER::LEXER, options, _file_path, _tokens, _byte, _line, _file_name, _token_key) {
+    }
 
     std::vector<Token> Lexer::get_tokens() const noexcept { return _tokens; }
 
@@ -97,7 +99,7 @@ namespace nvi {
                     while (peek().has_value() && peek().value() != CLOSE_BRACE) {
                         if (peek().value() == LINE_DELIMITER) {
                             _token_key = token.key.value();
-                            log(INTERPOLATION_ERROR);
+                            logger.fatal(INTERPOLATION_ERROR);
                         } else {
                             value.push_back(commit());
                         }
@@ -200,13 +202,13 @@ namespace nvi {
 
         _file = envs;
         if (not _file.length()) {
-            log(EMPTY_RESPONSE_ENVS_ERROR);
+            logger.fatal(EMPTY_RESPONSE_ENVS_ERROR);
         }
 
         parse_file();
 
         if (_options.debug) {
-            log(DEBUG);
+            logger.debug(DEBUG_LEXER);
         }
 
         return this;
@@ -223,21 +225,21 @@ namespace nvi {
 
             _file_path = std::filesystem::current_path() / _options.dir / _file_name;
             if (not std::filesystem::exists(_file_path)) {
-                log(FILE_ENOENT_ERROR);
+                logger.fatal(LEXER_FILE_ENOENT_ERROR);
             }
 
             if (std::string{_file_path.extension()}.find(".env") == std::string::npos &&
                 std::string{_file_path.stem()}.find(".env") == std::string::npos) {
-                log(FILE_EXTENSION_ERROR);
+                logger.fatal(FILE_EXTENSION_ERROR);
             }
 
             _env_file = std::ifstream{_file_path, std::ios_base::in};
             if (not _env_file.is_open()) {
-                log(FILE_ERROR);
+                logger.fatal(LEXER_FILE_ERROR);
             }
             _file = std::string{std::istreambuf_iterator{_env_file}, {}};
             if (not _file.length()) {
-                log(EMPTY_ENVS_ERROR);
+                logger.fatal(EMPTY_ENVS_ERROR);
             }
 
             parse_file();
@@ -246,89 +248,9 @@ namespace nvi {
         }
 
         if (_options.debug) {
-            log(DEBUG);
+            logger.debug(DEBUG_LEXER);
         }
 
         return this;
-    }
-
-    std::string Lexer::get_value_type_string(const ValueType &vt) const noexcept {
-        switch (vt) {
-        case ValueType::normal:
-            return "a normal value";
-        case ValueType::interpolated:
-            return "an interpolated key";
-        default:
-            return "a multiline value";
-        }
-    }
-
-    void Lexer::log(const messages_t &code) const noexcept {
-        // clang-format off
-        switch (code) {
-        case INTERPOLATION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                INTERPOLATION_ERROR,
-                R"([%s:%d:%d] The key "%s" contains an interpolated "{" operator, but appears to be missing a closing "}" operator.)",
-                _file_name.c_str(), _line, _byte, _token_key.c_str());
-            break;
-        }
-           case FILE_ENOENT_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ENOENT_ERROR,
-                R"(Unable to locate "%s". The .env file doesn't appear to exist at this path!)",
-                _file_path.c_str());
-            break;
-        }
-        case FILE_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_ERROR,
-                R"(Unable to open "%s". The .env file is either invalid, has restricted access, or may be corrupted.)",
-                _file_path.c_str());
-            break;
-        }
-        case FILE_EXTENSION_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                FILE_EXTENSION_ERROR,
-                R"(The "%s" file is not a valid ".env" file extension.)",
-                _file_name.c_str());
-            break;
-        } 
-        case EMPTY_RESPONSE_ENVS_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                EMPTY_RESPONSE_ENVS_ERROR,
-                R"(Unable to parse any ENVs! Please ensure the "%s" project has a(n) "%s" environment with at least 1 ENV.)",
-                _file_path.c_str(), _file_name.c_str());
-            break;
-        }
-        case EMPTY_ENVS_ERROR: {
-            NVI_LOG_ERROR_AND_EXIT(
-                EMPTY_ENVS_ERROR,
-                R"(Unable to parse any ENVs! Please ensure the "%s" file is not empty.)",
-                _file.c_str());
-            break;
-        }
-        case DEBUG: {
-            for (const Token &token : _tokens) {
-                std::stringstream ss;
-                ss << "Created a token key " << std::quoted(token.key.value());
-                ss << " with the following tokenized values(" << token.values.size() << "): \n";
-                for (size_t index = 0; index < token.values.size(); ++index) {
-                    const ValueToken &vt = token.values.at(index);
-                    ss << std::setw(4) << index + 1 << ": [" << token.file << "::" << vt.line << "::" << vt.byte << "] ";
-                    ss << "A token value of " << std::quoted((vt.value.has_value() ? vt.value.value() : ""));
-                    ss << " has been created as " << get_value_type_string(vt.type) << ".";
-                    if(index + 1 != token.values.size()) {
-                        ss << '\n';
-                    }
-                }
-                NVI_LOG_DEBUG(DEBUG, ss.str().c_str(), NULL);
-            }
-            break;
-        }
-        default:
-            break;
-        }
-        // clang-format on
     }
 }; // namespace nvi

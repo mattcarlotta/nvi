@@ -2,6 +2,7 @@
 #define NVI_ARG_H
 
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include <string>
 #include <string_view>
@@ -47,7 +48,6 @@ namespace nvi {
         std::vector<std::string> parse_multi_arg(const messages_t &code) noexcept;
         void parse_command_args() noexcept;
         void remove_invalid_flag() noexcept;
-        void log(const messages_t &code) const noexcept;
 
         int _argc;
         char **_argv;
@@ -72,6 +72,7 @@ namespace nvi {
         std::string _invalid_flag;
         std::string _invalid_args;
         std::string _command;
+        Logger logger;
     };
 } // namespace nvi
 

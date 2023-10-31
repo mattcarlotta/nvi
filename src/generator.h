@@ -2,6 +2,7 @@
 #define NVI_ENV_GENERATOR_H
 
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include "parser.h"
 
@@ -12,10 +13,9 @@ namespace nvi {
         void set_or_print_envs() const noexcept;
 
         private:
-        void log(const messages_t &code) const noexcept;
-
         env_map_t _env_map;
         options_t _options;
+        Logger logger;
     };
 } // namespace nvi
 

@@ -2,6 +2,7 @@
 #define NVI_API_H
 
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include <cstddef>
 #include <curl/curl.h>
@@ -37,7 +38,6 @@ namespace nvi {
         }
 
         private:
-        void log(const messages_t &code) const noexcept;
         void save_envs_to_disk() noexcept;
         void fetch_data(std::string REQ_URL) noexcept;
         std::string get_input_selection_for(std::string type) noexcept;
@@ -50,6 +50,7 @@ namespace nvi {
         std::filesystem::path _env_file_path;
         unsigned int _res_status_code = 0;
         std::string _api_url;
+        Logger logger;
     };
 }; // namespace nvi
 #endif

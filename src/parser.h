@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include "log.h"
+#include "logger.h"
 #include "options.h"
 #include <cstddef>
 #include <fstream>
@@ -39,8 +40,6 @@ namespace nvi {
         Parser *parse_tokens() noexcept;
 
         private:
-        void log(const messages_t &code) const noexcept;
-
         const tokens_t _tokens;
         options_t &_options;
         Token _token;
@@ -50,6 +49,7 @@ namespace nvi {
         std::string _value;
         std::vector<std::string> _undefined_keys;
         env_map_t _env_map;
+        Logger logger;
     };
 }; // namespace nvi
 #endif
