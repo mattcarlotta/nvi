@@ -15,9 +15,11 @@ namespace nvi {
         size_t line = 0;
     };
 
+    typedef std::vector<ValueToken> value_tokens_t;
+
     struct Token {
         std::optional<std::string> key = "";
-        std::vector<ValueToken> values{};
+        value_tokens_t values{};
         std::string file;
     };
 
@@ -34,4 +36,5 @@ namespace nvi {
         }
     }
 } // namespace nvi
+
 #endif

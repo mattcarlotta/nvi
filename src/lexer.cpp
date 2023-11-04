@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "lexer_token.h"
 #include "log.h"
 #include <cctype>
 #include <cstddef>
@@ -26,7 +27,7 @@ namespace nvi {
         : _options(options), logger(LOGGER::LEXER, options, _file_path, _tokens, _byte, _line, _file_name, _token_key) {
     }
 
-    std::vector<Token> Lexer::get_tokens() const noexcept { return _tokens; }
+    tokens_t Lexer::get_tokens() const noexcept { return _tokens; }
 
     std::optional<char> Lexer::peek(int offset) const noexcept {
         if (_index + offset >= _file.length()) {

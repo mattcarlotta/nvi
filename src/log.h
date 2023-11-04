@@ -227,7 +227,6 @@ namespace nvi {
             return "UNKNOWN_MESSAGE_TYPE";
         }
     }
-
 } // namespace nvi
 
 #endif

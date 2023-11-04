@@ -53,7 +53,7 @@ namespace nvi {
         const config_tokens_t empty_config_token = {};
         const std::filesystem::path empty_path = "";
         const CURLcode empty_curl = CURLE_UNSUPPORTED_PROTOCOL;
-        const Token empty_token = {std::optional<std::string>{}, std::vector<ValueToken>{}, ""};
+        const Token empty_token = {std::optional<std::string>{}, value_tokens_t{}, ""};
         const tokens_t empty_tokens = std::vector<Token>{empty_token};
         const ValueToken empty_value_token = {ValueType::unknown, std::optional<std::string>{}, 0, 0};
 
@@ -92,4 +92,5 @@ namespace nvi {
         const std::string &_token_key = empty_string;
     };
 }; // namespace nvi
+
 #endif

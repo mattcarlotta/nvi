@@ -470,5 +470,4 @@ for more detailed information, please see the man documentation or the README.)"
         }
         std::exit(EXIT_SUCCESS);
     }
-
 } // namespace nvi

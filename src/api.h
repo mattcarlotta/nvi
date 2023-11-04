@@ -53,4 +53,5 @@ namespace nvi {
         Logger logger;
     };
 }; // namespace nvi
+
 #endif
