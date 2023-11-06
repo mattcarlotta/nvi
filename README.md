@@ -10,7 +10,9 @@ nvi (pronounced "en-vee") is a stand-alone .env file parser for interpolating an
 
 [Requirements](https://github.com/mattcarlotta/nvi/wiki/Requirements)
 
-[Install From Source](https://github.com/mattcarlotta/nvi/wiki/Install-From-Source)
+[Install From Source (*recommended*)](https://github.com/mattcarlotta/nvi/wiki/Install-From-Source)
+
+[Install From Pre‐built Assets](https://github.com/mattcarlotta/nvi/wiki/Install-From-Pre%E2%80%90built-Assets)
 
 [Custom Compiler Builds](https://github.com/mattcarlotta/nvi/wiki/Custom-Compiler-Builds)
 
