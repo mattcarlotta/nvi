@@ -40,8 +40,8 @@ jobs:
 
       - name: install dependencies
         run: |
-          apt-get -y update
-          apt-get -y install cmake make curl clang++ g++ 
+          sudo apt-get -y update
+          sudo apt-get -y install cmake make curl clang++ g++ 
 
       - name: build
         run: |
