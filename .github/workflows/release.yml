@@ -41,7 +41,7 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get -y update
-          sudo apt-get -y install cmake make curl clang++ g++ 
+          sudo apt-get -y install libcurl4-openssl-dev
 
       - name: build
         run: |
@@ -56,7 +56,8 @@ jobs:
 
       - name: compress
         run: |
-          mkdir nvi
+          mkdir -p nvi/bin
+          mkdir -p nvi/man
           cp ./src/nvi nvi/bin/
           cp ./docs/nvi.1 nvi/man/
           tar -zcvf ./nvi-linux-x86_64.tar.gz nvi
@@ -79,10 +80,10 @@ jobs:
           submodules: "recursive"
           fetch-depth: 0
 
-      - name: install dependencies
-        run: |
-          brew update
-          brew install cmake make curl clang++ g++ 
+      # - name: install dependencies
+      #   run: |
+      #     brew update
+      #     brew install cmake make curl clang++ g++ 
 
       - name: build
         run: |
@@ -97,7 +98,8 @@ jobs:
 
       - name: compress
         run: |
-          mkdir nvi
+          mkdir -p nvi/bin
+          mkdir -p nvi/man
           cp ./src/nvi nvi/bin/
           cp ./docs/nvi.1 nvi/man/
           tar -zcvf ./nvi-darwin-x86_64.tar.gz nvi
