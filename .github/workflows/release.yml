@@ -38,10 +38,10 @@ jobs:
           submodules: "recursive"
           fetch-depth: 0
 
-      # - name: install dependencies
-      #   run: |
-      #     apt-get -y update
-      #     apt-get -y install cmake make curl clang++ g++ 
+      - name: install dependencies
+        run: |
+          apt-get -y update
+          apt-get -y install cmake make curl clang++ g++ 
 
       - name: build
         run: |
@@ -79,10 +79,10 @@ jobs:
           submodules: "recursive"
           fetch-depth: 0
 
-      # - name: install dependencies
-      #   run: |
-      #     brew update
-      #     brew install cmake make curl clang++ g++ 
+      - name: install dependencies
+        run: |
+          brew update
+          brew install cmake make curl clang++ g++ 
 
       - name: build
         run: |
