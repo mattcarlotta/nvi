@@ -43,6 +43,7 @@ namespace nvi {
                     parse_command_args();
                     goto exit_flag_parsing;
                 }
+                break;
             }
             case FLAG::FILES: {
                 _options.files = parse_multi_arg(FILES_FLAG_ERROR);
@@ -50,6 +51,7 @@ namespace nvi {
             }
             case FLAG::HELP: {
                 logger.log_and_exit(HELP_DOC);
+                break;
             }
             case FLAG::PRINT: {
                 _options.print = true;
@@ -69,6 +71,7 @@ namespace nvi {
             }
             case FLAG::VERSION: {
                 logger.log_and_exit(NVI_VERSION);
+                break;
             }
             default: {
                 remove_invalid_flag();
