@@ -45,8 +45,8 @@ jobs:
 
       - name: build
         run: |
-          cmake -DCOMPILE_TESTS=ON .
-          make
+          cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=ON -DUSE_LOCALHOST_API=OFF .
+          cmake --build . -j $(nproc --all)
 
       - name: test
         run: |
@@ -87,8 +87,8 @@ jobs:
 
       - name: build
         run: |
-          cmake -DCOMPILE_TESTS=ON .
-          make
+          cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=ON -DUSE_LOCALHOST_API=OFF .
+          cmake --build . -j $(sysctl -n hw.ncpu)
 
       - name: test
         run: |
@@ -170,12 +170,12 @@ jobs:
             TAG_NAME=${{ github.ref }}
             echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
 
-        - id: tag
-          run: |
-            echo "SUBJECT=nvi release build" >> $GITHUB_ENV
+        # - id: tag
+        #   run: |
+        #     echo "SUBJECT=nvi release build" >> $GITHUB_ENV
 
         - name: publish release
           env:
             DEBUG: api
           run: |
-            gh release create $TAG_NAME --title "$TAG_NAME" --target $GITHUB_SHA nvi-darwin/* nvi-linux/*
+            gh release create $TAG_NAME --generate-notes --title "$TAG_NAME" --target $GITHUB_SHA nvi-darwin/* nvi-linux/*

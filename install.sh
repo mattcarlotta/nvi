@@ -85,7 +85,7 @@ compile_for_mac() {
 }
 
 compile_for_gnu_linux() {
-    local cpu_core_count=$(grep -m 1 'cpu cores' /proc/cpuinfo | sed 's/.*: //')
+    local cpu_core_count=$(nproc --all)
     compile_bin $cpu_core_count
 }
 
