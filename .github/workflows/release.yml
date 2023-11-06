@@ -35,7 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-        submodules: "recursive"
+          submodules: "recursive"
+          fetch-depth: 0
 
       # - name: install dependencies
       #   run: |
@@ -75,7 +76,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-        submodules: "recursive"
+          submodules: "recursive"
+          fetch-depth: 0
 
       # - name: install dependencies
       #   run: |
@@ -107,49 +109,49 @@ jobs:
             ./nvi-darwin-x86_64.tar.gz
           retention-days: 1
 
-  macos_aarch:
-    runs-on: macos-13-xlarge
-    needs: tagname
-    env:
-      RELEASE_TAG_NAME: ${{ needs.tagname.outputs.tag_name }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-        submodules: "recursive"
+  # macos_aarch:
+  #   runs-on: macos-13-xlarge
+  #   needs: tagname
+  #   env:
+  #     RELEASE_TAG_NAME: ${{ needs.tagname.outputs.tag_name }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #       submodules: "recursive"
 
-      # - name: install dependencies
-      #   run: |
-      #     brew update
-      #     brew install cmake make curl clang++ g++ 
+  #     # - name: install dependencies
+  #     #   run: |
+  #     #     brew update
+  #     #     brew install cmake make curl clang++ g++ 
 
-      - name: build
-        run: |
-          cmake -DCOMPILE_TESTS=ON .
-          make
+  #     - name: build
+  #       run: |
+  #         cmake -DCOMPILE_TESTS=ON .
+  #         make
 
-      - name: test
-        run: |
-          cd tests
-          ./tests
-          cd ../
+  #     - name: test
+  #       run: |
+  #         cd tests
+  #         ./tests
+  #         cd ../
 
-      - name: compress
-        run: |
-          mkdir nvi
-          cp ./src/nvi nvi/bin/
-          cp ./docs/nvi.1 nvi/man/
-          tar -zcvf ./nvi-darwin-aarch64.tar.gz nvi
+  #     - name: compress
+  #       run: |
+  #         mkdir nvi
+  #         cp ./src/nvi nvi/bin/
+  #         cp ./docs/nvi.1 nvi/man/
+  #         tar -zcvf ./nvi-darwin-aarch64.tar.gz nvi
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: nvi-darwin-aarch64
-          path: |
-            ./nvi-darwin-aarch64.tar.gz
-          retention-days: 1
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: nvi-darwin-aarch64
+  #         path: |
+  #           ./nvi-darwin-aarch64.tar.gz
+  #         retention-days: 1
 
   publish:
       if: github.event_name != "pull_request"
-      needs: [linux, macos, macos_aarch]
+      needs: [linux, macos] # macos_aarch
       runs-on: ubuntu-latest
       env:
         GH_REPO: ${{ github.repository }}
