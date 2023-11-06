@@ -106,7 +106,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: nvi-darwin-x86_64
+          name: nvi-darwin
           path: |
             ./nvi-darwin-x86_64.tar.gz
           retention-days: 1
@@ -178,4 +178,4 @@ jobs:
           env:
             DEBUG: api
           run: |
-            gh release create $TAG_NAME --title "$TAG_NAME" --target $GITHUB_SHA nvi-darwin-*/* nvi-linux-*/*
+            gh release create $TAG_NAME --title "$TAG_NAME" --target $GITHUB_SHA nvi-darwin/* nvi-linux/*
