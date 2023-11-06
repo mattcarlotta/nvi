@@ -107,8 +107,8 @@ jobs:
             ./nvi-darwin-x86_64.tar.gz
           retention-days: 1
 
-  macos_arm:
-    runs-on: macos-13-arm64
+  macos_aarch:
+    runs-on: macos-13-xlarge
     needs: tagname
     env:
       RELEASE_TAG_NAME: ${{ needs.tagname.outputs.tag_name }}
@@ -138,18 +138,18 @@ jobs:
           mkdir nvi
           cp ./src/nvi nvi/bin/
           cp ./docs/nvi.1 nvi/man/
-          tar -zcvf ./nvi-darwin-arm64.tar.gz nvi
+          tar -zcvf ./nvi-darwin-aarch64.tar.gz nvi
 
       - uses: actions/upload-artifact@v3
         with:
-          name: nvi-darwin-arm64
+          name: nvi-darwin-aarch64
           path: |
-            ./nvi-darwin-arm64.tar.gz
+            ./nvi-darwin-aarch64.tar.gz
           retention-days: 1
 
   publish:
       if: github.event_name != "pull_request"
-      needs: [linux, macos, macos_arm]
+      needs: [linux, macos, macos_aarch]
       runs-on: ubuntu-latest
       env:
         GH_REPO: ${{ github.repository }}
