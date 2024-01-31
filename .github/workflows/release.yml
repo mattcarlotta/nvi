@@ -9,173 +9,77 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  tagname:
-    runs-on: ubuntu-latest
-    outputs:
-      tag_name: ${{ steps.tag.outputs.tag }}
-    steps:
-      - if: github.event_name == 'push'
-        run: |
-          TAG_NAME=${{ github.ref }}
-          echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
+  build:
+      name: ${{ matrix.toolchain.name }}
+      runs-on: ${{ matrix.toolchain.runs_on }}
+      strategy:
+        fail-fast: true
+        matrix:
+          toolchain:
+            - {runs_on: ubuntu-latest, name: "Linux x86_64", archive_name: "linux-x86_64", cpus: "$(nproc --all)"}
+            - {runs_on: macos-11, name: "macOS x86_64", archive_name: "macos-x86_64", cpus: "$(sysctl -n hw.ncpu)"}
+            - {runs_on: macos-14, name: "macOS AArch64", archive_name: "macos-aarch64", cpus: "$(sysctl -n hw.ncpu)"}
 
-      - id: vars
-        shell: bash
-        run: echo "sha_short=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            submodules: "recursive"
+            fetch-depth: 0
 
-      - id: tag
-        run: echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+        - name: install dependencies
+          if: ${{ matrix.toolchain.archive_name == 'linux-x86_64' }}
+          run: |
+            sudo apt-get -y update
+            sudo apt-get -y install libcurl4-openssl-dev
 
-  linux:
-    runs-on: ubuntu-latest
-    # container: ubuntu-latest
-    needs: tagname
-    env:
-      RELEASE_TAG_NAME: ${{ needs.tagname.outputs.tag_name }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "recursive"
-          fetch-depth: 0
+        - name: build
+          run: |
+            cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=ON -DUSE_LOCALHOST_API=OFF .
+            cmake --build . -j ${{ matrix.toolchain.cpus }}
 
-      - name: install dependencies
-        run: |
-          sudo apt-get -y update
-          sudo apt-get -y install libcurl4-openssl-dev
+        - name: test
+          run: |
+            cd tests
+            ./tests
+            cd ../
 
-      - name: build
-        run: |
-          cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=ON -DUSE_LOCALHOST_API=OFF .
-          cmake --build . -j $(nproc --all)
+        - name: compress
+          run: |
+            mkdir -p nvi/bin
+            mkdir -p nvi/man
+            cp ./src/nvi nvi/bin/
+            cp ./docs/nvi.1 nvi/man/
+            tar -zcvf ./nvi-${{ matrix.toolchain.archive_name }}.tar.gz nvi
 
-      - name: test
-        run: |
-          cd tests
-          ./tests
-          cd ../
-
-      - name: compress
-        run: |
-          mkdir -p nvi/bin
-          mkdir -p nvi/man
-          cp ./src/nvi nvi/bin/
-          cp ./docs/nvi.1 nvi/man/
-          tar -zcvf ./nvi-linux-x86_64.tar.gz nvi
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: nvi-linux
-          path: |
-            ./nvi-linux-x86_64.tar.gz
-          retention-days: 1
+        - uses: actions/upload-artifact@v4
+          with:
+            if-no-files-found: error
+            name: nvi-${{ matrix.toolchain.archive_name }}
+            path: nvi-${{ matrix.toolchain.archive_name }}.tar.gz
+            retention-days: 1
   
-  macos:
-    runs-on: macos-12
-    needs: tagname
-    env:
-      RELEASE_TAG_NAME: ${{ needs.tagname.outputs.tag_name }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "recursive"
-          fetch-depth: 0
-
-      # - name: install dependencies
-      #   run: |
-      #     brew update
-      #     brew install cmake make curl clang++ g++ 
-
-      - name: build
-        run: |
-          cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=ON -DUSE_LOCALHOST_API=OFF .
-          cmake --build . -j $(sysctl -n hw.ncpu)
-
-      - name: test
-        run: |
-          cd tests
-          ./tests
-          cd ../
-
-      - name: compress
-        run: |
-          mkdir -p nvi/bin
-          mkdir -p nvi/man
-          cp ./src/nvi nvi/bin/
-          cp ./docs/nvi.1 nvi/man/
-          tar -zcvf ./nvi-darwin-x86_64.tar.gz nvi
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: nvi-darwin
-          path: |
-            ./nvi-darwin-x86_64.tar.gz
-          retention-days: 1
-
-  # macos_aarch:
-  #   runs-on: macos-13-xlarge
-  #   needs: tagname
-  #   env:
-  #     RELEASE_TAG_NAME: ${{ needs.tagname.outputs.tag_name }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #       submodules: "recursive"
-
-  #     # - name: install dependencies
-  #     #   run: |
-  #     #     brew update
-  #     #     brew install cmake make curl clang++ g++ 
-
-  #     - name: build
-  #       run: |
-  #         cmake -DCOMPILE_TESTS=ON .
-  #         make
-
-  #     - name: test
-  #       run: |
-  #         cd tests
-  #         ./tests
-  #         cd ../
-
-  #     - name: compress
-  #       run: |
-  #         mkdir nvi
-  #         cp ./src/nvi nvi/bin/
-  #         cp ./docs/nvi.1 nvi/man/
-  #         tar -zcvf ./nvi-darwin-aarch64.tar.gz nvi
-
-  #     - uses: actions/upload-artifact@v3
-  #       with:
-  #         name: nvi-darwin-aarch64
-  #         path: |
-  #           ./nvi-darwin-aarch64.tar.gz
-  #         retention-days: 1
-
   publish:
       if: github.event_name != 'pull_request'
-      needs: [linux, macos] # macos_aarch
+      needs: build
       runs-on: ubuntu-latest
       env:
         GH_REPO: ${{ github.repository }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       permissions:
         contents: write
+
       steps:
         - uses: actions/checkout@v4
 
-        - uses: actions/download-artifact@v3
+        - uses: actions/download-artifact@v4
 
         - if: github.event_name == 'push'
           run: |
             TAG_NAME=${{ github.ref }}
             echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
 
-        # - id: tag
-        #   run: |
-        #     echo "SUBJECT=nvi release build" >> $GITHUB_ENV
-
         - name: publish release
           env:
             DEBUG: api
           run: |
-            gh release create $TAG_NAME --generate-notes --title "$TAG_NAME" --target $GITHUB_SHA nvi-darwin/* nvi-linux/*
+            gh release create $TAG_NAME --generate-notes --title "$TAG_NAME" --target $GITHUB_SHA nvi-macos-x86_64/* nvi-macos-aarch64/* nvi-linux-x86_64/*
