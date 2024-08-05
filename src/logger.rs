@@ -8,7 +8,7 @@ use std::process::exit;
 pub struct Logger {}
 
 impl Logger {
-    pub fn print_version() {
+    pub fn print_version_and_exit() {
         println!(
             "{}", 
             format!(

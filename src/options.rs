@@ -40,3 +40,5 @@ impl<'a> Options<'a> {
         }
     }
 }
+
+pub type OptionsType<'a> = Options<'a>;
