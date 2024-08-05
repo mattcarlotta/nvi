@@ -18,3 +18,5 @@ Makefile
 **/*/node_modules
 **/*/target
 *.log*
+
+/target
