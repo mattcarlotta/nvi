@@ -2,7 +2,7 @@ use crate::logger::Logger;
 use crate::options::OptionsType;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
-use std::fmt;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 enum ARG {
     API,
@@ -63,8 +63,8 @@ impl ARG {
     }
 }
 
-impl fmt::Display for ARG {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for ARG {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", self.debug())
     }
 }
@@ -90,32 +90,111 @@ lazy_static! {
     };
 }
 
-pub fn parse<'a>(options: &mut OptionsType<'a>) {
-    let mut i: usize = 1;
+pub struct ArgParser<'a> {
+    index: usize,
+    options: &'a mut OptionsType<'a>,
+    logger: Logger<'a>,
+}
 
-    while i < options.argc {
-        let flag = match options.args.get(i) {
+impl<'a> ArgParser<'a> {
+    pub fn new(options: &'a mut OptionsType<'a>) -> Self {
+        return ArgParser {
+            index: 1,
+            options,
+            logger: Logger::new("ArgParser"),
+        };
+    }
+
+    fn parse_single_arg(&mut self, flag: ARG) -> Result<String, ()> {
+        let curr_arg = match self.options.argv.get(self.index) {
             Some(f) => f,
             None => ARG::UNKNOWN.as_str(),
         };
+        self.index += 1;
+        match self.options.argv.get(self.index) {
+            Some(arg) => {
+                if arg.contains("-") {
+                    return Err(self.logger.fatal(format!("error {} {}", flag, curr_arg)));
+                }
+                return Ok(String::from(arg));
+            }
+            None => Err(self.logger.fatal(format!("invalid arg error {}", flag))),
+        }
+    }
 
-        match ARGS.get(flag) {
-            Some(ARG::API) => options.api = true,
-            Some(ARG::CONFIG) => println!("{}", ARG::CONFIG),
-            Some(ARG::DEBUG) => options.debug = true,
-            Some(ARG::DIRECTORY) => println!("{}", ARG::DIRECTORY),
-            Some(ARG::ENVIRONMENT) => println!("{}", ARG::ENVIRONMENT),
-            Some(ARG::EXECUTE) => println!("{}", ARG::EXECUTE),
-            Some(ARG::FILES) => println!("{}", ARG::FILES),
-            Some(ARG::HELP) => println!("{}", ARG::HELP),
-            Some(ARG::PRINT) => options.print = true,
-            Some(ARG::PROJECT) => println!("{}", ARG::PROJECT),
-            Some(ARG::REQUIRED) => println!("{}", ARG::REQUIRED),
-            Some(ARG::SAVE) => options.save = true,
-            Some(ARG::VERSION) => Logger::print_version_and_exit(),
-            Some(ARG::UNKNOWN) | None => println!("{} {}", ARG::UNKNOWN, flag),
+    pub fn parse(&mut self) {
+        while self.index < self.options.argc {
+            let flag = match self.options.argv.get(self.index) {
+                Some(f) => f,
+                None => ARG::UNKNOWN.as_str(),
+            };
+
+            match ARGS.get(flag) {
+                Some(ARG::API) => self.options.api = true,
+                Some(ARG::CONFIG) => {
+                    self.options.config = self.parse_single_arg(ARG::CONFIG).unwrap()
+                }
+                Some(ARG::DEBUG) => self.options.debug = true,
+                Some(ARG::DIRECTORY) => {
+                    self.options.dir = self.parse_single_arg(ARG::DIRECTORY).unwrap();
+                }
+                Some(ARG::ENVIRONMENT) => {
+                    self.options.environment = self.parse_single_arg(ARG::ENVIRONMENT).unwrap();
+                }
+                Some(ARG::EXECUTE) => println!("{}", ARG::EXECUTE),
+                Some(ARG::FILES) => {
+                    // self.options.files = self.parse_single_arg(ARG::FILES).unwrap();
+                }
+                Some(ARG::HELP) => println!("{}", ARG::HELP),
+                Some(ARG::PRINT) => self.options.print = true,
+                Some(ARG::PROJECT) => {
+                    self.options.project = self.parse_single_arg(ARG::PROJECT).unwrap();
+                }
+                Some(ARG::REQUIRED) => println!("{}", ARG::REQUIRED),
+                Some(ARG::SAVE) => self.options.save = true,
+                Some(ARG::VERSION) => self.logger.print_version_and_exit(),
+                Some(ARG::UNKNOWN) | None => {
+                    let mut invalid_flag = String::new();
+
+                    while self.index < self.options.argc {
+                        self.index += 1;
+
+                        match self.options.argv.get(self.index) {
+                            Some(flag) => {
+                                if flag.contains("-") {
+                                    self.index -= 1;
+                                    break;
+                                }
+
+                                if invalid_flag.len() > 0 {
+                                    invalid_flag += &format!(" {}", flag);
+                                } else {
+                                    invalid_flag += &flag;
+                                }
+                            }
+                            None => {
+                                self.index -= 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    let mut message = format!("found an unknown flag: \"{}\"", flag);
+
+                    if invalid_flag.len() > 0 {
+                        message += &format!(" with args \"{}\"", invalid_flag);
+                    }
+
+                    self.logger.warn(message + ". Skipping.");
+                }
+            }
+
+            self.index += 1;
         }
 
-        i += 1;
+        if self.options.debug {
+            let message = format!("set the following options:\n  {:?}", self.options);
+            self.logger.debug(message);
+        }
     }
 }

@@ -1,9 +1,10 @@
 use std::env;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug)]
 pub struct Options<'a> {
     pub argc: usize,
-    pub args: Vec<String>,
+    pub argv: Vec<String>,
     pub api: bool,
     pub api_envs: String,
     pub commands: Vec<&'a str>,
@@ -20,11 +21,11 @@ pub struct Options<'a> {
 
 impl<'a> Options<'a> {
     pub fn new() -> Self {
-        let args: Vec<String> = env::args().collect();
+        let argv: Vec<String> = env::args().collect();
 
-        Options {
-            argc: args.len(),
-            args,
+        return Options {
+            argc: argv.len(),
+            argv,
             api: false,
             api_envs: String::new(),
             commands: vec![],
@@ -37,7 +38,13 @@ impl<'a> Options<'a> {
             project: String::new(),
             required_envs: vec![],
             save: false,
-        }
+        };
+    }
+}
+
+impl<'a> Display for Options<'a> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "{}", self)
     }
 }
 
