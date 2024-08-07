@@ -2,7 +2,6 @@ use super::{Options, OptionsType, ARG, ARGS};
 use crate::logger::Logger;
 use std::env;
 
-#[derive(Debug)]
 pub struct ArgParser<'a> {
     curr_flag: String,
     options: OptionsType,
@@ -40,32 +39,33 @@ impl<'a> ArgParser<'a> {
         return self.options;
     }
 
-    fn parse_single_arg(&mut self, flag: ARG) -> Result<String, ()> {
-        self.index += 1;
-        let arg = match self.options.argv.get(self.index) {
+    fn get_arg(&'a self) -> &'a str {
+        return match self.options.argv.get(self.index) {
             Some(a) => a,
             None => "",
         };
-
-        if arg.is_empty() || arg.contains("-") {
-            return Err(self
-                .logger
-                .fatal(format!("error {} {}", flag, self.curr_flag)));
-        }
-
-        return Ok(String::from(arg));
     }
 
-    fn parse_multi_arg(&mut self, flag: ARG, delimiter_stop: bool) -> Result<Vec<String>, ()> {
+    fn parse_single_arg(&mut self, flag: ARG) -> String {
+        self.index += 1;
+
+        let arg = self.get_arg();
+
+        if arg.is_empty() || arg.contains("-") {
+            self.logger
+                .fatal(format!("error {} {}", flag, self.curr_flag));
+        }
+
+        return arg.to_string();
+    }
+
+    fn parse_multi_arg(&mut self, flag: ARG, delimiter_stop: bool) -> Vec<String> {
         let mut args = vec![];
 
         while self.index < self.options.argc {
             self.index += 1;
 
-            let arg = match self.options.argv.get(self.index) {
-                Some(a) => a.to_string(),
-                None => "".to_string(),
-            };
+            let arg = self.get_arg();
 
             if arg.is_empty() {
                 break;
@@ -76,81 +76,75 @@ impl<'a> ArgParser<'a> {
                 break;
             }
 
-            args.push(arg);
+            args.push(arg.to_string());
         }
 
         if args.is_empty() {
             self.logger.fatal(format!("error for {}", flag));
         }
 
-        return Ok(args);
+        return args;
     }
 
     pub fn parse(&mut self) -> &mut Self {
         while self.index < self.options.argc {
             self.curr_flag = match self.options.argv.get(self.index) {
-                Some(f) => String::from(f),
-                None => String::from(ARG::UNKNOWN.as_str()),
+                Some(f) => f.to_string(),
+                None => ARG::UNKNOWN.to_string(),
             };
 
             match ARGS.get(self.curr_flag.as_str()) {
                 Some(ARG::API) => self.options.api = true,
                 Some(ARG::CONFIG) => {
-                    self.options.config = self.parse_single_arg(ARG::CONFIG).unwrap()
+                    self.options.config = self.parse_single_arg(ARG::CONFIG);
                 }
                 Some(ARG::DEBUG) => self.options.debug = true,
                 Some(ARG::DIRECTORY) => {
-                    self.options.dir = self.parse_single_arg(ARG::DIRECTORY).unwrap();
+                    self.options.dir = self.parse_single_arg(ARG::DIRECTORY);
                 }
                 Some(ARG::ENVIRONMENT) => {
-                    self.options.environment = self.parse_single_arg(ARG::ENVIRONMENT).unwrap();
+                    self.options.environment = self.parse_single_arg(ARG::ENVIRONMENT);
                 }
                 Some(ARG::EXECUTE) => {
-                    self.options.commands = self.parse_multi_arg(ARG::EXECUTE, false).unwrap();
+                    self.options.commands = self.parse_multi_arg(ARG::EXECUTE, false);
                 }
                 Some(ARG::FILES) => {
-                    self.options.files = self.parse_multi_arg(ARG::FILES, true).unwrap();
+                    self.options.files = self.parse_multi_arg(ARG::FILES, true);
                 }
                 Some(ARG::HELP) => self.logger.print_help_and_exit(),
                 Some(ARG::PRINT) => self.options.print = true,
                 Some(ARG::PROJECT) => {
-                    self.options.project = self.parse_single_arg(ARG::PROJECT).unwrap();
+                    self.options.project = self.parse_single_arg(ARG::PROJECT);
                 }
                 Some(ARG::REQUIRED) => {
-                    self.options.required_envs = self.parse_multi_arg(ARG::REQUIRED, true).unwrap();
+                    self.options.required_envs = self.parse_multi_arg(ARG::REQUIRED, true);
                 }
                 Some(ARG::SAVE) => self.options.save = true,
                 Some(ARG::VERSION) => self.logger.print_version_and_exit(),
                 Some(ARG::UNKNOWN) | None => {
-                    let mut invalid_flag = String::new();
+                    let mut invalid_args = String::new();
 
                     while self.index < self.options.argc {
                         self.index += 1;
 
-                        match self.options.argv.get(self.index) {
-                            Some(flag) => {
-                                if flag.contains("-") {
-                                    self.index -= 1;
-                                    break;
-                                }
+                        let arg = self.get_arg();
 
-                                if invalid_flag.len() > 0 {
-                                    invalid_flag += &format!(" {}", flag);
-                                } else {
-                                    invalid_flag += &flag;
-                                }
-                            }
-                            None => {
-                                self.index -= 1;
-                                break;
-                            }
+                        if arg.is_empty() | arg.contains("-") {
+                            self.index -= 1;
+                            break;
                         }
+
+                        if !invalid_args.is_empty() {
+                            invalid_args.push_str(" ");
+                        }
+
+                        invalid_args.push_str(arg);
                     }
 
                     let mut message = format!("found an unknown flag: \"{}\"", self.curr_flag);
 
-                    if invalid_flag.is_empty() {
-                        message += &format!(" with args \"{}\"", invalid_flag);
+                    if !invalid_args.is_empty() {
+                        message += &format!(" with args \"{}\"", invalid_args);
                     }
 
                     self.logger.warn(message + ". Skipping.");

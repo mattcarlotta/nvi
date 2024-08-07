@@ -19,8 +19,6 @@ pub enum ARG {
     UNKNOWN,
 }
 
-// pub type ARG_T = ARG;
-
 impl ARG {
     pub fn as_str(&self) -> &'static str {
         match self {
