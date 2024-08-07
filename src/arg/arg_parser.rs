@@ -47,7 +47,7 @@ impl<'a> ArgParser<'a> {
             None => "",
         };
 
-        if arg.len() == 0 || arg.contains("-") {
+        if arg.is_empty() || arg.contains("-") {
             return Err(self
                 .logger
                 .fatal(format!("error {} {}", flag, self.curr_flag)));
@@ -67,7 +67,7 @@ impl<'a> ArgParser<'a> {
                 None => "".to_string(),
             };
 
-            if arg.len() == 0 {
+            if arg.is_empty() {
                 break;
             }
 
@@ -79,7 +79,7 @@ impl<'a> ArgParser<'a> {
             args.push(arg);
         }
 
-        if args.len() == 0 {
+        if args.is_empty() {
             self.logger.fatal(format!("error for {}", flag));
         }
 
@@ -149,7 +149,7 @@ impl<'a> ArgParser<'a> {
 
                     let mut message = format!("found an unknown flag: \"{}\"", self.curr_flag);
 
-                    if invalid_flag.len() > 0 {
+                    if invalid_flag.is_empty() {
                         message += &format!(" with args \"{}\"", invalid_flag);
                     }
 
