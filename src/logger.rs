@@ -54,4 +54,30 @@ impl<'a> Logger<'a> {
         );
         exit(0);
     }
+
+    pub fn print_help_and_exit(&self) {
+        println!("{}", format!(
+            r#"
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ nvi cli documentation                                                                                                 │
+├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ flag          │ description (for more details, see the man documentation or the README)                               │
+├───────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ --api         │ specifies whether or not to retrieve ENVs from the remote API. (ex: --api)                            │
+│ --config      │ specifies which environment configuration to load from the .nvi file. (ex: --config dev)              │
+│ --debug       │ specifies whether or not to log debug details. (ex: --debug)                                          │
+│ --directory   │ specifies which directory the .env files are located within. (ex: --directory path/to/envs)           │
+│ --environment │ specifies which environment config to use within a remote project. (ex: --environment dev)            │
+│ --files       │ specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)            │
+│ --project     │ specifies which remote project to select from the nvi API. (ex: --project my_project)                 │
+│ --print       │ specifies whether or not to print ENVs to standard out. (ex: --print)                                 │
+│ --required    │ specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                │
+│ --save        │ specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
+│ --version     │ prints out binary version. (ex: --version)                                                            │
+│ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)         │
+└───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+"#,
+        ).blue());
+        exit(0);
+    }
 }

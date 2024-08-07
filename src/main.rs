@@ -1,14 +1,18 @@
-// mod arg;
+mod arg;
 mod logger;
-mod options;
 
-// use arg::ArgParser;
-use options::Options;
+use arg::options::Options;
+use std::process::Command;
 
 fn main() {
     let options = Options::new();
 
-    // ArgParser::new(&mut options).parse();
-
-    println!("{:?}", options);
+    if options.commands.len() > 0 {
+        if let Err(_) = Command::new(&options.commands[0])
+            .args(&options.commands[1..options.commands.len()])
+            .spawn()
+        {
+            eprintln!("ERROR");
+        }
+    }
 }
