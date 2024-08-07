@@ -91,6 +91,7 @@ lazy_static! {
 }
 
 pub struct ArgParser<'a> {
+    curr_flag: String,
     index: usize,
     options: &'a mut OptionsType<'a>,
     logger: Logger<'a>,
@@ -99,6 +100,7 @@ pub struct ArgParser<'a> {
 impl<'a> ArgParser<'a> {
     pub fn new(options: &'a mut OptionsType<'a>) -> Self {
         return ArgParser {
+            curr_flag: String::new(),
             index: 1,
             options,
             logger: Logger::new("ArgParser"),
@@ -106,15 +108,13 @@ impl<'a> ArgParser<'a> {
     }
 
     fn parse_single_arg(&mut self, flag: ARG) -> Result<String, ()> {
-        let curr_arg = match self.options.argv.get(self.index) {
-            Some(f) => f,
-            None => ARG::UNKNOWN.as_str(),
-        };
         self.index += 1;
         match self.options.argv.get(self.index) {
             Some(arg) => {
                 if arg.contains("-") {
-                    return Err(self.logger.fatal(format!("error {} {}", flag, curr_arg)));
+                    return Err(self
+                        .logger
+                        .fatal(format!("error {} {}", flag, self.curr_flag)));
                 }
                 return Ok(String::from(arg));
             }
@@ -124,12 +124,12 @@ impl<'a> ArgParser<'a> {
 
     pub fn parse(&mut self) {
         while self.index < self.options.argc {
-            let flag = match self.options.argv.get(self.index) {
-                Some(f) => f,
-                None => ARG::UNKNOWN.as_str(),
+            self.curr_flag = match self.options.argv.get(self.index) {
+                Some(f) => String::from(f),
+                None => String::from(ARG::UNKNOWN.as_str()),
             };
 
-            match ARGS.get(flag) {
+            match ARGS.get(self.curr_flag.as_str()) {
                 Some(ARG::API) => self.options.api = true,
                 Some(ARG::CONFIG) => {
                     self.options.config = self.parse_single_arg(ARG::CONFIG).unwrap()
@@ -179,7 +179,7 @@ impl<'a> ArgParser<'a> {
                         }
                     }
 
-                    let mut message = format!("found an unknown flag: \"{}\"", flag);
+                    let mut message = format!("found an unknown flag: \"{}\"", self.curr_flag);
 
                     if invalid_flag.len() > 0 {
                         message += &format!(" with args \"{}\"", invalid_flag);

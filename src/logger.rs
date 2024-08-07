@@ -5,6 +5,7 @@ use chrono::Datelike;
 use colored::*;
 use std::process::exit;
 
+#[derive(Debug)]
 pub struct Logger<'a> {
     log_type: &'a str,
 }
