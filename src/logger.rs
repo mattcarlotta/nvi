@@ -18,16 +18,16 @@ impl<'a> Logger<'a> {
     pub fn debug(&self, message: String) {
         println!(
             "{} {} {}",
-            "[info]".cyan(),
-            self.log_type.cyan(),
-            message.cyan()
+            "[info]".blue(),
+            self.log_type.blue(),
+            message.blue()
         );
     }
 
     pub fn fatal(&self, message: String) {
         println!(
             "{} {} {}",
-            "[fatal]".red(),
+            "[error]".red(),
             self.log_type.red(),
             message.red()
         );
@@ -57,8 +57,7 @@ impl<'a> Logger<'a> {
 
     pub fn print_help_and_exit(&self) {
         println!("{}", format!(
-            r#"
-┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+            r#"┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ nvi cli documentation                                                                                                 │
 ├───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ flag          │ description (for more details, see the man documentation or the README)                               │
@@ -75,9 +74,8 @@ impl<'a> Logger<'a> {
 │ --save        │ specifies whether or not to save remote ENVs to disk with the selected environment name. (ex: --save) │
 │ --version     │ prints out binary version. (ex: --version)                                                            │
 │ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)         │
-└───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘
-"#,
-        ).blue());
+└───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────┘"#,
+        ).green());
         exit(0);
     }
 }
