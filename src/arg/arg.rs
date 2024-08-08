@@ -1,5 +1,3 @@
-use lazy_static::lazy_static;
-use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 pub enum ARG {
@@ -63,25 +61,4 @@ impl Display for ARG {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", self.debug())
     }
-}
-
-lazy_static! {
-    pub static ref ARGS: HashMap<&'static str, ARG> = {
-        return HashMap::from([
-            (ARG::API.as_str(), ARG::API),
-            (ARG::CONFIG.as_str(), ARG::CONFIG),
-            (ARG::DEBUG.as_str(), ARG::DEBUG),
-            (ARG::DIRECTORY.as_str(), ARG::DIRECTORY),
-            (ARG::ENVIRONMENT.as_str(), ARG::ENVIRONMENT),
-            (ARG::EXECUTE.as_str(), ARG::EXECUTE),
-            (ARG::FILES.as_str(), ARG::FILES),
-            (ARG::HELP.as_str(), ARG::HELP),
-            (ARG::PRINT.as_str(), ARG::PRINT),
-            (ARG::PROJECT.as_str(), ARG::PROJECT),
-            (ARG::REQUIRED.as_str(), ARG::REQUIRED),
-            (ARG::SAVE.as_str(), ARG::SAVE),
-            (ARG::VERSION.as_str(), ARG::VERSION),
-            (ARG::UNKNOWN.as_str(), ARG::UNKNOWN),
-        ]);
-    };
 }

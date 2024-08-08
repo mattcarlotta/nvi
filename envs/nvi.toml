@@ -1,0 +1,19 @@
+[standard]
+api = true
+debug = true
+# valid comment
+directory = "path/to/custom/directory"
+environment = "my_env"
+execute = ["bin", "test"]
+files = [ "test1.env", "test2.env", "test3.env" ]
+print = true
+project = "my_project"
+# valid comment
+required = [ "TEST1", "TEST2", "TEST3" ]
+save = true
+
+[partial]
+debug = true
+environment = "my_env"
+execute = ["bin", "test"]
+files = [ "test1.env", "test2.env", "test3.env" ]

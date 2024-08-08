@@ -24,7 +24,7 @@ impl<'a> Logger<'a> {
         );
     }
 
-    pub fn fatal(&self, message: String) {
+    pub fn fatal(&self, message: String) -> ! {
         println!(
             "{} {} {}",
             "[error]".red(),

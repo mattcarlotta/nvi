@@ -1,8 +1,14 @@
-use super::{Options, OptionsType, ARG, ARGS};
+use super::ARG;
+use crate::globals::ARGS;
 use crate::logger::Logger;
+use crate::options::{Options, OptionsType};
 use std::env;
+use std::fs;
+use std::path::PathBuf;
+use toml::{Table, Value};
 
 pub struct ArgParser<'a> {
+    file: PathBuf,
     curr_flag: String,
     options: OptionsType,
     index: usize,
@@ -11,25 +17,15 @@ pub struct ArgParser<'a> {
 
 impl<'a> ArgParser<'a> {
     pub fn new() -> Self {
-        let argv: Vec<String> = env::args().collect();
+        let file = match env::current_dir() {
+            Ok(p) => p,
+            Err(_) => PathBuf::new(),
+        };
 
         return ArgParser {
+            file,
             curr_flag: String::new(),
-            options: Options {
-                argc: argv.len(),
-                argv,
-                api: false,
-                commands: vec![],
-                config: String::new(),
-                debug: false,
-                dir: String::new(),
-                environment: String::new(),
-                files: vec![".env".to_string()],
-                print: false,
-                project: String::new(),
-                required_envs: vec![],
-                save: false,
-            },
+            options: Options::default(),
             index: 1,
             logger: Logger::new("ArgParser"),
         };
@@ -37,6 +33,150 @@ impl<'a> ArgParser<'a> {
 
     pub fn get_options(self) -> OptionsType {
         return self.options;
+    }
+
+    fn get_vec_str_opt(&self, config: &Value, prop: &str) -> Option<Vec<String>> {
+        if let Some(opt_vec) = config.get(prop) {
+            let values = match opt_vec {
+                toml::Value::Array(v) => v,
+                _ => self.logger.fatal(format!(
+                    "expected the \"{}\" config option to be an array, instead parsed a(n): {}.",
+                    prop,
+                    opt_vec.type_str()
+                )),
+            };
+
+            let mut opts = vec![];
+
+            for val in values {
+                match val {
+                toml::Value::String(v) => opts.push(v.to_owned()),
+                _ => self.logger.fatal(format!(
+                        "expected the \"{}\" config option to be an array of strings, instead found {}, which is a(n): {}.",
+                        prop,
+                        val,
+                        val.type_str()
+                    )),
+                }
+            }
+
+            return Some(opts);
+        };
+
+        return None;
+    }
+
+    fn get_str_opt(&self, config: &Value, prop: &str) -> Option<String> {
+        if let Some(value) = config.get(prop) {
+            match value {
+                toml::Value::String(v) => return Some(v.to_string()),
+                _ => self.logger.fatal(format!(
+                    "expected the \"{}\" config option to be a string value, instead parsed a(n): {}.",
+                    prop,
+                    value.type_str()
+                )),
+            };
+        };
+
+        return None;
+    }
+
+    fn get_bool_opt(&self, config: &Value, prop: &str) -> Option<bool> {
+        if let Some(value) = config.get(prop) {
+            match value {
+                toml::Value::Boolean(v) => return Some(*v),
+                _ => self.logger.fatal(format!(
+                    "expected the \"{}\" config option to be a boolean value, instead parsed a(n): {}.",
+                    prop,
+                    value.type_str()
+                )),
+            };
+        };
+
+        return None;
+    }
+
+    fn parse_config(&mut self) -> &mut Self {
+        if !self.options.dir.is_empty() {
+            self.file.push(&self.options.dir);
+        }
+
+        self.file.push("nvi.toml");
+
+        let file_contents = match fs::read_to_string(&self.file) {
+            Ok(c) => c,
+            Err(err) => {
+                self.logger.fatal(format!(
+                    "could not read file: \"{}\". Reason: {}.",
+                    self.file.display(),
+                    err
+                ));
+            }
+        };
+
+        let parsed_config: Table = match toml::from_str(&file_contents) {
+            Ok(pc) => pc,
+            Err(err) => {
+                self.logger.fatal(format!(
+                    "was unable to load the toml config data from \"{}\". Reason: {}.",
+                    self.file.display(),
+                    err
+                ));
+            }
+        };
+
+        let config = match parsed_config.get(&self.options.config) {
+            Some(c) => c,
+            None => {
+                self.logger.fatal(format!(
+                    "was unable to load the \"{}\" environment config from \"{}\". Reason: The environment configuration does't appear to exist. Maybe a spelling error?",
+                    self.options.config,
+                    self.file.display(),
+                ));
+            }
+        };
+
+        if let Some(api) = self.get_bool_opt(config, "api") {
+            self.options.api = api;
+        }
+
+        if let Some(debug) = self.get_bool_opt(config, "debug") {
+            self.options.debug = debug;
+        }
+
+        if let Some(directory) = self.get_str_opt(config, "directory") {
+            self.options.dir = directory;
+        }
+
+        if let Some(environment) = self.get_str_opt(config, "environment") {
+            self.options.environment = environment;
+        }
+
+        if let Some(execute) = self.get_vec_str_opt(config, "execute") {
+            self.options.commands = execute;
+        }
+
+        if let Some(files) = self.get_vec_str_opt(config, "files") {
+            self.options.files = files;
+        }
+
+        if let Some(print) = self.get_bool_opt(config, "print") {
+            self.options.print = print;
+        }
+
+        if let Some(project) = self.get_str_opt(config, "project") {
+            self.options.project = project;
+        }
+
+        if let Some(required_envs) = self.get_vec_str_opt(config, "required") {
+            self.options.required_envs = required_envs;
+        }
+
+        if let Some(save) = self.get_bool_opt(config, "save") {
+            self.options.save = save;
+        }
+
+        return self;
     }
 
     fn get_arg(&'a self) -> &'a str {
@@ -154,9 +294,15 @@ impl<'a> ArgParser<'a> {
             self.index += 1;
         }
 
+        if !self.options.config.is_empty() {
+            self.parse_config();
+        }
+
         if self.options.debug {
-            let message = format!("set the following flag options...{:?}", self.options);
-            self.logger.debug(message);
+            self.logger.debug(format!(
+                "set the following flag options...{:?}",
+                self.options
+            ));
         }
 
         return self;

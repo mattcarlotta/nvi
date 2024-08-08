@@ -1,4 +1,5 @@
-use super::ArgParser;
+use crate::arg::ArgParser;
+use std::env;
 use std::fmt::{Debug, Formatter, Result as FormatResult};
 
 pub struct Options {
@@ -25,7 +26,7 @@ impl Debug for Options {
             f,
             r#"     
         api: {},
-        command: "{}",
+        command: [{}],
         config: "{}",
         debug: {},
         directory: "{}",
@@ -36,7 +37,7 @@ impl Debug for Options {
         required_envs: [{}],
         save: {}"#,
             self.api,
-            self.commands.join(" "),
+            self.commands.join(", "),
             self.config,
             self.debug,
             self.dir,
@@ -51,6 +52,25 @@ impl Debug for Options {
 }
 
 impl Options {
+    pub fn default() -> Self {
+        let argv: Vec<String> = env::args().collect();
+        return Options {
+            argc: argv.len(),
+            argv,
+            api: false,
+            commands: vec![],
+            config: String::new(),
+            debug: false,
+            dir: String::new(),
+            environment: String::new(),
+            files: vec![".env".to_string()],
+            print: false,
+            project: String::new(),
+            required_envs: vec![],
+            save: false,
+        };
+    }
+
     pub fn new() -> Self {
         let mut arg_parser = ArgParser::new();
         arg_parser.parse();
