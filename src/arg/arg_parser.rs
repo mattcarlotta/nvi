@@ -8,6 +8,8 @@ use std::path::PathBuf;
 use toml::{Table, Value};
 
 pub struct ArgParser<'a> {
+    pub argc: usize,
+    pub argv: Vec<String>,
     file: PathBuf,
     curr_flag: String,
     options: &'a mut OptionsType,
@@ -17,12 +19,15 @@ pub struct ArgParser<'a> {
 
 impl<'a> ArgParser<'a> {
     pub fn new(options: &'a mut OptionsType) -> Self {
+        let argv: Vec<String> = env::args().collect();
         let file = match env::current_dir() {
             Ok(p) => p,
             Err(_) => PathBuf::new(),
         };
 
         return ArgParser {
+            argc: argv.len(),
+            argv,
             file,
             curr_flag: String::new(),
             options,
@@ -185,7 +190,7 @@ impl<'a> ArgParser<'a> {
     }
 
     fn get_arg(&'a self) -> &'a str {
-        return match self.options.argv.get(self.index) {
+        return match self.argv.get(self.index) {
             Some(a) => a,
             None => "",
         };
@@ -207,7 +212,7 @@ impl<'a> ArgParser<'a> {
     fn parse_multi_arg(&mut self, flag: ARG, delimiter_stop: bool) -> Vec<String> {
         let mut args = vec![];
 
-        while self.index < self.options.argc {
+        while self.index < self.argc {
             self.index += 1;
 
             let arg = self.get_arg();
@@ -232,8 +237,8 @@ impl<'a> ArgParser<'a> {
     }
 
     pub fn parse(&mut self) -> &mut Self {
-        while self.index < self.options.argc {
-            self.curr_flag = match self.options.argv.get(self.index) {
+        while self.index < self.argc {
+            self.curr_flag = match self.argv.get(self.index) {
                 Some(f) => f.to_owned(),
                 None => ARG::UNKNOWN.to_string(),
             };
@@ -269,7 +274,7 @@ impl<'a> ArgParser<'a> {
                 Some(ARG::UNKNOWN) | None => {
                     let mut invalid_args = String::new();
 
-                    while self.index < self.options.argc {
+                    while self.index < self.argc {
                         self.index += 1;
 
                         let arg = self.get_arg();
@@ -313,7 +318,7 @@ impl<'a> ArgParser<'a> {
 
         if debug {
             self.logger.debug(format!(
-                "set the following flag options...{:?}",
+                "set the following flag options...\n        {:?}",
                 self.options
             ));
         }
