@@ -65,7 +65,7 @@ impl<'a> ArgParser<'a> {
     fn get_str_opt(&self, config: &Value, prop: &str) -> Option<String> {
         if let Some(value) = config.get(prop) {
             match value {
-                toml::Value::String(v) => return Some(v.to_string()),
+                toml::Value::String(v) => return Some(v.to_owned()),
                 _ => self.logger.fatal(format!(
                     "expected the \"{}\" config option to be a string value, instead parsed a(n): {}.",
                     prop,
@@ -201,7 +201,7 @@ impl<'a> ArgParser<'a> {
                 .fatal(format!("error {} {}", flag, self.curr_flag));
         }
 
-        return arg.to_string();
+        return arg.to_owned();
     }
 
     fn parse_multi_arg(&mut self, flag: ARG, delimiter_stop: bool) -> Vec<String> {
@@ -221,7 +221,7 @@ impl<'a> ArgParser<'a> {
                 break;
             }
 
-            args.push(arg.to_string());
+            args.push(arg.to_owned());
         }
 
         if args.is_empty() {
@@ -234,7 +234,7 @@ impl<'a> ArgParser<'a> {
     pub fn parse(&mut self) -> &mut Self {
         while self.index < self.options.argc {
             self.curr_flag = match self.options.argv.get(self.index) {
-                Some(f) => f.to_string(),
+                Some(f) => f.to_owned(),
                 None => ARG::UNKNOWN.to_string(),
             };
 
