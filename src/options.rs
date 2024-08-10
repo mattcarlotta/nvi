@@ -26,35 +26,35 @@ impl Debug for Options {
             f,
             r#"     
         api: {},
-        command: [{}],
+        command: {:?},
         config: "{}",
         debug: {},
         directory: "{}",
         environment: "{}",
-        files: [{}],
+        files: {:?},
         print: {},
         project: "{}",
-        required_envs: [{}],
+        required_envs: {:?},
         save: {}"#,
             self.api,
-            self.commands.join(", "),
+            self.commands,
             self.config,
             self.debug,
             self.dir,
             self.environment,
-            self.files.join(", "),
+            self.files,
             self.print,
             self.project,
-            self.required_envs.join(", "),
+            self.required_envs,
             self.save
         );
     }
 }
 
 impl Options {
-    pub fn default() -> Self {
+    pub fn new() -> Self {
         let argv: Vec<String> = env::args().collect();
-        return Options {
+        let mut options = Options {
             argc: argv.len(),
             argv,
             api: false,
@@ -69,12 +69,12 @@ impl Options {
             required_envs: vec![],
             save: false,
         };
-    }
 
-    pub fn new() -> Self {
-        let mut arg_parser = ArgParser::new();
-        arg_parser.parse();
+        {
+            let mut arg_parser = ArgParser::new(&mut options);
+            arg_parser.parse();
+        }
 
-        return arg_parser.get_options();
+        return options;
     }
 }

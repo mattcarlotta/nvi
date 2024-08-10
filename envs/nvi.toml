@@ -4,7 +4,7 @@ debug = true
 # valid comment
 directory = "path/to/custom/directory"
 environment = "my_env"
-execute = ["bin", "test"]
+execute = ["echo", "Hello World!"]
 files = [ "test1.env", "test2.env", "test3.env" ]
 print = true
 project = "my_project"
@@ -15,5 +15,5 @@ save = true
 [partial]
 debug = true
 environment = "my_env"
-execute = ["bin", "test"]
+execute = ["echo", "Hello World!"]
 files = [ "test1.env", "test2.env", "test3.env" ]

@@ -1,7 +1,7 @@
 use super::ARG;
 use crate::globals::ARGS;
 use crate::logger::Logger;
-use crate::options::{Options, OptionsType};
+use crate::options::OptionsType;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -10,13 +10,13 @@ use toml::{Table, Value};
 pub struct ArgParser<'a> {
     file: PathBuf,
     curr_flag: String,
-    options: OptionsType,
+    options: &'a mut OptionsType,
     index: usize,
     logger: Logger<'a>,
 }
 
 impl<'a> ArgParser<'a> {
-    pub fn new() -> Self {
+    pub fn new(options: &'a mut OptionsType) -> Self {
         let file = match env::current_dir() {
             Ok(p) => p,
             Err(_) => PathBuf::new(),
@@ -25,14 +25,10 @@ impl<'a> ArgParser<'a> {
         return ArgParser {
             file,
             curr_flag: String::new(),
-            options: Options::default(),
+            options,
             index: 1,
             logger: Logger::new("ArgParser"),
         };
-    }
-
-    pub fn get_options(self) -> OptionsType {
-        return self.options;
     }
 
     fn get_vec_str_opt(&self, config: &Value, prop: &str) -> Option<Vec<String>> {
@@ -135,6 +131,15 @@ impl<'a> ArgParser<'a> {
                 ));
             }
         };
+
+        if self.options.debug {
+            self.logger.debug(format!(
+                "successfully loaded the \"{}\" config from {}: \n        {:?}",
+                self.options.config,
+                self.file.display(),
+                config
+            ));
+        }
 
         if let Some(api) = self.get_bool_opt(config, "api") {
             self.options.api = api;
@@ -294,11 +299,19 @@ impl<'a> ArgParser<'a> {
             self.index += 1;
         }
 
+        let debug = self.options.debug;
+
         if !self.options.config.is_empty() {
+            if debug {
+                self.logger.debug(format!(
+                    "attempting to load the \"{}\" config from the nvi.toml...",
+                    self.options.config
+                ));
+            }
             self.parse_config();
         }
 
-        if self.options.debug {
+        if debug {
             self.logger.debug(format!(
                 "set the following flag options...{:?}",
                 self.options
