@@ -41,8 +41,7 @@ impl<'a> ArgParser<'a> {
             let values = match opt_vec {
                 toml::Value::Array(v) => v,
                 _ => self.logger.fatal(format!(
-                    "expected the \"{}\" config option to be an array, instead parsed a(n): {}.",
-                    prop,
+                    "expected the \"{prop}\" config option to be an array, instead parsed a(n): {}.",
                     opt_vec.type_str()
                 )),
             };
@@ -53,9 +52,7 @@ impl<'a> ArgParser<'a> {
                 match val {
                 toml::Value::String(v) => opts.push(v.to_owned()),
                 _ => self.logger.fatal(format!(
-                        "expected the \"{}\" config option to be an array of strings, instead found {}, which is a(n): {}.",
-                        prop,
-                        val,
+                        "expected the \"{prop}\" config option to be an array of strings, instead found {val}, which is a(n): {}.",
                         val.type_str()
                     )),
                 }
@@ -72,8 +69,7 @@ impl<'a> ArgParser<'a> {
             match value {
                 toml::Value::String(v) => return Some(v.to_owned()),
                 _ => self.logger.fatal(format!(
-                    "expected the \"{}\" config option to be a string value, instead parsed a(n): {}.",
-                    prop,
+                    "expected the \"{prop}\" config option to be a string value, instead parsed a(n): {}.",
                     value.type_str()
                 )),
             };
@@ -87,8 +83,7 @@ impl<'a> ArgParser<'a> {
             match value {
                 toml::Value::Boolean(v) => return Some(*v),
                 _ => self.logger.fatal(format!(
-                    "expected the \"{}\" config option to be a boolean value, instead parsed a(n): {}.",
-                    prop,
+                    "expected the \"{prop}\" config option to be a boolean value, instead parsed a(n): {}.",
                     value.type_str()
                 )),
             };
@@ -108,9 +103,8 @@ impl<'a> ArgParser<'a> {
             Ok(c) => c,
             Err(err) => {
                 self.logger.fatal(format!(
-                    "could not read file: \"{}\". Reason: {}.",
+                    "could not read file: \"{}\". Reason: {err}.",
                     self.file.display(),
-                    err
                 ));
             }
         };
@@ -119,9 +113,8 @@ impl<'a> ArgParser<'a> {
             Ok(pc) => pc,
             Err(err) => {
                 self.logger.fatal(format!(
-                    "was unable to load the toml config data from \"{}\". Reason: {}.",
+                    "was unable to load the toml config data from \"{}\". Reason: {err}.",
                     self.file.display(),
-                    err
                 ));
             }
         };
@@ -203,7 +196,7 @@ impl<'a> ArgParser<'a> {
 
         if arg.is_empty() || arg.contains("-") {
             self.logger
-                .fatal(format!("error {} {}", flag, self.curr_flag));
+                .fatal(format!("error {flag} {}", self.curr_flag));
         }
 
         return arg.to_owned();
@@ -230,7 +223,7 @@ impl<'a> ArgParser<'a> {
         }
 
         if args.is_empty() {
-            self.logger.fatal(format!("error for {}", flag));
+            self.logger.fatal(format!("error for {flag}"));
         }
 
         return args;
@@ -294,7 +287,7 @@ impl<'a> ArgParser<'a> {
                     let mut message = format!("found an unknown flag: \"{}\"", self.curr_flag);
 
                     if !invalid_args.is_empty() {
-                        message += &format!(" with args \"{}\"", invalid_args);
+                        message += &format!(" with args \"{invalid_args}\"");
                     }
 
                     self.logger.warn(message + ". Skipping.");

@@ -34,16 +34,15 @@ impl<'a> Api<'a> {
         search_params: Option<String>,
         return_data: bool,
     ) -> String {
-        let mut url = format!("{}/cli/{}/?apiKey={}", API_URL, req_type, self.api_key);
+        let mut url = format!("{API_URL}/cli/{req_type}/?apiKey={}", self.api_key);
         if let Some(sp) = search_params {
             url.push_str(sp.as_str());
         }
 
         let res = match reqwest::blocking::get(url) {
             Ok(r) => r,
-            Err(e) => self.logger.fatal(format!(
-                "Failed to retrieve {} from the nvi API. Reason: {}.",
-                req_type, e
+            Err(err) => self.logger.fatal(format!(
+                "Failed to retrieve {req_type} from the nvi API. Reason: {err}.",
             )),
         };
 
@@ -55,7 +54,7 @@ impl<'a> Api<'a> {
         };
 
         if !self.status_code.is_success() | data.is_empty() {
-            self.logger.fatal(format!("failed to retrieve {0} from the nvi API. Either the API key is invalid or you haven't created any {0} yet!", req_type));
+            self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Either the API key is invalid or you haven't created any {req_type} yet!"));
         }
 
         if return_data {
@@ -63,8 +62,7 @@ impl<'a> Api<'a> {
         }
 
         self.logger.println(format!(
-            "Retrieved the following {} from the nvi API...",
-            req_type
+            "Retrieved the following {req_type} from the nvi API..."
         ));
 
         let mut options: HashMap<u16, &str> = HashMap::new();
@@ -74,7 +72,7 @@ impl<'a> Api<'a> {
             for opt in data.split("\n") {
                 if !opt.is_empty() {
                     options.insert(index, opt);
-                    let m = format!("      [{}]: {}", index, opt);
+                    let m = format!("      [{index}]: {opt}");
                     println!("{}", m.cyan());
                 }
                 index += 1;
@@ -102,21 +100,18 @@ impl<'a> Api<'a> {
                 let option = match options.get(&s) {
                     Some(p) => p,
                     None => self.logger.fatal(format!(
-                        "was provided a(n) invalid {} selection. Aborting.",
-                        req_type
+                        "was provided a(n) invalid {req_type} selection. Aborting.",
                     )),
                 };
 
                 self.logger.println(format!(
-                    "The following {} option was selected: \"{}\".",
-                    req_type, option
+                    "The following {req_type} option was selected: \"{option}\"."
                 ));
 
                 return option.to_string();
             }
             Err(_) => self.logger.fatal(format!(
-                "was provided a(n) {} invalid selection. Aborting.",
-                req_type
+                "was provided a(n) {req_type} invalid selection. Aborting.",
             )),
         };
     }
@@ -141,9 +136,8 @@ impl<'a> Api<'a> {
                 }
                 Err(err) => {
                     self.logger.fatal(format!(
-                        "could not read file: \"{}\". Reason: {}.",
+                        "could not read file: \"{}\". Reason: {err}.",
                         api_key_file.display(),
-                        err
                     ));
                 }
             };
