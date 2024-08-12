@@ -18,7 +18,7 @@ impl<'a> Logger<'a> {
     pub fn debug(&self, message: String) {
         println!(
             "{} {} {}",
-            "[info]".blue(),
+            "[nvi::info]".blue(),
             self.log_type.blue(),
             message.blue()
         );
@@ -27,7 +27,7 @@ impl<'a> Logger<'a> {
     pub fn fatal(&self, message: String) -> ! {
         println!(
             "{} {} {}",
-            "[error]".red(),
+            "[nvi::error]".red(),
             self.log_type.red(),
             message.red()
         );
@@ -37,10 +37,18 @@ impl<'a> Logger<'a> {
     pub fn warn(&self, message: String) {
         println!(
             "{} {} {}",
-            "[warning]".yellow(),
+            "[nvi::warning]".yellow(),
             self.log_type.yellow(),
             message.yellow()
         );
+    }
+
+    pub fn print(&self, message: String) {
+        print!("{} {}", "[nvi]".cyan(), message.cyan());
+    }
+
+    pub fn println(&self, message: String) {
+        println!("{} {}", "[nvi]".cyan(), message.cyan());
     }
 
     pub fn print_version_and_exit(&self) {

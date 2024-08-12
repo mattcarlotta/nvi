@@ -10,6 +10,11 @@ use std::collections::HashMap;
 // pub const DOUBLE_QUOTE: char = '\"'; // 0x22
 // pub const LINE_DELIMITER: char = '\n'; // 0x0a
 // pub const ASSIGN_OP: char = '='; // 0x3d
+//
+pub const API_URL: &'static str = match option_env!("API_URL") {
+    Some(v) => v,
+    None => "http://127.0.0.1:4000",
+};
 
 lazy_static! {
     pub static ref ARGS: HashMap<&'static str, ARG> = {
