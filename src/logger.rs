@@ -18,7 +18,7 @@ impl<'a> Logger<'a> {
     pub fn debug(&self, message: String) {
         println!(
             "{} {} {}",
-            "[nvi::info]".blue(),
+            "[nvi::debug]".blue(),
             self.log_type.blue(),
             message.blue()
         );

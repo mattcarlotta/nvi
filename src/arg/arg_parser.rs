@@ -318,7 +318,7 @@ impl<'a> ArgParser<'a> {
 
         if debug {
             self.logger.debug(format!(
-                "set the following flag options...\n        {:?}",
+                "set the following flag options... {:?}",
                 self.options
             ));
         }

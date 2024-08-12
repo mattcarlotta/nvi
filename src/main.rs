@@ -4,22 +4,13 @@ mod globals;
 mod logger;
 mod options;
 
-use api::Api;
 use options::Options;
 use std::process::Command;
 
 use crate::logger::Logger;
 
 fn main() {
-    let mut options = Options::new();
-
-    {
-        if options.api {
-            let mut api = Api::new(&mut options);
-
-            api.get_key_from_file_or_input();
-        }
-    }
+    let options = Options::new();
 
     if !options.commands.is_empty() {
         if let Err(err) = Command::new(&options.commands[0])

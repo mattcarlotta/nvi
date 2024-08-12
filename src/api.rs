@@ -14,7 +14,6 @@ use std::path::PathBuf;
 pub struct Api<'a> {
     options: &'a mut OptionsType,
     api_key: String,
-    // env_file_path: String,
     status_code: reqwest::StatusCode,
     logger: Logger<'a>,
 }
@@ -24,7 +23,6 @@ impl<'a> Api<'a> {
         return Api {
             options,
             api_key: String::new(),
-            // env_file_path: String::new(),
             status_code: reqwest::StatusCode::OK,
             logger: Logger::new("Api"),
         };
@@ -37,14 +35,14 @@ impl<'a> Api<'a> {
         return_data: bool,
     ) -> String {
         let mut url = format!("{}/cli/{}/?apiKey={}", API_URL, req_type, self.api_key);
-        match search_params {
-            Some(r) => url.push_str(r.as_str()),
-            None => {}
-        };
+        if let Some(sp) = search_params {
+            url.push_str(sp.as_str());
+        }
+
         let res = match reqwest::blocking::get(url) {
             Ok(r) => r,
             Err(e) => self.logger.fatal(format!(
-                "Failed to retrieve {} from API. Reason: {}.",
+                "Failed to retrieve {} from the nvi API. Reason: {}.",
                 req_type, e
             )),
         };
@@ -52,12 +50,12 @@ impl<'a> Api<'a> {
         self.status_code = res.status().to_owned();
 
         let data = match res.text() {
-            Ok(t) => t,
+            Ok(d) => d,
             Err(_) => String::new(),
         };
 
         if !self.status_code.is_success() | data.is_empty() {
-            self.logger.fatal(format!("failed to retrieve {0}. Either the API key is invalid or you haven't created any {0} yet!", req_type));
+            self.logger.fatal(format!("failed to retrieve {0} from the nvi API. Either the API key is invalid or you haven't created any {0} yet!", req_type));
         }
 
         if return_data {
@@ -73,10 +71,10 @@ impl<'a> Api<'a> {
         {
             let mut index: u16 = 1;
 
-            for o in data.split("\n") {
-                if !o.is_empty() {
-                    options.insert(index, o);
-                    let m = format!("      [{}]: {}", index, o);
+            for opt in data.split("\n") {
+                if !opt.is_empty() {
+                    options.insert(index, opt);
+                    let m = format!("      [{}]: {}", index, opt);
                     println!("{}", m.cyan());
                 }
                 index += 1;
@@ -123,7 +121,7 @@ impl<'a> Api<'a> {
         };
     }
 
-    pub fn get_key_from_file_or_input(&mut self) -> &mut Self {
+    pub fn get_and_set_api_envs(&mut self) {
         let mut api_key_file = match env::current_dir() {
             Ok(p) => p,
             Err(_) => PathBuf::new(),
@@ -158,13 +156,10 @@ impl<'a> Api<'a> {
             }
         } else {
             let msg = format!("[nvi] Please enter your unique API key: ").cyan();
-            self.api_key = match prompt_password(msg) {
-                Ok(mut ak) => {
-                    ak.retain(|c| c.is_alphanumeric());
-                    ak
-                }
-                Err(_) => String::new(),
-            };
+            if let Ok(mut ak) = prompt_password(msg) {
+                ak.retain(|c| c.is_alphanumeric());
+                self.api_key.push_str(ak.as_str());
+            }
         }
 
         if self.api_key.is_empty() {
@@ -183,7 +178,7 @@ impl<'a> Api<'a> {
             );
         }
 
-        let data = self.fetch_data(
+        self.options.api_envs = self.fetch_data(
             "secrets",
             Some(format!(
                 "&project={}&environment={}",
@@ -192,9 +187,14 @@ impl<'a> Api<'a> {
             true,
         );
 
-        // TODO: Save or store
-        println!("{}", data);
+        if self.options.debug {
+            self.logger
+                .debug(format!("set the following options... {:?}", self.options));
 
-        return self;
+            self.logger.debug(format!(
+                "successfully retrieved {} project's {} secrets!",
+                self.options.project, self.options.environment
+            ));
+        }
     }
 }

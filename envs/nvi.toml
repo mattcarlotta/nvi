@@ -14,6 +14,6 @@ save = true
 
 [partial]
 debug = true
-environment = "my_env"
+environment = "debug"
 execute = ["echo", "Hello World!"]
 files = [ "test1.env", "test2.env", "test3.env" ]
