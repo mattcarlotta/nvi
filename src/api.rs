@@ -12,7 +12,7 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 
 pub struct Api<'a> {
-    options: &'a OptionsType,
+    options: &'a mut OptionsType,
     api_key: String,
     // env_file_path: String,
     status_code: reqwest::StatusCode,
@@ -20,13 +20,106 @@ pub struct Api<'a> {
 }
 
 impl<'a> Api<'a> {
-    pub fn new(options: &'a OptionsType) -> Self {
+    pub fn new(options: &'a mut OptionsType) -> Self {
         return Api {
             options,
             api_key: String::new(),
             // env_file_path: String::new(),
             status_code: reqwest::StatusCode::OK,
             logger: Logger::new("Api"),
+        };
+    }
+
+    fn fetch_data(
+        &mut self,
+        req_type: &'a str,
+        search_params: Option<String>,
+        return_data: bool,
+    ) -> String {
+        let mut url = format!("{}/cli/{}/?apiKey={}", API_URL, req_type, self.api_key);
+        match search_params {
+            Some(r) => url.push_str(r.as_str()),
+            None => {}
+        };
+        let res = match reqwest::blocking::get(url) {
+            Ok(r) => r,
+            Err(e) => self.logger.fatal(format!(
+                "Failed to retrieve {} from API. Reason: {}.",
+                req_type, e
+            )),
+        };
+
+        self.status_code = res.status().to_owned();
+
+        let data = match res.text() {
+            Ok(t) => t,
+            Err(_) => String::new(),
+        };
+
+        if !self.status_code.is_success() | data.is_empty() {
+            self.logger.fatal(format!("failed to retrieve {0}. Either the API key is invalid or you haven't created any {0} yet!", req_type));
+        }
+
+        if return_data {
+            return data;
+        }
+
+        self.logger.println(format!(
+            "Retrieved the following {} from the nvi API...",
+            req_type
+        ));
+
+        let mut options: HashMap<u16, &str> = HashMap::new();
+        {
+            let mut index: u16 = 1;
+
+            for o in data.split("\n") {
+                if !o.is_empty() {
+                    options.insert(index, o);
+                    let m = format!("      [{}]: {}", index, o);
+                    println!("{}", m.cyan());
+                }
+                index += 1;
+            }
+
+            self.logger.print(format!(
+                "Please select one of the options above using the corresponding [number]... "
+            ));
+
+            io::stdout().flush().expect("Failed to flush stdout");
+        }
+
+        let mut selection = String::new();
+        {
+            let stdin = std::io::stdin();
+            stdin
+                .read_line(&mut selection)
+                .expect("Failed to read line");
+
+            selection.retain(|c| c.is_digit(10));
+        }
+
+        match selection.parse::<u16>() {
+            Ok(s) => {
+                let option = match options.get(&s) {
+                    Some(p) => p,
+                    None => self.logger.fatal(format!(
+                        "was provided a(n) invalid {} selection. Aborting.",
+                        req_type
+                    )),
+                };
+
+                self.logger.println(format!(
+                    "The following {} option was selected: \"{}\".",
+                    req_type, option
+                ));
+
+                return option.to_string();
+            }
+            Err(_) => self.logger.fatal(format!(
+                "was provided a(n) {} invalid selection. Aborting.",
+                req_type
+            )),
         };
     }
 
@@ -79,82 +172,28 @@ impl<'a> Api<'a> {
         }
 
         if self.options.project.is_empty() {
-            let res = match reqwest::blocking::get(format!(
-                "{}/cli/projects/?apiKey={}",
-                API_URL, self.api_key
-            )) {
-                Ok(r) => r,
-                Err(e) => self.logger.fatal(format!(
-                    "Failed to retrieve projects from API. Reason: {}.",
-                    e
-                )),
-            };
-
-            self.status_code = res.status().to_owned();
-
-            let text = match res.text() {
-                Ok(t) => t,
-                Err(_) => String::new(),
-            };
-
-            if !self.status_code.is_success() | text.is_empty() {
-                self.logger.fatal(String::from("failed to retrieve projects. Either the API key is invalid or you haven't created any projects yet!"));
-            }
-
-            self.logger.println(format!(
-                "Retrieved the following projects from the nvi API..."
-            ));
-            let mut projects: HashMap<u16, &str> = HashMap::new();
-            let mut index: u16 = 1;
-
-            for p in text.split("\n") {
-                if !p.is_empty() {
-                    projects.insert(index, p);
-                    let m = format!("      [{}]: {}", index, p);
-                    println!("{}", m.cyan());
-                }
-                index += 1;
-            }
-
-            self.logger.print(format!(
-                "Please select one of the options above using the corresponding [number]... "
-            ));
-            io::stdout().flush().expect("Failed to flush stdout");
-
-            let mut selection = String::new();
-
-            {
-                let stdin = std::io::stdin();
-                stdin
-                    .read_line(&mut selection)
-                    .expect("Failed to read line");
-
-                selection.retain(|c| c.is_digit(10));
-            }
-
-            match selection.parse::<u16>() {
-                Ok(s) => {
-                    let project = match projects.get(&s) {
-                        Some(p) => p,
-                        None => self
-                            .logger
-                            .fatal(String::from("was provided an valid selection. Aborting.")),
-                    };
-
-                    self.logger.println(format!(
-                        "The following project was selected: \"{}\".",
-                        project
-                    ));
-                }
-                Err(_) => self
-                    .logger
-                    .fatal(String::from("was provided an valid selection. Aborting.")),
-            };
+            self.options.project = self.fetch_data("projects", None, false);
         }
 
         if self.options.environment.is_empty() {
-            // TODO: Implement fetching environments from API
+            self.options.environment = self.fetch_data(
+                "environments",
+                Some(format!("&project={}", self.options.project)),
+                false,
+            );
         }
+
+        let data = self.fetch_data(
+            "secrets",
+            Some(format!(
+                "&project={}&environment={}",
+                self.options.project, self.options.environment
+            )),
+            true,
+        );
+
+        // TODO: Save or store
+        println!("{}", data);
 
         return self;
     }

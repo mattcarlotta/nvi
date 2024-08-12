@@ -51,7 +51,7 @@ impl<'a> Logger<'a> {
         println!("{} {}", "[nvi]".cyan(), message.cyan());
     }
 
-    pub fn print_version_and_exit(&self) {
+    pub fn print_version_and_exit(&self) -> ! {
         println!(
             "{}", 
             format!(
@@ -63,7 +63,7 @@ impl<'a> Logger<'a> {
         exit(0);
     }
 
-    pub fn print_help_and_exit(&self) {
+    pub fn print_help_and_exit(&self) -> ! {
         println!("{}", format!(
             r#"┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ nvi cli documentation                                                                                                 │

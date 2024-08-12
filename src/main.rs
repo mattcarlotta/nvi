@@ -11,12 +11,14 @@ use std::process::Command;
 use crate::logger::Logger;
 
 fn main() {
-    let options = Options::new();
+    let mut options = Options::new();
 
-    if options.api {
-        let mut api = Api::new(&options);
+    {
+        if options.api {
+            let mut api = Api::new(&mut options);
 
-        api.get_key_from_file_or_input();
+            api.get_key_from_file_or_input();
+        }
     }
 
     if !options.commands.is_empty() {
