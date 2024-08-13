@@ -20,10 +20,6 @@ pub struct ArgParser<'a> {
 impl<'a> ArgParser<'a> {
     pub fn new(options: &'a mut OptionsType) -> Self {
         let argv: Vec<String> = env::args().collect();
-        let file = match env::current_dir() {
-            Ok(p) => p,
-            Err(_) => PathBuf::new(),
-        };
 
         let mut logger = Logger::new("ArgParser");
         logger.set_debug(&options.debug);
@@ -31,7 +27,7 @@ impl<'a> ArgParser<'a> {
         return ArgParser {
             argc: argv.len(),
             argv,
-            file,
+            file: env::current_dir().unwrap_or(PathBuf::new()),
             curr_flag: String::new(),
             options,
             index: 1,
@@ -239,7 +235,7 @@ impl<'a> ArgParser<'a> {
         return args;
     }
 
-    pub fn parse(&mut self) -> &mut Self {
+    pub fn parse(&mut self) {
         while self.index < self.argc {
             self.curr_flag = match self.argv.get(self.index) {
                 Some(f) => f.to_owned(),
@@ -277,7 +273,7 @@ impl<'a> ArgParser<'a> {
                 }
                 Some(ARG::SAVE) => self.options.save = true,
                 Some(ARG::VERSION) => self.logger.print_version_and_exit(),
-                Some(ARG::UNKNOWN) | None => {
+                _ => {
                     let mut invalid_args = String::new();
 
                     while self.index < self.argc {
@@ -323,7 +319,5 @@ impl<'a> ArgParser<'a> {
             "has set the following flag options... \n{:#?}",
             self.options
         ));
-
-        return self;
     }
 }

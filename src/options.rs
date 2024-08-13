@@ -32,7 +32,7 @@ impl Options {
             debug: false,
             dir: String::new(),
             environment: String::new(),
-            files: vec![".env".to_string()],
+            files: vec![String::from(".env")],
             print: false,
             project: String::new(),
             required_envs: vec![],

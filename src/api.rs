@@ -5,6 +5,7 @@ use colored::Colorize;
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, HeaderValue, CONTENT_TYPE},
+    StatusCode,
 };
 use rpassword::prompt_password;
 
@@ -19,7 +20,7 @@ pub struct Api<'a> {
     headers: HeaderMap,
     options: &'a mut OptionsType,
     api_key: String,
-    status_code: reqwest::StatusCode,
+    status_code: StatusCode,
     logger: Logger<'a>,
 }
 
@@ -36,7 +37,7 @@ impl<'a> Api<'a> {
             headers,
             options,
             api_key: String::new(),
-            status_code: reqwest::StatusCode::OK,
+            status_code: StatusCode::OK,
             logger,
         };
     }
