@@ -2,7 +2,7 @@ extern crate chrono;
 extern crate colored;
 
 use chrono::Datelike;
-use colored::*;
+use colored::Colorize;
 use std::process::exit;
 
 #[derive(Debug)]
