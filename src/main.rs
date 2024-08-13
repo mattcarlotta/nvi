@@ -17,8 +17,7 @@ fn main() {
             .args(&options.commands[1..options.commands.len()])
             .spawn()
         {
-            let logger = Logger::new("Command");
-            logger.fatal(format!(
+            Logger::new("Command").fatal(format!(
                 "was unable to run: {}. Reason: {}",
                 &options.commands.join(" "),
                 err

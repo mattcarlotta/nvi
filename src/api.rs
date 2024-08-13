@@ -20,11 +20,14 @@ pub struct Api<'a> {
 
 impl<'a> Api<'a> {
     pub fn new(options: &'a mut OptionsType) -> Self {
+        let mut logger = Logger::new("Api");
+        logger.set_debug(&options.debug);
+
         return Api {
             options,
             api_key: String::new(),
             status_code: reqwest::StatusCode::OK,
-            logger: Logger::new("Api"),
+            logger,
         };
     }
 
@@ -40,15 +43,13 @@ impl<'a> Api<'a> {
             url.push_str(sp.as_str());
         }
 
-        if self.options.debug {
-            self.logger
-                .debug(format!("is attempting to get data from {}...", base_url));
-        }
+        self.logger
+            .debug(format!("is attempting to get data from {}...", base_url));
 
         let res = match reqwest::blocking::get(url) {
             Ok(r) => r,
             Err(err) => self.logger.fatal(format!(
-                "Failed to retrieve {req_type} from the nvi API. Reason: {err}.",
+                "failed to retrieve {req_type} from the nvi API. Reason: {err}.",
             )),
         };
 
@@ -63,10 +64,9 @@ impl<'a> Api<'a> {
             self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Either the API key is invalid or you haven't created any {req_type} yet!"));
         }
 
-        if self.options.debug {
-            self.logger
-                .debug(format!("successfully retrieved data from {}!", base_url));
-        }
+        self.logger
+            .debug(format!("successfully retrieved data from {}!", base_url));
+
         if return_data {
             return data;
         }
@@ -158,12 +158,10 @@ impl<'a> Api<'a> {
                 }
             };
 
-            if self.options.debug {
-                self.logger.debug(format!(
-                    "successfully parsed the API key found within \"{}\"!",
-                    api_key_file.display()
-                ));
-            }
+            self.logger.debug(format!(
+                "successfully parsed the API key found within \"{}\"!",
+                api_key_file.display()
+            ));
         } else {
             let msg = format!("[nvi] Please enter your unique API key: ").cyan();
             if let Ok(mut ak) = prompt_password(msg) {
@@ -197,16 +195,14 @@ impl<'a> Api<'a> {
             true,
         );
 
-        if self.options.debug {
-            self.logger.debug(format!(
-                "has set the following options... \n{:#?}",
-                self.options
-            ));
+        self.logger.debug(format!(
+            "has set the following options... \n{:#?}",
+            self.options
+        ));
 
-            self.logger.debug(format!(
-                "successfully retrieved the \"{}\" project's \"{}\" environment secrets!",
-                self.options.project, self.options.environment
-            ));
-        }
+        self.logger.debug(format!(
+            "successfully retrieved the \"{}\" project's \"{}\" environment secrets!",
+            self.options.project, self.options.environment
+        ));
     }
 }

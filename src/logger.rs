@@ -8,14 +8,26 @@ use std::process::exit;
 #[derive(Debug)]
 pub struct Logger<'a> {
     log_type: &'a str,
+    debug: bool,
 }
 
 impl<'a> Logger<'a> {
     pub fn new(log_type: &'a str) -> Self {
-        return Logger { log_type };
+        return Logger {
+            log_type,
+            debug: false,
+        };
+    }
+
+    pub fn set_debug(&mut self, debug: &bool) {
+        self.debug = *debug;
     }
 
     pub fn debug(&self, message: String) {
+        if !self.debug {
+            return;
+        }
+
         println!(
             "{} {} {}",
             "[nvi::debug]".blue(),

@@ -25,6 +25,9 @@ impl<'a> ArgParser<'a> {
             Err(_) => PathBuf::new(),
         };
 
+        let mut logger = Logger::new("ArgParser");
+        logger.set_debug(&options.debug);
+
         return ArgParser {
             argc: argv.len(),
             argv,
@@ -32,7 +35,7 @@ impl<'a> ArgParser<'a> {
             curr_flag: String::new(),
             options,
             index: 1,
-            logger: Logger::new("ArgParser"),
+            logger,
         };
     }
 
@@ -130,14 +133,12 @@ impl<'a> ArgParser<'a> {
             }
         };
 
-        if self.options.debug {
-            self.logger.debug(format!(
+        self.logger.debug(format!(
                 "successfully loaded the \"{}\" config from \"{}\" with the following options... \n{:#?}",
                 self.options.config,
                 self.file.display(),
                 config
             ));
-        }
 
         if let Some(api) = self.get_bool_opt(config, "api") {
             self.options.api = api;
@@ -145,6 +146,7 @@ impl<'a> ArgParser<'a> {
 
         if let Some(debug) = self.get_bool_opt(config, "debug") {
             self.options.debug = debug;
+            self.logger.set_debug(&self.options.debug);
         }
 
         if let Some(directory) = self.get_str_opt(config, "directory") {
@@ -249,7 +251,10 @@ impl<'a> ArgParser<'a> {
                 Some(ARG::CONFIG) => {
                     self.options.config = self.parse_single_arg(ARG::CONFIG);
                 }
-                Some(ARG::DEBUG) => self.options.debug = true,
+                Some(ARG::DEBUG) => {
+                    self.options.debug = true;
+                    self.logger.set_debug(&self.options.debug);
+                }
                 Some(ARG::DIRECTORY) => {
                     self.options.dir = self.parse_single_arg(ARG::DIRECTORY);
                 }
@@ -305,24 +310,19 @@ impl<'a> ArgParser<'a> {
             self.next_arg();
         }
 
-        let debug = self.options.debug;
-
         if !self.options.config.is_empty() {
-            if debug {
-                self.logger.debug(format!(
-                    "is attempting to load the \"{}\" config from the nvi.toml...",
-                    self.options.config
-                ));
-            }
+            self.logger.debug(format!(
+                "is attempting to load the \"{}\" config from the nvi.toml...",
+                self.options.config
+            ));
+
             self.parse_config();
         }
 
-        if debug {
-            self.logger.debug(format!(
-                "set the following flag options... \n{:#?}",
-                self.options
-            ));
-        }
+        self.logger.debug(format!(
+            "has set the following flag options... \n{:#?}",
+            self.options
+        ));
 
         return self;
     }
