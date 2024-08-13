@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use toml::{Table, Value};
 
 pub struct ArgParser<'a> {
-    pub argc: usize,
-    pub argv: Vec<String>,
+    argc: usize,
+    argv: Vec<String>,
     file: PathBuf,
     curr_flag: String,
     options: &'a mut OptionsType,
@@ -132,7 +132,7 @@ impl<'a> ArgParser<'a> {
 
         if self.options.debug {
             self.logger.debug(format!(
-                "successfully loaded the \"{}\" config from {}: \n        {:?}",
+                "successfully loaded the \"{}\" config from \"{}\" with the following options... \n{:#?}",
                 self.options.config,
                 self.file.display(),
                 config
@@ -182,6 +182,14 @@ impl<'a> ArgParser<'a> {
         return self;
     }
 
+    fn next_arg(&mut self) {
+        self.index += 1;
+    }
+
+    fn prev_arg(&mut self) {
+        self.index -= 1;
+    }
+
     fn get_arg(&'a self) -> &'a str {
         return match self.argv.get(self.index) {
             Some(a) => a,
@@ -190,7 +198,7 @@ impl<'a> ArgParser<'a> {
     }
 
     fn parse_single_arg(&mut self, flag: ARG) -> String {
-        self.index += 1;
+        self.next_arg();
 
         let arg = self.get_arg();
 
@@ -206,7 +214,7 @@ impl<'a> ArgParser<'a> {
         let mut args = vec![];
 
         while self.index < self.argc {
-            self.index += 1;
+            self.next_arg();
 
             let arg = self.get_arg();
 
@@ -214,8 +222,8 @@ impl<'a> ArgParser<'a> {
                 break;
             }
 
-            if delimiter_stop & arg.contains("-") {
-                self.index -= 1;
+            if delimiter_stop && arg.contains("-") {
+                self.prev_arg();
                 break;
             }
 
@@ -268,12 +276,12 @@ impl<'a> ArgParser<'a> {
                     let mut invalid_args = String::new();
 
                     while self.index < self.argc {
-                        self.index += 1;
+                        self.next_arg();
 
                         let arg = self.get_arg();
 
-                        if arg.is_empty() | arg.contains("-") {
-                            self.index -= 1;
+                        if arg.is_empty() || arg.contains("-") {
+                            self.prev_arg();
                             break;
                         }
 
@@ -294,7 +302,7 @@ impl<'a> ArgParser<'a> {
                 }
             }
 
-            self.index += 1;
+            self.next_arg();
         }
 
         let debug = self.options.debug;
@@ -302,7 +310,7 @@ impl<'a> ArgParser<'a> {
         if !self.options.config.is_empty() {
             if debug {
                 self.logger.debug(format!(
-                    "attempting to load the \"{}\" config from the nvi.toml...",
+                    "is attempting to load the \"{}\" config from the nvi.toml...",
                     self.options.config
                 ));
             }
@@ -311,7 +319,7 @@ impl<'a> ArgParser<'a> {
 
         if debug {
             self.logger.debug(format!(
-                "set the following flag options... {:?}",
+                "set the following flag options... \n{:#?}",
                 self.options
             ));
         }

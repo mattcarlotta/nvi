@@ -1,7 +1,8 @@
 use crate::api::Api;
 use crate::arg::ArgParser;
-use std::fmt::{Debug, Formatter, Result as FormatResult};
+// use std::fmt::{Debug, Formatter, Result as FormatResult};
 
+#[derive(Debug)]
 pub struct Options {
     pub api: bool,
     pub api_envs: String,
@@ -19,25 +20,25 @@ pub struct Options {
 
 pub type OptionsType = Options;
 
-impl Debug for Options {
-    fn fmt(&self, f: &mut Formatter) -> FormatResult {
-        return write!(
-            f,
-            "api: {}, command: {:?}, config: \"{}\", debug: {}, directory: \"{}\", environment: \"{}\", files: {:?}, print: {}, project: \"{}\", required_envs: {:?}, save: {}",
-            self.api,
-            self.commands,
-            self.config,
-            self.debug,
-            self.dir,
-            self.environment,
-            self.files,
-            self.print,
-            self.project,
-            self.required_envs,
-            self.save
-        );
-    }
-}
+// impl Debug for Options {
+//     fn fmt(&self, f: &mut Formatter) -> FormatResult {
+//         return write!(
+//             f,
+//             "api: {}, command: {:?}, config: \"{}\", debug: {}, directory: \"{}\", environment: \"{}\", files: {:?}, print: {}, project: \"{}\", required_envs: {:?}, save: {}",
+//             self.api,
+//             self.commands,
+//             self.config,
+//             self.debug,
+//             self.dir,
+//             self.environment,
+//             self.files,
+//             self.print,
+//             self.project,
+//             self.required_envs,
+//             self.save
+//         );
+//     }
+// }
 
 impl Options {
     pub fn new() -> Self {

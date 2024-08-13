@@ -34,9 +34,15 @@ impl<'a> Api<'a> {
         search_params: Option<String>,
         return_data: bool,
     ) -> String {
-        let mut url = format!("{API_URL}/cli/{req_type}/?apiKey={}", self.api_key);
+        let base_url = format!("{API_URL}/cli/{req_type}");
+        let mut url = format!("{base_url}/?apiKey={}", self.api_key);
         if let Some(sp) = search_params {
             url.push_str(sp.as_str());
+        }
+
+        if self.options.debug {
+            self.logger
+                .debug(format!("is attempting to get data from {}...", base_url));
         }
 
         let res = match reqwest::blocking::get(url) {
@@ -53,10 +59,14 @@ impl<'a> Api<'a> {
             Err(_) => String::new(),
         };
 
-        if !self.status_code.is_success() | data.is_empty() {
+        if !self.status_code.is_success() || data.is_empty() {
             self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Either the API key is invalid or you haven't created any {req_type} yet!"));
         }
 
+        if self.options.debug {
+            self.logger
+                .debug(format!("successfully retrieved data from {}!", base_url));
+        }
         if return_data {
             return data;
         }
@@ -83,6 +93,12 @@ impl<'a> Api<'a> {
             ));
 
             io::stdout().flush().expect("Failed to flush stdout");
+        }
+
+        if options.is_empty() {
+            self.logger.fatal(format!(
+                "failed to parse {req_type} options from the nvi API. Aborting."
+            ));
         }
 
         let mut selection = String::new();
@@ -144,7 +160,7 @@ impl<'a> Api<'a> {
 
             if self.options.debug {
                 self.logger.debug(format!(
-                    "successfully read API key from {}!",
+                    "successfully parsed the API key found within \"{}\"!",
                     api_key_file.display()
                 ));
             }
@@ -182,11 +198,13 @@ impl<'a> Api<'a> {
         );
 
         if self.options.debug {
-            self.logger
-                .debug(format!("set the following options... {:?}", self.options));
+            self.logger.debug(format!(
+                "has set the following options... \n{:#?}",
+                self.options
+            ));
 
             self.logger.debug(format!(
-                "successfully retrieved {} project's {} secrets!",
+                "successfully retrieved the \"{}\" project's \"{}\" environment secrets!",
                 self.options.project, self.options.environment
             ));
         }
