@@ -15,9 +15,12 @@ fn main() {
     let options = Options::new();
 
     let mut lexer = Lexer::new(&options);
-    {
+    if options.api {
+        lexer.parse_api_response();
+    } else {
         lexer.parse_files();
     }
+
     let _tokens = lexer.get_tokens();
 
     if !options.commands.is_empty() {

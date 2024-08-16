@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-enum LexerValue {
+pub enum LexerValue {
     Normal,
     Interpolated,
     Multiline,
@@ -48,7 +48,7 @@ impl Display for LexerValue {
 
 pub struct LexerToken {
     pub key: Option<String>,
-    pub values: LexerValueType,
+    pub values: Vec<LexerValueToken>,
     pub file: String,
 }
 
