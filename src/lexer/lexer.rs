@@ -11,7 +11,6 @@ pub struct Lexer<'a> {
     index: usize,
     byte: usize,
     line: usize,
-    // envs: String,
     file: String,
     file_name: String,
     file_path: PathBuf,
@@ -29,7 +28,6 @@ impl<'a> Lexer<'a> {
             index: 0,
             byte: 1,
             line: 1,
-            // envs: String::new(),
             file: String::new(),
             file_name: String::new(),
             file_path: env::current_dir().unwrap_or(PathBuf::new()),
@@ -67,246 +65,209 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip(&mut self, offset: Option<usize>) {
-        self.index += offset.unwrap_or(1);
+        let o = offset.unwrap_or(1);
+        self.inc_byte(Some(o));
+        self.index += o;
     }
 
-    fn get_char(&self) -> char {
-        return match self.peek(None) {
-            Some(c) => c,
-            None => globals::NULL_CHAR,
-        };
-    }
-
-    fn get_next_char(&self) -> char {
-        return match self.peek(Some(1)) {
+    fn get_char(&self, offset: Option<usize>) -> char {
+        return match self.peek(offset) {
             Some(c) => c,
             None => globals::NULL_CHAR,
         };
     }
 
     fn parse_file(&mut self) {
-        // let mut token = LexerToken::new();
-        // token.file = self.file_name.to_owned();
+        let mut token = LexerToken::new();
+        token.file = self.file_name.to_owned();
 
         let mut value = String::new();
-        let mut key = String::new();
         while self.peek(None).is_some() {
-            let current_char = self.get_char();
+            let current_char = self.get_char(None);
 
-            if !key.is_empty() || !value.is_empty() {
-                println!("key: {key}, value: {value}");
-            }
+            match current_char {
+                globals::NULL_CHAR | globals::LINE_DELIMITER => {
+                    if token.key.is_some() && !value.is_empty() {
+                        token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
+                        self.tokens.push(token.clone());
+                    }
 
-            if current_char == globals::NULL_CHAR || current_char == globals::LINE_DELIMITER {
-                value.clear();
-                key.clear();
-                self.skip(None);
-                continue;
-            }
-            println!(
-                "char: {}, line: {}, byte: {}, index: {}",
-                current_char.escape_default().to_string(),
-                self.line,
-                self.byte,
-                self.index,
-            );
+                    token.key = None;
+                    token.values.clear();
+                    value.clear();
+                    self.inc_line();
+                    self.skip(None);
+                    self.reset_byte();
+                    continue;
+                }
+                globals::ASSIGN_OP => {
+                    token.key = Some(value.to_owned());
+                    value.clear();
 
-            if current_char.is_alphanumeric() {
-                while self.peek(None).is_some() && self.get_char().is_alphanumeric() {
-                    value.push(self.get_char());
+                    // skip '='
                     self.skip(None);
                 }
-                continue;
-            } else if current_char.is_whitespace() || current_char.is_ascii_punctuation() {
-                match current_char {
-                    globals::LINE_DELIMITER => continue,
-                    globals::ASSIGN_OP => {
-                        key = value.to_owned();
-                        self.inc_byte(None);
-                        value.clear();
-
-                        // self.skip '='
+                globals::HASH => {
+                    // commit values with hashes
+                    if token.key.is_some() {
+                        value.push(current_char);
                         self.skip(None);
                         continue;
                     }
-                    globals::HASH => {
-                        if !key.is_empty() {
-                            // commit lines with hashes
-                            value.push(current_char);
-                            self.skip(None);
-                            continue;
-                        }
 
-                        // skip lines with comments
-                        while self.peek(None).is_some()
-                            && self.get_char() != globals::LINE_DELIMITER
-                        {
-                            self.skip(None);
-                        }
-
-                        self.inc_line();
-                        // self.skip '\n'
+                    // skip lines starting with comments
+                    while self.peek(None).is_some()
+                        && self.get_char(None) != globals::LINE_DELIMITER
+                    {
+                        value.push(self.get_char(None));
                         self.skip(None);
+                    }
 
+                    let mut comment_token = LexerToken::new();
+                    comment_token.file = token.file.clone();
+
+
+                    comment_token.values.push(LexerValueToken::new(LexerValue::Comment, &value, self.line, self.byte));
+                    self.tokens.push(comment_token.clone());
+                    value.clear();
+                }
+                globals::DOLLAR_SIGN => {
+                    // commit values with dollar signs
+                    if self.get_char(Some(1)) != globals::OPEN_BRACE {
+                        value.push(current_char);
+                        self.skip(None);
                         continue;
                     }
-                    globals::DOLLAR_SIGN => {
-                        if self.get_next_char() != globals::OPEN_BRACE {
-                            value.push(current_char);
-                            continue;
-                        }
 
-                        if !value.is_empty() {
-                            // token.values.push(LexerValueToken {
-                            //     token_type: LexerValue::Normal,
-                            //     value: Some(value.clone()),
-                            //     byte: self.byte,
-                            //     line: self.line,
-                            // });
-                            value.clear();
-                        }
-
-                        // self.skip "${"
-                        self.skip(Some(2));
-                        self.inc_byte(Some(2));
-
-                        while self.peek(None).is_some() && self.get_char() != globals::CLOSE_BRACE {
-                            if self.get_char() == globals::LINE_DELIMITER {
-                                // _token_key = token.key.value();
-                                // logger.fatal(INTERPOLATION_ERROR);
-                            } else {
-                                if let Some(c) = self.peek(None) {
-                                    value.push(c);
-                                }
-                                self.skip(None);
-                                // value.push_back(commit());
-                            }
-                        }
-
-                        // token.values.push(LexerValueToken {
-                        //     token_type: LexerValue::Interpolated,
-                        //     value: Some(value.clone()),
-                        //     byte: self.byte,
-                        //     line: self.line,
-                        // });
+                    if !value.is_empty() {
+                        token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
                         value.clear();
-
-                        // self.skip '}'
-                        self.skip(None);
-                        self.inc_byte(None);
-
-                        // if the next value is a new line, store the token and then reset it
-                        if self.peek(None).is_some() && self.get_char() == globals::LINE_DELIMITER {
-                            // self.tokens.push(token);
-                            // token.key = None;
-                            // token.values.clear();
-                            self.reset_byte();
-                            value.clear();
-                            self.inc_line();
-
-                            // self.skip '\n'
-                            self.skip(None);
-                        }
-                        continue;
                     }
-                    globals::BACK_SLASH => {
-                        if self.get_next_char() != globals::LINE_DELIMITER {
-                            value.push(current_char);
-                            continue;
-                        }
 
-                        if !value.is_empty() {
-                            // token.values.push({ValueType::normal, value, _byte, _line});
-                        }
+                    // skip "${"
+                    self.skip(Some(2));
 
-                        // self.skip "\\n"
-                        self.skip(Some(2));
-                        self.reset_byte();
-
-                        // handle multiline values
-                        value.clear();
-                        while self.peek(None).is_some() {
-                            let is_eol = self.get_char() == globals::LINE_DELIMITER;
-
-                            if (self.get_char() == globals::BACK_SLASH
-                                && self.get_next_char() == globals::LINE_DELIMITER)
-                                || is_eol
-                            {
-                                self.inc_line();
-
-                                // TODO: Fix this WET code
-                                // if is_eol {
-                                //     token.values.push(LexerValueToken {
-                                //         token_type: LexerValue::Normal,
-                                //         value: Some(value.clone()),
-                                //         byte: self.byte,
-                                //         line: self.line,
-                                //     });
-                                // } else {
-                                //     token.values.push(LexerValueToken {
-                                //         token_type: LexerValue::Multiline,
-                                //         value: Some(value.clone()),
-                                //         byte: self.byte,
-                                //         line: self.line,
-                                //     });
-                                // }
-
-                                value.clear();
-                                self.reset_byte();
-
-                                // self.skip '\n' or "\\n"
-                                let mut next_byte: usize = 1;
-                                if is_eol {
-                                    next_byte += 1;
-                                }
-                                self.skip(Some(next_byte));
-
-                                if is_eol {
-                                    break;
-                                }
-
-                                continue;
-                            }
-
+                    while self.peek(None).is_some() && self.get_char(None) != globals::CLOSE_BRACE {
+                        if self.get_char(None) == globals::LINE_DELIMITER {
+                            self.logger.fatal(
+                                format!(
+                                    "found an error in {}:{}:{}. The key \"{}\" contains an Interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
+                                    self.file_name, 
+                                    self.line, 
+                                    self.byte, 
+                                    token.key.unwrap())
+                                );
+                        } else {
                             if let Some(c) = self.peek(None) {
                                 value.push(c);
                             }
                             self.skip(None);
                         }
+                    }
 
-                        // self.tokens.push(token);
-                        // token.key = None;
-                        // token.values = vec![];
-                        value.clear();
-                        self.reset_byte();
-                        self.inc_line();
-                        continue;
-                    }
-                    _ => {
-                        value.push(current_char);
-                        self.skip(None);
-                        continue;
-                    }
+                    token.values.push(LexerValueToken::new(LexerValue::Interpolated, &value, self.line, self.byte));
+                    value.clear();
+
+                    // skip '}'
+                    self.skip(None);
+
+                    // if the next value is a new line, store the token and then reset it
+                    // if self.peek(None).is_some() && self.get_char() == globals::LINE_DELIMITER {
+                    //     self.tokens.push(token.clone());
+                    //     token.key = None;
+                    //     token.values.clear();
+                    //     self.reset_byte();
+                    //     value.clear();
+                    //     self.inc_line();
+
+                    //     // self.skip '\n'
+                    //     self.skip(None);
+                    // }
                 }
-            } else {
-                // if token.key.is_some() {
-                //     token.values.push(LexerValueToken {
-                //         token_type: LexerValue::Normal,
-                //         value: Some(value.clone()),
-                //         byte: self.byte,
-                //         line: self.line,
-                //     });
-                //     self.tokens.push(token);
-                // }
+                // globals::BACK_SLASH => {
+                //     if self.peek(Some(1)).is_some()
+                //         && self.get_next_char() != globals::LINE_DELIMITER
+                //     {
+                //         value.push(current_char);
+                //         continue;
+                //     }
 
-                // token.key = None;
-                // token.values.clear();
-                value.clear();
-                self.reset_byte();
-                self.inc_line();
-                self.skip(None);
-                continue;
+                //     if !value.is_empty() {
+                //         token.values.push(LexerValueToken {
+                //             token_type: LexerValue::Normal,
+                //             value: Some(value.to_owned()),
+                //             byte: self.byte,
+                //             line: self.line,
+                //         });
+                //     }
+
+                //     // self.skip "\\n"
+                //     self.skip(Some(2));
+                //     self.reset_byte();
+
+                //     // handle multiline values
+                //     value.clear();
+                //     while self.peek(None).is_some() {
+                //         let is_eol = self.get_char() == globals::LINE_DELIMITER;
+
+                //         if (self.get_char() == globals::BACK_SLASH
+                //             && self.get_next_char() == globals::LINE_DELIMITER)
+                //             || is_eol
+                //         {
+                //             self.inc_line();
+
+                //             let token_type;
+                //             if is_eol {
+                //                 token_type = LexerValue::Normal;
+                //             } else {
+                //                 token_type = LexerValue::Multiline;
+                //             }
+
+                //             token.values.push(LexerValueToken {
+                //                 token_type,
+                //                 value: Some(value.to_owned()),
+                //                 byte: self.byte,
+                //                 line: self.line,
+                //             });
+
+                //             value.clear();
+                //             self.reset_byte();
+
+                //             // self.skip '\n' or "\\n"
+                //             let mut next_byte: usize = 1;
+                //             if is_eol {
+                //                 next_byte += 1;
+                //             }
+                //             self.skip(Some(next_byte));
+
+                //             if is_eol {
+                //                 break;
+                //             }
+                //             continue;
+                //         }
+
+                //         if let Some(c) = self.peek(None) {
+                //             value.push(c);
+                //         }
+                //         self.skip(None);
+                //     }
+
+                //     self.tokens.push(token.clone());
+                //     token.key = None;
+                //     token.values.clear();
+                //     value.clear();
+                //     self.reset_byte();
+                //     self.inc_line();
+                // }
+                _ => {
+                    value.push(current_char);
+                    self.skip(None);
+                }
             }
+        }
+
+        if self.tokens.is_empty() {
+            self.logger.fatal(format!("was unable to generate any tokens for \"{}\". Aborting.", self.file_name));
         }
     }
 
@@ -380,10 +341,6 @@ impl<'a> Lexer<'a> {
             self.parse_file();
         }
 
-        // if (_options.debug) {
-        //     logger.debug(DEBUG_LEXER);
-        // }
-
-        // return this;
+        self.logger.debug(format!("generated the following tokens...\n{:#?}", self.tokens));
     }
 }

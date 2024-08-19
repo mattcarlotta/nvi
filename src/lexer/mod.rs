@@ -1,5 +1,5 @@
 pub use lexer::Lexer;
-pub use lexer_token::{LexerToken, LexerTokensType, LexerValue, LexerValueToken, LexerValueType};
+pub use lexer_token::{LexerToken, LexerValue, LexerValueToken};
 
 mod lexer;
 mod lexer_token;
