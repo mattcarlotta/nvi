@@ -83,10 +83,11 @@ impl<'a> Lexer<'a> {
 
         let mut value = String::new();
         while self.peek(None).is_some() {
-            let current_char = self.get_char(None);
+            let mut current_char = self.get_char(None);
 
             match current_char {
-                globals::NULL_CHAR | globals::LINE_DELIMITER => {
+                globals::NULL_CHAR => self.skip(None),
+                globals::LINE_DELIMITER => {
                     if token.key.is_some() && !value.is_empty() {
                         token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
                         self.tokens.push(token.clone());
@@ -98,7 +99,6 @@ impl<'a> Lexer<'a> {
                     self.inc_line();
                     self.skip(None);
                     self.reset_byte();
-                    continue;
                 }
                 globals::ASSIGN_OP => {
                     token.key = Some(value.to_owned());
@@ -123,12 +123,8 @@ impl<'a> Lexer<'a> {
                         self.skip(None);
                     }
 
-                    let mut comment_token = LexerToken::new();
-                    comment_token.file = token.file.clone();
-
-
-                    comment_token.values.push(LexerValueToken::new(LexerValue::Comment, &value, self.line, self.byte));
-                    self.tokens.push(comment_token.clone());
+                    token.values.push(LexerValueToken::new(LexerValue::Comment, &value, self.line, self.byte));
+                    self.tokens.push(token.clone());
                     value.clear();
                 }
                 globals::DOLLAR_SIGN => {
@@ -139,6 +135,7 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
+                    // store any previous parsed values 
                     if !value.is_empty() {
                         token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
                         value.clear();
@@ -147,21 +144,25 @@ impl<'a> Lexer<'a> {
                     // skip "${"
                     self.skip(Some(2));
 
-                    while self.peek(None).is_some() && self.get_char(None) != globals::CLOSE_BRACE {
-                        if self.get_char(None) == globals::LINE_DELIMITER {
-                            self.logger.fatal(
-                                format!(
-                                    "found an error in {}:{}:{}. The key \"{}\" contains an Interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
-                                    self.file_name, 
-                                    self.line, 
-                                    self.byte, 
-                                    token.key.unwrap())
+                    // extract ENV within "${ENV}"
+                    while self.peek(None).is_some() {
+                        current_char = self.get_char(None);
+                        match current_char {
+                            globals::CLOSE_BRACE => break,
+                            globals::LINE_DELIMITER => {
+                                self.logger.fatal(
+                                    format!(
+                                        "found an error in {}:{}:{}. The key \"{}\" contains an Interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
+                                        self.file_name, 
+                                        self.line, 
+                                        self.byte, 
+                                        token.key.unwrap())
                                 );
-                        } else {
-                            if let Some(c) = self.peek(None) {
-                                value.push(c);
                             }
-                            self.skip(None);
+                            _ => {
+                                value.push(current_char);
+                                self.skip(None);
+                            }
                         }
                     }
 
@@ -193,25 +194,21 @@ impl<'a> Lexer<'a> {
                     }
 
                     if !value.is_empty() {
-                        token.values.push(LexerValueToken {
-                            token_type: LexerValue::Normal,
-                            value: Some(value.to_owned()),
-                            byte: self.byte,
-                            line: self.line,
-                        });
+                        token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
                     }
 
                     // self.skip "\\n"
                     self.skip(Some(2));
                     self.reset_byte();
 
-                    // handle multiline values
                     value.clear();
-                    while self.peek(None).is_some() {
-                        let cc = self.get_char(None);
-                        let is_eol = cc == globals::LINE_DELIMITER;
 
-                        if (cc == globals::BACK_SLASH
+                    // handle multiline values
+                    while self.peek(None).is_some() {
+                        current_char = self.get_char(None);
+                        let is_eol = current_char == globals::LINE_DELIMITER;
+
+                        if (current_char == globals::BACK_SLASH
                             && self.get_char(Some(1)) == globals::LINE_DELIMITER)
                             || is_eol
                         {
@@ -236,7 +233,7 @@ impl<'a> Lexer<'a> {
 
                         if let Some(c) = self.peek(None) {
                             value.push(c);
-                        }
+                        } 
                         self.skip(None);
                     }
 
