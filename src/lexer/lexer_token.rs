@@ -5,7 +5,19 @@ pub enum LexerValue {
     Normal,
     Interpolated,
     Comment,
-    // Multiline,
+    Multiline,
+}
+
+impl Display for LexerValue {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        let val = match self {
+            LexerValue::Normal => "NORMAL",
+            LexerValue::Interpolated => "INTERPOLATED",
+            LexerValue::Comment => "COMMENT",
+            LexerValue::Multiline => "MULTILINE",
+        };
+        return write!(f, "{}", val);
+    }
 }
 
 pub struct LexerValueToken {
@@ -32,11 +44,11 @@ impl Debug for LexerValueToken {
             Some(v) => format!("Some({v})"),
             None => String::from("None"),
         };
-        write!(
+        return write!(
             f,
             "token_type: {}, value: {}, line: {}, byte: {}",
             &self.token_type, value, &self.line, &self.byte
-        )
+        );
     }
 }
 
@@ -48,19 +60,6 @@ impl LexerValueToken {
             line,
             byte,
         };
-    }
-}
-
-impl Display for LexerValue {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let v = match self {
-            LexerValue::Normal => "NORMAL",
-            LexerValue::Interpolated => "INTERPOLATED",
-            LexerValue::Comment => "COMMENT",
-            // LexerValue::Multiline => "MULTILINE",
-            // LexerValue::Unknown => "an unknown value",
-        };
-        write!(f, "{}", v)
     }
 }
 
@@ -82,11 +81,12 @@ impl Clone for LexerToken {
 
 impl Debug for LexerToken {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        f.debug_struct("LexerToken")
+        return f
+            .debug_struct("LexerToken")
             .field("key", &self.key)
             .field("values", &self.values)
             .field("file", &self.file)
-            .finish()
+            .finish();
     }
 }
 

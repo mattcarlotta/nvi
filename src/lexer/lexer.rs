@@ -184,81 +184,69 @@ impl<'a> Lexer<'a> {
                     //     self.skip(None);
                     // }
                 }
-                // globals::BACK_SLASH => {
-                //     if self.peek(Some(1)).is_some()
-                //         && self.get_next_char() != globals::LINE_DELIMITER
-                //     {
-                //         value.push(current_char);
-                //         continue;
-                //     }
+                globals::BACK_SLASH => {
+                    if self.peek(Some(1)).is_some()
+                        && self.get_char(Some(1)) != globals::LINE_DELIMITER
+                    {
+                        value.push(current_char);
+                        continue;
+                    }
 
-                //     if !value.is_empty() {
-                //         token.values.push(LexerValueToken {
-                //             token_type: LexerValue::Normal,
-                //             value: Some(value.to_owned()),
-                //             byte: self.byte,
-                //             line: self.line,
-                //         });
-                //     }
+                    if !value.is_empty() {
+                        token.values.push(LexerValueToken {
+                            token_type: LexerValue::Normal,
+                            value: Some(value.to_owned()),
+                            byte: self.byte,
+                            line: self.line,
+                        });
+                    }
 
-                //     // self.skip "\\n"
-                //     self.skip(Some(2));
-                //     self.reset_byte();
+                    // self.skip "\\n"
+                    self.skip(Some(2));
+                    self.reset_byte();
 
-                //     // handle multiline values
-                //     value.clear();
-                //     while self.peek(None).is_some() {
-                //         let is_eol = self.get_char() == globals::LINE_DELIMITER;
+                    // handle multiline values
+                    value.clear();
+                    while self.peek(None).is_some() {
+                        let cc = self.get_char(None);
+                        let is_eol = cc == globals::LINE_DELIMITER;
 
-                //         if (self.get_char() == globals::BACK_SLASH
-                //             && self.get_next_char() == globals::LINE_DELIMITER)
-                //             || is_eol
-                //         {
-                //             self.inc_line();
+                        if (cc == globals::BACK_SLASH
+                            && self.get_char(Some(1)) == globals::LINE_DELIMITER)
+                            || is_eol
+                        {
+                            self.inc_line();
 
-                //             let token_type;
-                //             if is_eol {
-                //                 token_type = LexerValue::Normal;
-                //             } else {
-                //                 token_type = LexerValue::Multiline;
-                //             }
+                            token.values.push(LexerValueToken::new(LexerValue::Multiline, &value, self.line, self.byte));
 
-                //             token.values.push(LexerValueToken {
-                //                 token_type,
-                //                 value: Some(value.to_owned()),
-                //                 byte: self.byte,
-                //                 line: self.line,
-                //             });
+                            value.clear();
+                            self.reset_byte();
 
-                //             value.clear();
-                //             self.reset_byte();
+                            // skip '\n' or "\\n"
+                            let mut next_byte: usize = 1;
+                            if !is_eol {
+                                next_byte += 1;
+                            }
+                            self.skip(Some(next_byte));
 
-                //             // self.skip '\n' or "\\n"
-                //             let mut next_byte: usize = 1;
-                //             if is_eol {
-                //                 next_byte += 1;
-                //             }
-                //             self.skip(Some(next_byte));
+                            if is_eol {
+                                break;
+                            }
+                        }
 
-                //             if is_eol {
-                //                 break;
-                //             }
-                //             continue;
-                //         }
+                        if let Some(c) = self.peek(None) {
+                            value.push(c);
+                        }
+                        self.skip(None);
+                    }
 
-                //         if let Some(c) = self.peek(None) {
-                //             value.push(c);
-                //         }
-                //         self.skip(None);
-                //     }
-
-                //     self.tokens.push(token.clone());
-                //     token.key = None;
-                //     token.values.clear();
-                //     value.clear();
-                //     self.reset_byte();
-                //     self.inc_line();
-                // }
+                    self.tokens.push(token.clone());
+                    token.key = None;
+                    token.values.clear();
+                    value.clear();
+                    self.reset_byte();
+                    self.inc_line();
+                }
                 _ => {
                     value.push(current_char);
                     self.skip(None);
