@@ -77,7 +77,7 @@ impl<'a> Lexer<'a> {
         };
     }
 
-    fn parse_file(&mut self) {
+    fn parse(&mut self) {
         let mut token = LexerToken::new();
         token.file = self.file_name.to_owned();
 
@@ -146,9 +146,12 @@ impl<'a> Lexer<'a> {
 
                     // extract ENV within "${ENV}"
                     while self.peek(None).is_some() {
-                        current_char = self.get_char(None);
-                        match current_char {
-                            globals::CLOSE_BRACE => break,
+                        match self.get_char(None) {
+                            globals::CLOSE_BRACE => {
+                                // skip '}'
+                                self.skip(None);
+                                break;
+                            },
                             globals::LINE_DELIMITER => {
                                 self.logger.fatal(
                                     format!(
@@ -156,11 +159,14 @@ impl<'a> Lexer<'a> {
                                         self.file_name, 
                                         self.line, 
                                         self.byte, 
-                                        token.key.unwrap())
+                                        token.key.unwrap_or(String::new())
+                                    )
                                 );
                             }
                             _ => {
-                                value.push(current_char);
+                                if let Some(c) = self.peek(None) {
+                                    value.push(c);
+                                } 
                                 self.skip(None);
                             }
                         }
@@ -168,24 +174,9 @@ impl<'a> Lexer<'a> {
 
                     token.values.push(LexerValueToken::new(LexerValue::Interpolated, &value, self.line, self.byte));
                     value.clear();
-
-                    // skip '}'
-                    self.skip(None);
-
-                    // if the next value is a new line, store the token and then reset it
-                    // if self.peek(None).is_some() && self.get_char() == globals::LINE_DELIMITER {
-                    //     self.tokens.push(token.clone());
-                    //     token.key = None;
-                    //     token.values.clear();
-                    //     self.reset_byte();
-                    //     value.clear();
-                    //     self.inc_line();
-
-                    //     // self.skip '\n'
-                    //     self.skip(None);
-                    // }
                 }
                 globals::BACK_SLASH => {
+                    // commit values with back slashes
                     if self.peek(Some(1)).is_some()
                         && self.get_char(Some(1)) != globals::LINE_DELIMITER
                     {
@@ -193,11 +184,12 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
+                    // store any previous parsed values 
                     if !value.is_empty() {
                         token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
                     }
 
-                    // self.skip "\\n"
+                    // skip "\\n" characters
                     self.skip(Some(2));
                     self.reset_byte();
 
@@ -260,12 +252,12 @@ impl<'a> Lexer<'a> {
         self.index = 0;
         self.byte = 1;
         self.line = 1;
+        self.file_name = format!("{}_{}", self.options.project, self.options.environment);
         self.file = self.options.api_envs.to_owned();
-        self.file_path = env::current_dir().unwrap_or(PathBuf::new());
 
-        self.parse_file();
+        self.parse();
 
-        self.logger.debug(format!("lexer tokens"));
+        self.logger.debug(format!("generated the following tokens...\n{:#?}", self.tokens));
     }
 
     pub fn parse_files(&mut self) {
@@ -275,7 +267,6 @@ impl<'a> Lexer<'a> {
             self.line = 1;
             self.file_name = env.clone();
             self.file = String::new();
-            self.file_path = env::current_dir().unwrap_or(PathBuf::new());
 
             if !self.options.dir.is_empty() {
                 self.file_path.push(&self.options.dir);
@@ -323,7 +314,7 @@ impl<'a> Lexer<'a> {
                 self.file_path.display()
             ));
 
-            self.parse_file();
+            self.parse();
         }
 
         self.logger.debug(format!("generated the following tokens...\n{:#?}", self.tokens));
