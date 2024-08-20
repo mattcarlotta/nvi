@@ -37,7 +37,7 @@ impl<'a> Logger<'a> {
     }
 
     pub fn fatal(&self, message: String) -> ! {
-        println!(
+        eprintln!(
             "{} {} {}",
             "[nvi::error]".red(),
             self.log_type.red(),
@@ -47,7 +47,7 @@ impl<'a> Logger<'a> {
     }
 
     pub fn warn(&self, message: String) {
-        println!(
+        eprintln!(
             "{} {} {}",
             "[nvi::warning]".yellow(),
             self.log_type.yellow(),

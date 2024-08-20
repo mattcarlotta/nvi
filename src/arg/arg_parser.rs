@@ -40,7 +40,7 @@ impl<'a> ArgParser<'a> {
             let values = match opt_vec {
                 toml::Value::Array(v) => v,
                 _ => self.logger.fatal(format!(
-                    "expected the \"{prop}\" config option to be an array, instead parsed a(n): {}.",
+                    "expected the {prop:?} config option to be an array, instead parsed a(n): {}.",
                     opt_vec.type_str()
                 )),
             };
@@ -51,7 +51,7 @@ impl<'a> ArgParser<'a> {
                 match val {
                 toml::Value::String(v) => opts.push(v.to_owned()),
                 _ => self.logger.fatal(format!(
-                        "expected the \"{prop}\" config option to be an array of strings, instead found {val}, which is a(n): {}.",
+                        "expected the {prop:?} config option to be an array of strings, instead found {val}, which is a(n): {}.",
                         val.type_str()
                     )),
                 }
@@ -68,7 +68,7 @@ impl<'a> ArgParser<'a> {
             match value {
                 toml::Value::String(v) => return Some(v.to_owned()),
                 _ => self.logger.fatal(format!(
-                    "expected the \"{prop}\" config option to be a string value, instead parsed a(n): {}.",
+                    "expected the {prop:?} config option to be a string value, instead parsed a(n): {}.",
                     value.type_str()
                 )),
             };
@@ -82,7 +82,7 @@ impl<'a> ArgParser<'a> {
             match value {
                 toml::Value::Boolean(v) => return Some(*v),
                 _ => self.logger.fatal(format!(
-                    "expected the \"{prop}\" config option to be a boolean value, instead parsed a(n): {}.",
+                    "expected the {prop:?} config option to be a boolean value, instead parsed a(n): {}.",
                     value.type_str()
                 )),
             };
@@ -102,7 +102,7 @@ impl<'a> ArgParser<'a> {
             Ok(c) => c,
             Err(err) => {
                 self.logger.fatal(format!(
-                    "could not read file: \"{}\". Reason: {err}.",
+                    "could not read file: {:?}. Reason: {err}.",
                     self.file.display(),
                 ));
             }
@@ -112,7 +112,7 @@ impl<'a> ArgParser<'a> {
             Ok(pc) => pc,
             Err(err) => {
                 self.logger.fatal(format!(
-                    "was unable to load the toml config data from \"{}\". Reason: {err}.",
+                    "was unable to load the toml config data from {:?}. Reason: {err}.",
                     self.file.display(),
                 ));
             }
@@ -122,7 +122,7 @@ impl<'a> ArgParser<'a> {
             Some(c) => c,
             None => {
                 self.logger.fatal(format!(
-                    "was unable to load the \"{}\" environment config from \"{}\". Reason: The environment configuration does't appear to exist. Maybe a spelling error?",
+                    "was unable to load the {:?} environment config from {:?}. Reason: The environment configuration does't appear to exist. Maybe a spelling error?",
                     self.options.config,
                     self.file.display(),
                 ));
@@ -130,11 +130,11 @@ impl<'a> ArgParser<'a> {
         };
 
         self.logger.debug(format!(
-                "successfully loaded the \"{}\" config from \"{}\" with the following options... \n{:#?}",
-                self.options.config,
-                self.file.display(),
-                config
-            ));
+            "successfully loaded the {:?} config from {:?} with the following options... \n{:#?}",
+            self.options.config,
+            self.file.display(),
+            config
+        ));
 
         if let Some(api) = self.get_bool_opt(config, "api") {
             self.options.api = api;
@@ -201,6 +201,7 @@ impl<'a> ArgParser<'a> {
         let arg = self.get_arg();
 
         if arg.is_empty() || arg.contains("-") {
+            // TODO - Add per flag error messages
             self.logger
                 .fatal(format!("error {flag} {}", self.curr_flag));
         }
@@ -228,6 +229,7 @@ impl<'a> ArgParser<'a> {
             args.push(arg.to_owned());
         }
 
+        // TODO - Add per flag error messages
         if args.is_empty() {
             self.logger.fatal(format!("error for {flag}"));
         }
@@ -293,13 +295,13 @@ impl<'a> ArgParser<'a> {
                         invalid_args.push_str(arg);
                     }
 
-                    let mut message = format!("found an unknown flag: \"{}\"", self.curr_flag);
+                    let mut message = format!("found an unknown flag {:?}", self.curr_flag);
 
                     if !invalid_args.is_empty() {
-                        message += &format!(" with args \"{invalid_args}\"");
+                        message.push_str(format!(" with args {invalid_args:?}").as_str());
                     }
 
-                    self.logger.warn(message + ". Skipping.");
+                    self.logger.warn(format!("{message}. Skipping."));
                 }
             }
 
@@ -308,7 +310,7 @@ impl<'a> ArgParser<'a> {
 
         if !self.options.config.is_empty() {
             self.logger.debug(format!(
-                "is attempting to load the \"{}\" config from the nvi.toml...",
+                "is attempting to load the {:?} config from the nvi.toml...",
                 self.options.config
             ));
 

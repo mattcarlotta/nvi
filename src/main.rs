@@ -1,38 +1,30 @@
 mod api;
 mod arg;
+mod generator;
 mod globals;
 mod lexer;
 mod logger;
 mod options;
+mod parser;
 
+use generator::Generator;
 use lexer::Lexer;
 use options::Options;
-use std::process::Command;
-
-use crate::logger::Logger;
+use parser::Parser;
 
 fn main() {
     let options = Options::new();
 
     let mut lexer = Lexer::new(&options);
-    if options.api {
-        lexer.parse_api_response();
-    } else {
-        lexer.parse_files();
-    }
+    lexer.tokenize();
 
-    let _tokens = lexer.get_tokens();
+    let tokens = lexer.get_tokens();
 
-    if !options.commands.is_empty() {
-        if let Err(err) = Command::new(&options.commands[0])
-            .args(&options.commands[1..options.commands.len()])
-            .spawn()
-        {
-            Logger::new("Command").fatal(format!(
-                "was unable to run: {}. Reason: {}",
-                &options.commands.join(" "),
-                err
-            ));
-        }
-    }
+    let mut parser = Parser::new(&options, &tokens);
+    parser.parse_tokens();
+
+    let envs = parser.get_envs();
+
+    let generator = Generator::new(&options, &envs);
+    generator.run();
 }

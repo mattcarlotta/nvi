@@ -93,6 +93,8 @@ impl<'a> Lexer<'a> {
                         self.tokens.push(token.clone());
                     }
 
+                    // println!("key: {}, value: {value}", token.key.unwrap_or(String::from("")));
+
                     token.key = None;
                     token.values.clear();
                     value.clear();
@@ -155,7 +157,7 @@ impl<'a> Lexer<'a> {
                             globals::LINE_DELIMITER => {
                                 self.logger.fatal(
                                     format!(
-                                        "found an error in {}:{}:{}. The key \"{}\" contains an Interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
+                                        "found an error in {}:{}:{}. The key {:?} contains an interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
                                         self.file_name, 
                                         self.line, 
                                         self.byte, 
@@ -172,7 +174,10 @@ impl<'a> Lexer<'a> {
                         }
                     }
 
+
                     token.values.push(LexerValueToken::new(LexerValue::Interpolated, &value, self.line, self.byte));
+                    self.tokens.push(token.clone());
+
                     value.clear();
                 }
                 globals::BACK_SLASH => {
@@ -244,23 +249,19 @@ impl<'a> Lexer<'a> {
         }
 
         if self.tokens.is_empty() {
-            self.logger.fatal(format!("was unable to generate any tokens for \"{}\". Aborting.", self.file_name));
+            self.logger.fatal(format!("was unable to generate any tokens for {:?}. Aborting.", self.file_name));
         }
     }
 
-    pub fn parse_api_response(&mut self) {
-        self.index = 0;
-        self.byte = 1;
-        self.line = 1;
+    fn parse_api_response(&mut self) {
         self.file_name = format!("{}_{}", self.options.project, self.options.environment);
         self.file = self.options.api_envs.to_owned();
 
         self.parse();
 
-        self.logger.debug(format!("generated the following tokens...\n{:#?}", self.tokens));
     }
 
-    pub fn parse_files(&mut self) {
+    fn parse_files(&mut self) {
         for env in &self.options.files {
             self.index = 0;
             self.byte = 1;
@@ -285,7 +286,7 @@ impl<'a> Lexer<'a> {
 
             if !self.file_path.is_file() {
                 self.logger.fatal(format!(
-                    "was unable to locate \"{}\". The .env file doesn't appear to exist at this path!",
+                    "was unable to locate {:?}. The .env file doesn't appear to exist at this path!",
                     self.file_path.display()
                 ));
             }
@@ -296,7 +297,7 @@ impl<'a> Lexer<'a> {
                 }
                 Err(err) => {
                     self.logger.fatal(format!(
-                        "could not read file: \"{}\". Reason: {err}.",
+                        "could not read file: {:?}. Reason: {err}.",
                         self.file_path.display(),
                     ));
                 }
@@ -304,17 +305,25 @@ impl<'a> Lexer<'a> {
 
             if self.file.is_empty() {
                 self.logger.fatal(format!(
-                    "tried to load file: \"{}\", but it doesn't appear to have any ENVs. Aborting.",
+                    "tried to load file: {:?}, but it doesn't appear to have any ENVs. Aborting.",
                     self.file_path.display(),
                 ));
             }
 
             self.logger.debug(format!(
-                "successfully parsed the file \"{}\"!",
+                "successfully parsed the file {:?}!",
                 self.file_path.display()
             ));
 
             self.parse();
+        }
+    }
+
+    pub fn tokenize(&mut self) {
+        if self.options.api {
+            self.parse_api_response();
+        } else {
+            self.parse_files();
         }
 
         self.logger.debug(format!("generated the following tokens...\n{:#?}", self.tokens));

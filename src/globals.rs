@@ -2,7 +2,6 @@ use crate::arg::ARG;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
-// pub const COMMENT: char = '#'; // 0x23
 // pub const SPACE: char = ' '; // 0x20
 // pub const OPEN_BRACKET: char = '['; // 0x5b
 // pub const CLOSE_BRACKET: char = ']'; // 0x5d
