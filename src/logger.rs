@@ -28,7 +28,7 @@ impl<'a> Logger<'a> {
             return;
         }
 
-        println!(
+        eprintln!(
             "{} {} {}",
             "[nvi::debug]".blue(),
             self.log_type.blue(),
@@ -56,15 +56,15 @@ impl<'a> Logger<'a> {
     }
 
     pub fn print(&self, message: String) {
-        print!("{} {}", "[nvi]".cyan(), message.cyan());
+        eprint!("{} {}", "[nvi]".cyan(), message.cyan());
     }
 
     pub fn println(&self, message: String) {
-        println!("{} {}", "[nvi]".cyan(), message.cyan());
+        eprintln!("{} {}", "[nvi]".cyan(), message.cyan());
     }
 
     pub fn print_version_and_exit(&self) -> ! {
-        println!(
+        eprintln!(
             "{}", 
             format!(
                 "nvi v{}\nCopyright (C) {} Matt Carlotta\nThis is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",

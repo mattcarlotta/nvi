@@ -21,7 +21,7 @@ impl<'a> Generator<'a> {
         };
     }
 
-    pub fn run(self) {
+    pub fn run(&self) {
         if !self.options.commands.is_empty() {
             match Command::new(&self.options.commands[0])
                 .args(&self.options.commands[1..self.options.commands.len()])
@@ -54,8 +54,19 @@ impl<'a> Generator<'a> {
                     ));
                 }
             }
-        } else if !self.options.print {
-            // TODO: print ENVS
+        } else if self.options.print {
+            let mut env_json = String::new();
+            if let Some((last_key, _)) = self.envs.iter().last() {
+                for (key, value) in self.envs {
+                    let mut kv = format!("{:?}:{:?},", key, value);
+                    if last_key == key {
+                        kv.pop();
+                    }
+                    env_json.push_str(kv.as_str());
+                }
+            }
+
+            println!("{{{}}}", env_json);
             exit(0);
         }
 

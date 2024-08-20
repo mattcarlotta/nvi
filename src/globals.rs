@@ -5,8 +5,8 @@ use std::collections::HashMap;
 // pub const SPACE: char = ' '; // 0x20
 // pub const OPEN_BRACKET: char = '['; // 0x5b
 // pub const CLOSE_BRACKET: char = ']'; // 0x5d
-// pub const COMMA: char = ','; // 0x2c
 // pub const DOUBLE_QUOTE: char = '\"'; // 0x22
+// pub const COMMA: char = ','; // 0x2c
 pub const LINE_DELIMITER: char = '\n'; // 0x0a
 pub const ASSIGN_OP: char = '='; // 0x3d
 pub const HASH: char = '#'; // 0x23
