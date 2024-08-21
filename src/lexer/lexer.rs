@@ -82,7 +82,7 @@ impl<'a> Lexer<'a> {
 
         let mut value = String::new();
         while self.peek(None).is_some() {
-            let mut current_char = self.get_char(None);
+            let current_char = self.get_char(None);
 
             match current_char {
                 globals::NULL_CHAR => self.skip(None),
@@ -220,10 +220,9 @@ impl<'a> Lexer<'a> {
 
                     // handle multiline values
                     while self.peek(None).is_some() {
-                        current_char = self.get_char(None);
-                        let is_eol = current_char == globals::LINE_DELIMITER;
+                        let is_eol = self.get_char(None) == globals::LINE_DELIMITER;
 
-                        if (current_char == globals::BACK_SLASH
+                        if (self.get_char(None) == globals::BACK_SLASH
                             && self.get_char(Some(1)) == globals::LINE_DELIMITER)
                             || is_eol
                         {
