@@ -1,4 +1,4 @@
-use crate::globals::API_URL;
+use crate::globals::{self, API_URL};
 use crate::logger::Logger;
 use crate::options::OptionsType;
 use colored::Colorize;
@@ -10,7 +10,6 @@ use reqwest::{
 use rpassword::prompt_password;
 
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::{self, Write};
@@ -40,7 +39,7 @@ impl<'a> Api<'a> {
             headers,
             options,
             data: String::new(),
-            save_file_path: env::current_dir().unwrap_or(PathBuf::new()),
+            save_file_path: globals::current_dir().clone(),
             api_key: String::new(),
             status_code: StatusCode::OK,
             logger,
@@ -103,10 +102,10 @@ impl<'a> Api<'a> {
         {
             let mut index: u16 = 1;
 
-            for opt in self.data.split("\n") {
-                if !opt.is_empty() {
-                    options.insert(index, opt);
-                    println!("{}", format!("      [{index}]: {opt}").cyan());
+            for option in self.data.split("\n") {
+                if !option.is_empty() {
+                    options.insert(index, option);
+                    println!("{}", format!("      [{index}]: {option}").cyan());
                 }
                 index += 1;
             }
@@ -208,7 +207,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn get_and_set_api_envs(&mut self) {
-        let mut api_key_file = env::current_dir().unwrap_or(PathBuf::new());
+        let mut api_key_file = globals::current_dir().clone();
 
         if !self.options.dir.is_empty() {
             api_key_file.push(&self.options.dir);

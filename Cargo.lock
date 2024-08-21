@@ -578,7 +578,6 @@ dependencies = [
  "chrono",
  "colored",
  "derivative",
- "lazy_static",
  "reqwest",
  "rpassword",
  "toml",

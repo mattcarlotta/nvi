@@ -1,5 +1,5 @@
 use super::ARG;
-use crate::globals::ARGS;
+use crate::globals;
 use crate::logger::Logger;
 use crate::options::OptionsType;
 use std::env;
@@ -27,7 +27,7 @@ impl<'a> ArgParser<'a> {
         return ArgParser {
             argc: argv.len(),
             argv,
-            file: env::current_dir().unwrap_or(PathBuf::new()),
+            file: globals::current_dir().clone(),
             curr_flag: String::new(),
             options,
             index: 1,
@@ -244,7 +244,7 @@ impl<'a> ArgParser<'a> {
                 None => ARG::UNKNOWN.to_string(),
             };
 
-            match ARGS.get(self.curr_flag.as_str()) {
+            match globals::args().get(self.curr_flag.as_str()) {
                 Some(ARG::API) => self.options.api = true,
                 Some(ARG::CONFIG) => {
                     self.options.config = self.parse_single_arg(ARG::CONFIG);

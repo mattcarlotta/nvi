@@ -64,7 +64,7 @@ impl<'a> Logger<'a> {
     }
 
     pub fn print_version_and_exit(&self) -> ! {
-        eprintln!(
+        println!(
             "{}", 
             format!(
                 "nvi v{}\nCopyright (C) {} Matt Carlotta\nThis is free software licensed under the GPL-3.0 license; see the source LICENSE for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",

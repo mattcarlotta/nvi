@@ -2,7 +2,6 @@ use super::{LexerToken, LexerValue, LexerValueToken};
 use crate::globals;
 use crate::logger::Logger;
 use crate::options::OptionsType;
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 
@@ -30,7 +29,7 @@ impl<'a> Lexer<'a> {
             line: 1,
             file: String::new(),
             file_name: String::new(),
-            file_path: env::current_dir().unwrap_or(PathBuf::new()),
+            file_path: globals::current_dir().clone(),
             tokens: vec![],
             logger,
         };
@@ -89,11 +88,14 @@ impl<'a> Lexer<'a> {
                 globals::NULL_CHAR => self.skip(None),
                 globals::LINE_DELIMITER => {
                     if token.key.is_some() && !value.is_empty() {
-                        token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
+                        token.values.push(LexerValueToken::new(
+                            LexerValue::Normal,
+                            &value,
+                            self.line,
+                            self.byte,
+                        ));
                         self.tokens.push(token.clone());
                     }
-
-                    // println!("key: {}, value: {value}", token.key.unwrap_or(String::from("")));
 
                     token.key = None;
                     token.values.clear();
@@ -125,7 +127,12 @@ impl<'a> Lexer<'a> {
                         self.skip(None);
                     }
 
-                    token.values.push(LexerValueToken::new(LexerValue::Comment, &value, self.line, self.byte));
+                    token.values.push(LexerValueToken::new(
+                        LexerValue::Comment,
+                        &value,
+                        self.line,
+                        self.byte,
+                    ));
                     self.tokens.push(token.clone());
                     value.clear();
                 }
@@ -137,9 +144,14 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
-                    // store any previous parsed values 
+                    // store any previous parsed values
                     if !value.is_empty() {
-                        token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
+                        token.values.push(LexerValueToken::new(
+                            LexerValue::Normal,
+                            &value,
+                            self.line,
+                            self.byte,
+                        ));
                         value.clear();
                     }
 
@@ -153,29 +165,30 @@ impl<'a> Lexer<'a> {
                                 // skip '}'
                                 self.skip(None);
                                 break;
-                            },
+                            }
                             globals::LINE_DELIMITER => {
                                 self.logger.fatal(
                                     format!(
                                         "found an error in {}:{}:{}. The key {:?} contains an interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
-                                        self.file_name, 
-                                        self.line, 
-                                        self.byte, 
-                                        token.key.unwrap_or(String::new())
+                                        self.file_name, self.line, self.byte, token.key.unwrap_or(String::new())
                                     )
                                 );
                             }
                             _ => {
                                 if let Some(c) = self.peek(None) {
                                     value.push(c);
-                                } 
+                                }
                                 self.skip(None);
                             }
                         }
                     }
 
-
-                    token.values.push(LexerValueToken::new(LexerValue::Interpolated, &value, self.line, self.byte));
+                    token.values.push(LexerValueToken::new(
+                        LexerValue::Interpolated,
+                        &value,
+                        self.line,
+                        self.byte,
+                    ));
                     self.tokens.push(token.clone());
 
                     value.clear();
@@ -189,9 +202,14 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
-                    // store any previous parsed values 
+                    // store any previous parsed values
                     if !value.is_empty() {
-                        token.values.push(LexerValueToken::new(LexerValue::Normal, &value, self.line, self.byte));
+                        token.values.push(LexerValueToken::new(
+                            LexerValue::Normal,
+                            &value,
+                            self.line,
+                            self.byte,
+                        ));
                     }
 
                     // skip "\\n" characters
@@ -211,7 +229,12 @@ impl<'a> Lexer<'a> {
                         {
                             self.inc_line();
 
-                            token.values.push(LexerValueToken::new(LexerValue::Multiline, &value, self.line, self.byte));
+                            token.values.push(LexerValueToken::new(
+                                LexerValue::Multiline,
+                                &value,
+                                self.line,
+                                self.byte,
+                            ));
 
                             value.clear();
                             self.reset_byte();
@@ -230,7 +253,7 @@ impl<'a> Lexer<'a> {
 
                         if let Some(c) = self.peek(None) {
                             value.push(c);
-                        } 
+                        }
                         self.skip(None);
                     }
 
@@ -249,7 +272,10 @@ impl<'a> Lexer<'a> {
         }
 
         if self.tokens.is_empty() {
-            self.logger.fatal(format!("was unable to generate any tokens for {:?}. Aborting.", self.file_name));
+            self.logger.fatal(format!(
+                "was unable to generate any tokens for {:?}. Aborting.",
+                self.file_name
+            ));
         }
     }
 
@@ -258,7 +284,6 @@ impl<'a> Lexer<'a> {
         self.file = self.options.api_envs.to_owned();
 
         self.parse();
-
     }
 
     fn parse_files(&mut self) {
@@ -326,6 +351,9 @@ impl<'a> Lexer<'a> {
             self.parse_files();
         }
 
-        self.logger.debug(format!("generated the following tokens...\n{:#?}", self.tokens));
+        self.logger.debug(format!(
+            "generated the following tokens...\n{:#?}",
+            self.tokens
+        ));
     }
 }

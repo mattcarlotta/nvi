@@ -8,7 +8,7 @@ pub struct Parser<'a> {
     envs: HashMap<String, String>,
     options: &'a OptionsType,
     tokens: &'a Vec<LexerToken>,
-    undefined_keys: Vec<&'a str>,
+    undefined_keys: Vec<String>,
     logger: Logger<'a>,
 }
 
@@ -21,7 +21,7 @@ impl<'a> Parser<'a> {
             envs: HashMap::new(),
             options,
             tokens,
-            undefined_keys: vec![],
+            undefined_keys: options.required_envs.clone(),
             logger,
         };
     }
@@ -55,28 +55,19 @@ impl<'a> Parser<'a> {
                                 self.logger.warn(
                                     format!(
                                         "found a key {:?} that contains an invalid interpolated variable: {:?} ({}:{}:{}). Unable to locate a value that corresponds to this key. Skipping.",
-                                        key, 
-                                        interpolated_key,
-                                        token.file, 
-                                        value_token.line, 
-                                        value_token.byte, 
+                                        key, interpolated_key, token.file, value_token.line, value_token.byte
                                     )
                                 );
                             }
                         }
                         LexerValue::Comment => {
                             if let Some(val) = &value_token.value {
-                                self.logger.debug(
-                                    format!(
-                                        "parsed the following comment {:?} ({}:{}:{}). Skipping.",
-                                        val,
-                                        token.file, 
-                                        value_token.line, 
-                                        value_token.byte, 
-                                    )
-                                );
+                                self.logger.debug(format!(
+                                    "parsed the following comment {:?} ({}:{}:{}). Skipping.",
+                                    val, token.file, value_token.line, value_token.byte
+                                ));
                             }
-                        },
+                        }
                         _ => {
                             if let Some(val) = &value_token.value {
                                 value.push_str(val.as_str());
@@ -86,7 +77,10 @@ impl<'a> Parser<'a> {
                 }
 
                 if !key.is_empty() {
-                    self.envs.insert(key, value);
+                    self.envs.insert(key.clone(), value);
+                    if !self.undefined_keys.is_empty() {
+                        self.undefined_keys.retain(|k| *k != key);
+                    }
                 }
             }
         }
@@ -95,14 +89,6 @@ impl<'a> Parser<'a> {
             self.logger.fatal(String::from(
                 "Unable to parse any ENVs! Please ensure the provided .env files are not empty.)",
             ));
-        } 
-
-        if !&self.options.required_envs.is_empty() {
-            for key in &self.options.required_envs {
-                if !self.envs.contains_key(key) {
-                    self.undefined_keys.push(key.as_str());
-                }
-            }
         }
 
         if !self.undefined_keys.is_empty() {
@@ -114,7 +100,9 @@ impl<'a> Parser<'a> {
              );
         }
 
-
-        self.logger.debug(format!("generated the following env map...\n{:#?}", self.envs));
+        self.logger.debug(format!(
+            "generated the following env map...\n{:#?}",
+            self.envs
+        ));
     }
 }

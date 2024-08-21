@@ -1,6 +1,8 @@
 use crate::arg::ARG;
-use lazy_static::lazy_static;
 use std::collections::HashMap;
+use std::env;
+use std::path::PathBuf;
+use std::sync::OnceLock;
 
 // pub const SPACE: char = ' '; // 0x20
 // pub const OPEN_BRACKET: char = '['; // 0x5b
@@ -22,8 +24,16 @@ pub const API_URL: &'static str = "http://127.0.0.1:4000";
 #[cfg(not(debug_assertions))]
 pub const API_URL: &'static str = "http://nvi.sh/api";
 
-lazy_static! {
-    pub static ref ARGS: HashMap<&'static str, ARG> = {
+pub fn current_dir() -> &'static PathBuf {
+    static CURRENT_DIR: OnceLock<PathBuf> = OnceLock::new();
+    CURRENT_DIR.get_or_init(|| {
+        return env::current_dir().expect("Failed to retrieve current directory.");
+    })
+}
+
+pub fn args() -> &'static HashMap<&'static str, ARG> {
+    static HASHMAP: OnceLock<HashMap<&'static str, ARG>> = OnceLock::new();
+    HASHMAP.get_or_init(|| {
         return HashMap::from([
             (ARG::API.as_str(), ARG::API),
             (ARG::CONFIG.as_str(), ARG::CONFIG),
@@ -40,5 +50,5 @@ lazy_static! {
             (ARG::VERSION.as_str(), ARG::VERSION),
             (ARG::UNKNOWN.as_str(), ARG::UNKNOWN),
         ]);
-    };
+    })
 }
