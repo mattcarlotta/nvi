@@ -68,8 +68,8 @@ impl<'a> Generator<'a> {
 
             println!("{{{}}}", env_json);
             exit(0);
+        } else if !self.options.save {
+            self.logger.fatal(String::from("Running the CLI tool without any system commands nor a \"--print\" or \"--save\" flag won't do anything. Use flag \"-h\" or \"--help\" for more information."))
         }
-
-        self.logger.fatal(String::from("Running the CLI tool without any system commands nor a \"--print\" or \"--save\" flag won't do anything. Use flag \"-h\" or \"--help\" for more information."))
     }
 }

@@ -12,6 +12,7 @@ use rpassword::prompt_password;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
+use std::fs::File;
 use std::io::{self, Write};
 use std::path::PathBuf;
 
@@ -20,7 +21,9 @@ pub struct Api<'a> {
     headers: HeaderMap,
     options: &'a mut OptionsType,
     api_key: String,
+    data: String,
     status_code: StatusCode,
+    save_file_path: PathBuf,
     logger: Logger<'a>,
 }
 
@@ -36,6 +39,8 @@ impl<'a> Api<'a> {
             request: Client::new(),
             headers,
             options,
+            data: String::new(),
+            save_file_path: env::current_dir().unwrap_or(PathBuf::new()),
             api_key: String::new(),
             status_code: StatusCode::OK,
             logger,
@@ -77,9 +82,9 @@ impl<'a> Api<'a> {
             self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Excepted the response content-type to be text/plain instead received {content_type}."));
         }
 
-        let data = res.text().unwrap_or(String::new());
+        self.data = res.text().unwrap_or(String::new());
 
-        if !self.status_code.is_success() || data.is_empty() {
+        if !self.status_code.is_success() || self.data.is_empty() {
             self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Either the API key was invalid or you haven't created any {req_type} yet!"));
         }
 
@@ -87,7 +92,7 @@ impl<'a> Api<'a> {
             .debug(format!("successfully retrieved data from {}!", base_url));
 
         if return_data {
-            return data;
+            return self.data.clone();
         }
 
         self.logger.println(format!(
@@ -98,7 +103,7 @@ impl<'a> Api<'a> {
         {
             let mut index: u16 = 1;
 
-            for opt in data.split("\n") {
+            for opt in self.data.split("\n") {
                 if !opt.is_empty() {
                     options.insert(index, opt);
                     println!("{}", format!("      [{index}]: {opt}").cyan());
@@ -141,6 +146,64 @@ impl<'a> Api<'a> {
             self.logger.fatal(format!(
                 "was provided a(n) invalid {req_type} selection. Aborting.",
             ));
+        };
+    }
+
+    fn save_envs_to_disk(&mut self) {
+        let env_name = format!("{}{}", self.options.environment, ".env");
+        if !self.options.dir.is_empty() {
+            self.save_file_path.push(&self.options.dir);
+        }
+
+        self.save_file_path.push(&env_name);
+
+        if self.save_file_path.is_file() {
+            self.logger.println(format!(
+                "A file named {:?} already exists at the current path {:?}",
+                env_name,
+                self.save_file_path.display()
+            ));
+
+            self.logger.print(format!(
+                "Are you sure you want to save and overwrite it? (y|N) "
+            ));
+            io::stdout().flush().expect("Failed to flush stdout");
+
+            let mut selection = String::new();
+            io::stdin()
+                .read_line(&mut selection)
+                .expect("Failed to read input");
+
+            if !selection.to_lowercase().contains("y") {
+                return;
+            }
+        }
+
+        let mut env_file = match File::create(&self.save_file_path) {
+            Ok(f) => f,
+            Err(err) => {
+                self.logger.fatal(format!(
+                    "was unable to create an ENV file at {:?}. Reason: {}",
+                    self.save_file_path.display(),
+                    err
+                ));
+            }
+        };
+
+        match env_file.write_all(self.data.as_bytes()) {
+            Ok(_) => {
+                self.logger.debug(format!(
+                    "successfully saved {:?} with API ENVs to disk!",
+                    self.save_file_path.display()
+                ));
+            }
+            Err(err) => {
+                self.logger.fatal(format!(
+                    "was unable to save {}. Reason: {}",
+                    self.save_file_path.display(),
+                    err
+                ));
+            }
         };
     }
 
@@ -214,5 +277,9 @@ impl<'a> Api<'a> {
             "successfully retrieved the \"{}\" project's \"{}\" environment secrets!",
             self.options.project, self.options.environment
         ));
+
+        if self.options.save {
+            self.save_envs_to_disk();
+        }
     }
 }
