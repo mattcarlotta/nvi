@@ -1,12 +1,9 @@
 use crate::api::Api;
 use crate::arg::ArgParser;
-use derivative::Derivative;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
-#[derive(Derivative)]
-#[derivative(Debug)]
 pub struct Options {
     pub api: bool,
-    #[derivative(Debug = "ignore")]
     pub api_envs: String,
     pub commands: Vec<String>,
     pub config: String,
@@ -21,6 +18,26 @@ pub struct Options {
 }
 
 pub type OptionsType = Options;
+
+impl Debug for Options {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        return write!(
+            f,
+            "{{\n    \"api\": {},\n    \"command\": {:?},\n    \"config\": {:?},\n    \"debug\": {},\n    \"directory\": {:?},\n    \"environment\": {:?},\n    \"files\": {:?},\n    \"print\": {},\n    \"project\": {:?},\n    \"required_envs\": {:?},\n    \"save\": {}\n}}",
+            self.api,
+            self.commands,
+            self.config,
+            self.debug,
+            self.dir,
+            self.environment,
+            self.files,
+            self.print,
+            self.project,
+            self.required_envs,
+            self.save
+        );
+    }
+}
 
 impl Options {
     pub fn new() -> Self {
