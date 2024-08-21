@@ -25,6 +25,6 @@ fn main() {
 
     let envs = parser.get_envs();
 
-    let generator = Generator::new(&options, &envs);
+    let generator = Generator::new(options, envs);
     generator.run();
 }

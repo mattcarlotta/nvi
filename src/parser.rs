@@ -108,8 +108,8 @@ impl<'a> Parser<'a> {
         if !self.undefined_keys.is_empty() {
             self.logger.fatal(
                 format!(
-                    "The following ENV keys were marked as required: {:?}, but they were undefined after the ENV tokens were parsed.", 
-                    self.undefined_keys.join(", ")
+                    "found that the following ENVs were marked as required: {:?}, but they are undefined after all of the ENVs were parsed. Perhaps you forgot to include them in an .env file or an API project's environment?", 
+                    self.undefined_keys
                 )
              );
         }

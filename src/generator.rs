@@ -4,13 +4,13 @@ use std::collections::HashMap;
 use std::process::{exit, Command, Stdio};
 
 pub struct Generator<'a> {
-    options: &'a OptionsType,
-    envs: &'a HashMap<String, String>,
+    options: OptionsType,
+    envs: HashMap<String, String>,
     logger: Logger<'a>,
 }
 
 impl<'a> Generator<'a> {
-    pub fn new(options: &'a OptionsType, envs: &'a HashMap<String, String>) -> Self {
+    pub fn new(options: OptionsType, envs: HashMap<String, String>) -> Self {
         let mut logger = Logger::new("Generator");
         logger.set_debug(&options.debug);
 
@@ -25,7 +25,7 @@ impl<'a> Generator<'a> {
         if !self.options.commands.is_empty() {
             match Command::new(&self.options.commands[0])
                 .args(&self.options.commands[1..self.options.commands.len()])
-                .envs(self.envs)
+                .envs(&self.envs)
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
@@ -57,7 +57,7 @@ impl<'a> Generator<'a> {
         } else if self.options.print {
             let mut env_json = String::new();
             if let Some((last_key, _)) = self.envs.iter().last() {
-                for (key, value) in self.envs {
+                for (key, value) in &self.envs {
                     let mut kv = format!("{:?}:{:?},", key, value);
                     if last_key == key {
                         kv.pop();
