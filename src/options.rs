@@ -40,7 +40,7 @@ impl Debug for Options {
 }
 
 impl Options {
-    pub fn new() -> Self {
+    pub fn new(argv: Vec<String>) -> Self {
         let mut options = Options {
             api: false,
             api_envs: String::new(),
@@ -57,7 +57,7 @@ impl Options {
         };
 
         {
-            let mut arg_parser = ArgParser::new(&mut options);
+            let mut arg_parser = ArgParser::new(&mut options, argv);
             arg_parser.parse();
         }
 
@@ -70,5 +70,53 @@ impl Options {
         }
 
         return options;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_arg_options() {
+        let argv = vec![
+            String::from("nvi"),
+            String::from("--debug"),
+            String::from("--directory"),
+            String::from("tests"),
+            String::from("--environment"),
+            String::from("testing"),
+            String::from("--files"),
+            String::from("test.env"),
+            String::from("test2.env"),
+            String::from("test3.env"),
+            String::from("--project"),
+            String::from("rust"),
+            String::from("--required"),
+            String::from("ENV_KEY_1"),
+            String::from("ENV_KEY_2"),
+            String::from("ENV_KEY_3"),
+            String::from("--save"),
+            String::from("--"),
+            String::from("echo"),
+            String::from("Hello World"),
+        ];
+        let options = Options::new(argv);
+
+        assert_eq!(options.api, false);
+        assert_eq!(options.api_envs, String::new());
+        assert_eq!(options.commands[0], String::from("echo"));
+        assert_eq!(options.commands[1], String::from("Hello World"));
+        assert_eq!(options.debug, true);
+        assert_eq!(options.dir, String::from("tests"));
+        assert_eq!(options.environment, String::from("testing"));
+        assert_eq!(options.files[0], String::from("test.env"));
+        assert_eq!(options.files[1], String::from("test2.env"));
+        assert_eq!(options.files[2], String::from("test3.env"));
+        assert_eq!(options.project, String::from("rust"));
+        assert_eq!(options.required_envs[0], String::from("ENV_KEY_1"));
+        assert_eq!(options.required_envs[1], String::from("ENV_KEY_2"));
+        assert_eq!(options.required_envs[2], String::from("ENV_KEY_3"));
+        assert_eq!(options.save, true);
     }
 }

@@ -2,7 +2,6 @@ use super::ARG;
 use crate::globals;
 use crate::logger::Logger;
 use crate::options::OptionsType;
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 use toml::{Table, Value};
@@ -18,9 +17,7 @@ pub struct ArgParser<'a> {
 }
 
 impl<'a> ArgParser<'a> {
-    pub fn new(options: &'a mut OptionsType) -> Self {
-        let argv: Vec<String> = env::args().collect();
-
+    pub fn new(options: &'a mut OptionsType, argv: Vec<String>) -> Self {
         let mut logger = Logger::new("ArgParser");
         logger.set_debug(&options.debug);
 

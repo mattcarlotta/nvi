@@ -56,14 +56,14 @@ impl<'a> Generator<'a> {
             }
         } else if self.options.print {
             let mut env_json = String::new();
-            if let Some((last_key, _)) = self.envs.iter().last() {
-                for (key, value) in &self.envs {
-                    let mut kv = format!("{:?}:{:?},", key, value);
-                    if last_key == key {
-                        kv.pop();
-                    }
-                    env_json.push_str(kv.as_str());
+            let mut env_count = 1;
+            for (key, value) in &self.envs {
+                let mut kv = format!("{:?}:{:?},", key, value);
+                if env_count == self.envs.len() {
+                    kv.pop();
                 }
+                env_json.push_str(kv.as_str());
+                env_count += 1;
             }
 
             println!("{{{}}}", env_json);
