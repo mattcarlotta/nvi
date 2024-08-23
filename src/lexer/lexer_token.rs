@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LexerValue {
     Normal,
     Interpolated,

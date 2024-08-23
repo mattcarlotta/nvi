@@ -78,7 +78,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_arg_options() {
+    fn create_options() {
         let argv = vec![
             String::from("nvi"),
             String::from("--debug"),

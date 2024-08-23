@@ -87,7 +87,7 @@ impl<'a> Lexer<'a> {
             match current_char {
                 globals::NULL_CHAR => self.skip(None),
                 globals::LINE_DELIMITER => {
-                    if token.key.is_some() && !value.is_empty() {
+                    if token.key.is_some() {
                         token.values.push(LexerValueToken::new(
                             LexerValue::Normal,
                             &value,
@@ -189,7 +189,17 @@ impl<'a> Lexer<'a> {
                         self.line,
                         self.byte,
                     ));
-                    self.tokens.push(token.clone());
+
+                    if self.get_char(None) == globals::LINE_DELIMITER {
+                        self.tokens.push(token.clone());
+
+                        token.key = None;
+                        token.values.clear();
+                        self.inc_line();
+                        // skip '\n'
+                        self.skip(None);
+                        self.reset_byte();
+                    }
 
                     value.clear();
                 }
@@ -351,8 +361,237 @@ impl<'a> Lexer<'a> {
         }
 
         self.logger.debug(format!(
-            "generated the following tokens...\n{:#?}",
-            self.tokens
+            "generated the following tokens...\n{:#?}\n{}",
+            self.tokens,
+            self.tokens.len()
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::options::Options;
+    use std::sync::OnceLock;
+
+    fn get_tokens() -> &'static Vec<LexerToken> {
+        static TOKENS: OnceLock<Vec<LexerToken>> = OnceLock::new();
+        TOKENS.get_or_init(|| {
+            let argv = vec![
+                String::from("nvi"),
+                String::from("--debug"),
+                String::from("--directory"),
+                String::from("envs"),
+                String::from("--files"),
+                String::from("simple.env"),
+            ];
+            let options = Options::new(argv);
+
+            let mut lexer = Lexer::new(&options);
+            lexer.tokenize();
+
+            return lexer.get_tokens();
+        })
+    }
+
+    fn get_token(index: usize) -> LexerToken {
+        let tokens = get_tokens();
+
+        return tokens[index].to_owned();
+    }
+
+    #[test]
+    fn basic_env() {
+        let token = get_token(0);
+
+        assert_eq!(token.key, Some(String::from("BASIC_ENV")));
+        assert_eq!(token.file, String::from("simple.env"));
+        assert_eq!(token.values.len(), 1);
+
+        let vt = token.values[0].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("true")));
+        assert_eq!(vt.line, 1);
+        assert_eq!(vt.byte, 15);
+    }
+
+    #[test]
+    fn no_env() {
+        let token = get_token(1);
+
+        assert_eq!(token.key, Some(String::from("NO_VALUE")));
+        assert_eq!(token.file, String::from("simple.env"));
+        assert_eq!(token.values.len(), 1);
+
+        let vt = token.values[0].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("")));
+        assert_eq!(vt.line, 2);
+        assert_eq!(vt.byte, 10);
+    }
+
+    #[test]
+    fn comment() {
+        let token = get_token(3);
+
+        assert_eq!(token.key, None);
+        assert_eq!(token.file, String::from("simple.env"));
+        assert_eq!(token.values.len(), 1);
+
+        let vt = token.values[0].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Comment);
+        assert_eq!(vt.value, Some(String::from("# COMMENT")));
+        assert_eq!(vt.line, 4);
+        assert_eq!(vt.byte, 10);
+    }
+
+    #[test]
+    fn multiline_env() {
+        let token = get_token(4);
+
+        assert_eq!(token.key, Some(String::from("MULTI_LINE_KEY")));
+        assert_eq!(token.file, String::from("simple.env"));
+        assert_eq!(token.values.len(), 5);
+
+        let mut vt = token.values[0].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("ssh-rsa BBBB")));
+        assert_eq!(vt.line, 6);
+        assert_eq!(vt.byte, 28);
+
+        vt = token.values[1].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Multiline);
+        assert_eq!(vt.value, Some(String::from("Pl1P1")));
+        assert_eq!(vt.line, 7);
+        assert_eq!(vt.byte, 6);
+
+        vt = token.values[2].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Multiline);
+        assert_eq!(vt.value, Some(String::from("A")));
+        assert_eq!(vt.line, 8);
+        assert_eq!(vt.byte, 4);
+
+        vt = token.values[3].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Multiline);
+        assert_eq!(vt.value, Some(String::from("D+jk/3")));
+        assert_eq!(vt.line, 9);
+        assert_eq!(vt.byte, 9);
+
+        vt = token.values[4].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Multiline);
+        assert_eq!(vt.value, Some(String::from("Lf3Dw== test@example.com")));
+        assert_eq!(vt.line, 10);
+        assert_eq!(vt.byte, 27);
+    }
+
+    #[test]
+    fn interpolated_env() {
+        let token = get_token(5);
+
+        assert_eq!(token.key, Some(String::from("INTERP_VALUE")));
+        assert_eq!(token.file, String::from("simple.env"));
+        assert_eq!(token.values.len(), 2);
+
+        let mut vt = token.values[0].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Interpolated);
+        assert_eq!(vt.value, Some(String::from("MESSAGE")));
+        assert_eq!(vt.line, 12);
+        assert_eq!(vt.byte, 24);
+
+        vt = token.values[1].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("world")));
+        assert_eq!(vt.line, 12);
+        assert_eq!(vt.byte, 29);
+    }
+
+    #[test]
+    fn multiple_interpolated_env() {
+        let token = get_token(11);
+
+        assert_eq!(token.key, Some(String::from("MONGOLAB_URI")));
+        assert_eq!(token.file, String::from("simple.env"));
+        assert_eq!(token.values.len(), 10);
+
+        let mut vt = token.values[0].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("mongodb://")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 24);
+
+        vt = token.values[1].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Interpolated);
+        assert_eq!(vt.value, Some(String::from("MONGOLAB_USER")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 40);
+
+        vt = token.values[2].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from(":")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 41);
+
+        vt = token.values[3].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Interpolated);
+        assert_eq!(vt.value, Some(String::from("MONGOLAB_PASSWORD")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 61);
+
+        vt = token.values[4].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("@")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 62);
+
+        vt = token.values[5].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Interpolated);
+        assert_eq!(vt.value, Some(String::from("MONGOLAB_DOMAIN")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 80);
+
+        vt = token.values[6].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from(":")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 81);
+
+        vt = token.values[7].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Interpolated);
+        assert_eq!(vt.value, Some(String::from("MONGOLAB_PORT")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 97);
+
+        vt = token.values[8].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Normal);
+        assert_eq!(vt.value, Some(String::from("/")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 98);
+
+        vt = token.values[9].to_owned();
+        assert_eq!(vt.token_type, LexerValue::Interpolated);
+        assert_eq!(vt.value, Some(String::from("MONGOLAB_DATABASE")));
+        assert_eq!(vt.line, 19);
+        assert_eq!(vt.byte, 118);
+    }
+
+    #[test]
+    fn api_response() {
+        let mut options = Options::new(vec![]);
+        options.api = true;
+        options.api_envs.push_str("API_KEY_1=sdfksdfj\n");
+        options.api_envs.push_str("API_KEY_2=${API_KEY_1}\n");
+        options.api_envs.push_str("API_KEY_3=ssh-rsa BBBB\\\n");
+        options.api_envs.push_str("Pl1P1\\\n");
+        options.api_envs.push_str("A\\\n");
+        options.api_envs.push_str("D+jk/3\\\n");
+        options.api_envs.push_str("Lf3Dw== test@example.com\n");
+        options.api_envs.push_str("API_KEY_4='  SINGLE QUOTES  '\n");
+
+        let mut lexer = Lexer::new(&options);
+        lexer.tokenize();
+
+        let tokens = lexer.get_tokens();
+
+        assert_eq!(tokens.len(), 4);
     }
 }
