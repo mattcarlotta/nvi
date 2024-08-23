@@ -1,9 +1,9 @@
 [standard]
-api = true
+api = false
 debug = true
 # valid comment
 directory = "envs"
-environment = "debug"
+environment = "testing"
 execute = ["echo", "Hello World!"]
 files = [ "test1.env", "test2.env", "test3.env" ]
 print = true

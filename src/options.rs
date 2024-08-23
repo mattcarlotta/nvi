@@ -78,45 +78,74 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create_options() {
+    fn argv() {
         let argv = vec![
             String::from("nvi"),
             String::from("--debug"),
             String::from("--directory"),
-            String::from("tests"),
+            String::from("envs"),
             String::from("--environment"),
             String::from("testing"),
             String::from("--files"),
-            String::from("test.env"),
+            String::from("test1.env"),
             String::from("test2.env"),
             String::from("test3.env"),
             String::from("--project"),
             String::from("rust"),
             String::from("--required"),
-            String::from("ENV_KEY_1"),
-            String::from("ENV_KEY_2"),
-            String::from("ENV_KEY_3"),
+            String::from("TEST1"),
+            String::from("TEST2"),
+            String::from("TEST3"),
             String::from("--save"),
             String::from("--"),
             String::from("echo"),
-            String::from("Hello World"),
+            String::from("Hello World!"),
         ];
         let options = Options::new(argv);
 
         assert_eq!(options.api, false);
         assert_eq!(options.api_envs, String::new());
         assert_eq!(options.commands[0], String::from("echo"));
-        assert_eq!(options.commands[1], String::from("Hello World"));
+        assert_eq!(options.commands[1], String::from("Hello World!"));
         assert_eq!(options.debug, true);
-        assert_eq!(options.dir, String::from("tests"));
+        assert_eq!(options.dir, String::from("envs"));
         assert_eq!(options.environment, String::from("testing"));
-        assert_eq!(options.files[0], String::from("test.env"));
+        assert_eq!(options.files[0], String::from("test1.env"));
         assert_eq!(options.files[1], String::from("test2.env"));
         assert_eq!(options.files[2], String::from("test3.env"));
         assert_eq!(options.project, String::from("rust"));
-        assert_eq!(options.required_envs[0], String::from("ENV_KEY_1"));
-        assert_eq!(options.required_envs[1], String::from("ENV_KEY_2"));
-        assert_eq!(options.required_envs[2], String::from("ENV_KEY_3"));
+        assert_eq!(options.required_envs[0], String::from("TEST1"));
+        assert_eq!(options.required_envs[1], String::from("TEST2"));
+        assert_eq!(options.required_envs[2], String::from("TEST3"));
+        assert_eq!(options.save, true);
+    }
+
+    #[test]
+    fn toml_config() {
+        let argv = vec![
+            String::from("nvi"),
+            String::from("--debug"),
+            String::from("--directory"),
+            String::from("envs"),
+            String::from("--config"),
+            String::from("standard"),
+        ];
+        let options = Options::new(argv);
+
+        assert_eq!(options.api, false);
+        assert_eq!(options.api_envs, String::new());
+        assert_eq!(options.commands[0], String::from("echo"));
+        assert_eq!(options.commands[1], String::from("Hello World!"));
+        assert_eq!(options.debug, true);
+        assert_eq!(options.dir, String::from("envs"));
+        assert_eq!(options.environment, String::from("testing"));
+        assert_eq!(options.files[0], String::from("test1.env"));
+        assert_eq!(options.files[1], String::from("test2.env"));
+        assert_eq!(options.files[2], String::from("test3.env"));
+        assert_eq!(options.project, String::from("rust"));
+        assert_eq!(options.required_envs[0], String::from("TEST1"));
+        assert_eq!(options.required_envs[1], String::from("TEST2"));
+        assert_eq!(options.required_envs[2], String::from("TEST3"));
         assert_eq!(options.save, true);
     }
 }
