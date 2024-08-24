@@ -44,7 +44,6 @@ impl<'a> Generator<'a> {
                     }
 
                     println!("{}", String::from_utf8_lossy(&output.stdout));
-                    exit(0);
                 }
                 Err(err) => {
                     self.logger.fatal(format!(
@@ -67,9 +66,87 @@ impl<'a> Generator<'a> {
             }
 
             println!("{{{}}}", env_json);
-            exit(0);
-        } else if !self.options.save {
-            self.logger.fatal(String::from("Running the CLI tool without any system commands nor a \"--print\" or \"--save\" flag won't do anything. Use flag \"-h\" or \"--help\" for more information."))
+        } else if !self.options.api && !self.options.save {
+            self.logger.fatal(String::from("encountered an error. Running nvi without any of these flags: \"--print,\" \"--api with --save,\" or \"--\" won't result in any meaningful action. Use flag \"--help\" for more information."))
+        }
+
+        exit(0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::process::{Command, Stdio};
+
+    #[test]
+    fn prints_envs() {
+        match Command::new("./target/debug/nvi")
+            .args(["--print", "--directory", "envs", "--files", "base.env"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), true);
+
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                assert_eq!(stdout, String::from("{\"BASE\":\"hello\"}\n"));
+            }
+            Err(err) => {
+                panic!("Failed to run print_envs test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn assigns_envs_to_command() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--", "echo", "Hello", "World!"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), true);
+
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                assert_eq!(stdout, String::from("Hello World!\n\n"));
+            }
+            Err(err) => {
+                panic!("Failed to run assigns_envs_to_command test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(stderr.contains("Generator encountered an error"), true);
+            }
+            Err(err) => {
+                panic!("Failed to run prints_error test. Reason: {err}");
+            }
         }
     }
 }
