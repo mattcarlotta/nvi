@@ -106,3 +106,178 @@ impl<'a> Parser<'a> {
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lexer::Lexer;
+    use crate::options::Options;
+    use std::sync::OnceLock;
+
+    fn get_envs() -> &'static HashMap<String, String> {
+        static ENVS: OnceLock<HashMap<String, String>> = OnceLock::new();
+        ENVS.get_or_init(|| {
+            let argv = vec![
+                String::from("nvi"),
+                String::from("--debug"),
+                String::from("--directory"),
+                String::from("envs"),
+                String::from("--files"),
+                String::from(".env"),
+                String::from("base.env"),
+                String::from("reference.env"),
+            ];
+            let options = Options::new(argv);
+
+            let mut lexer = Lexer::new(&options);
+            lexer.tokenize();
+
+            let tokens = lexer.get_tokens();
+            let mut parser = Parser::new(&options, &tokens);
+            parser.parse_tokens();
+
+            return parser.get_envs();
+        })
+    }
+
+    fn get_env(key: &str) -> String {
+        let envs = get_envs();
+
+        match envs.get(key) {
+            Some(v) => String::from(v),
+            None => String::new(),
+        }
+    }
+
+    #[test]
+    fn basic_env() {
+        assert_eq!(get_env("BASIC_ENV"), String::from("true"));
+    }
+
+    #[test]
+    fn base_env() {
+        assert_eq!(get_env("BASE"), String::from("hello"));
+    }
+
+    #[test]
+    fn ref_base_env() {
+        assert_eq!(get_env("REFERENCE"), String::from("hello"));
+    }
+
+    #[test]
+    fn multiline_env() {
+        assert_eq!(
+            get_env("MULTI_LINE_KEY"),
+            String::from("ssh-rsa BBBBPl1P1AD+jk/3Lf3Dw== test@example.com")
+        );
+    }
+
+    #[test]
+    fn no_env() {
+        assert_eq!(get_env("NO_VALUE"), String::from(""));
+    }
+
+    #[test]
+    fn hash_env() {
+        assert_eq!(get_env("HASH_KEYS"), String::from("1#2#3#4#"));
+    }
+
+    #[test]
+    fn dollars_env() {
+        assert_eq!(get_env("JUST_DOLLARS"), String::from("$$$$$"));
+    }
+
+    #[test]
+    fn braces_env() {
+        assert_eq!(get_env("JUST_BRACES"), String::from("{{{{}}}}"));
+    }
+
+    #[test]
+    fn spaces_env() {
+        assert_eq!(get_env("JUST_SPACES"), String::from("          "));
+    }
+
+    #[test]
+    fn sentence_env() {
+        assert_eq!(
+            get_env("SENTENCE"),
+            String::from(
+                "chat gippity is just a junior engineer that copies/pastes from StackOverflow"
+            )
+        );
+    }
+
+    #[test]
+    fn interpolate_from_system_env() {
+        assert_eq!(get_env("INTERP_ENV_FROM_SYS").len() > 0, true);
+    }
+
+    #[test]
+    fn empty_interpolated_env() {
+        assert_eq!(get_env("EMPTY_INTERP_KEY"), String::from("abc123"));
+    }
+
+    #[test]
+    fn single_quotes_env() {
+        assert_eq!(
+            get_env("SINGLE_QUOTES_SPACES"),
+            String::from("'  SINGLE QUOTES  '")
+        );
+    }
+
+    #[test]
+    fn double_quotes_env() {
+        assert_eq!(
+            get_env("DOUBLE_QUOTES_SPACES"),
+            String::from("\"  DOUBLE QUOTES  \"")
+        );
+    }
+
+    #[test]
+    fn quotes_env() {
+        assert_eq!(get_env("QUOTES"), String::from("sad\"wow\"bak"));
+    }
+
+    #[test]
+    fn invalid_single_quotes_env() {
+        assert_eq!(get_env("INVALID_SINGLE_QUOTES"), String::from("bad\'dq"));
+    }
+
+    #[test]
+    fn invalid_double_quotes_env() {
+        assert_eq!(get_env("INVALID_DOUBLE_QUOTES"), String::from("bad\"dq"));
+    }
+
+    #[test]
+    fn invalid_template_literal_env() {
+        assert_eq!(get_env("INVALID_TEMPLATE_LITERAL"), String::from("bad`as"));
+    }
+
+    #[test]
+    fn invalid_mix_quotes_env() {
+        assert_eq!(get_env("INVALID_MIX_QUOTES"), String::from("bad\"'`mq"));
+    }
+
+    #[test]
+    fn empty_single_quotes_env() {
+        assert_eq!(get_env("EMPTY_SINGLE_QUOTES"), String::from("''"));
+    }
+
+    #[test]
+    fn empty_double_quotes_env() {
+        assert_eq!(get_env("EMPTY_DOUBLE_QUOTES"), String::from("\"\""));
+    }
+
+    #[test]
+    fn empty_template_literal_env() {
+        assert_eq!(get_env("EMPTY_TEMPLATE_LITERAL"), String::from("``"));
+    }
+
+    #[test]
+    fn multiple_interpolated_env() {
+        assert_eq!(
+            get_env("MONGOLAB_URI"),
+            String::from("mongodb://root:password@abcd1234.mongolab.com:12345/localhost")
+        );
+    }
+}

@@ -302,6 +302,7 @@ impl<'a> Lexer<'a> {
             self.line = 1;
             self.file_name = env.clone();
             self.file = String::new();
+            self.file_path = globals::current_dir().clone();
 
             if !self.options.dir.is_empty() {
                 self.file_path.push(&self.options.dir);
