@@ -4,28 +4,23 @@ use std::collections::HashMap;
 use std::process::{exit, Command, Stdio};
 
 pub struct Generator<'a> {
-    options: OptionsType,
-    envs: HashMap<String, String>,
+    options: &'a OptionsType,
     logger: Logger<'a>,
 }
 
 impl<'a> Generator<'a> {
-    pub fn new(options: OptionsType, envs: HashMap<String, String>) -> Self {
+    pub fn new(options: &'a OptionsType) -> Self {
         let mut logger = Logger::new("Generator");
         logger.set_debug(&options.debug);
 
-        return Generator {
-            envs,
-            options,
-            logger,
-        };
+        return Generator { options, logger };
     }
 
-    pub fn run(&self) {
+    pub fn run(&self, envs: HashMap<String, String>) {
         if !self.options.commands.is_empty() {
             match Command::new(&self.options.commands[0])
                 .args(&self.options.commands[1..self.options.commands.len()])
-                .envs(&self.envs)
+                .envs(&envs)
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
@@ -56,9 +51,9 @@ impl<'a> Generator<'a> {
         } else if self.options.print {
             let mut env_json = String::new();
             let mut env_count = 1;
-            for (key, value) in &self.envs {
+            for (key, value) in &envs {
                 let mut kv = format!("{:?}:{:?},", key, value);
-                if env_count == self.envs.len() {
+                if env_count == envs.len() {
                     kv.pop();
                 }
                 env_json.push_str(kv.as_str());
@@ -105,7 +100,15 @@ mod tests {
     #[test]
     fn assigns_envs_to_command() {
         match Command::new("./target/debug/nvi")
-            .args(["--directory", "envs", "--", "echo", "Hello", "World!"])
+            .args([
+                "--directory",
+                "envs",
+                "--files",
+                "message.env",
+                "--",
+                "printenv",
+                "MESSAGE",
+            ])
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -118,7 +121,7 @@ mod tests {
 
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
-                assert_eq!(stdout, String::from("Hello World!\n\n"));
+                assert_eq!(stdout, String::from("It works on my machine.\n\n"));
             }
             Err(err) => {
                 panic!("Failed to run assigns_envs_to_command test. Reason: {err}");

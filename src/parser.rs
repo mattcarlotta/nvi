@@ -7,13 +7,13 @@ use std::env;
 pub struct Parser<'a> {
     envs: HashMap<String, String>,
     options: &'a OptionsType,
-    tokens: &'a Vec<LexerToken>,
+    tokens: Vec<LexerToken>,
     undefined_keys: Vec<String>,
     logger: Logger<'a>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(options: &'a OptionsType, tokens: &'a Vec<LexerToken>) -> Self {
+    pub fn new(options: &'a OptionsType, tokens: Vec<LexerToken>) -> Self {
         let mut logger = Logger::new("Parser");
         logger.set_debug(&options.debug);
 
@@ -31,7 +31,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_tokens(&mut self) {
-        for token in self.tokens {
+        for token in &self.tokens {
             let mut value = String::new();
             let mut key = String::new();
 
@@ -132,8 +132,7 @@ mod tests {
             let mut lexer = Lexer::new(&options);
             lexer.tokenize();
 
-            let tokens = lexer.get_tokens();
-            let mut parser = Parser::new(&options, &tokens);
+            let mut parser = Parser::new(&options, lexer.get_tokens());
             parser.parse_tokens();
 
             return parser.get_envs();

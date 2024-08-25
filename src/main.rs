@@ -19,13 +19,8 @@ fn main() {
     let mut lexer = Lexer::new(&options);
     lexer.tokenize();
 
-    let tokens = lexer.get_tokens();
-
-    let mut parser = Parser::new(&options, &tokens);
+    let mut parser = Parser::new(&options, lexer.get_tokens());
     parser.parse_tokens();
 
-    let envs = parser.get_envs();
-
-    let generator = Generator::new(options, envs);
-    generator.run();
+    Generator::new(&options).run(parser.get_envs());
 }
