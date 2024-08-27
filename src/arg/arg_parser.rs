@@ -198,9 +198,27 @@ impl<'a> ArgParser<'a> {
         let arg = self.get_arg();
 
         if arg.is_empty() || arg.contains("-") {
-            // TODO - Add per flag error messages
-            self.logger
-                .fatal(format!("error {flag} {}", self.curr_flag));
+            let mut error = String::new();
+            match flag {
+                ARG::CONFIG => {
+                    error.push_str("The \"--config\" flag must contain an environment name from the .nvi configuration file");
+                }
+                ARG::DIRECTORY => {
+                    error.push_str("The \"--directory\" flag must contain a valid directory path");
+                }
+                ARG::ENVIRONMENT => {
+                    error.push_str(
+                        "The \"--environment\" flag must contain a valid environment name",
+                    );
+                }
+                ARG::PROJECT => {
+                    error.push_str("The \"--project\" flag must contain a valid project name");
+                }
+                _ => (),
+            }
+            self.logger.fatal(format!(
+                "encountered an error: {error}. Use flag \"--help\" for more information."
+            ));
         }
 
         return arg.to_owned();
@@ -226,9 +244,25 @@ impl<'a> ArgParser<'a> {
             args.push(arg.to_owned());
         }
 
-        // TODO - Add per flag error messages
         if args.is_empty() {
-            self.logger.fatal(format!("error for {flag}"));
+            let mut error = String::new();
+            match flag {
+                ARG::EXECUTE => {
+                    error.push_str(
+                        "The \"--\" (execute) flag must contain at least 1 system command",
+                    );
+                }
+                ARG::FILES => {
+                    error.push_str("The \"--files\" flag must contain at least 1 .env file");
+                }
+                ARG::REQUIRED => {
+                    error.push_str("The \"--required\" flag must contain at least 1 ENV key");
+                }
+                _ => (),
+            }
+            self.logger.fatal(format!(
+                "encountered an error: {error}. Use flag \"--help\" for more information."
+            ));
         }
 
         return args;
