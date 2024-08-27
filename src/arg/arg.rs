@@ -36,29 +36,10 @@ impl ARG {
             ARG::UNKNOWN => "",
         }
     }
-
-    fn debug(&self) -> &'static str {
-        match self {
-            ARG::API => "API",
-            ARG::CONFIG => "CONFIG",
-            ARG::DEBUG => "DEBUG",
-            ARG::DIRECTORY => "DIRECTORY",
-            ARG::ENVIRONMENT => "ENVIRONMENT",
-            ARG::EXECUTE => "EXECUTE",
-            ARG::FILES => "FILES",
-            ARG::HELP => "HELP",
-            ARG::PRINT => "PRINT",
-            ARG::PROJECT => "PROJECT",
-            ARG::REQUIRED => "REQUIRED",
-            ARG::SAVE => "SAVE",
-            ARG::VERSION => "VERSION",
-            ARG::UNKNOWN => "UNKNOWN",
-        }
-    }
 }
 
 impl Display for ARG {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", self.debug())
+        write!(f, "{}", self.as_str())
     }
 }
