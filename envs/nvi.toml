@@ -17,3 +17,43 @@ debug = true
 environment = "debug"
 execute = ["echo", "Hello World!"]
 files = [ "test1.env", "test2.env", "test3.env" ]
+
+## THE FOLLOWING IS STRICTLY FOR TESTING PURPOSES ONLY
+[invalid_api]
+api = "false"
+
+[invalid_debug]
+debug = "false"
+
+[invalid_directory]
+directory = false
+
+[invalid_environment]
+environment = false
+
+[invalid_execute]
+execute = false
+
+[invalid_execute_2]
+execute = [1]
+
+[invalid_files]
+files = false
+
+[invalid_files_2]
+files = [1]
+
+[invalid_print]
+print = "false"
+
+[invalid_project]
+project = false
+
+[invalid_required]
+required = false
+
+[invalid_required_2]
+required = [1]
+
+[invalid_save]
+save = "false"

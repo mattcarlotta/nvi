@@ -201,7 +201,7 @@ impl<'a> ArgParser<'a> {
             let mut error = String::new();
             match flag {
                 ARG::CONFIG => {
-                    error.push_str("The \"--config\" flag must contain an environment name from the .nvi configuration file");
+                    error.push_str("The \"--config\" flag must contain an environment name from the nvi.toml configuration file");
                 }
                 ARG::DIRECTORY => {
                     error.push_str("The \"--directory\" flag must contain a valid directory path");

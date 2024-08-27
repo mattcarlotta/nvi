@@ -76,6 +76,7 @@ impl Options {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::{Command, Stdio};
 
     #[test]
     fn argv() {
@@ -147,5 +148,611 @@ mod tests {
         assert_eq!(options.required_envs[1], String::from("TEST2"));
         assert_eq!(options.required_envs[2], String::from("TEST3"));
         assert_eq!(options.save, true);
+    }
+
+    #[test]
+    fn prints_arg_config_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--config"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(stderr.contains("The \"--config\" flag must contain an environment name from the nvi.toml configuration file"), true);
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_config_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_directory_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("The \"--directory\" flag must contain a valid directory path"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_directory_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_environment_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--environment"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains(
+                        "The \"--environment\" flag must contain a valid environment name"
+                    ),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_environment_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_execute_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains(
+                        "The \"--\" (execute) flag must contain at least 1 system command"
+                    ),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_execute_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_files_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--files"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("The \"--files\" flag must contain at least 1 .env file"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_files_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_help() {
+        match Command::new("./target/debug/nvi")
+            .args(["--help"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), true);
+
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                assert_eq!(stdout.contains("nvi documentation"), true);
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_help test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_project_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--project"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("The \"--project\" flag must contain a valid project name"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_project_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_required_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--required"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("The \"--required\" flag must contain at least 1 ENV key"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_required_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_selection_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "abc"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("The environment configuration does't appear to exist"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_selection_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_api_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_api"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"api\" config option to be a boolean value"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_api_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_debug_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_debug"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"debug\" config option to be a boolean value"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_debug_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_directory_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_directory"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr
+                        .contains("expected the \"directory\" config option to be a string value"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_directory_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_environment_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_environment"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains(
+                        "expected the \"environment\" config option to be a string value"
+                    ),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_environment_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_execute_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_execute"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"execute\" config option to be an array"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_execute_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_execute_array_type_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_execute_2"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains(
+                        "expected the \"execute\" config option to be an array of strings"
+                    ),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!(
+                    "Failed to run prints_toml_config_execute_array_type_error test. Reason: {err}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_files_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_files"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"files\" config option to be an array"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_files_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_files_array_type_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_files_2"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr
+                        .contains("expected the \"files\" config option to be an array of strings"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!(
+                    "Failed to run prints_toml_config_files_array_type_error test. Reason: {err}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_print_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_print"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"print\" config option to be a boolean value"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_print_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_project_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_project"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"project\" config option to be a string value"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_project_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_required_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_required"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"required\" config option to be an array"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_required_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_required_array_type_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_required_2"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains(
+                        "expected the \"required\" config option to be an array of strings"
+                    ),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!(
+                    "Failed to run prints_toml_config_required_array_type_error test. Reason: {err}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_save_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_save"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert_eq!(output.status.success(), false);
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert_eq!(
+                    stderr.contains("expected the \"save\" config option to be a boolean value"),
+                    true
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_save_error test. Reason: {err}");
+            }
+        }
     }
 }
