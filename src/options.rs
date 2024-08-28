@@ -2,6 +2,43 @@ use crate::api::Api;
 use crate::arg::ArgParser;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 
+#[derive(Clone, PartialEq)]
+pub enum PrintOptions {
+    Env,
+    Flags,
+    JSON,
+    Unknown,
+}
+
+impl PrintOptions {
+    fn as_str(&self) -> &'static str {
+        match self {
+            PrintOptions::Env => "env",
+            PrintOptions::Flags => "flags",
+            PrintOptions::JSON => "json",
+            PrintOptions::Unknown => "",
+        }
+    }
+
+    pub fn to_option(input: String) -> PrintOptions {
+        let print: PrintOptions;
+        match input.as_str() {
+            "json" | "JSON" => print = PrintOptions::JSON,
+            "flags" => print = PrintOptions::Flags,
+            "env" | "ENV" => print = PrintOptions::Env,
+            _ => print = PrintOptions::Unknown,
+        }
+
+        return print.to_owned();
+    }
+}
+
+impl Debug for PrintOptions {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        return write!(f, "{:?}", self.as_str());
+    }
+}
+
 pub struct Options {
     pub api: bool,
     pub api_envs: String,
@@ -11,7 +48,7 @@ pub struct Options {
     pub dir: String,
     pub environment: String,
     pub files: Vec<String>,
-    pub print: bool,
+    pub print: PrintOptions,
     pub project: String,
     pub required_envs: Vec<String>,
     pub save: bool,
@@ -23,7 +60,7 @@ impl Debug for Options {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         return write!(
             f,
-            "{{\n    \"api\": {},\n    \"command\": {:?},\n    \"config\": {:?},\n    \"debug\": {},\n    \"directory\": {:?},\n    \"environment\": {:?},\n    \"files\": {:?},\n    \"print\": {},\n    \"project\": {:?},\n    \"required_envs\": {:?},\n    \"save\": {}\n}}",
+            "{{\n    \"api\": {},\n    \"command\": {:?},\n    \"config\": {:?},\n    \"debug\": {},\n    \"directory\": {:?},\n    \"environment\": {:?},\n    \"files\": {:?},\n    \"print\": {:?},\n    \"project\": {:?},\n    \"required_envs\": {:?},\n    \"save\": {}\n}}",
             self.api,
             self.commands,
             self.config,
@@ -50,7 +87,7 @@ impl Options {
             dir: String::new(),
             environment: String::new(),
             files: vec![String::from(".env")],
-            print: false,
+            print: PrintOptions::Unknown,
             project: String::new(),
             required_envs: vec![],
             save: false,
@@ -79,7 +116,7 @@ mod tests {
     use std::process::{Command, Stdio};
 
     #[test]
-    fn argv() {
+    fn parses_argv() {
         let argv = vec![
             String::from("nvi"),
             String::from("--debug"),
@@ -91,6 +128,8 @@ mod tests {
             String::from("test1.env"),
             String::from("test2.env"),
             String::from("test3.env"),
+            String::from("--print"),
+            String::from("env"),
             String::from("--project"),
             String::from("rust"),
             String::from("--required"),
@@ -115,6 +154,7 @@ mod tests {
         assert_eq!(options.files[1], String::from("test2.env"));
         assert_eq!(options.files[2], String::from("test3.env"));
         assert_eq!(options.project, String::from("rust"));
+        assert_eq!(options.print, PrintOptions::Env);
         assert_eq!(options.required_envs[0], String::from("TEST1"));
         assert_eq!(options.required_envs[1], String::from("TEST2"));
         assert_eq!(options.required_envs[2], String::from("TEST3"));
@@ -270,6 +310,30 @@ mod tests {
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_files_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_print_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--print"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(stderr.contains("The \"--print\" flag must contain a valid format"),);
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_print_error test. Reason: {err}");
             }
         }
     }
@@ -593,7 +657,7 @@ mod tests {
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
                 assert!(
-                    stderr.contains("expected the \"print\" config option to be a boolean value"),
+                    stderr.contains("expected the \"print\" config option to be a string value"),
                 );
             }
             Err(err) => {

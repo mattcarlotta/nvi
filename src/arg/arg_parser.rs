@@ -1,7 +1,7 @@
 use super::ARG;
-use crate::globals;
 use crate::logger::Logger;
 use crate::options::OptionsType;
+use crate::{globals, options::PrintOptions};
 use std::fs;
 use std::path::PathBuf;
 use toml::{Table, Value};
@@ -158,8 +158,14 @@ impl<'a> ArgParser<'a> {
             self.options.files = files;
         }
 
-        if let Some(print) = self.get_bool_opt(config, "print") {
-            self.options.print = print;
+        if let Some(p) = self.get_str_opt(config, "print") {
+            let print = PrintOptions::to_option(p.clone());
+            match print {
+                PrintOptions::Unknown => {
+                    self.logger.fatal(format!("expected the print config option to be a valid format: env|ENV, flags, or json|JSON, instead parsed: {p:?}."));
+                }
+                _ => self.options.print = print,
+            }
         }
 
         if let Some(project) = self.get_str_opt(config, "project") {
@@ -213,6 +219,11 @@ impl<'a> ArgParser<'a> {
                 }
                 ARG::PROJECT => {
                     error.push_str("The \"--project\" flag must contain a valid project name");
+                }
+                ARG::PRINT => {
+                    error.push_str(
+                        "The \"--print\" flag must contain a valid format: env|ENV, flags, or json|JSON",
+                    );
                 }
                 _ => (),
             }
@@ -297,7 +308,15 @@ impl<'a> ArgParser<'a> {
                     self.options.files = self.parse_multi_arg(ARG::FILES, true);
                 }
                 Some(ARG::HELP) => self.logger.print_help_and_exit(),
-                Some(ARG::PRINT) => self.options.print = true,
+                Some(ARG::PRINT) => {
+                    let print = PrintOptions::to_option(self.parse_single_arg(ARG::PRINT));
+                    match print {
+                        PrintOptions::Unknown => {
+                            self.logger.fatal(format!("encountered an error: The \"--print\" option must be a valid format: env|ENV, flags, or json|JSON. Use flag \"--help\" for more information."));
+                        }
+                        _ => self.options.print = print,
+                    }
+                }
                 Some(ARG::PROJECT) => {
                     self.options.project = self.parse_single_arg(ARG::PROJECT);
                 }

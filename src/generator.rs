@@ -1,10 +1,11 @@
 use crate::logger::Logger;
-use crate::options::OptionsType;
+use crate::options::{OptionsType, PrintOptions};
 use std::collections::HashMap;
 use std::process::{exit, Command};
 
 pub struct Generator<'a> {
     options: &'a OptionsType,
+    output: String,
     logger: Logger<'a>,
 }
 
@@ -13,10 +14,14 @@ impl<'a> Generator<'a> {
         let mut logger = Logger::new("Generator");
         logger.set_debug(&options.debug);
 
-        return Generator { options, logger };
+        return Generator {
+            options,
+            output: String::new(),
+            logger,
+        };
     }
 
-    pub fn run(&self, envs: HashMap<String, String>) {
+    pub fn run(&mut self, envs: HashMap<String, String>) {
         if !self.options.commands.is_empty() {
             let mut child_process = Command::new(&self.options.commands[0])
                 .args(&self.options.commands[1..self.options.commands.len()])
@@ -25,20 +30,37 @@ impl<'a> Generator<'a> {
                 .expect("Failed to execute command");
 
             child_process.wait().expect("Failed to read command output");
-        } else if self.options.print {
-            let mut env_json = String::new();
+        } else if self.options.print != PrintOptions::Unknown {
             let mut env_count = 1;
+            if self.options.print == PrintOptions::JSON {
+                self.output.push_str("{");
+            }
+
             for (key, value) in &envs {
-                let kv = format!("{:?}:{:?},", key, value);
+                let kv: String;
+                match self.options.print {
+                    PrintOptions::JSON => {
+                        kv = format!("{:?}:{:?},", key, value);
+                    }
+                    PrintOptions::Flags => {
+                        kv = format!("--{} {:?} ", key, value);
+                    }
+                    _ => {
+                        kv = format!("{}={}\n", key, value);
+                    }
+                }
                 let mut kvl = kv.len();
                 if env_count == envs.len() {
                     kvl -= 1;
                 }
-                env_json.push_str(&kv[0..kvl]);
+                self.output.push_str(&kv[0..kvl]);
                 env_count += 1;
             }
 
-            println!("{{{}}}", env_json);
+            if self.options.print == PrintOptions::JSON {
+                self.output.push_str("}");
+            }
+            println!("{}", self.output);
         } else if !self.options.api && !self.options.save {
             self.logger.fatal(String::from("encountered an error. Running nvi without any of these flags: \"--print,\" \"--api with --save,\" or \"--\" won't result in any meaningful action. Use flag \"--help\" for more information."))
         }
@@ -54,7 +76,14 @@ mod tests {
     #[test]
     fn prints_envs() {
         match Command::new("./target/debug/nvi")
-            .args(["--print", "--directory", "envs", "--files", "base.env"])
+            .args([
+                "--print",
+                "json",
+                "--directory",
+                "envs",
+                "--files",
+                "base.env",
+            ])
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

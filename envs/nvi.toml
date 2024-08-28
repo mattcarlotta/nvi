@@ -6,7 +6,7 @@ directory = "envs"
 environment = "testing"
 execute = ["echo", "Hello World!"]
 files = [ "test1.env", "test2.env", "test3.env" ]
-print = true
+print = "json"
 project = "rust"
 # valid comment
 required = [ "TEST1", "TEST2", "TEST3" ]
@@ -44,7 +44,7 @@ files = false
 files = [1]
 
 [invalid_print]
-print = "false"
+print = false
 
 [invalid_project]
 project = false
