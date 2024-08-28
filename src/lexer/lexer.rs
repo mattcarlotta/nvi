@@ -340,7 +340,7 @@ impl<'a> Lexer<'a> {
 
             if self.file.is_empty() {
                 self.logger.fatal(format!(
-                    "tried to load file: {:?}, but it doesn't appear to have any ENVs. Aborting.",
+                    "tried to load file: {:?}, but it doesn't appear to contain any ENVs. Aborting.",
                     self.file_path.display(),
                 ));
             }
@@ -373,6 +373,7 @@ impl<'a> Lexer<'a> {
 mod tests {
     use super::*;
     use crate::options::Options;
+    use std::process::{Command, Stdio};
     use std::sync::OnceLock;
 
     fn get_tokens() -> &'static Vec<LexerToken> {
@@ -594,5 +595,77 @@ mod tests {
         let tokens = lexer.get_tokens();
 
         assert_eq!(tokens.len(), 4);
+    }
+
+    #[test]
+    fn prints_invalid_file_path_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--files", "non_existent.env"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(stderr.contains("The .env file doesn't appear to exist at this path"),);
+            }
+            Err(err) => {
+                panic!("Failed to run prints_invalid_file_path_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_invalid_env_interpolation_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--files", "error.env"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(stderr.contains("contains an interpolated \"{\" operator, but appears to be missing a closing \"}\" operator."));
+            }
+            Err(err) => {
+                panic!("Failed to run prints_invalid_env_interpolation_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_empty_env_file_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--files", "empty.env"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(stderr.contains("it doesn't appear to contain any ENVs"));
+            }
+            Err(err) => {
+                panic!("Failed to run prints_empty_env_file_error test. Reason: {err}");
+            }
+        }
     }
 }

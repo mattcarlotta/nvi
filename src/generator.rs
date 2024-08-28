@@ -85,7 +85,7 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), true);
+                assert!(output.status.success());
 
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -117,7 +117,7 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), true);
+                assert!(output.status.success());
 
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
@@ -141,11 +141,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(stderr.contains("Generator encountered an error"), true);
+                assert!(stderr.contains("Generator encountered an error"));
             }
             Err(err) => {
                 panic!("Failed to run prints_error test. Reason: {err}");

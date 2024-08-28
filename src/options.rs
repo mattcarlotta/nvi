@@ -162,11 +162,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(stderr.contains("The \"--config\" flag must contain an environment name from the nvi.toml configuration file"), true);
+                assert!(stderr.contains("The \"--config\" flag must contain an environment name from the nvi.toml configuration file"));
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_config_error test. Reason: {err}");
@@ -186,13 +186,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("The \"--directory\" flag must contain a valid directory path"),
-                    true
+                assert!(
+                    stderr.contains("The \"--directory\" flag must contain a valid directory path")
                 );
             }
             Err(err) => {
@@ -213,16 +212,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains(
-                        "The \"--environment\" flag must contain a valid environment name"
-                    ),
-                    true
-                );
+                assert!(stderr
+                    .contains("The \"--environment\" flag must contain a valid environment name"));
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_environment_error test. Reason: {err}");
@@ -242,16 +237,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains(
-                        "The \"--\" (execute) flag must contain at least 1 system command"
-                    ),
-                    true
-                );
+                assert!(stderr
+                    .contains("The \"--\" (execute) flag must contain at least 1 system command"));
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_execute_error test. Reason: {err}");
@@ -271,14 +262,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("The \"--files\" flag must contain at least 1 .env file"),
-                    true
-                );
+                assert!(stderr.contains("The \"--files\" flag must contain at least 1 .env file"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_files_error test. Reason: {err}");
@@ -298,11 +286,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), true);
+                assert!(output.status.success());
 
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
-                assert_eq!(stdout.contains("nvi documentation"), true);
+                assert!(stdout.contains("nvi documentation"));
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_help test. Reason: {err}");
@@ -322,13 +310,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
+                assert!(
                     stderr.contains("The \"--project\" flag must contain a valid project name"),
-                    true
                 );
             }
             Err(err) => {
@@ -349,14 +336,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("The \"--required\" flag must contain at least 1 ENV key"),
-                    true
-                );
+                assert!(stderr.contains("The \"--required\" flag must contain at least 1 ENV key"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_required_error test. Reason: {err}");
@@ -376,14 +360,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("The environment configuration does't appear to exist"),
-                    true
-                );
+                assert!(stderr.contains("The environment configuration does't appear to exist"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_selection_error test. Reason: {err}");
@@ -403,13 +384,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
+                assert!(
                     stderr.contains("expected the \"api\" config option to be a boolean value"),
-                    true
                 );
             }
             Err(err) => {
@@ -430,13 +410,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
+                assert!(
                     stderr.contains("expected the \"debug\" config option to be a boolean value"),
-                    true
                 );
             }
             Err(err) => {
@@ -457,15 +436,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr
-                        .contains("expected the \"directory\" config option to be a string value"),
-                    true
-                );
+                assert!(stderr
+                    .contains("expected the \"directory\" config option to be a string value"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_directory_error test. Reason: {err}");
@@ -485,16 +461,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains(
-                        "expected the \"environment\" config option to be a string value"
-                    ),
-                    true
-                );
+                assert!(stderr
+                    .contains("expected the \"environment\" config option to be a string value"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_environment_error test. Reason: {err}");
@@ -514,14 +486,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("expected the \"execute\" config option to be an array"),
-                    true
-                );
+                assert!(stderr.contains("expected the \"execute\" config option to be an array"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_execute_error test. Reason: {err}");
@@ -541,16 +510,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains(
-                        "expected the \"execute\" config option to be an array of strings"
-                    ),
-                    true
-                );
+                assert!(stderr
+                    .contains("expected the \"execute\" config option to be an array of strings"),);
             }
             Err(err) => {
                 panic!(
@@ -572,14 +537,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("expected the \"files\" config option to be an array"),
-                    true
-                );
+                assert!(stderr.contains("expected the \"files\" config option to be an array"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_files_error test. Reason: {err}");
@@ -599,15 +561,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr
-                        .contains("expected the \"files\" config option to be an array of strings"),
-                    true
-                );
+                assert!(stderr
+                    .contains("expected the \"files\" config option to be an array of strings"),);
             }
             Err(err) => {
                 panic!(
@@ -629,13 +588,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
+                assert!(
                     stderr.contains("expected the \"print\" config option to be a boolean value"),
-                    true
                 );
             }
             Err(err) => {
@@ -656,13 +614,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
+                assert!(
                     stderr.contains("expected the \"project\" config option to be a string value"),
-                    true
                 );
             }
             Err(err) => {
@@ -683,14 +640,11 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains("expected the \"required\" config option to be an array"),
-                    true
-                );
+                assert!(stderr.contains("expected the \"required\" config option to be an array"),);
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_required_error test. Reason: {err}");
@@ -710,16 +664,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
-                    stderr.contains(
-                        "expected the \"required\" config option to be an array of strings"
-                    ),
-                    true
-                );
+                assert!(stderr
+                    .contains("expected the \"required\" config option to be an array of strings"),);
             }
             Err(err) => {
                 panic!(
@@ -741,13 +691,12 @@ mod tests {
             Ok(c) => {
                 let output = c.wait_with_output().expect("Failed to read command output");
 
-                assert_eq!(output.status.success(), false);
+                assert!(!output.status.success());
 
                 let stderr = String::from_utf8_lossy(&output.stderr);
 
-                assert_eq!(
+                assert!(
                     stderr.contains("expected the \"save\" config option to be a boolean value"),
-                    true
                 );
             }
             Err(err) => {

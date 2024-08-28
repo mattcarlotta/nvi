@@ -112,6 +112,7 @@ mod tests {
     use super::*;
     use crate::lexer::Lexer;
     use crate::options::Options;
+    use std::process::{Command, Stdio};
     use std::sync::OnceLock;
 
     fn get_envs() -> &'static HashMap<String, String> {
@@ -278,5 +279,64 @@ mod tests {
             get_env("MONGOLAB_URI"),
             String::from("mongodb://root:password@abcd1234.mongolab.com:12345/localhost")
         );
+    }
+
+    #[test]
+    fn prints_empty_env_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--files", "comment.env"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(
+                    stderr.contains("Unable to parse any ENVs! Please ensure the provided .env files are not empty."),
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_empty_env_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_required_env_error() {
+        match Command::new("./target/debug/nvi")
+            .args([
+                "--directory",
+                "envs",
+                "--files",
+                "base.env",
+                "--required",
+                "KEY1",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(
+                    stderr.contains("found that the following ENVs were marked as required: [\"KEY1\"], but they are undefined"),
+                );
+            }
+            Err(err) => {
+                panic!("Failed to run prints_required_env_error test. Reason: {err}");
+            }
+        }
     }
 }
