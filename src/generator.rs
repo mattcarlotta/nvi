@@ -1,7 +1,7 @@
 use crate::logger::Logger;
 use crate::options::OptionsType;
 use std::collections::HashMap;
-use std::process::{exit, Command, Stdio};
+use std::process::{exit, Command};
 
 pub struct Generator<'a> {
     options: &'a OptionsType,
@@ -18,45 +18,23 @@ impl<'a> Generator<'a> {
 
     pub fn run(&self, envs: HashMap<String, String>) {
         if !self.options.commands.is_empty() {
-            match Command::new(&self.options.commands[0])
+            let mut child_process = Command::new(&self.options.commands[0])
                 .args(&self.options.commands[1..self.options.commands.len()])
                 .envs(&envs)
-                .stdin(Stdio::null())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
                 .spawn()
-            {
-                Ok(c) => {
-                    let output = c.wait_with_output().expect("Failed to read command output");
+                .expect("Failed to execute command");
 
-                    if !output.status.success() {
-                        self.logger.fatal(format!(
-                            "was unable to run: {:?}\n{}\n{}",
-                            &self.options.commands.join(" "),
-                            output.status,
-                            String::from_utf8_lossy(&output.stderr)
-                        ));
-                    }
-
-                    println!("{}", String::from_utf8_lossy(&output.stdout));
-                }
-                Err(err) => {
-                    self.logger.fatal(format!(
-                        "was unable to run: {}. Reason: {}",
-                        &self.options.commands.join(" "),
-                        err
-                    ));
-                }
-            }
+            child_process.wait().expect("Failed to read command output");
         } else if self.options.print {
             let mut env_json = String::new();
             let mut env_count = 1;
             for (key, value) in &envs {
-                let mut kv = format!("{:?}:{:?},", key, value);
+                let kv = format!("{:?}:{:?},", key, value);
+                let mut kvl = kv.len();
                 if env_count == envs.len() {
-                    kv.pop();
+                    kvl -= 1;
                 }
-                env_json.push_str(kv.as_str());
+                env_json.push_str(&kv[0..kvl]);
                 env_count += 1;
             }
 
@@ -121,7 +99,7 @@ mod tests {
 
                 let stdout = String::from_utf8_lossy(&output.stdout);
 
-                assert_eq!(stdout, String::from("It works on my machine.\n\n"));
+                assert_eq!(stdout, String::from("It works on my machine.\n"));
             }
             Err(err) => {
                 panic!("Failed to run assigns_envs_to_command test. Reason: {err}");
