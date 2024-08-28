@@ -1,15 +1,15 @@
 [build]
-execute = "cargo build --release"
+execute = ["cargo", "build", "--release"]
 files = [".env"]
 required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
 
 [debug]
 debug = true
-execute = "cargo run"
+execute = ["cargo", "run"]
 files = [".env"]
 required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
 
 [release]
-execute = "cargo run --release"
+execute = ["cargo", "run", "--release"]
 files = [".env"]
 required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]
