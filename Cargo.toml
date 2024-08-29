@@ -1,9 +1,19 @@
 [package]
+authors = ["Matt Carlotta <matt@mattcarlotta.com>"]
+categories = ["command-line-utilities"]
+description = "A stand-alone CLI .env file parser tool that interpolates and assigns ENVs into a process locally or remotely."
+keywords = ["env"]
+license = "GPL-3.0"
+readme = "./README.md"
+repository = "https://github.com/mattcarlotta/nvi"
 name = "nvi"
 version = "0.3.0"
 edition = "2021"
+rust-version = "1.80"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "nvi"
+path = "src/main.rs"
 
 [dependencies]
 colored = "2.1.0"
