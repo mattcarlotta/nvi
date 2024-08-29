@@ -1,7 +1,7 @@
 use super::ARG;
+use crate::globals;
 use crate::logger::Logger;
-use crate::options::OptionsType;
-use crate::{globals, options::PrintOptions};
+use crate::options::{OptionsType, PrintOptions};
 use std::fs;
 use std::path::PathBuf;
 use toml::{Table, Value};
@@ -159,12 +159,11 @@ impl<'a> ArgParser<'a> {
         }
 
         if let Some(p) = self.get_str_opt(config, "print") {
-            let print = PrintOptions::to_option(p.clone());
-            match print {
-                PrintOptions::Unknown => {
-                    self.logger.fatal(format!("expected the print config option to be a valid format: env|ENV, flags, or json|JSON, instead parsed: {p:?}."));
+            match PrintOptions::to_option(p) {
+                Ok(print) => self.options.print = print,
+                Err(input) => {
+                    self.logger.fatal(format!("expected the print config option to be a valid format: envs|ENVs, flags, or json|JSON, instead parsed: {input:?}."));
                 }
-                _ => self.options.print = print,
             }
         }
 
@@ -222,7 +221,7 @@ impl<'a> ArgParser<'a> {
                 }
                 ARG::PRINT => {
                     error.push_str(
-                        "The \"--print\" flag must contain a valid format: env|ENV, flags, or json|JSON",
+                        "The \"--print\" flag must contain a valid format: envs|ENVs, flags, or json|JSON",
                     );
                 }
                 _ => (),
@@ -309,12 +308,11 @@ impl<'a> ArgParser<'a> {
                 }
                 Some(ARG::HELP) => self.logger.print_help_and_exit(),
                 Some(ARG::PRINT) => {
-                    let print = PrintOptions::to_option(self.parse_single_arg(ARG::PRINT));
-                    match print {
-                        PrintOptions::Unknown => {
-                            self.logger.fatal(format!("encountered an error: The \"--print\" option must be a valid format: env|ENV, flags, or json|JSON. Use flag \"--help\" for more information."));
+                    match PrintOptions::to_option(self.parse_single_arg(ARG::PRINT)) {
+                        Ok(print) => self.options.print = print,
+                        Err(_) => {
+                            self.logger.fatal(format!("encountered an error: The \"--print\" option must be a valid format: envs|ENVs, flags, or json|JSON. Use flag \"--help\" for more information."));
                         }
-                        _ => self.options.print = print,
                     }
                 }
                 Some(ARG::PROJECT) => {

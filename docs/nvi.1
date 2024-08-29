@@ -27,8 +27,8 @@ nvi [\f[B]options\f[R]]
 .PP
 A stand-alone binary that can parse, interpolate and assign ENVs into a
 process locally or remotely.
-It will either print ENVs as stringified JSON to standard output or it
-will assign them to a child process.
+It will either print ENVs as ENVs, flags or JSON to standard output or
+it will assign them to a child process.
 All options below are optional.
 Only long form (--) flags are supported.
 .SH OPTIONS
@@ -55,14 +55,15 @@ A list of .env files to parse.
 Each specified \f[I]file\f[R] needs to be separated by a space.
 .TP
 --help
-Prints a table CLI flag usage information.
+Prints condensed documentation for flag usage.
 .TP
 --project \f[I]project\f[R]
 Specifies which remote project to select from the nvi API.
 Remote projects are created via the front-facing web application.
 .TP
---print
-Specifies whether or not to print ENVs as JSON to standard out.
+--print \f[I]envs|ENVs\f[R] or \f[I]flags\f[R] or \f[I]json|JSON\f[R]
+Specifies whether or not to print ENVs as ENVs, flags, or JSON to
+standard out after parsing.
 This flag will be ignored if a system command is defined.
 .TP
 --required \f[I]KEY_1\f[R] \f[I]KEY_2\f[R] \f[I]KEY_3\f[R] \&...etc

@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 #[derive(Clone, PartialEq)]
 pub enum PrintOptions {
-    Env,
+    Envs,
     Flags,
     JSON,
     Unknown,
@@ -13,23 +13,20 @@ pub enum PrintOptions {
 impl PrintOptions {
     fn as_str(&self) -> &'static str {
         match self {
-            PrintOptions::Env => "env",
+            PrintOptions::Envs => "envs",
             PrintOptions::Flags => "flags",
             PrintOptions::JSON => "json",
             PrintOptions::Unknown => "",
         }
     }
 
-    pub fn to_option(input: String) -> PrintOptions {
-        let print: PrintOptions;
-        match input.as_str() {
-            "json" | "JSON" => print = PrintOptions::JSON,
-            "flags" => print = PrintOptions::Flags,
-            "env" | "ENV" => print = PrintOptions::Env,
-            _ => print = PrintOptions::Unknown,
-        }
-
-        return print.to_owned();
+    pub fn to_option(input: String) -> Result<PrintOptions, String> {
+        return match input.as_str() {
+            "json" | "JSON" => Ok(PrintOptions::JSON),
+            "flags" => Ok(PrintOptions::Flags),
+            "envs" | "ENVs" => Ok(PrintOptions::Envs),
+            _ => Err(input),
+        };
     }
 }
 
@@ -129,7 +126,7 @@ mod tests {
             String::from("test2.env"),
             String::from("test3.env"),
             String::from("--print"),
-            String::from("env"),
+            String::from("envs"),
             String::from("--project"),
             String::from("rust"),
             String::from("--required"),
@@ -154,7 +151,7 @@ mod tests {
         assert_eq!(options.files[1], String::from("test2.env"));
         assert_eq!(options.files[2], String::from("test3.env"));
         assert_eq!(options.project, String::from("rust"));
-        assert_eq!(options.print, PrintOptions::Env);
+        assert_eq!(options.print, PrintOptions::Envs);
         assert_eq!(options.required_envs[0], String::from("TEST1"));
         assert_eq!(options.required_envs[1], String::from("TEST2"));
         assert_eq!(options.required_envs[2], String::from("TEST3"));
@@ -334,6 +331,30 @@ mod tests {
             }
             Err(err) => {
                 panic!("Failed to run prints_arg_print_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_arg_print_option_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--print", "invalid"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(stderr.contains("The \"--print\" option must be a valid format"));
+            }
+            Err(err) => {
+                panic!("Failed to run prints_arg_print_option_error test. Reason: {err}");
             }
         }
     }
@@ -662,6 +683,30 @@ mod tests {
             }
             Err(err) => {
                 panic!("Failed to run prints_toml_config_print_error test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_toml_config_print_option_error() {
+        match Command::new("./target/debug/nvi")
+            .args(["--directory", "envs", "--config", "invalid_print_2"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(!output.status.success());
+
+                let stderr = String::from_utf8_lossy(&output.stderr);
+
+                assert!(stderr.contains("expected the print config option to be a valid format"),);
+            }
+            Err(err) => {
+                panic!("Failed to run prints_toml_config_print_option_error test. Reason: {err}");
             }
         }
     }

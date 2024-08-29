@@ -13,7 +13,7 @@
 # DESCRIPTION
 
 A stand-alone binary that can parse, interpolate and assign ENVs into a process locally or remotely.
-It will either print ENVs as stringified JSON to standard output or it will assign them to a child process. 
+It will either print ENVs as ENVs, flags or JSON to standard output or it will assign them to a child process. 
 All options below are optional. Only long form (\--) flags are supported.
 
 # OPTIONS
@@ -44,15 +44,15 @@ All options below are optional. Only long form (\--) flags are supported.
 
 \--help
 
-:   Prints a table CLI flag usage information.
+:   Prints condensed documentation for flag usage.
 
 \--project [project]{.underline}
 
 :   Specifies which remote project to select from the nvi API. Remote projects are created via the front-facing web application.
 
-\--print
+\--print [envs|ENVs]{.underline} or [flags]{.underline} or [json|JSON]{.underline}
 
-:   Specifies whether or not to print ENVs as JSON to standard out. This flag will be ignored if a system command is defined.
+:   Specifies whether or not to print ENVs as ENVs, flags, or JSON to standard out after parsing. This flag will be ignored if a system command is defined.
 
 \--required [KEY_1]{.underline} [KEY_2]{.underline} [KEY_3]{.underline} ...etc
 

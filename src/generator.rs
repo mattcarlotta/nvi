@@ -43,7 +43,7 @@ impl<'a> Generator<'a> {
                         kv = format!("{:?}:{:?},", key, value);
                     }
                     PrintOptions::Flags => {
-                        kv = format!("--{} {:?} ", key, value);
+                        kv = format!("--{} {} ", key, value);
                     }
                     _ => {
                         kv = format!("{}={}\n", key, value);
@@ -74,7 +74,7 @@ mod tests {
     use std::process::{Command, Stdio};
 
     #[test]
-    fn prints_envs() {
+    fn prints_envs_as_json() {
         match Command::new("./target/debug/nvi")
             .args([
                 "--print",
@@ -99,7 +99,69 @@ mod tests {
                 assert_eq!(stdout, String::from("{\"BASE\":\"hello\"}\n"));
             }
             Err(err) => {
-                panic!("Failed to run print_envs test. Reason: {err}");
+                panic!("Failed to run prints_envs_as_json test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_envs_as_flags() {
+        match Command::new("./target/debug/nvi")
+            .args([
+                "--print",
+                "flags",
+                "--directory",
+                "envs",
+                "--files",
+                "base.env",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(output.status.success());
+
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                assert_eq!(stdout, String::from("--BASE hello\n"));
+            }
+            Err(err) => {
+                panic!("Failed to run prints_envs_as_flags test. Reason: {err}");
+            }
+        }
+    }
+
+    #[test]
+    fn prints_envs() {
+        match Command::new("./target/debug/nvi")
+            .args([
+                "--print",
+                "envs",
+                "--directory",
+                "envs",
+                "--files",
+                "base.env",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => {
+                let output = c.wait_with_output().expect("Failed to read command output");
+
+                assert!(output.status.success());
+
+                let stdout = String::from_utf8_lossy(&output.stdout);
+
+                assert_eq!(stdout, String::from("BASE=hello\n"));
+            }
+            Err(err) => {
+                panic!("Failed to run prints_envs test. Reason: {err}");
             }
         }
     }

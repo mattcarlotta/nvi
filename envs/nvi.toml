@@ -46,6 +46,9 @@ files = [1]
 [invalid_print]
 print = false
 
+[invalid_print_2]
+print = "invalid"
+
 [invalid_project]
 project = false
 

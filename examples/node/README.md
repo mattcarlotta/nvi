@@ -24,5 +24,5 @@ nvi --config ts
 nvi -- pnpm run ts
 
 # piping ENVs to node process.stdin, so they can be manually assigned to process.env
-nvi --print | node stdin.mjs
+nvi --print json | node stdin.mjs
 ```
