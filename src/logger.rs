@@ -86,7 +86,7 @@ impl<'a> Logger<'a> {
 │ --environment │ specifies which environment config to use within a nvi API project. (ex: --environment dev)                    │
 │ --files       │ specifies which .env files to parse separated by a space. (ex: --files test.env test2.env)                     │
 │ --project     │ specifies which remote project to select from the nvi API. (ex: --project my_project)                          │
-│ --print       │ specifies whether or not to print ENVs as ENVs, flags, or JSON to stdout after parsing. (ex: --print json)     │
+│ --print       │ specifies whether or not to print envs/ENVs, flags, or json/JSON to stdout after parsing. (ex: --print json)   │
 │ --required    │ specifies which ENV keys are required separated by a space. (ex: --required KEY1 KEY2)                         │
 │ --save        │ specifies whether or not to save nvi API ENVs to disk with the selected environment name. (ex: --save)         │
 │ --version     │ prints out app version. (ex: --version)                                                                        │
