@@ -1,5 +1,0 @@
-[development]
-debug = true
-execute = "go run main.go"
-files = [".env"]
-required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]

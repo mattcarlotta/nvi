@@ -1,6 +1,6 @@
-% nvi(1) CLI Documentation v0.2.2
+% nvi(1) CLI Documentation v0.3.0
 % Matt Carlotta
-% 01-31-2024
+% 08-28-2024
 
 # NAME
 
@@ -12,21 +12,19 @@
 
 # DESCRIPTION
 
-A zero-dependency, stand-alone binary that can parse, interpolate and assign ENVs into a process locally or remotely.
-It will either print ENVs as stringified JSON to standard output or it will assign them to a forked child process. 
+A stand-alone binary that can parse, interpolate and assign ENVs into a process locally or remotely.
+It will either print ENVs as ENVs, flags or JSON to standard output or it will assign them to a child process. 
 All options below are optional. Only long form (\--) flags are supported.
 
 # OPTIONS
 
 \--api
 
-:   Specifies whether or not to retrieve ENVs from the remote API.
+:   Specifies whether or not to retrieve ENVs from the nvi API.
 
 \--config [environment]{.underline}
 
-:  Specifies which environment config to load from the .nvi file. 
-
-    When this flag is present, then the options below are ignored as they should be defined within the .nvi configuration file.
+:  Specifies which environment config to load from a nvi.toml file. 
 
 \--debug
 
@@ -38,7 +36,7 @@ All options below are optional. Only long form (\--) flags are supported.
 
 \--environment [environment]{.underline}
 
-:   Specifies which environment config to use within a remote project. Remote environments are created via the front-facing web application.
+:   Specifies which environment config to use within a nvi API project. Remote environments are created via the front-facing web application.
 
 \--files [file1.env]{.underline} [file2.env]{.underline} [file3.env]{.underline} ...etc
 
@@ -46,23 +44,23 @@ All options below are optional. Only long form (\--) flags are supported.
 
 \--help
 
-:   Prints a table CLI flag usage information.
+:   Prints condensed documentation for flag usage.
 
 \--project [project]{.underline}
 
 :   Specifies which remote project to select from the nvi API. Remote projects are created via the front-facing web application.
 
-\--print
+\--print [envs|ENVs]{.underline} or [flags]{.underline} or [json|JSON]{.underline}
 
-:   Specifies whether or not to print ENVs to standard out. This flag will be ignored if a system command is defined.
+:   Specifies whether or not to print ENVs as ENVs, flags, or JSON to standard out after parsing. This flag will be ignored if a system command is defined.
 
 \--required [KEY_1]{.underline} [KEY_2]{.underline} [KEY_3]{.underline} ...etc
 
-:   A list of ENV keys that are required to exist after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
+:   A list of ENV keys that are required to be defined after parsing. Each specified [KEY]{.underline} needs to be separated by a space.
 
 \--save
 
-:   Specifies whether or not to save remote ENVs to disk with the selected environment name.
+:   Specifies whether or not to save nvi API ENVs to disk with the selected environment name.
 
 \--version
 
@@ -70,7 +68,7 @@ All options below are optional. Only long form (\--) flags are supported.
 
 \-- [command]{.underline}
 
-:   A system command to run in a forked child process that has been assigned with the parsed ENVs. This should be last flag defined, therefore anything placed after it will be consumed as part of the system command.
+:   A system command to run in a child process that has been assigned with the parsed ENVs. This should be last flag defined, therefore anything placed after it will be consumed as part of the system command.
 
 # EXIT STATUS
 
@@ -78,7 +76,7 @@ nvi exits with a 0 on success and 1 if there's an error.
 
 # FILES
 
-*\*/.nvi*
+*\*/nvi.toml*
 
 :   Global project environment configuration file.
 
@@ -90,10 +88,10 @@ nvi exits with a 0 on success and 1 if there's an error.
 
 Parsing a local `example.env` file from a custom directory with debug logging:
 ```bash
-$ nvi --files example.env --dir dist/client --debug
+$ nvi --files example.env --directory dist/client --debug
 ```
 
-Parsing one or many local `.env` files from a .nvi configuration file typically located at a project's root directory:
+Parsing one or many local `.env` files from a nvi.toml configuration file typically located at a project's root directory:
 ```bash
 $ nvi --config standard
 ```
@@ -129,13 +127,13 @@ $ [nvi] Please enter your unique API key:
 
 If no error is displayed in the terminal, then a child process should be spawned with the command OR ENVs will be printed to standard out as stringified JSON.
 
-The following represents an example `.nvi` configuration:
+The following represents an example `nvi.toml` configuration:
 ```toml
 [dev]
 debug = true
 directory = "path/to/custom/dir"
 files = [ ".env", "base.env", "reference.env" ]
-execute = "bin dev"
+execute = ["echo", "Hello"]
 required = [ "TEST1", "TEST2", "TEST3" ]
 
 [staging]
@@ -146,13 +144,13 @@ required = [ "TEST1" ]
 api = true
 debug = true
 environment = "development"
-execute = "bin dev"
+execute = ["echo", "Hello"]
 project = "my_project"
 required = [ "TEST1", "TEST2", "TEST3" ]
 save = true
 ```
 
-To target a configuration within the .nvi config file, simply use the `--config` flag followed by the config name:
+To target a configuration within the nvi.toml config file, simply use the `--config` flag followed by the config name:
 ```bash
 $ nvi --config dev
 ```
@@ -168,4 +166,4 @@ Please read [this](https://github.com/mattcarlotta/nvi#what-are-the-nvi-configur
 
 # LICENSE
 
-Copyright 2023 (C) Matt Carlotta. GPL-3.0 licensed.
+Copyright 2024 (C) Matt Carlotta. GPL-3.0 licensed.

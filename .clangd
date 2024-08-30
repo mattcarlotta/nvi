@@ -1,2 +1,0 @@
-CompileFlags:                     # Tweak the parse settings
-  Add: [-Werror, -Wall, -Wextra, -Wpedantic, -std=c++17, -I../src, -I./googletest/googletest/include]             # treat all files as C++, enable more warnings

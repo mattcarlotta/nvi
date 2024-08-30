@@ -1,5 +1,0 @@
-[main]
-debug = true
-execute = "python3 main.py"
-files = [".env"]
-required = ["BASIC_ENV", "QUOTES", "MULTI_LINE_KEY", "MONGOLAB_URI"]

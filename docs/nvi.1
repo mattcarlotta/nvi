@@ -14,7 +14,7 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "nvi" "1" "01-31-2024" "CLI Documentation v0.2.2" ""
+.TH "nvi" "1" "08-28-2024" "CLI Documentation v0.3.0" ""
 .hy
 .SH NAME
 .PP
@@ -25,24 +25,19 @@ assigning multiple .env files into a process.
 nvi [\f[B]options\f[R]]
 .SH DESCRIPTION
 .PP
-A zero-dependency, stand-alone binary that can parse, interpolate and
-assign ENVs into a process locally or remotely.
-It will either print ENVs as stringified JSON to standard output or it
-will assign them to a forked child process.
+A stand-alone binary that can parse, interpolate and assign ENVs into a
+process locally or remotely.
+It will either print ENVs as ENVs, flags or JSON to standard output or
+it will assign them to a child process.
 All options below are optional.
 Only long form (--) flags are supported.
 .SH OPTIONS
 .TP
 --api
-Specifies whether or not to retrieve ENVs from the remote API.
+Specifies whether or not to retrieve ENVs from the nvi API.
 .TP
 --config \f[I]environment\f[R]
-Specifies which environment config to load from the .nvi file.
-.RS
-.PP
-When this flag is present, then the options below are ignored as they
-should be defined within the .nvi configuration file.
-.RE
+Specifies which environment config to load from a nvi.toml file.
 .TP
 --debug
 Specifies whether or not to log debug details.
@@ -52,7 +47,7 @@ Specifies which directory path the .env files are located within.
 The \f[I]path\f[R] will be relative to the current directory.
 .TP
 --environment \f[I]environment\f[R]
-Specifies which environment config to use within a remote project.
+Specifies which environment config to use within a nvi API project.
 Remote environments are created via the front-facing web application.
 .TP
 --files \f[I]file1.env\f[R] \f[I]file2.env\f[R] \f[I]file3.env\f[R] \&...etc
@@ -60,30 +55,31 @@ A list of .env files to parse.
 Each specified \f[I]file\f[R] needs to be separated by a space.
 .TP
 --help
-Prints a table CLI flag usage information.
+Prints condensed documentation for flag usage.
 .TP
 --project \f[I]project\f[R]
 Specifies which remote project to select from the nvi API.
 Remote projects are created via the front-facing web application.
 .TP
---print
-Specifies whether or not to print ENVs to standard out.
+--print \f[I]envs|ENVs\f[R] or \f[I]flags\f[R] or \f[I]json|JSON\f[R]
+Specifies whether or not to print ENVs as ENVs, flags, or JSON to
+standard out after parsing.
 This flag will be ignored if a system command is defined.
 .TP
 --required \f[I]KEY_1\f[R] \f[I]KEY_2\f[R] \f[I]KEY_3\f[R] \&...etc
-A list of ENV keys that are required to exist after parsing.
+A list of ENV keys that are required to be defined after parsing.
 Each specified \f[I]KEY\f[R] needs to be separated by a space.
 .TP
 --save
-Specifies whether or not to save remote ENVs to disk with the selected
+Specifies whether or not to save nvi API ENVs to disk with the selected
 environment name.
 .TP
 --version
 Prints the current version number.
 .TP
 -- \f[I]command\f[R]
-A system command to run in a forked child process that has been assigned
-with the parsed ENVs.
+A system command to run in a child process that has been assigned with
+the parsed ENVs.
 This should be last flag defined, therefore anything placed after it
 will be consumed as part of the system command.
 .SH EXIT STATUS
@@ -91,7 +87,7 @@ will be consumed as part of the system command.
 nvi exits\ with a 0 on success and\ 1 if there\[cq]s an error.
 .SH FILES
 .TP
-\f[I]*/.nvi\f[R]
+\f[I]*/nvi.toml\f[R]
 Global project environment configuration file.
 .TP
 \f[I]*/*.env.*\f[R]
@@ -103,12 +99,12 @@ debug logging:
 .IP
 .nf
 \f[C]
-$ nvi --files example.env --dir dist/client --debug
+$ nvi --files example.env --directory dist/client --debug
 \f[R]
 .fi
 .PP
-Parsing one or many local \f[V].env\f[R] files from a .nvi configuration
-file typically located at a project\[cq]s root directory:
+Parsing one or many local \f[V].env\f[R] files from a nvi.toml
+configuration file typically located at a project\[cq]s root directory:
 .IP
 .nf
 \f[C]
@@ -185,7 +181,7 @@ If no error is displayed in the terminal, then a child process should be
 spawned with the command OR ENVs will be printed to standard out as
 stringified JSON.
 .PP
-The following represents an example \f[V].nvi\f[R] configuration:
+The following represents an example \f[V]nvi.toml\f[R] configuration:
 .IP
 .nf
 \f[C]
@@ -193,7 +189,7 @@ The following represents an example \f[V].nvi\f[R] configuration:
 debug = true
 directory = \[dq]path/to/custom/dir\[dq]
 files = [ \[dq].env\[dq], \[dq]base.env\[dq], \[dq]reference.env\[dq] ]
-execute = \[dq]bin dev\[dq]
+execute = [\[dq]echo\[dq], \[dq]Hello\[dq]]
 required = [ \[dq]TEST1\[dq], \[dq]TEST2\[dq], \[dq]TEST3\[dq] ]
 
 [staging]
@@ -204,15 +200,15 @@ required = [ \[dq]TEST1\[dq] ]
 api = true
 debug = true
 environment = \[dq]development\[dq]
-execute = \[dq]bin dev\[dq]
+execute = [\[dq]echo\[dq], \[dq]Hello\[dq]]
 project = \[dq]my_project\[dq]
 required = [ \[dq]TEST1\[dq], \[dq]TEST2\[dq], \[dq]TEST3\[dq] ]
 save = true
 \f[R]
 .fi
 .PP
-To target a configuration within the .nvi config file, simply use the
-\f[V]--config\f[R] flag followed by the config name:
+To target a configuration within the nvi.toml config file, simply use
+the \f[V]--config\f[R] flag followed by the config name:
 .IP
 .nf
 \f[C]
@@ -232,7 +228,7 @@ Issues (https://github.com/mattcarlotta/nvi/issues)
 Documentation (https://github.com/mattcarlotta/nvi#README)
 .SH LICENSE
 .PP
-Copyright 2023 (C) Matt Carlotta.
+Copyright 2024 (C) Matt Carlotta.
 GPL-3.0 licensed.
 .SH AUTHORS
 Matt Carlotta.
