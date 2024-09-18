@@ -1,18 +1,31 @@
 # NVI Man Documentation
 
-Man documentation nvi CLI tool. 
+Man documentation for the nvi CLI tool. 
 
 ## Requirements
-- pandoc v3.1.6+ (click [here](https://pandoc.org/MANUAL.html) for documentation)
+- pandoc v3.1.6+ (click [here](https://pandoc.org/installing.html) for installation)
 
-## Manually Build
+## Download Pre-built Documentation
+According to your operating system and CPU architecture, download one of the pre-built assets from the [releases](https://github.com/mattcarlotta/nvi/releases) page.
+
+Open a terminal to where the downloaded asset resides and unzip the asset. Replace `<asset>` with the downloaded asset name and replace `</destination/directory/>` with an unzip destination:
+```bash
+tar –xzf <asset>.tar.gz -C </destination/directory/>
+```
+
+You'll find 2 directories within the unzipped asset:
+- bin
+- man
+
+
+## Manually Build Documentation
 ```bash
 git clone git@github.com:mattcarlotta/nvi.git
-cd docs 
+cd nvi/docs
 pandoc --standalone --to man nvi.1.md -o nvi.1
 ```
 
-Man from local directory:
+View man documentation:
 ```bash
 man ./nvi.1
 ```
