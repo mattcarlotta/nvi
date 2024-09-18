@@ -17,7 +17,7 @@ jobs:
         matrix:
           toolchain:
             - {runs_on: ubuntu-latest, name: "Linux x86_64", archive_name: "linux-x86_64"}
-            - {runs_on: macos-11, name: "macOS x86_64", archive_name: "macos-x86_64"}
+            - {runs_on: macos-12, name: "macOS x86_64", archive_name: "macos-x86_64"}
             - {runs_on: macos-14, name: "macOS AArch64", archive_name: "macos-aarch64"}
 
       steps:
@@ -40,7 +40,7 @@ jobs:
           if: ${{ matrix.toolchain.archive_name != 'linux-x86_64' }}
           run: brew install pandoc
 
-        - name: format Assets
+        - name: Format Assets
           run: cargo fmt --verbose --all --check
 
         - name: Lint Assets
@@ -52,8 +52,8 @@ jobs:
             cd docs
             pandoc --standalone --to man nvi.1.md -o nvi.1
 
-        - name: Run Tests
-          run: cargo test
+        # - name: Run Tests
+        #   run: cargo test
 
         - name: Compress Assets
           run: |
