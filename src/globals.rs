@@ -1,4 +1,4 @@
-use crate::arg::ARG;
+use crate::arg::Arg;
 use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
@@ -19,36 +19,34 @@ pub const CLOSE_BRACE: char = '}'; // 0x7d
 pub const NULL_CHAR: char = '\0'; // 0x0
 
 #[cfg(debug_assertions)]
-pub const API_URL: &'static str = "http://127.0.0.1:4000";
+pub const API_URL: &str = "http://127.0.0.1:4000";
 
 #[cfg(not(debug_assertions))]
-pub const API_URL: &'static str = "http://nvi.sh/api";
+pub const API_URL: &str = "http://nvi.sh/api";
 
 pub fn current_dir() -> &'static PathBuf {
     static CURRENT_DIR: OnceLock<PathBuf> = OnceLock::new();
-    CURRENT_DIR.get_or_init(|| {
-        return env::current_dir().expect("Failed to retrieve current directory.");
-    })
+    CURRENT_DIR.get_or_init(|| env::current_dir().expect("Failed to retrieve current directory."))
 }
 
-pub fn args() -> &'static HashMap<&'static str, ARG> {
-    static HASHMAP: OnceLock<HashMap<&'static str, ARG>> = OnceLock::new();
+pub fn args() -> &'static HashMap<&'static str, Arg> {
+    static HASHMAP: OnceLock<HashMap<&'static str, Arg>> = OnceLock::new();
     HASHMAP.get_or_init(|| {
-        return HashMap::from([
-            (ARG::API.as_str(), ARG::API),
-            (ARG::CONFIG.as_str(), ARG::CONFIG),
-            (ARG::DEBUG.as_str(), ARG::DEBUG),
-            (ARG::DIRECTORY.as_str(), ARG::DIRECTORY),
-            (ARG::ENVIRONMENT.as_str(), ARG::ENVIRONMENT),
-            (ARG::EXECUTE.as_str(), ARG::EXECUTE),
-            (ARG::FILES.as_str(), ARG::FILES),
-            (ARG::HELP.as_str(), ARG::HELP),
-            (ARG::PRINT.as_str(), ARG::PRINT),
-            (ARG::PROJECT.as_str(), ARG::PROJECT),
-            (ARG::REQUIRED.as_str(), ARG::REQUIRED),
-            (ARG::SAVE.as_str(), ARG::SAVE),
-            (ARG::VERSION.as_str(), ARG::VERSION),
-            (ARG::UNKNOWN.as_str(), ARG::UNKNOWN),
-        ]);
+        HashMap::from([
+            (Arg::Api.as_str(), Arg::Api),
+            (Arg::Config.as_str(), Arg::Config),
+            (Arg::Debug.as_str(), Arg::Debug),
+            (Arg::Directory.as_str(), Arg::Directory),
+            (Arg::Environment.as_str(), Arg::Environment),
+            (Arg::Execute.as_str(), Arg::Execute),
+            (Arg::Files.as_str(), Arg::Files),
+            (Arg::Help.as_str(), Arg::Help),
+            (Arg::Print.as_str(), Arg::Print),
+            (Arg::Project.as_str(), Arg::Project),
+            (Arg::Required.as_str(), Arg::Required),
+            (Arg::Save.as_str(), Arg::Save),
+            (Arg::Version.as_str(), Arg::Version),
+            (Arg::Unknown.as_str(), Arg::Unknown),
+        ])
     })
 }

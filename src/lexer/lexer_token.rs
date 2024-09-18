@@ -16,7 +16,7 @@ impl Display for LexerValue {
             LexerValue::Comment => "COMMENT",
             LexerValue::Multiline => "MULTILINE",
         };
-        return write!(f, "{}", val);
+        write!(f, "{}", val)
     }
 }
 
@@ -29,12 +29,12 @@ pub struct LexerValueToken {
 
 impl Clone for LexerValueToken {
     fn clone(&self) -> Self {
-        return LexerValueToken {
+        LexerValueToken {
             token_type: self.token_type.clone(),
             value: self.value.clone(),
             byte: self.byte,
             line: self.line,
-        };
+        }
     }
 }
 
@@ -44,22 +44,22 @@ impl Debug for LexerValueToken {
             Some(v) => format!("Some({v})"),
             None => String::from("None"),
         };
-        return write!(
+        write!(
             f,
             "token_type: {}, value: {}, line: {}, byte: {}",
             &self.token_type, value, &self.line, &self.byte
-        );
+        )
     }
 }
 
 impl LexerValueToken {
     pub fn new(token_type: LexerValue, value: &String, line: usize, byte: usize) -> Self {
-        return LexerValueToken {
+        LexerValueToken {
             token_type,
             value: Some(value.to_owned()),
             line,
             byte,
-        };
+        }
     }
 }
 
@@ -71,31 +71,30 @@ pub struct LexerToken {
 
 impl Clone for LexerToken {
     fn clone(&self) -> Self {
-        return LexerToken {
+        LexerToken {
             key: self.key.clone(),
             values: self.values.clone(),
             file: self.file.clone(),
-        };
+        }
     }
 }
 
 impl Debug for LexerToken {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        return f
-            .debug_struct("LexerToken")
+        f.debug_struct("LexerToken")
             .field("key", &self.key)
             .field("values", &self.values)
             .field("file", &self.file)
-            .finish();
+            .finish()
     }
 }
 
 impl LexerToken {
     pub fn new() -> Self {
-        return LexerToken {
+        LexerToken {
             key: None,
             values: vec![],
             file: String::new(),
-        };
+        }
     }
 }

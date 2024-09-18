@@ -1,44 +1,44 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-pub enum ARG {
-    API,
-    CONFIG,
-    DEBUG,
-    DIRECTORY,
-    ENVIRONMENT,
-    EXECUTE,
-    FILES,
-    HELP,
-    PRINT,
-    PROJECT,
-    REQUIRED,
-    SAVE,
-    VERSION,
-    UNKNOWN,
+pub enum Arg {
+    Api,
+    Config,
+    Debug,
+    Directory,
+    Environment,
+    Execute,
+    Files,
+    Help,
+    Print,
+    Project,
+    Required,
+    Save,
+    Version,
+    Unknown,
 }
 
-impl ARG {
+impl Arg {
     pub fn as_str(&self) -> &'static str {
         match self {
-            ARG::API => "--api",
-            ARG::CONFIG => "--config",
-            ARG::DEBUG => "--debug",
-            ARG::DIRECTORY => "--directory",
-            ARG::ENVIRONMENT => "--environment",
-            ARG::EXECUTE => "--",
-            ARG::FILES => "--files",
-            ARG::HELP => "--help",
-            ARG::PRINT => "--print",
-            ARG::PROJECT => "--project",
-            ARG::REQUIRED => "--required",
-            ARG::SAVE => "--save",
-            ARG::VERSION => "--version",
-            ARG::UNKNOWN => "",
+            Arg::Api => "--api",
+            Arg::Config => "--config",
+            Arg::Debug => "--debug",
+            Arg::Directory => "--directory",
+            Arg::Environment => "--environment",
+            Arg::Execute => "--",
+            Arg::Files => "--files",
+            Arg::Help => "--help",
+            Arg::Print => "--print",
+            Arg::Project => "--project",
+            Arg::Required => "--required",
+            Arg::Save => "--save",
+            Arg::Version => "--version",
+            Arg::Unknown => "",
         }
     }
 }
 
-impl Display for ARG {
+impl Display for Arg {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         write!(f, "{}", self.as_str())
     }

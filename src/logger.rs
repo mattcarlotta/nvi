@@ -11,10 +11,10 @@ pub struct Logger<'a> {
 
 impl<'a> Logger<'a> {
     pub fn new(log_type: &'a str) -> Self {
-        return Logger {
+        Logger {
             log_type,
             debug: false,
-        };
+        }
     }
 
     pub fn set_debug(&mut self, debug: &bool) {
@@ -73,7 +73,7 @@ impl<'a> Logger<'a> {
     }
 
     pub fn print_help_and_exit(&self) -> ! {
-        println!("{}", format!(
+        println!("{}", 
             r#"┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ nvi documentation                                                                                                              │
 ├───────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -91,8 +91,8 @@ impl<'a> Logger<'a> {
 │ --save        │ specifies whether or not to save nvi API ENVs to disk with the selected environment name. (ex: --save)         │
 │ --version     │ prints out app version. (ex: --version)                                                                        │
 │ --            │ specifies which system command to run in a child process with parsed ENVs. (ex: -- cargo run)                  │
-└───────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘"#,
-        ).green());
+└───────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘"#
+        .to_string().green());
         exit(0);
     }
 }

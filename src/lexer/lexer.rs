@@ -22,7 +22,7 @@ impl<'a> Lexer<'a> {
         let mut logger = Logger::new("Lexer");
         logger.set_debug(&options.debug);
 
-        return Lexer {
+        Lexer {
             options,
             index: 0,
             byte: 1,
@@ -32,11 +32,11 @@ impl<'a> Lexer<'a> {
             file_path: globals::current_dir().clone(),
             tokens: vec![],
             logger,
-        };
+        }
     }
 
     pub fn get_tokens(self) -> Vec<LexerToken> {
-        return self.tokens;
+        self.tokens
     }
 
     fn reset_byte(&mut self) {
@@ -57,10 +57,7 @@ impl<'a> Lexer<'a> {
             return None;
         }
 
-        match self.file.chars().nth(index) {
-            Some(c) => return Some(c),
-            None => return None,
-        }
+        self.file.chars().nth(index)
     }
 
     fn skip(&mut self, offset: Option<usize>) {
@@ -70,10 +67,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn get_char(&self, offset: Option<usize>) -> char {
-        return match self.peek(offset) {
+        match self.peek(offset) {
             Some(c) => c,
             None => globals::NULL_CHAR,
-        };
+        }
     }
 
     fn parse(&mut self) {
@@ -170,7 +167,7 @@ impl<'a> Lexer<'a> {
                                 self.logger.fatal(
                                     format!(
                                         "found an error in {}:{}:{}. The key {:?} contains an interpolated \"{{\" operator, but appears to be missing a closing \"}}\" operator.", 
-                                        self.file_name, self.line, self.byte, token.key.unwrap_or(String::new())
+                                        self.file_name, self.line, self.byte, token.key.unwrap_or_default()
                                     )
                                 );
                             }
@@ -392,14 +389,14 @@ mod tests {
             let mut lexer = Lexer::new(&options);
             lexer.tokenize();
 
-            return lexer.get_tokens();
+            lexer.get_tokens()
         })
     }
 
     fn get_token(index: usize) -> LexerToken {
         let tokens = get_tokens();
 
-        return tokens[index].to_owned();
+        tokens[index].to_owned()
     }
 
     #[test]

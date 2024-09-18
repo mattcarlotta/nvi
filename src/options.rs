@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 pub enum PrintOptions {
     Envs,
     Flags,
-    JSON,
+    Json,
     Unknown,
 }
 
@@ -15,24 +15,24 @@ impl PrintOptions {
         match self {
             PrintOptions::Envs => "envs",
             PrintOptions::Flags => "flags",
-            PrintOptions::JSON => "json",
+            PrintOptions::Json => "json",
             PrintOptions::Unknown => "",
         }
     }
 
     pub fn to_option(input: String) -> Result<PrintOptions, String> {
-        return match input.as_str() {
-            "json" | "JSON" => Ok(PrintOptions::JSON),
+        match input.as_str() {
+            "json" | "JSON" => Ok(PrintOptions::Json),
             "flags" => Ok(PrintOptions::Flags),
             "envs" | "ENVs" => Ok(PrintOptions::Envs),
             _ => Err(input),
-        };
+        }
     }
 }
 
 impl Debug for PrintOptions {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        return write!(f, "{:?}", self.as_str());
+        write!(f, "{:?}", self.as_str())
     }
 }
 
@@ -55,7 +55,7 @@ pub type OptionsType = Options;
 
 impl Debug for Options {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        return write!(
+        write!(
             f,
             "{{\n    \"api\": {},\n    \"command\": {:?},\n    \"config\": {:?},\n    \"debug\": {},\n    \"directory\": {:?},\n    \"environment\": {:?},\n    \"files\": {:?},\n    \"print\": {:?},\n    \"project\": {:?},\n    \"required_envs\": {:?},\n    \"save\": {}\n}}",
             self.api,
@@ -69,7 +69,7 @@ impl Debug for Options {
             self.project,
             self.required_envs,
             self.save
-        );
+        )
     }
 }
 
@@ -103,7 +103,7 @@ impl Options {
             }
         }
 
-        return options;
+        options
     }
 }
 

@@ -34,7 +34,7 @@ impl<'a> Api<'a> {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
 
-        return Api {
+        Api {
             request: Client::new(),
             headers,
             options,
@@ -43,7 +43,7 @@ impl<'a> Api<'a> {
             api_key: String::new(),
             status_code: StatusCode::OK,
             logger,
-        };
+        }
     }
 
     fn fetch_data(
@@ -81,7 +81,7 @@ impl<'a> Api<'a> {
             self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Excepted the response content-type to be text/plain instead received {content_type}."));
         }
 
-        self.data = res.text().unwrap_or(String::new());
+        self.data = res.text().unwrap_or_default();
 
         if !self.status_code.is_success() || self.data.is_empty() {
             self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Either the API key was invalid or you haven't created any {req_type} yet!"));
@@ -110,9 +110,10 @@ impl<'a> Api<'a> {
                 index += 1;
             }
 
-            self.logger.print(format!(
+            self.logger.print(
                 "Please select one of the options above using the corresponding [number]... "
-            ));
+                    .to_string(),
+            );
 
             io::stdout().flush().expect("Failed to flush stdout");
         }
@@ -130,7 +131,7 @@ impl<'a> Api<'a> {
                 .read_line(&mut selection)
                 .expect("Failed to read line");
 
-            selection.retain(|c| c.is_digit(10));
+            selection.retain(|c| c.is_ascii_digit());
         }
 
         let index_option = selection.parse::<u16>().unwrap_or(0);
@@ -141,11 +142,11 @@ impl<'a> Api<'a> {
             ));
 
             return option.to_string();
-        } else {
-            self.logger.fatal(format!(
-                "was provided a(n) invalid {req_type} selection. Aborting.",
-            ));
-        };
+        }
+
+        self.logger.fatal(format!(
+            "was provided a(n) invalid {req_type} selection. Aborting.",
+        ));
     }
 
     fn save_envs_to_disk(&mut self) {
@@ -163,9 +164,8 @@ impl<'a> Api<'a> {
                 self.save_file_path.display()
             ));
 
-            self.logger.print(format!(
-                "Are you sure you want to save and overwrite it? (y|N) "
-            ));
+            self.logger
+                .print("Are you sure you want to save and overwrite it? (y|N) ".to_string());
             io::stdout().flush().expect("Failed to flush stdout");
 
             let mut selection = String::new();
@@ -233,13 +233,13 @@ impl<'a> Api<'a> {
                 "successfully parsed the API key found within \"{}\"!",
                 api_key_file.display()
             ));
-        } else {
-            if let Ok(mut ak) =
-                prompt_password(format!("[nvi] Please enter your unique API key: ").cyan())
-            {
-                ak.retain(|c| c.is_alphanumeric());
-                self.api_key.push_str(ak.as_str());
-            }
+        } else if let Ok(mut ak) = prompt_password(
+            "[nvi] Please enter your unique API key: "
+                .to_string()
+                .cyan(),
+        ) {
+            ak.retain(|c| c.is_alphanumeric());
+            self.api_key.push_str(ak.as_str());
         }
 
         if self.api_key.is_empty() {

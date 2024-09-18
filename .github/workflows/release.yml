@@ -16,42 +16,55 @@ jobs:
         fail-fast: true
         matrix:
           toolchain:
-            - {runs_on: ubuntu-latest, name: "Linux x86_64", archive_name: "linux-x86_64", cpus: "$(nproc --all)"}
-            - {runs_on: macos-11, name: "macOS x86_64", archive_name: "macos-x86_64", cpus: "$(sysctl -n hw.ncpu)"}
-            - {runs_on: macos-14, name: "macOS AArch64", archive_name: "macos-aarch64", cpus: "$(sysctl -n hw.ncpu)"}
+            - {runs_on: ubuntu-latest, name: "Linux x86_64", archive_name: "linux-x86_64"}
+            - {runs_on: macos-11, name: "macOS x86_64", archive_name: "macos-x86_64"}
+            - {runs_on: macos-14, name: "macOS AArch64", archive_name: "macos-aarch64"}
 
       steps:
-        - uses: actions/checkout@v4
-          with:
-            submodules: "recursive"
-            fetch-depth: 0
+        - name: Checkout Code
+          uses: actions/checkout@v4
 
-        - name: install dependencies
+        - name: Setup Rust Toolchain
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: stable 
+            components: rustfmt, clippy
+
+        - name: Install Dependencies
           if: ${{ matrix.toolchain.archive_name == 'linux-x86_64' }}
           run: |
             sudo apt-get -y update
-            sudo apt-get -y install libcurl4-openssl-dev
+            sudo apt-get -y install pandoc
 
-        - name: build
+        - name: Install Dependencies
+          if: ${{ matrix.toolchain.archive_name != 'linux-x86_64' }}
+          run: brew install pandoc
+
+        - name: format Assets
+          run: cargo fmt --verbose --all --check
+
+        - name: Lint Assets
+          run: cargo clippy -- -Dwarnings
+
+        - name: Build Assets
           run: |
-            cmake -DCOMPILE_SRC=ON -DCOMPILE_TESTS=ON -DUSE_LOCALHOST_API=OFF .
-            cmake --build . -j ${{ matrix.toolchain.cpus }}
+            cargo build --release
+            cd docs
+            pandoc --standalone --to man nvi.1.md -o nvi.1
 
-        - name: test
-          run: |
-            cd tests
-            ./tests
-            cd ../
+        - name: Run Tests
+          run: cargo test
 
-        - name: compress
+        - name: Compress Assets
           run: |
             mkdir -p nvi/bin
             mkdir -p nvi/man
-            cp ./src/nvi nvi/bin/
+            cp ./target/release/nvi nvi/bin/
             cp ./docs/nvi.1 nvi/man/
             tar -zcvf ./nvi-${{ matrix.toolchain.archive_name }}.tar.gz nvi
 
-        - uses: actions/upload-artifact@v4
+        - name: Upload Assets
+          uses: actions/upload-artifact@v4
           with:
             if-no-files-found: error
             name: nvi-${{ matrix.toolchain.archive_name }}
@@ -73,13 +86,8 @@ jobs:
 
         - uses: actions/download-artifact@v4
 
-        - if: github.event_name == 'push'
-          run: |
-            TAG_NAME=${{ github.ref }}
-            echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
+        - name: Set Tag Name
+          run: TAG_NAME=${{ github.ref }}
 
-        - name: publish release
-          env:
-            DEBUG: api
-          run: |
-            gh release create $TAG_NAME --generate-notes --title "$TAG_NAME" --target $GITHUB_SHA nvi-macos-x86_64/* nvi-macos-aarch64/* nvi-linux-x86_64/*
+        - name: Publish Release
+          run: gh release create $TAG_NAME --generate-notes --title "$TAG_NAME" --target $GITHUB_SHA nvi-macos-x86_64/* nvi-macos-aarch64/* nvi-linux-x86_64/*

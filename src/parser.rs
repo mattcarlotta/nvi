@@ -17,17 +17,17 @@ impl<'a> Parser<'a> {
         let mut logger = Logger::new("Parser");
         logger.set_debug(&options.debug);
 
-        return Parser {
+        Parser {
             envs: HashMap::new(),
             options,
             tokens,
             undefined_keys: options.required_envs.clone(),
             logger,
-        };
+        }
     }
 
     pub fn get_envs(self) -> HashMap<String, String> {
-        return self.envs;
+        self.envs
     }
 
     pub fn parse_tokens(&mut self) {
@@ -136,7 +136,7 @@ mod tests {
             let mut parser = Parser::new(&options, lexer.get_tokens());
             parser.parse_tokens();
 
-            return parser.get_envs();
+            parser.get_envs()
         })
     }
 

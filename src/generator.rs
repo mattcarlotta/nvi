@@ -14,11 +14,11 @@ impl<'a> Generator<'a> {
         let mut logger = Logger::new("Generator");
         logger.set_debug(&options.debug);
 
-        return Generator {
+        Generator {
             options,
             output: String::new(),
             logger,
-        };
+        }
     }
 
     pub fn run(&mut self, envs: HashMap<String, String>) {
@@ -32,23 +32,22 @@ impl<'a> Generator<'a> {
             child_process.wait().expect("Failed to read command output");
         } else if self.options.print != PrintOptions::Unknown {
             let mut env_count = 1;
-            if self.options.print == PrintOptions::JSON {
-                self.output.push_str("{");
+            if self.options.print == PrintOptions::Json {
+                self.output.push('{');
             }
 
             for (key, value) in &envs {
-                let kv: String;
-                match self.options.print {
-                    PrintOptions::JSON => {
-                        kv = format!("{:?}:{:?},", key, value);
+                let kv = match self.options.print {
+                    PrintOptions::Json => {
+                        format!("{:?}:{:?},", key, value)
                     }
                     PrintOptions::Flags => {
-                        kv = format!("--{} {} ", key, value);
+                        format!("--{} {} ", key, value)
                     }
                     _ => {
-                        kv = format!("{}={}\n", key, value);
+                        format!("{}={}\n", key, value)
                     }
-                }
+                };
                 let mut kvl = kv.len();
                 if env_count == envs.len() {
                     kvl -= 1;
@@ -57,8 +56,8 @@ impl<'a> Generator<'a> {
                 env_count += 1;
             }
 
-            if self.options.print == PrintOptions::JSON {
-                self.output.push_str("}");
+            if self.options.print == PrintOptions::Json {
+                self.output.push('}');
             }
             println!("{}", self.output);
         } else if !self.options.api && !self.options.save {

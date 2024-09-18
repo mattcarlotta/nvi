@@ -1,4 +1,4 @@
-use super::ARG;
+use super::Arg;
 use crate::globals;
 use crate::logger::Logger;
 use crate::options::{OptionsType, PrintOptions};
@@ -21,7 +21,7 @@ impl<'a> ArgParser<'a> {
         let mut logger = Logger::new("ArgParser");
         logger.set_debug(&options.debug);
 
-        return ArgParser {
+        ArgParser {
             argc: argv.len(),
             argv,
             file: globals::current_dir().clone(),
@@ -29,7 +29,7 @@ impl<'a> ArgParser<'a> {
             options,
             index: 1,
             logger,
-        };
+        }
     }
 
     fn get_vec_str_opt(&self, config: &Value, prop: &str) -> Option<Vec<String>> {
@@ -57,7 +57,7 @@ impl<'a> ArgParser<'a> {
             return Some(opts);
         };
 
-        return None;
+        None
     }
 
     fn get_str_opt(&self, config: &Value, prop: &str) -> Option<String> {
@@ -71,7 +71,7 @@ impl<'a> ArgParser<'a> {
             };
         };
 
-        return None;
+        None
     }
 
     fn get_bool_opt(&self, config: &Value, prop: &str) -> Option<bool> {
@@ -85,7 +85,7 @@ impl<'a> ArgParser<'a> {
             };
         };
 
-        return None;
+        None
     }
 
     fn parse_config(&mut self) -> &mut Self {
@@ -179,7 +179,7 @@ impl<'a> ArgParser<'a> {
             self.options.save = save;
         }
 
-        return self;
+        self
     }
 
     fn next_arg(&mut self) {
@@ -191,13 +191,13 @@ impl<'a> ArgParser<'a> {
     }
 
     fn get_arg(&'a self) -> &'a str {
-        return match self.argv.get(self.index) {
+        match self.argv.get(self.index) {
             Some(a) => a,
             None => "",
-        };
+        }
     }
 
-    fn parse_single_arg(&mut self, flag: ARG) -> String {
+    fn parse_single_arg(&mut self, flag: Arg) -> String {
         self.next_arg();
 
         let arg = self.get_arg();
@@ -205,21 +205,21 @@ impl<'a> ArgParser<'a> {
         if arg.is_empty() || arg.contains("-") {
             let mut error = String::new();
             match flag {
-                ARG::CONFIG => {
+                Arg::Config => {
                     error.push_str("The \"--config\" flag must contain an environment name from the nvi.toml configuration file");
                 }
-                ARG::DIRECTORY => {
+                Arg::Directory => {
                     error.push_str("The \"--directory\" flag must contain a valid directory path");
                 }
-                ARG::ENVIRONMENT => {
+                Arg::Environment => {
                     error.push_str(
                         "The \"--environment\" flag must contain a valid environment name",
                     );
                 }
-                ARG::PROJECT => {
+                Arg::Project => {
                     error.push_str("The \"--project\" flag must contain a valid project name");
                 }
-                ARG::PRINT => {
+                Arg::Print => {
                     error.push_str(
                         "The \"--print\" flag must contain a valid format: envs|ENVs, flags, or json|JSON",
                     );
@@ -231,10 +231,10 @@ impl<'a> ArgParser<'a> {
             ));
         }
 
-        return arg.to_owned();
+        arg.to_owned()
     }
 
-    fn parse_multi_arg(&mut self, flag: ARG, delimiter_stop: bool) -> Vec<String> {
+    fn parse_multi_arg(&mut self, flag: Arg, delimiter_stop: bool) -> Vec<String> {
         let mut args = vec![];
 
         while self.index < self.argc {
@@ -257,15 +257,15 @@ impl<'a> ArgParser<'a> {
         if args.is_empty() {
             let mut error = String::new();
             match flag {
-                ARG::EXECUTE => {
+                Arg::Execute => {
                     error.push_str(
                         "The \"--\" (execute) flag must contain at least 1 system command",
                     );
                 }
-                ARG::FILES => {
+                Arg::Files => {
                     error.push_str("The \"--files\" flag must contain at least 1 .env file");
                 }
-                ARG::REQUIRED => {
+                Arg::Required => {
                     error.push_str("The \"--required\" flag must contain at least 1 ENV key");
                 }
                 _ => (),
@@ -275,54 +275,54 @@ impl<'a> ArgParser<'a> {
             ));
         }
 
-        return args;
+        args
     }
 
     pub fn parse(&mut self) {
         while self.index < self.argc {
             self.curr_flag = match self.argv.get(self.index) {
                 Some(f) => f.to_owned(),
-                None => ARG::UNKNOWN.to_string(),
+                None => Arg::Unknown.to_string(),
             };
 
             match globals::args().get(self.curr_flag.as_str()) {
-                Some(ARG::API) => self.options.api = true,
-                Some(ARG::CONFIG) => {
-                    self.options.config = self.parse_single_arg(ARG::CONFIG);
+                Some(Arg::Api) => self.options.api = true,
+                Some(Arg::Config) => {
+                    self.options.config = self.parse_single_arg(Arg::Config);
                 }
-                Some(ARG::DEBUG) => {
+                Some(Arg::Debug) => {
                     self.options.debug = true;
                     self.logger.set_debug(&self.options.debug);
                 }
-                Some(ARG::DIRECTORY) => {
-                    self.options.dir = self.parse_single_arg(ARG::DIRECTORY);
+                Some(Arg::Directory) => {
+                    self.options.dir = self.parse_single_arg(Arg::Directory);
                 }
-                Some(ARG::ENVIRONMENT) => {
-                    self.options.environment = self.parse_single_arg(ARG::ENVIRONMENT);
+                Some(Arg::Environment) => {
+                    self.options.environment = self.parse_single_arg(Arg::Environment);
                 }
-                Some(ARG::EXECUTE) => {
-                    self.options.commands = self.parse_multi_arg(ARG::EXECUTE, false);
+                Some(Arg::Execute) => {
+                    self.options.commands = self.parse_multi_arg(Arg::Execute, false);
                 }
-                Some(ARG::FILES) => {
-                    self.options.files = self.parse_multi_arg(ARG::FILES, true);
+                Some(Arg::Files) => {
+                    self.options.files = self.parse_multi_arg(Arg::Files, true);
                 }
-                Some(ARG::HELP) => self.logger.print_help_and_exit(),
-                Some(ARG::PRINT) => {
-                    match PrintOptions::to_option(self.parse_single_arg(ARG::PRINT)) {
+                Some(Arg::Help) => self.logger.print_help_and_exit(),
+                Some(Arg::Print) => {
+                    match PrintOptions::to_option(self.parse_single_arg(Arg::Print)) {
                         Ok(print) => self.options.print = print,
                         Err(_) => {
-                            self.logger.fatal(format!("encountered an error: The \"--print\" option must be a valid format: envs|ENVs, flags, or json|JSON. Use flag \"--help\" for more information."));
+                            self.logger.fatal("encountered an error: The \"--print\" option must be a valid format: envs|ENVs, flags, or json|JSON. Use flag \"--help\" for more information.".to_string());
                         }
                     }
                 }
-                Some(ARG::PROJECT) => {
-                    self.options.project = self.parse_single_arg(ARG::PROJECT);
+                Some(Arg::Project) => {
+                    self.options.project = self.parse_single_arg(Arg::Project);
                 }
-                Some(ARG::REQUIRED) => {
-                    self.options.required_envs = self.parse_multi_arg(ARG::REQUIRED, true);
+                Some(Arg::Required) => {
+                    self.options.required_envs = self.parse_multi_arg(Arg::Required, true);
                 }
-                Some(ARG::SAVE) => self.options.save = true,
-                Some(ARG::VERSION) => self.logger.print_version_and_exit(),
+                Some(Arg::Save) => self.options.save = true,
+                Some(Arg::Version) => self.logger.print_version_and_exit(),
                 _ => {
                     let mut invalid_args = String::new();
 
@@ -337,7 +337,7 @@ impl<'a> ArgParser<'a> {
                         }
 
                         if !invalid_args.is_empty() {
-                            invalid_args.push_str(" ");
+                            invalid_args.push(' ');
                         }
 
                         invalid_args.push_str(arg);
