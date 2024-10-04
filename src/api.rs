@@ -78,7 +78,7 @@ impl<'a> Api<'a> {
         };
 
         if content_type != "text/plain; charset=utf-8" {
-            self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Excepted the response content-type to be text/plain instead received {content_type}."));
+            self.logger.fatal(format!("failed to retrieve {req_type} from the nvi API. Expected the response content-type to be text/plain instead received {content_type}."));
         }
 
         self.data = res.text().unwrap_or_default();
