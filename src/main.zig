@@ -1,36 +1,26 @@
 const std = @import("std");
 const Io = std.Io;
 const print_error = std.log.err;
+const exit = std.process.exit;
 
 const nvi = @import("nvi");
 const arg = @import("arg.zig");
 
 pub fn main(init: std.process.Init) !void {
-    // This is appropriate for anything that lives as long as the process.
     const arena: std.mem.Allocator = init.arena.allocator();
-    const argv = try init.minimal.args.toSlice(arena);
-
-    var args: arg.Arg = .{};
-    args.parse(arena, argv) catch |err| {
-        switch (err) {
-            error.MissingValue => print_error("Flag '{s}' requires a value", .{args.invalid_flag.?}),
-            error.MissingCommand => print_error("Missing a '--' (command) to run after parsing", .{}),
-            else => print_error("argument error: {s}", .{@errorName(err)}),
-        }
-        std.process.exit(2);
+    const argv = init.minimal.args.toSlice(arena) catch {
+        print_error("failed to read arguments (out of memory)", .{});
+        exit(2);
     };
-    for (args.files.items) |f| {
-        std.log.info("file: {s}", .{f});
-    }
-    std.log.info("directory: {s}", .{args.directory orelse "(none)"});
-    if (args.command) |cmd| {
-        var buf: [4096]u8 = undefined;
-        var w: std.Io.Writer = .fixed(&buf);
-        for (cmd, 0..) |part, idx| {
-            if (idx != 0) w.writeByte(' ') catch {};
-            w.writeAll(part) catch {};
-        }
-        std.log.info("command: {s}", .{w.buffered()});
+
+    const args = arg.argParser(arena, argv) catch |err| {
+        print_error("argument error: {s}", .{@errorName(err)});
+        exit(2);
+    };
+
+    if (args.err) |err| {
+        err.print();
+        exit(2);
     }
 
     // // In order to do I/O operations need an `Io` instance.
