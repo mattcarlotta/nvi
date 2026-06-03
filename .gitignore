@@ -1,0 +1,6 @@
+zig-out/
+.zig-cache/
+*.o
+build/
+build-*/
+docgen-tmp/
