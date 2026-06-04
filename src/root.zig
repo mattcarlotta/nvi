@@ -1,6 +1,7 @@
-//! By convention, root.zig is the root source file when making a package.
-// const std = @import("std");
+const arg = @import("arg.zig");
 
-// test {
-//     _ = @import("arg.zig");
-// }
+pub const argParser = arg.argParser;
+
+test {
+    _ = arg;
+}

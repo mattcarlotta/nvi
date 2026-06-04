@@ -1,28 +1,19 @@
+const tty = @import("tty.zig");
 const std = @import("std");
 const Io = std.Io;
 const expect = std.testing.expect;
 
-const bold = "\x1b[1m";
-const italic = "\x1b[3m";
-
-const red = "\x1b[31m";
-const green = "\x1b[32m";
-const yellow = "\x1b[33m";
-const cyan = "\x1b[36m";
-const reset = "\x1b[0m";
-
-const Ignored = struct {
+const IgnoredFlag = struct {
     flag: []const u8,
     params: std.ArrayList([]const u8) = .empty,
 };
 
-pub const Arg = struct {
+const Arg = struct {
     files: std.ArrayList([]const u8) = .empty,
     command: ?[]const [:0]const u8 = null,
     debug: bool = false,
     required: std.ArrayList([]const u8) = .empty,
     err: ?Error = null,
-    logger: *Io.Writer,
 
     const Flag = enum { files, debug, required };
 
@@ -43,44 +34,46 @@ pub const Arg = struct {
             return switch (self) {
                 .missing_value => |flag| std.fmt.allocPrint(
                     alloc,
-                    red ++ "error" ++ reset ++ ": Flag " ++ bold ++ red ++ "{s}" ++ reset ++ " requires at least 1 parameter\n",
+                    tty.red ++ "error" ++ tty.reset ++ ": Flag " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n",
                     .{flag},
                 ),
                 .missing_command => std.fmt.allocPrint(
                     alloc,
-                    red ++ "error" ++ reset ++ ": An " ++ italic ++ "end of options delimiter" ++ reset ++ " (--) must be defined and followed by a command to run (e.g., nvi <flags>" ++ green ++ " -- <command>" ++ reset ++ ")\n",
+                    tty.red ++ "error" ++ tty.reset ++ ": An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset ++ " (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ ")\n",
                     .{},
                 ),
             };
         }
     };
 
-    pub fn debugPrint(self: Arg) !void {
-        try self.logger.writeAll(cyan ++ "info: " ++ reset ++ "The following flags have been set... " ++ cyan ++ "\n• command: " ++ reset);
+    pub fn printFlags(self: Arg, logger: *Io.Writer) !void {
+        try logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... " ++ tty.cyan ++ "\n• command: " ++ tty.reset);
         if (self.command) |cmd| {
             for (cmd, 0..) |part, idx| {
-                if (idx != 0) try self.logger.writeByte(' ');
-                try self.logger.writeAll(part);
-            }
-        }
-
-        try self.logger.writeAll(cyan ++ "\n• files: " ++ reset);
-        for (self.files.items, 0..) |f, i| {
-            if (i != 0) try self.logger.writeAll(", ");
-            try self.logger.writeAll(f);
-        }
-
-        try self.logger.writeAll(cyan ++ "\n• required: " ++ reset);
-        if (self.required.items.len > 0) {
-            for (self.required.items, 0..) |f, i| {
-                if (i != 0) try self.logger.writeAll(", ");
-                try self.logger.writeAll(f);
+                if (idx != 0) try logger.writeByte(' ');
+                try logger.writeAll(part);
             }
         } else {
-            try self.logger.writeAll("(none)");
+            try logger.writeAll("(none)");
         }
 
-        try self.logger.writeByte('\n');
+        try logger.writeAll(tty.cyan ++ "\n• files: " ++ tty.reset);
+        for (self.files.items, 0..) |f, i| {
+            if (i != 0) try logger.writeAll(", ");
+            try logger.writeAll(f);
+        }
+
+        try logger.writeAll(tty.cyan ++ "\n• required: " ++ tty.reset);
+        if (self.required.items.len > 0) {
+            for (self.required.items, 0..) |f, i| {
+                if (i != 0) try logger.writeAll(", ");
+                try logger.writeAll(f);
+            }
+        } else {
+            try logger.writeAll("(none)");
+        }
+
+        try logger.writeByte('\n');
     }
 };
 
@@ -91,6 +84,7 @@ const ArgvIter = struct {
     fn next(self: *ArgvIter) ?[:0]const u8 {
         if (self.i >= self.argv.len) return null;
         defer self.i += 1;
+
         return self.argv[self.i];
     }
 
@@ -100,6 +94,7 @@ const ArgvIter = struct {
 
     fn nextValue(self: *ArgvIter) ?[:0]const u8 {
         const nxt = self.peek() orelse return null;
+
         return if (std.mem.startsWith(u8, nxt, "-")) null else self.next();
     }
 
@@ -109,12 +104,13 @@ const ArgvIter = struct {
 };
 
 pub fn argParser(alloc: std.mem.Allocator, argv: []const [:0]const u8, logger: *Io.Writer) !Arg {
-    var args: Arg = .{ .logger = logger };
+    var args: Arg = .{};
     var iter: ArgvIter = .{ .argv = argv };
-    var ignored: std.ArrayList(Ignored) = .empty;
+
+    var ignored_flags: std.ArrayList(IgnoredFlag) = .empty;
     defer {
-        for (ignored.items) |*entry| entry.params.deinit(alloc);
-        ignored.deinit(alloc);
+        for (ignored_flags.items) |*entry| entry.params.deinit(alloc);
+        ignored_flags.deinit(alloc);
     }
 
     // skipping program name at argv[0]
@@ -127,19 +123,17 @@ pub fn argParser(alloc: std.mem.Allocator, argv: []const [:0]const u8, logger: *
         }
 
         const flag = Arg.flags.get(token) orelse {
-            var entry: Ignored = .{ .flag = token };
+            var entry: IgnoredFlag = .{ .flag = token };
 
             while (iter.nextValue()) |param| try entry.params.append(alloc, param);
 
-            try ignored.append(alloc, entry);
+            try ignored_flags.append(alloc, entry);
 
             continue;
         };
 
         switch (flag) {
-            .debug => {
-                args.debug = true;
-            },
+            .debug => args.debug = true,
             .files => {
                 const first = iter.nextValue() orelse {
                     args.err = .{ .missing_value = token };
@@ -163,24 +157,26 @@ pub fn argParser(alloc: std.mem.Allocator, argv: []const [:0]const u8, logger: *
         }
     }
 
-    if (ignored.items.len > 0) {
-        for (ignored.items) |entry| {
-            try args.logger.print(
-                yellow ++ "warning: " ++ reset ++ "An unrecognized flag " ++ bold ++ yellow ++ "{s}" ++ reset,
-                .{entry.flag},
-            );
+    for (ignored_flags.items) |entry| {
+        try logger.print(
+            tty.yellow ++ "warning: " ++ tty.reset ++ "An unrecognized flag " ++ tty.bold ++ tty.yellow ++ "{s}" ++ tty.reset,
+            .{entry.flag},
+        );
 
-            if (entry.params.items.len > 0) {
-                try args.logger.writeAll(" with parameters " ++ bold ++ yellow);
+        if (entry.params.items.len > 0) {
+            try logger.writeAll(" with parameters " ++ tty.bold ++ tty.yellow);
 
-                for (entry.params.items, 0..) |p, idx| {
-                    if (idx != 0) try logger.writeByte(' ');
-                    try args.logger.writeAll(p);
-                }
+            for (entry.params.items, 0..) |p, idx| {
+                if (idx != 0) try logger.writeByte(' ');
+                try logger.writeAll(p);
             }
-
-            try args.logger.writeAll(reset ++ " was ignored \n");
         }
+
+        try logger.writeAll(tty.reset ++ " was ignored \n");
+    }
+
+    if (args.files.items.len == 0) {
+        try args.files.append(alloc, ".env");
     }
 
     if (args.command == null or args.command.?.len == 0) {
@@ -188,12 +184,8 @@ pub fn argParser(alloc: std.mem.Allocator, argv: []const [:0]const u8, logger: *
         return args;
     }
 
-    if (args.files.items.len == 0) {
-        try args.files.append(alloc, ".env");
-    }
-
     if (args.debug) {
-        try args.debugPrint();
+        try args.printFlags(logger);
     }
 
     return args;

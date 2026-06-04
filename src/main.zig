@@ -4,21 +4,20 @@ const print_error = std.log.err;
 const exit = std.process.exit;
 
 const nvi = @import("nvi");
-const arg = @import("arg.zig");
 
 pub fn main(init: std.process.Init) !u8 {
-    const arena: std.mem.Allocator = init.arena.allocator();
-    const argv = init.minimal.args.toSlice(arena) catch {
-        print_error("failed to read arguments (out of memory)", .{});
-        exit(2);
-    };
-
     var log_buf: [4096]u8 = undefined;
-    var log_writer: Io.File.Writer = Io.File.stderr().writer(init.io, &log_buf);
+    var log_writer = Io.File.stderr().writer(init.io, &log_buf);
     const logger = &log_writer.interface;
     defer logger.flush() catch {};
 
-    const args = arg.argParser(arena, argv, logger) catch |err| {
+    const arena = init.arena.allocator();
+    const argv = init.minimal.args.toSlice(arena) catch {
+        try logger.writeAll("failed to read arguments (out of memory)");
+        return 2;
+    };
+
+    const args = nvi.argParser(arena, argv, logger) catch |err| {
         try logger.print("argument error: {s}", .{@errorName(err)});
         return 2;
     };
@@ -30,8 +29,4 @@ pub fn main(init: std.process.Init) !u8 {
     }
 
     return 0;
-}
-
-test {
-    _ = @import("arg.zig");
 }
