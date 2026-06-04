@@ -39,15 +39,19 @@ pub const Arg = struct {
         missing_value: []const u8,
         missing_command,
 
-        pub fn print(self: Error, logger: *Io.Writer) !void {
-            switch (self) {
-                .missing_value => |flag| {
-                    try logger.print(red ++ "error" ++ reset ++ ": Flag " ++ bold ++ red ++ "{s}" ++ reset ++ " requires at least 1 parameter\n", .{flag});
-                },
-                .missing_command => {
-                    try logger.writeAll(red ++ "error" ++ reset ++ ": An " ++ italic ++ "end of options delimiter" ++ reset ++ " (--) must be defined and followed by a command to run (e.g., nvi <flags>" ++ green ++ " -- <command>" ++ reset ++ ")\n");
-                },
-            }
+        pub fn getMessage(self: Error, alloc: std.mem.Allocator) ![]u8 {
+            return switch (self) {
+                .missing_value => |flag| std.fmt.allocPrint(
+                    alloc,
+                    red ++ "error" ++ reset ++ ": Flag " ++ bold ++ red ++ "{s}" ++ reset ++ " requires at least 1 parameter\n",
+                    .{flag},
+                ),
+                .missing_command => std.fmt.allocPrint(
+                    alloc,
+                    red ++ "error" ++ reset ++ ": An " ++ italic ++ "end of options delimiter" ++ reset ++ " (--) must be defined and followed by a command to run (e.g., nvi <flags>" ++ green ++ " -- <command>" ++ reset ++ ")\n",
+                    .{},
+                ),
+            };
         }
     };
 
