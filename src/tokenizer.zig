@@ -1,3 +1,4 @@
+const tty = @import("tty.zig");
 const std = @import("std");
 const Io = std.Io;
 
@@ -10,10 +11,10 @@ const OPEN_BRACE: u8 = '{';
 const CLOSE_BRACE: u8 = '}';
 const BACK_SLASH: u8 = '\\';
 
-pub const Value = enum { normal, comment, interpolated, multiline };
+pub const ValueKind = enum { normal, comment, interpolated, multiline };
 
 pub const ValueToken = struct {
-    kind: Value,
+    kind: ValueKind,
     value: []const u8,
     line: usize,
     byte: usize,
@@ -25,21 +26,21 @@ pub const Token = struct {
     values: std.ArrayList(ValueToken) = .empty,
 
     fn clone(self: Token, alloc: std.mem.Allocator) !Token {
-        var copy: Token = .{
+        var token: Token = .{
             .file = try alloc.dupe(u8, self.file),
             .key = if (self.key) |k| try alloc.dupe(u8, k) else null,
         };
 
-        try copy.values.ensureTotalCapacity(alloc, self.values.items.len);
+        try token.values.ensureTotalCapacity(alloc, self.values.items.len);
 
-        for (self.values.items) |v| copy.values.appendAssumeCapacity(.{
+        for (self.values.items) |v| token.values.appendAssumeCapacity(.{
             .kind = v.kind,
             .value = try alloc.dupe(u8, v.value),
             .line = v.line,
             .byte = v.byte,
         });
 
-        return copy;
+        return token;
     }
 };
 
@@ -59,35 +60,35 @@ const Tokenizer = struct {
     file_path: []const u8,
     tokens: std.ArrayList(Token) = .empty,
 
-    fn inc_line(self: *Tokenizer) void {
+    fn nextLine(self: *Tokenizer) void {
         self.line += 1;
     }
 
-    fn reset_byte(self: *Tokenizer) void {
+    fn resetByte(self: *Tokenizer) void {
         self.byte = 1;
     }
 
-    fn inc_byte(self: *Tokenizer, offset: ?usize) void {
+    fn next_byte(self: *Tokenizer, offset: ?usize) void {
         self.byte += offset orelse 1;
+    }
+
+    fn skipByte(self: *Tokenizer, offset: ?usize) void {
+        const o = offset orelse 1;
+        self.next_byte(o);
+        self.i += o;
     }
 
     fn peek(self: *Tokenizer, offset: ?usize) ?u8 {
         const index = self.i + (offset orelse 0);
-        if (index >= self.file.len) return null;
-        return self.file[index];
+
+        return if (index >= self.file.len) null else self.file[index];
     }
 
     fn get_char(self: *Tokenizer, offset: ?usize) ?u8 {
         return self.peek(offset);
     }
 
-    fn skip(self: *Tokenizer, offset: ?usize) void {
-        const o = offset orelse 1;
-        self.inc_byte(o);
-        self.i += o;
-    }
-
-    fn pushValue(self: *Tokenizer, token: *Token, kind: Value, bytes: []const u8) !void {
+    fn commitToken(self: *Tokenizer, token: *Token, kind: ValueKind, bytes: []const u8) !void {
         try token.values.append(self.alloc, .{
             .kind = kind,
             .value = try self.alloc.dupe(u8, bytes),
@@ -104,37 +105,38 @@ const Tokenizer = struct {
 
         while (self.peek(null)) |current_char| {
             switch (current_char) {
-                NULL_CHAR => self.skip(null),
+                NULL_CHAR => self.skipByte(null),
                 LINE_DELIMITER => {
                     if (token.key != null) {
-                        try self.pushValue(&token, .normal, value.items);
+                        try self.commitToken(&token, ValueKind.normal, value.items);
                         try self.tokens.append(self.alloc, try token.clone(self.alloc));
                     }
                     token.key = null;
                     token.values.clearRetainingCapacity();
                     value.clearRetainingCapacity();
-                    self.inc_line();
-                    self.skip(null);
-                    self.reset_byte();
+                    self.nextLine();
+                    self.skipByte(null);
+                    self.resetByte();
                 },
                 ASSIGN_OP => {
                     token.key = try self.alloc.dupe(u8, value.items);
                     value.clearRetainingCapacity();
-                    self.skip(null); // skip '='
+                    // skipByte '='
+                    self.skipByte(null);
                 },
                 HASH => {
                     // hash inside a started key: treat as literal
                     if (token.key != null) {
                         try value.append(self.alloc, current_char);
-                        self.skip(null);
+                        self.skipByte(null);
                         continue;
                     }
                     // otherwise a comment: consume to end of line
                     while (self.peek(null) != null and (self.get_char(null) orelse 0) != LINE_DELIMITER) {
                         try value.append(self.alloc, self.get_char(null).?);
-                        self.skip(null);
+                        self.skipByte(null);
                     }
-                    try self.pushValue(&token, .comment, value.items);
+                    try self.commitToken(&token, ValueKind.comment, value.items);
                     try self.tokens.append(self.alloc, try token.clone(self.alloc));
                     value.clearRetainingCapacity();
                 },
@@ -142,108 +144,111 @@ const Tokenizer = struct {
                     // not "${": literal '$'
                     if ((self.get_char(1) orelse 0) != OPEN_BRACE) {
                         try value.append(self.alloc, current_char);
-                        self.skip(null);
+                        self.skipByte(null);
                         continue;
                     }
+
                     // commit anything accumulated before the "${"
                     if (value.items.len != 0) {
-                        try self.pushValue(&token, .normal, value.items);
+                        try self.commitToken(&token, ValueKind.normal, value.items);
                         value.clearRetainingCapacity();
                     }
-                    self.skip(2); // skip "${"
 
-                    // extract ENV within "${ENV}"
+                    // skipByte "${"
+                    self.skipByte(2);
+
+                    // interpolate ENV within "${ENV}"
                     while (self.peek(null) != null) {
                         switch (self.get_char(null) orelse 0) {
                             CLOSE_BRACE => {
-                                self.skip(null); // skip '}'
+                                // skipByte '}'
+                                self.skipByte(null);
                                 break;
                             },
                             LINE_DELIMITER => {
                                 try self.logger.print(
-                                    "error in {s}:{d}:{d}: key '{s}' opens an interpolation with \"${{\" but never closes it with \"}}\".\n",
+                                    tty.red ++ "error" ++ tty.reset ++ ": in {s}:{d}:{d}: key '{s}' opens an interpolation with " ++ tty.bold ++ tty.red ++ "${{" ++ tty.reset ++ " but never closes it with " ++ tty.bold ++ tty.red ++ "}}" ++ tty.reset ++ ".\n",
                                     .{ self.file_name, self.line, self.byte, token.key orelse "" },
                                 );
                                 return error.MissingClosingBrace;
                             },
                             else => {
                                 if (self.peek(null)) |c| try value.append(self.alloc, c);
-                                self.skip(null);
+                                self.skipByte(null);
                             },
                         }
                     }
 
-                    try self.pushValue(&token, .interpolated, value.items);
+                    try self.commitToken(&token, ValueKind.interpolated, value.items);
 
                     if ((self.get_char(null) orelse 0) == LINE_DELIMITER) {
                         try self.tokens.append(self.alloc, try token.clone(self.alloc));
                         token.key = null;
                         token.values.clearRetainingCapacity();
-                        self.inc_line();
-                        // skip '\n'
-                        self.skip(null);
-                        self.reset_byte();
+                        self.nextLine();
+                        // skipByte '\n'
+                        self.skipByte(null);
+                        self.resetByte();
                     }
                     value.clearRetainingCapacity();
                 },
-
                 BACK_SLASH => {
                     // literal backslash: next char exists and isn't a newline
                     if (self.peek(1) != null and (self.get_char(1) orelse 0) != LINE_DELIMITER) {
                         try value.append(self.alloc, current_char);
-                        self.skip(null);
+                        self.skipByte(null);
                         continue;
                     }
 
                     if (value.items.len != 0) {
-                        try self.pushValue(&token, .normal, value.items);
+                        try self.commitToken(&token, ValueKind.normal, value.items);
                     }
 
-                    // skip "\\n"
-                    self.skip(2);
-                    self.reset_byte();
+                    // skipByte "\\n"
+                    self.skipByte(2);
+                    self.resetByte();
                     value.clearRetainingCapacity();
 
                     // multiline values
                     while (self.peek(null) != null) {
                         const is_eol = (self.get_char(null) orelse 0) == LINE_DELIMITER;
+
                         if (((self.get_char(null) orelse 0) == BACK_SLASH and
                             (self.get_char(1) orelse 0) == LINE_DELIMITER) or is_eol)
                         {
-                            self.inc_line();
-                            try self.pushValue(&token, .multiline, value.items);
+                            self.nextLine();
+                            try self.commitToken(&token, ValueKind.multiline, value.items);
                             value.clearRetainingCapacity();
-                            self.reset_byte();
+                            self.resetByte();
 
-                            var next_byte: usize = 1;
-                            if (!is_eol) next_byte += 1;
-
-                            // skip '\n' or "\\n"
-                            self.skip(next_byte);
+                            // skipByte '\n' or "\\n"
+                            const bytes: usize = if (is_eol) 1 else 2;
+                            self.skipByte(bytes);
 
                             if (is_eol) break;
                         }
+
                         if (self.peek(null)) |c| try value.append(self.alloc, c);
-                        self.skip(null);
+
+                        self.skipByte(null);
                     }
 
                     try self.tokens.append(self.alloc, try token.clone(self.alloc));
                     token.key = null;
                     token.values.clearRetainingCapacity();
                     value.clearRetainingCapacity();
-                    self.reset_byte();
-                    self.inc_line();
+                    self.resetByte();
+                    self.nextLine();
                 },
-
                 else => {
                     try value.append(self.alloc, current_char);
-                    self.skip(null);
+                    self.skipByte(null);
                 },
             }
         }
 
         if (self.tokens.items.len == 0) {
-            try self.logger.print("unable to generate any tokens for '{s}'. Aborting.\n", .{self.file_name});
+            try self.logger.print(tty.red ++ "error" ++ tty.reset ++ ": unable to generate any tokens for '{s}'. Aborting.\n", .{self.file_name});
             return error.NoTokensGenerated;
         }
     }
