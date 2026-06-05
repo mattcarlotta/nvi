@@ -7,7 +7,7 @@ const nvi = @import("nvi");
 
 pub fn main(init: std.process.Init) !u8 {
     var log_buf: [4096]u8 = undefined;
-    var log_writer = Io.File.stderr().writer(init.io, &log_buf);
+    var log_writer: Io.File.Writer = Io.File.stderr().writer(init.io, &log_buf);
     const logger = &log_writer.interface;
     defer logger.flush() catch {};
 

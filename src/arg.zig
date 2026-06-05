@@ -46,7 +46,7 @@ const Arg = struct {
         }
     };
 
-    pub fn printFlags(self: Arg, logger: *Io.Writer) !void {
+    pub fn printFlags(self: *Arg, logger: *Io.Writer) !void {
         try logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... " ++ tty.cyan ++ "\n• command: " ++ tty.reset);
         if (self.command) |cmd| {
             for (cmd, 0..) |part, idx| {
@@ -191,13 +191,62 @@ pub fn argParser(alloc: std.mem.Allocator, argv: []const [:0]const u8, logger: *
     return args;
 }
 
+test "parses and sets debug flag" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var argv = [_][:0]const u8{ "nvi", "--debug", "--", "echo", "hi" };
+    var logger_buf: [1024]u8 = undefined;
+    var logger_w: Io.Writer = .fixed(&logger_buf);
+
+    const args = try argParser(alloc, &argv, &logger_w);
+
+    try expect(args.debug);
+}
+
+test "parses and sets files flag" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var argv = [_][:0]const u8{ "nvi", "--files", ".env.local", ".env", "--", "echo", "hi" };
+    var logger_buf: [1024]u8 = undefined;
+    var logger_w: Io.Writer = .fixed(&logger_buf);
+
+    const args = try argParser(alloc, &argv, &logger_w);
+
+    try expect(args.files.items.len == 2);
+    try std.testing.expectEqualStrings(".env.local", args.files.items[0]);
+    try std.testing.expectEqualStrings(".env", args.files.items[1]);
+}
+
+test "parses and sets required envs flag" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var argv = [_][:0]const u8{ "nvi", "--required", "ENV_1", "ENV_2", "--", "echo", "hi" };
+    var logger_buf: [1024]u8 = undefined;
+    var logger_w: Io.Writer = .fixed(&logger_buf);
+
+    const args = try argParser(alloc, &argv, &logger_w);
+
+    try expect(args.required.items.len == 2);
+    try std.testing.expectEqualStrings("ENV_1", args.required.items[0]);
+    try std.testing.expectEqualStrings("ENV_2", args.required.items[1]);
+}
+
 test "warns on unknown flag" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
     var argv = [_][:0]const u8{ "nvi", "--unknown", "x", "--", "echo", "hi" };
     var logger_buf: [1024]u8 = undefined;
     var logger_w: Io.Writer = .fixed(&logger_buf);
 
-    var args = try argParser(std.testing.allocator, &argv, &logger_w);
-    defer args.files.deinit(std.testing.allocator);
+    _ = try argParser(alloc, &argv, &logger_w);
 
-    try expect(std.mem.indexOf(u8, logger_w.buffered(), "--unknown") != null);
+    try expect(std.mem.indexOf(u8, logger_w.buffered(), "unrecognized flag") != null);
 }
