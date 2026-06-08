@@ -1,4 +1,5 @@
 const tty = @import("tty.zig");
+const arg = @import("arg.zig");
 const std = @import("std");
 const Io = std.Io;
 
@@ -11,16 +12,16 @@ const OPEN_BRACE: u8 = '{';
 const CLOSE_BRACE: u8 = '}';
 const BACK_SLASH: u8 = '\\';
 
-pub const ValueKind = enum { normal, comment, interpolated, multiline };
+const ValueKind = enum { normalized, partialed, commented, interpolated, multilined };
 
-pub const ValueToken = struct {
+const ValueToken = struct {
     kind: ValueKind,
     value: []const u8,
     line: usize,
     byte: usize,
 };
 
-pub const Token = struct {
+const Token = struct {
     key: ?[]const u8 = null,
     file: []const u8 = "",
     values: std.ArrayList(ValueToken) = .empty,
@@ -44,20 +45,20 @@ pub const Token = struct {
     }
 };
 
-pub const TokenizeError = error{
+const TokenizeError = error{
     MissingClosingBrace,
     NoTokensGenerated,
 } || std.mem.Allocator.Error || Io.Writer.Error;
 
-const Tokenizer = struct {
+pub const Tokenizer = struct {
     alloc: std.mem.Allocator,
     logger: *Io.Writer,
     i: usize = 0,
     byte: usize = 0,
     line: usize = 0,
-    file: []const u8,
-    file_name: []const u8,
-    file_path: []const u8,
+    file: ?[]const u8 = null,
+    file_name: []const u8 = undefined,
+    file_path: ?[]const u8 = null,
     tokens: std.ArrayList(Token) = .empty,
 
     fn nextLine(self: *Tokenizer) void {
@@ -79,9 +80,10 @@ const Tokenizer = struct {
     }
 
     fn peek(self: *Tokenizer, offset: ?usize) ?u8 {
+        const file = self.file orelse return null;
         const index = self.i + (offset orelse 0);
-
-        return if (index >= self.file.len) null else self.file[index];
+        if (index >= file.len) return null;
+        return file[index];
     }
 
     fn get_char(self: *Tokenizer, offset: ?usize) ?u8 {
@@ -108,7 +110,7 @@ const Tokenizer = struct {
                 NULL_CHAR => self.skipByte(null),
                 LINE_DELIMITER => {
                     if (token.key != null) {
-                        try self.commitToken(&token, ValueKind.normal, value.items);
+                        try self.commitToken(&token, ValueKind.normalized, value.items);
                         try self.tokens.append(self.alloc, try token.clone(self.alloc));
                     }
                     token.key = null;
@@ -131,12 +133,12 @@ const Tokenizer = struct {
                         self.skipByte(null);
                         continue;
                     }
-                    // otherwise a comment: consume to end of line
+                    // otherwise a commented: consume to end of line
                     while (self.peek(null) != null and (self.get_char(null) orelse 0) != LINE_DELIMITER) {
                         try value.append(self.alloc, self.get_char(null).?);
                         self.skipByte(null);
                     }
-                    try self.commitToken(&token, ValueKind.comment, value.items);
+                    try self.commitToken(&token, ValueKind.commented, value.items);
                     try self.tokens.append(self.alloc, try token.clone(self.alloc));
                     value.clearRetainingCapacity();
                 },
@@ -150,7 +152,7 @@ const Tokenizer = struct {
 
                     // commit anything accumulated before the "${"
                     if (value.items.len != 0) {
-                        try self.commitToken(&token, ValueKind.normal, value.items);
+                        try self.commitToken(&token, ValueKind.partialed, value.items);
                         value.clearRetainingCapacity();
                     }
 
@@ -168,7 +170,7 @@ const Tokenizer = struct {
                             LINE_DELIMITER => {
                                 try self.logger.print(
                                     tty.red ++ "error" ++ tty.reset ++ ": in {s}:{d}:{d}: key '{s}' opens an interpolation with " ++ tty.bold ++ tty.red ++ "${{" ++ tty.reset ++ " but never closes it with " ++ tty.bold ++ tty.red ++ "}}" ++ tty.reset ++ ".\n",
-                                    .{ self.file_name, self.line, self.byte, token.key orelse "" },
+                                    .{ self.file_name, self.line, self.byte, token.key orelse "(none)" },
                                 );
                                 return error.MissingClosingBrace;
                             },
@@ -201,7 +203,7 @@ const Tokenizer = struct {
                     }
 
                     if (value.items.len != 0) {
-                        try self.commitToken(&token, ValueKind.normal, value.items);
+                        try self.commitToken(&token, ValueKind.normalized, value.items);
                     }
 
                     // skipByte "\\n"
@@ -209,7 +211,7 @@ const Tokenizer = struct {
                     self.resetByte();
                     value.clearRetainingCapacity();
 
-                    // multiline values
+                    // multilined values
                     while (self.peek(null) != null) {
                         const is_eol = (self.get_char(null) orelse 0) == LINE_DELIMITER;
 
@@ -217,7 +219,7 @@ const Tokenizer = struct {
                             (self.get_char(1) orelse 0) == LINE_DELIMITER) or is_eol)
                         {
                             self.nextLine();
-                            try self.commitToken(&token, ValueKind.multiline, value.items);
+                            try self.commitToken(&token, ValueKind.multilined, value.items);
                             value.clearRetainingCapacity();
                             self.resetByte();
 
@@ -253,3 +255,46 @@ const Tokenizer = struct {
         }
     }
 };
+
+pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
+    var tokenizer: Tokenizer = .{ .alloc = alloc, .logger = logger };
+
+    for (args.files.items) |env| {
+        tokenizer.i = 0;
+        tokenizer.byte = 1;
+        tokenizer.line = 1;
+        tokenizer.file_name = env;
+
+        const contents = Io.Dir.cwd().readFileAlloc(io, tokenizer.file_name, tokenizer.alloc, .unlimited) catch |err| {
+            try tokenizer.logger.print("could not read file '{s}': {s}\n", .{ tokenizer.file_name, @errorName(err) });
+            return error.FileReadFailed;
+        };
+
+        if (contents.len == 0) {
+            try tokenizer.logger.print(
+                tty.red ++ "error" ++ tty.reset ++ ": The " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " file doesn't contain any environment variables!\n",
+                .{tokenizer.file_name},
+            );
+            return error.EmptyFile;
+        }
+
+        tokenizer.file = contents;
+        try tokenizer.parse();
+    }
+
+    if (args.debug) {
+        try logger.writeAll(tty.cyan ++ "\ninfo: " ++ tty.reset ++ "The following tokens have been created...");
+        for (tokenizer.tokens.items, 0..) |token, ti| {
+            try tokenizer.logger.print(tty.cyan ++ "\ntoken[{d}]({s})" ++ tty.reset ++ " key: {s}\n", .{ ti, token.file, token.key orelse "(none)" });
+
+            for (token.values.items) |value| {
+                try tokenizer.logger.print(
+                    "  • {s} (line {d}, byte {d}): {s}\n",
+                    .{ @tagName(value.kind), value.line, value.byte, value.value },
+                );
+            }
+        }
+    }
+
+    return tokenizer.tokens;
+}

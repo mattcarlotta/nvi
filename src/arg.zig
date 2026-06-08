@@ -8,7 +8,7 @@ const IgnoredFlag = struct {
     params: std.ArrayList([]const u8) = .empty,
 };
 
-const Arg = struct {
+pub const Arg = struct {
     files: std.ArrayList([]const u8) = .empty,
     command: ?[]const [:0]const u8 = null,
     debug: bool = false,
