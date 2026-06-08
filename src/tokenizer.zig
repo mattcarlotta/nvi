@@ -45,11 +45,6 @@ const Token = struct {
     }
 };
 
-const TokenizeError = error{
-    MissingClosingBrace,
-    NoTokensGenerated,
-} || std.mem.Allocator.Error || Io.Writer.Error;
-
 pub const Tokenizer = struct {
     alloc: std.mem.Allocator,
     logger: *Io.Writer,
@@ -99,7 +94,7 @@ pub const Tokenizer = struct {
         });
     }
 
-    fn parse(self: *Tokenizer) TokenizeError!void {
+    fn parse(self: *Tokenizer) !void {
         var token: Token = .{ .file = try self.alloc.dupe(u8, self.file_name) };
 
         var value: std.ArrayList(u8) = .empty;
@@ -169,9 +164,15 @@ pub const Tokenizer = struct {
                             },
                             LINE_DELIMITER => {
                                 try self.logger.print(
-                                    tty.red ++ "error" ++ tty.reset ++ ": in {s}:{d}:{d}: key '{s}' opens an interpolation with " ++ tty.bold ++ tty.red ++ "${{" ++ tty.reset ++ " but never closes it with " ++ tty.bold ++ tty.red ++ "}}" ++ tty.reset ++ ".\n",
-                                    .{ self.file_name, self.line, self.byte, token.key orelse "(none)" },
+                                    tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold ++ tty.red ++ "{s}:{d}:{d}. " ++ tty.reset,
+                                    .{ self.file_name, self.line, self.byte },
                                 );
+
+                                try self.logger.print("The " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " key has an unterminated value interpolation.\n", .{token.key orelse ("none")});
+                                try self.logger.print("     ${{{s}\n", .{value.items});
+                                try self.logger.writeAll(tty.green ++ "      ^");
+                                for (0..value.items.len) |_| try self.logger.writeByte('~');
+                                try self.logger.writeAll(tty.reset ++ " (missing a closing brace '}')\n");
                                 return error.MissingClosingBrace;
                             },
                             else => {
@@ -250,7 +251,7 @@ pub const Tokenizer = struct {
         }
 
         if (self.tokens.items.len == 0) {
-            try self.logger.print(tty.red ++ "error" ++ tty.reset ++ ": unable to generate any tokens for '{s}'. Aborting.\n", .{self.file_name});
+            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Unable to generate any tokens for " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ ". Aborting.\n", .{self.file_name});
             return error.NoTokensGenerated;
         }
     }
@@ -265,14 +266,17 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
         tokenizer.line = 1;
         tokenizer.file_name = env;
 
-        const contents = Io.Dir.cwd().readFileAlloc(io, tokenizer.file_name, tokenizer.alloc, .unlimited) catch |err| {
-            try tokenizer.logger.print("could not read file '{s}': {s}\n", .{ tokenizer.file_name, @errorName(err) });
+        const contents = Io.Dir.cwd().readFileAlloc(io, tokenizer.file_name, tokenizer.alloc, .limited(1024 * 1024)) catch {
+            try tokenizer.logger.print(
+                tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " within the current directory (file not found).\n",
+                .{tokenizer.file_name},
+            );
             return error.FileReadFailed;
         };
 
         if (contents.len == 0) {
             try tokenizer.logger.print(
-                tty.red ++ "error" ++ tty.reset ++ ": The " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " file doesn't contain any environment variables!\n",
+                tty.red ++ "error:" ++ tty.reset ++ " The " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " file doesn't contain any environment variables!\n",
                 .{tokenizer.file_name},
             );
             return error.EmptyFile;
@@ -283,13 +287,14 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
     }
 
     if (args.debug) {
-        try logger.writeAll(tty.cyan ++ "\ninfo: " ++ tty.reset ++ "The following tokens have been created...");
+        try tokenizer.logger.print(tty.cyan ++ "\ninfo: " ++ tty.reset ++ "The following {d} token(s) have been created...", .{tokenizer.tokens.items.len});
+
         for (tokenizer.tokens.items, 0..) |token, ti| {
-            try tokenizer.logger.print(tty.cyan ++ "\ntoken[{d}]({s})" ++ tty.reset ++ " key: {s}\n", .{ ti, token.file, token.key orelse "(none)" });
+            try tokenizer.logger.print(tty.cyan ++ "\ntoken #{d}:" ++ tty.reset ++ "\n  • file: {s}\n  • key: {s}\n  • value(s):\n", .{ ti + 1, token.file, token.key orelse "(none)" });
 
             for (token.values.items) |value| {
                 try tokenizer.logger.print(
-                    "  • {s} (line {d}, byte {d}): {s}\n",
+                    "    • {s} (line {d}, byte {d}): {s}\n",
                     .{ @tagName(value.kind), value.line, value.byte, value.value },
                 );
             }
