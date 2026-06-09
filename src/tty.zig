@@ -6,3 +6,4 @@ pub const green = "\x1b[32m";
 pub const yellow = "\x1b[33m";
 pub const cyan = "\x1b[36m";
 pub const reset = "\x1b[0m";
+pub const bright_green = "\x1b[92m";

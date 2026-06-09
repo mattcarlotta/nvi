@@ -2,6 +2,10 @@ const std = @import("std");
 const tty = @import("tty.zig");
 const arg = @import("arg.zig");
 const Io = std.Io;
+const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+const expectError = std.testing.expectError;
 
 const NULL_CHAR: u8 = 0;
 const LINE_DELIMITER: u8 = '\n';
@@ -288,21 +292,124 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
     }
 
     if (args.debug) {
-        try tokenizer.logger.print(tty.cyan ++ "\ninfo: " ++ tty.reset ++ "The following {d} token(s) have been created...", .{tokenizer.tokens.items.len});
+        try tokenizer.logger.print(tty.cyan ++ "\ninfo: " ++ tty.reset ++ "The following {d} token(s) have been generated...", .{tokenizer.tokens.items.len});
 
         for (tokenizer.tokens.items, 0..) |token, ti| {
-            try tokenizer.logger.print(tty.cyan ++ "\ntoken #{d}:" ++ tty.reset ++ "\n  • file: {s}\n  • key: {s}\n  • value(s):\n", .{ ti + 1, token.file, token.key orelse "(none)" });
+            try tokenizer.logger.print(tty.cyan ++ "\n  token #{d}:" ++ tty.reset ++ "\n", .{ti + 1});
+            try tokenizer.logger.print("    • file: {s}\n", .{token.file});
+            try tokenizer.logger.print("    • key: " ++ tty.bold ++ tty.green ++ "{s}" ++ tty.reset ++ "\n", .{token.key orelse "(none)"});
+            try tokenizer.logger.print("    • values ({d}):", .{token.values.items.len});
 
             for (token.values.items) |value| {
                 try tokenizer.logger.print(
-                    "    • {s} (line {d}, byte {d}): {s}\n",
-                    .{ @tagName(value.kind), value.line, value.byte, value.value },
+                    "\n     • {s} value -> " ++ tty.green ++ "{s}" ++ tty.reset ++ " (line {d}, byte {d})",
+                    .{
+                        @tagName(value.kind),
+                        value.value,
+                        value.line,
+                        value.byte,
+                    },
                 );
             }
         }
 
+        try tokenizer.logger.writeAll("\n\n");
         try tokenizer.logger.writeByte('\n');
     }
 
     return tokenizer.tokens;
+}
+
+const TestTokenizer = struct {
+    arena: std.heap.ArenaAllocator,
+    logger_buf: [4096]u8 = undefined,
+    logger: Io.Writer = undefined,
+
+    fn init() TestTokenizer {
+        return .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
+    }
+
+    fn deinit(self: *TestTokenizer) void {
+        self.arena.deinit();
+    }
+
+    fn generate(self: *TestTokenizer, content: []const u8) !std.ArrayList(Token) {
+        self.logger = .fixed(&self.logger_buf);
+
+        var tokenizer: Tokenizer = .{
+            .alloc = self.arena.allocator(),
+            .logger = &self.logger,
+            .i = 0,
+            .byte = 1,
+            .line = 1,
+            .file_name = "test.env",
+            .file = content,
+        };
+
+        try tokenizer.parse();
+
+        return tokenizer.tokens;
+    }
+};
+
+test "parses a simple key/value" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.generate("KEY=value\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expectEqualStrings("KEY", tokens.items[0].key.?);
+    try expectEqual(@as(usize, 1), tokens.items[0].values.items.len);
+    try expectEqual(ValueKind.normalized, tokens.items[0].values.items[0].kind);
+    try expectEqualStrings("value", tokens.items[0].values.items[0].value);
+}
+
+test "parses multiple line key/values" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.generate("A=123\\\n456\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expectEqualStrings("A", tokens.items[0].key.?);
+    try expectEqual(@as(usize, 2), tokens.items[0].values.items.len);
+    try expectEqual(ValueKind.normalized, tokens.items[0].values.items[0].kind);
+    try expectEqualStrings("123", tokens.items[0].values.items[0].value);
+    try expectEqual(ValueKind.multilined, tokens.items[0].values.items[1].kind);
+    try expectEqualStrings("456", tokens.items[0].values.items[1].value);
+}
+
+test "parses a comment" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.generate("# a comment\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expect(tokens.items[0].key == null);
+    try expectEqual(ValueKind.commented, tokens.items[0].values.items[0].kind);
+    try expectEqualStrings("# a comment", tokens.items[0].values.items[0].value);
+}
+
+test "parses an interpolated value" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.generate("KEY=${OTHER}\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expectEqualStrings("KEY", tokens.items[0].key.?);
+    try expectEqual(ValueKind.interpolated, tokens.items[0].values.items[0].kind);
+    try expectEqualStrings("OTHER", tokens.items[0].values.items[0].value);
+}
+
+test "errors on unterminated interpolation" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.MissingClosingBrace, t.generate("KEY=${OTHER\n"));
+}
+
+test "errors when no tokens are generated" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.NoTokensGenerated, t.generate("novalue\n"));
 }

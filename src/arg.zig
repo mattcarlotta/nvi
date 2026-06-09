@@ -3,6 +3,7 @@ const tty = @import("tty.zig");
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;
+const expectEqualStrings = std.testing.expectEqualStrings;
 
 const IgnoredFlag = struct {
     flag: []const u8,
@@ -48,30 +49,31 @@ pub const Arg = struct {
     }
 
     pub fn printFlags(self: *Arg) !void {
-        try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... " ++ tty.cyan ++ "\n• command: " ++ tty.reset);
+        try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... \n");
+        try self.logger.writeAll("   command: ");
         if (self.command) |cmd| {
             for (cmd, 0..) |part, idx| {
                 if (idx != 0) try self.logger.writeByte(' ');
-                try self.logger.writeAll(part);
+                try self.logger.print(tty.bold ++ tty.green ++ "{s}" ++ tty.reset, .{part});
             }
         } else {
-            try self.logger.writeAll("(none)");
+            try self.logger.writeAll("(undefined)");
         }
 
-        try self.logger.writeAll(tty.cyan ++ "\n• files: " ++ tty.reset);
+        try self.logger.writeAll("\n   files: ");
         for (self.files.items, 0..) |f, i| {
             if (i != 0) try self.logger.writeAll(", ");
-            try self.logger.writeAll(f);
+            try self.logger.print(tty.bold ++ tty.green ++ "{s}" ++ tty.reset, .{f});
         }
 
-        try self.logger.writeAll(tty.cyan ++ "\n• required: " ++ tty.reset);
+        try self.logger.writeAll("\n   required: ");
         if (self.required.items.len > 0) {
             for (self.required.items, 0..) |f, i| {
                 if (i != 0) try self.logger.writeAll(", ");
-                try self.logger.writeAll(f);
+                try self.logger.print(tty.bold ++ tty.green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
-            try self.logger.writeAll("(none)");
+            try self.logger.writeAll("(undefined)");
         }
 
         try self.logger.writeByte('\n');
@@ -223,8 +225,8 @@ test "parses and sets files flag" {
     const args = try argParser(alloc, &argv, &logger);
 
     try expect(args.files.items.len == 2);
-    try std.testing.expectEqualStrings(".env.local", args.files.items[0]);
-    try std.testing.expectEqualStrings(".env", args.files.items[1]);
+    try expectEqualStrings(".env.local", args.files.items[0]);
+    try expectEqualStrings(".env", args.files.items[1]);
 }
 
 test "errors on file flag missing .env extension" {
@@ -281,8 +283,8 @@ test "parses and sets required envs flag" {
     const args = try argParser(alloc, &argv, &logger);
 
     try expect(args.required.items.len == 2);
-    try std.testing.expectEqualStrings("ENV_1", args.required.items[0]);
-    try std.testing.expectEqualStrings("ENV_2", args.required.items[1]);
+    try expectEqualStrings("ENV_1", args.required.items[0]);
+    try expectEqualStrings("ENV_2", args.required.items[1]);
 }
 
 test "warns on unknown flag" {
