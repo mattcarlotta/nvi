@@ -1,5 +1,5 @@
-const tty = @import("tty.zig");
 const std = @import("std");
+const tty = @import("tty.zig");
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;

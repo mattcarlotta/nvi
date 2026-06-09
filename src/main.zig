@@ -22,11 +22,13 @@ pub fn main(init: std.process.Init) !u8 {
         return 2;
     };
 
-    _ = nvi.tokenizer(init.io, arena, &args, logger) catch {
+    const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
         return 2;
     };
 
-    // const envs: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
+    _ = nvi.parse(init.environ_map, arena, &args, &tokens, logger) catch {
+        return 2;
+    };
 
     return 0;
 }

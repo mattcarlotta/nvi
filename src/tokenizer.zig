@@ -1,6 +1,6 @@
+const std = @import("std");
 const tty = @import("tty.zig");
 const arg = @import("arg.zig");
-const std = @import("std");
 const Io = std.Io;
 
 const NULL_CHAR: u8 = 0;
@@ -12,7 +12,7 @@ const OPEN_BRACE: u8 = '{';
 const CLOSE_BRACE: u8 = '}';
 const BACK_SLASH: u8 = '\\';
 
-const ValueKind = enum { normalized, partialed, commented, interpolated, multilined };
+pub const ValueKind = enum { normalized, partialed, commented, interpolated, multilined };
 
 const ValueToken = struct {
     kind: ValueKind,
@@ -21,7 +21,7 @@ const ValueToken = struct {
     byte: usize,
 };
 
-const Token = struct {
+pub const Token = struct {
     key: ?[]const u8 = null,
     file: []const u8 = "",
     values: std.ArrayList(ValueToken) = .empty,
@@ -283,6 +283,7 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
         }
 
         tokenizer.file = contents;
+
         try tokenizer.parse();
     }
 
@@ -299,6 +300,8 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
                 );
             }
         }
+
+        try tokenizer.logger.writeByte('\n');
     }
 
     return tokenizer.tokens;
