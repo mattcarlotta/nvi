@@ -3,11 +3,12 @@ const tty = @import("tty.zig");
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;
+const expectError = std.testing.expectError;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 const IgnoredFlag = struct {
     flag: []const u8,
-    params: std.ArrayList([]const u8) = .empty,
+    params: []const [:0]const u8 = &.{},
 };
 
 pub const Arg = struct {
@@ -111,10 +112,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
     var iter: ArgvIter = .{ .argv = argv };
 
     var ignored_flags: std.ArrayList(IgnoredFlag) = .empty;
-    defer {
-        for (ignored_flags.items) |*entry| entry.params.deinit(alloc);
-        ignored_flags.deinit(alloc);
-    }
+    defer ignored_flags.deinit(alloc);
 
     // skipping program name at argv[0]
     _ = iter.next();
@@ -126,11 +124,9 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         }
 
         const flag = Arg.flags.get(token) orelse {
-            var entry: IgnoredFlag = .{ .flag = token };
-
-            while (iter.nextValue()) |param| try entry.params.append(alloc, param);
-
-            try ignored_flags.append(alloc, entry);
+            const start = iter.i;
+            while (iter.nextValue()) |_| {}
+            try ignored_flags.append(alloc, .{ .flag = token, .params = iter.argv[start..iter.i] });
 
             continue;
         };
@@ -139,7 +135,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
             .debug => args.debug = true,
             .files => {
                 const first = iter.nextValue() orelse {
-                    try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n");
+                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
                     return error.MissingValue;
                 };
 
@@ -154,7 +150,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
             },
             .required => {
                 const first = iter.nextValue() orelse {
-                    try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n");
+                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
                     return error.MissingValue;
                 };
 
@@ -171,10 +167,10 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
             .{entry.flag},
         );
 
-        if (entry.params.items.len > 0) {
+        if (entry.params.len > 0) {
             try args.logger.writeAll(" with parameters " ++ tty.bold_yellow);
 
-            for (entry.params.items, 0..) |p, idx| {
+            for (entry.params, 0..) |p, idx| {
                 if (idx != 0) try args.logger.writeByte(' ');
                 try args.logger.writeAll(p);
             }
@@ -199,30 +195,43 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
     return args;
 }
 
+const TestArgs = struct {
+    arena: std.heap.ArenaAllocator,
+    logger_buf: [1024]u8 = undefined,
+    logger: Io.Writer = undefined,
+
+    fn init() TestArgs {
+        return .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
+    }
+
+    fn deinit(self: *TestArgs) void {
+        self.arena.deinit();
+    }
+
+    fn output(self: *TestArgs) []const u8 {
+        return self.logger.buffered();
+    }
+
+    fn run(self: *TestArgs, argv: []const [:0]const u8) !Arg {
+        self.logger = .fixed(&self.logger_buf);
+        return argParser(self.arena.allocator(), argv, &self.logger);
+    }
+};
+
 test "parses and sets debug flag" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--debug", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
-
-    const args = try argParser(alloc, &argv, &logger);
+    const args = try t.run(&.{ "nvi", "--debug", "--", "echo", "hi" });
 
     try expect(args.debug);
 }
 
 test "parses and sets files flag" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--files", ".env.local", ".env", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
-
-    const args = try argParser(alloc, &argv, &logger);
+    const args = try t.run(&.{ "nvi", "--files", ".env.local", ".env", "--", "echo", "hi" });
 
     try expect(args.files.items.len == 2);
     try expectEqualStrings(".env.local", args.files.items[0]);
@@ -230,57 +239,34 @@ test "parses and sets files flag" {
 }
 
 test "errors on file flag missing .env extension" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--files", "example", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
-
-    _ = argParser(alloc, &argv, &logger) catch {};
-
-    try expect(mem.indexOf(u8, logger.buffered(), "is not a valid env file") != null);
+    try expectError(error.InvalidFileExtension, t.run(&.{ "nvi", "--files", "example", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "is not a valid env file") != null);
 }
 
-test "errors on a relative file flag" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+test "errors on an absolute file flag" {
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--files", "/home/.env", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
-
-    _ = argParser(alloc, &argv, &logger) catch {};
-
-    try expect(mem.indexOf(u8, logger.buffered(), "must be relative to the current directory") != null);
+    try expectError(error.InvalidFilePath, t.run(&.{ "nvi", "--files", "/home/.env", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "must be relative to the current directory") != null);
 }
 
-test "errors on a escape file flag" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+test "errors on an escape file flag" {
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--files", "../.env", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
-
-    _ = argParser(alloc, &argv, &logger) catch {};
-
-    try expect(mem.indexOf(u8, logger.buffered(), "may not escape the current directory") != null);
+    try expectError(error.InvalidFilePathEscape, t.run(&.{ "nvi", "--files", "../.env", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "may not escape the current directory") != null);
 }
 
 test "parses and sets required envs flag" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--required", "ENV_1", "ENV_2", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
-
-    const args = try argParser(alloc, &argv, &logger);
+    const args = try t.run(&.{ "nvi", "--required", "ENV_1", "ENV_2", "--", "echo", "hi" });
 
     try expect(args.required.items.len == 2);
     try expectEqualStrings("ENV_1", args.required.items[0]);
@@ -288,15 +274,19 @@ test "parses and sets required envs flag" {
 }
 
 test "warns on unknown flag" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+    var t = TestArgs.init();
+    defer t.deinit();
 
-    var argv = [_][:0]const u8{ "nvi", "--unknown", "x", "--", "echo", "hi" };
-    var logger_buf: [1024]u8 = undefined;
-    var logger: Io.Writer = .fixed(&logger_buf);
+    _ = try t.run(&.{ "nvi", "--unknown", "x", "--", "echo", "hi" });
 
-    _ = try argParser(alloc, &argv, &logger);
+    try expect(mem.indexOf(u8, t.output(), "unrecognized flag") != null);
+}
 
-    try expect(mem.indexOf(u8, logger.buffered(), "unrecognized flag") != null);
+test "errors on missing file flag parameter" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.MissingValue, t.run(&.{ "nvi", "--files", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "--files") != null);
+    try expect(mem.indexOf(u8, t.output(), "requires at least 1 parameter") != null);
 }

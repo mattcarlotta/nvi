@@ -2,6 +2,7 @@ const std = @import("std");
 const tty = @import("tty.zig");
 const arg = @import("arg.zig");
 const Io = std.Io;
+const mem = std.mem;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
@@ -16,7 +17,10 @@ const OPEN_BRACE: u8 = '{';
 const CLOSE_BRACE: u8 = '}';
 const BACK_SLASH: u8 = '\\';
 
-pub const ValueKind = enum { normalized, partialed, commented, interpolated, multilined };
+// every character the main loop treats specially; used to scan plain runs in one pass
+const SPECIAL_CHARS = [_]u8{ NULL_CHAR, LINE_DELIMITER, ASSIGN_OP, HASH, DOLLAR_SIGN, BACK_SLASH };
+
+pub const ValueKind = enum { literal, commented, interpolated };
 
 const ValueToken = struct {
     kind: ValueKind,
@@ -29,35 +33,16 @@ pub const Token = struct {
     key: ?[]const u8 = null,
     file: []const u8 = "",
     values: std.ArrayList(ValueToken) = .empty,
-
-    fn clone(self: Token, alloc: std.mem.Allocator) !Token {
-        var token: Token = .{
-            .file = try alloc.dupe(u8, self.file),
-            .key = if (self.key) |k| try alloc.dupe(u8, k) else null,
-        };
-
-        try token.values.ensureTotalCapacity(alloc, self.values.items.len);
-
-        for (self.values.items) |v| token.values.appendAssumeCapacity(.{
-            .kind = v.kind,
-            .value = try alloc.dupe(u8, v.value),
-            .line = v.line,
-            .byte = v.byte,
-        });
-
-        return token;
-    }
 };
 
 pub const Tokenizer = struct {
-    alloc: std.mem.Allocator,
+    alloc: mem.Allocator,
     logger: *Io.Writer,
     i: usize = 0,
     byte: usize = 0,
     line: usize = 0,
     file: ?[]const u8 = null,
     file_name: []const u8 = undefined,
-    file_path: ?[]const u8 = null,
     tokens: std.ArrayList(Token) = .empty,
 
     fn nextLine(self: *Tokenizer) void {
@@ -68,25 +53,27 @@ pub const Tokenizer = struct {
         self.byte = 1;
     }
 
-    fn next_byte(self: *Tokenizer, offset: ?usize) void {
-        self.byte += offset orelse 1;
+    fn next_byte(self: *Tokenizer, offset: usize) void {
+        self.byte += offset;
     }
 
-    fn skipByte(self: *Tokenizer, offset: ?usize) void {
-        const o = offset orelse 1;
-        self.next_byte(o);
-        self.i += o;
+    fn skipByte(self: *Tokenizer, offset: usize) void {
+        self.next_byte(offset);
+        self.i += offset;
     }
 
-    fn peek(self: *Tokenizer, offset: ?usize) ?u8 {
+    fn peek(self: *Tokenizer, offset: usize) ?u8 {
         const file = self.file orelse return null;
-        const index = self.i + (offset orelse 0);
+        const index = self.i + offset;
         if (index >= file.len) return null;
         return file[index];
     }
 
-    fn get_char(self: *Tokenizer, offset: ?usize) ?u8 {
-        return self.peek(offset);
+    fn scanUntil(self: *Tokenizer, value: *std.ArrayList(u8), chars: []const u8) !void {
+        const end = mem.indexOfAnyPos(u8, self.file.?, self.i, chars) orelse self.file.?.len;
+        try value.appendSlice(self.alloc, self.file.?[self.i..end]);
+        self.next_byte(end - self.i);
+        self.i = end;
     }
 
     fn commitToken(self: *Tokenizer, token: *Token, kind: ValueKind, bytes: []const u8) !void {
@@ -98,156 +85,146 @@ pub const Tokenizer = struct {
         });
     }
 
+    fn appendToken(self: *Tokenizer, token: *Token) !void {
+        try self.tokens.append(self.alloc, token.*);
+        token.* = .{ .file = self.file_name };
+    }
+
+    fn printErrorHeader(self: *Tokenizer) !void {
+        try self.logger.print(
+            tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
+            .{ self.file_name, self.line, self.byte },
+        );
+    }
+
+    fn printTokenLine(self: *Tokenizer, token: *const Token) !usize {
+        const key: []const u8 = token.key orelse "(none)";
+        try self.logger.print("   {s}=", .{key});
+
+        var prefix_len: usize = key.len + 1;
+        for (token.values.items) |v| {
+            if (v.kind == .literal) {
+                try self.logger.writeAll(v.value);
+                prefix_len += v.value.len;
+            }
+        }
+        return prefix_len;
+    }
+
     fn parse(self: *Tokenizer) !void {
-        var token: Token = .{ .file = try self.alloc.dupe(u8, self.file_name) };
+        var token: Token = .{ .file = self.file_name };
 
         var value: std.ArrayList(u8) = .empty;
         defer value.deinit(self.alloc);
 
-        while (self.peek(null)) |current_char| {
+        while (self.peek(0)) |current_char| {
             switch (current_char) {
-                NULL_CHAR => self.skipByte(null),
+                NULL_CHAR => self.skipByte(1),
                 LINE_DELIMITER => {
                     if (token.key != null) {
-                        try self.commitToken(&token, ValueKind.normalized, value.items);
-                        try self.tokens.append(self.alloc, try token.clone(self.alloc));
+                        try self.commitToken(&token, ValueKind.literal, value.items);
+                        try self.appendToken(&token);
                     }
-                    token.key = null;
-                    token.values.clearRetainingCapacity();
                     value.clearRetainingCapacity();
                     self.nextLine();
-                    self.skipByte(null);
+                    self.skipByte(1);
                     self.resetByte();
                 },
                 ASSIGN_OP => {
-                    const trimmed = std.mem.trim(u8, value.items, " \t");
-                    if (trimmed.len == 0) {
-                        try self.logger.print(
-                            tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
-                            .{ self.file_name, self.line, self.byte },
-                        );
-                        try self.logger.writeAll("An value assignment ('=') was found without a key name.\n");
+                    // '=' inside a value is literal
+                    if (token.key != null) {
+                        try value.append(self.alloc, current_char);
+                        self.skipByte(1);
+                        continue;
+                    }
 
-                        try self.logger.writeAll("   ");
-                        var len: usize = 0;
-                        while (self.peek(len)) |c| : (len += 1) {
-                            if (c == LINE_DELIMITER) break;
-                            try self.logger.writeByte(c);
-                        }
-                        try self.logger.writeByte('\n');
+                    const trimmed_key = mem.trim(u8, value.items, " \t");
+                    if (trimmed_key.len == 0) {
+                        try self.printErrorHeader();
+                        try self.logger.writeAll("A value assignment ('=') was found without a key name.\n");
+
+                        const end = mem.indexOfScalarPos(u8, self.file.?, self.i, LINE_DELIMITER) orelse self.file.?.len;
+                        const rest = self.file.?[self.i..end];
+
+                        try self.logger.print("   {s}\n", .{rest});
 
                         try self.logger.writeAll("   " ++ tty.green ++ "^");
-                        if (len > 1) for (0..len - 1) |_| try self.logger.writeByte('~');
+                        if (rest.len > 1) try self.logger.splatByteAll('~', rest.len - 1);
                         try self.logger.writeAll(" (missing key)\n" ++ tty.reset);
 
                         return error.EmptyKey;
                     }
 
-                    token.key = try self.alloc.dupe(u8, trimmed);
+                    token.key = try self.alloc.dupe(u8, trimmed_key);
                     value.clearRetainingCapacity();
                     // skipByte '='
-                    self.skipByte(null);
+                    self.skipByte(1);
                 },
                 HASH => {
-                    // hash inside a started key: treat as literal
+                    // hash inside a literal
                     if (token.key != null) {
                         try value.append(self.alloc, current_char);
-                        self.skipByte(null);
+                        self.skipByte(1);
                         continue;
                     }
-                    // otherwise a commented: consume to end of line
-                    while (self.peek(null) != null and (self.get_char(null) orelse 0) != LINE_DELIMITER) {
-                        try value.append(self.alloc, self.get_char(null).?);
-                        self.skipByte(null);
-                    }
+
+                    try self.scanUntil(&value, "\n");
+
                     try self.commitToken(&token, ValueKind.commented, value.items);
-                    try self.tokens.append(self.alloc, try token.clone(self.alloc));
+                    try self.appendToken(&token);
                     value.clearRetainingCapacity();
                 },
                 DOLLAR_SIGN => {
-                    // not "${": literal '$'
-                    if ((self.get_char(1) orelse 0) != OPEN_BRACE) {
+                    if ((self.peek(1) orelse 0) != OPEN_BRACE) {
                         try value.append(self.alloc, current_char);
-                        self.skipByte(null);
+                        self.skipByte(1);
                         continue;
                     }
 
                     // commit anything accumulated before the "${"
                     if (value.items.len != 0) {
-                        try self.commitToken(&token, ValueKind.partialed, value.items);
+                        try self.commitToken(&token, ValueKind.literal, value.items);
                         value.clearRetainingCapacity();
                     }
 
                     // skipByte "${"
                     self.skipByte(2);
 
-                    // interpolate ENV within "${ENV}"
-                    while (self.peek(null) != null) {
-                        switch (self.get_char(null) orelse 0) {
-                            CLOSE_BRACE => {
-                                // skipByte '}'
-                                self.skipByte(null);
-                                break;
-                            },
-                            LINE_DELIMITER => {
-                                try self.logger.print(
-                                    tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
-                                    .{ self.file_name, self.line, self.byte },
-                                );
-                                try self.logger.print(
-                                    "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an unterminated value interpolation.\n",
-                                    .{token.key orelse "(none)"},
-                                );
+                    try self.scanUntil(&value, "}\n");
 
-                                const key: []const u8 = token.key orelse "(none)";
-                                try self.logger.print("   {s}=", .{key});
+                    if ((self.peek(0) orelse LINE_DELIMITER) != CLOSE_BRACE) {
+                        try self.printErrorHeader();
+                        try self.logger.print(
+                            "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an unterminated value interpolation.\n",
+                            .{token.key orelse "(none)"},
+                        );
 
-                                var prefix_len: usize = key.len + 1;
-                                for (token.values.items) |v| {
-                                    if (v.kind == .partialed or v.kind == .normalized) {
-                                        try self.logger.writeAll(v.value);
-                                        prefix_len += v.value.len;
-                                    }
-                                }
-                                try self.logger.print("${{{s}\n", .{value.items});
+                        const prefix_len = try self.printTokenLine(&token);
+                        try self.logger.print("${{{s}\n", .{value.items});
 
-                                try self.logger.writeAll("   " ++ tty.green);
-                                for (0..prefix_len + 1) |_| try self.logger.writeByte(' ');
-                                try self.logger.writeByte('^');
-                                for (0..value.items.len) |_| try self.logger.writeByte('~');
-                                try self.logger.writeAll(" (missing a closing brace '}')\n" ++ tty.reset);
-                                return error.MissingClosingBrace;
-                            },
-                            else => {
-                                if (self.peek(null)) |c| try value.append(self.alloc, c);
-                                self.skipByte(null);
-                            },
-                        }
+                        try self.logger.writeAll("   " ++ tty.green);
+                        try self.logger.splatByteAll(' ', prefix_len + 1);
+                        try self.logger.writeByte('^');
+                        try self.logger.splatByteAll('~', value.items.len);
+                        try self.logger.writeAll(" (missing a closing brace '}')\n" ++ tty.reset);
+                        return error.MissingClosingBrace;
                     }
 
+                    // skipByte '}'
+                    self.skipByte(1);
+
                     if (value.items.len == 0) {
-                        try self.logger.print(
-                            tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
-                            .{ self.file_name, self.line, self.byte },
-                        );
+                        try self.printErrorHeader();
                         try self.logger.print(
                             "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an invalid key interpolation.\n",
-                            .{token.key orelse "none"},
+                            .{token.key orelse "(none)"},
                         );
-                        const key: []const u8 = token.key orelse "(none)";
-                        try self.logger.print("     {s}=", .{key});
 
-                        var prefix_len: usize = key.len + 1;
-                        for (token.values.items) |v| {
-                            if (v.kind == .partialed or v.kind == .normalized) {
-                                try self.logger.writeAll(v.value);
-                                prefix_len += v.value.len;
-                            }
-                        }
+                        const prefix_len = try self.printTokenLine(&token);
                         try self.logger.writeAll("${}\n");
 
-                        try self.logger.writeAll("     " ++ tty.green);
-                        for (0..prefix_len + 1) |_| try self.logger.writeByte(' ');
+                        try self.logger.writeAll("   " ++ tty.green);
+                        try self.logger.splatByteAll(' ', prefix_len + 1);
                         try self.logger.writeAll("^~ (unresolvable interpolation key)\n" ++ tty.reset);
 
                         return error.EmptyInterpolationKey;
@@ -255,70 +232,47 @@ pub const Tokenizer = struct {
 
                     try self.commitToken(&token, ValueKind.interpolated, value.items);
 
-                    if ((self.get_char(null) orelse 0) == LINE_DELIMITER) {
-                        try self.tokens.append(self.alloc, try token.clone(self.alloc));
-                        token.key = null;
-                        token.values.clearRetainingCapacity();
+                    if ((self.peek(0) orelse 0) == LINE_DELIMITER) {
+                        try self.appendToken(&token);
                         self.nextLine();
                         // skipByte '\n'
-                        self.skipByte(null);
+                        self.skipByte(1);
                         self.resetByte();
                     }
                     value.clearRetainingCapacity();
                 },
                 BACK_SLASH => {
-                    // literal backslash: next char exists and isn't a newline
-                    if (self.peek(1) != null and (self.get_char(1) orelse 0) != LINE_DELIMITER) {
+                    if (self.peek(1) != null and (self.peek(1) orelse 0) != LINE_DELIMITER) {
                         try value.append(self.alloc, current_char);
-                        self.skipByte(null);
+                        self.skipByte(1);
                         continue;
                     }
 
+                    // line continuation: commit the current segment and keep
+                    // tokenizing the same token from the main loop, so '$',
+                    // '#', and '=' on continuation lines are handled normally
                     if (value.items.len != 0) {
-                        try self.commitToken(&token, ValueKind.normalized, value.items);
+                        try self.commitToken(&token, ValueKind.literal, value.items);
                     }
 
+                    value.clearRetainingCapacity();
                     // skipByte "\\n"
                     self.skipByte(2);
-                    self.resetByte();
-                    value.clearRetainingCapacity();
-
-                    // multilined values
-                    while (self.peek(null) != null) {
-                        const is_eol = (self.get_char(null) orelse 0) == LINE_DELIMITER;
-
-                        if (((self.get_char(null) orelse 0) == BACK_SLASH and
-                            (self.get_char(1) orelse 0) == LINE_DELIMITER) or is_eol)
-                        {
-                            self.nextLine();
-                            try self.commitToken(&token, ValueKind.multilined, value.items);
-                            value.clearRetainingCapacity();
-                            self.resetByte();
-
-                            // skipByte '\n' or "\\n"
-                            const bytes: usize = if (is_eol) 1 else 2;
-                            self.skipByte(bytes);
-
-                            if (is_eol) break;
-                        }
-
-                        if (self.peek(null)) |c| try value.append(self.alloc, c);
-
-                        self.skipByte(null);
-                    }
-
-                    try self.tokens.append(self.alloc, try token.clone(self.alloc));
-                    token.key = null;
-                    token.values.clearRetainingCapacity();
-                    value.clearRetainingCapacity();
-                    self.resetByte();
                     self.nextLine();
+                    self.resetByte();
                 },
                 else => {
-                    try value.append(self.alloc, current_char);
-                    self.skipByte(null);
+                    try self.scanUntil(&value, &SPECIAL_CHARS);
                 },
             }
+        }
+
+        // flush a pending token if the file doesn't end with a newline
+        if (token.key != null) {
+            if (value.items.len > 0 or token.values.items.len == 0) {
+                try self.commitToken(&token, ValueKind.literal, value.items);
+            }
+            try self.appendToken(&token);
         }
 
         if (self.tokens.items.len == 0) {
@@ -328,7 +282,7 @@ pub const Tokenizer = struct {
     }
 };
 
-pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
+pub fn parseFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
     var tokenizer: Tokenizer = .{ .alloc = alloc, .logger = logger };
 
     for (args.files.items) |env| {
@@ -354,6 +308,11 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
         }
 
         tokenizer.file = contents;
+
+        try tokenizer.tokens.ensureTotalCapacity(
+            alloc,
+            tokenizer.tokens.items.len + mem.count(u8, contents, "\n") + 1,
+        );
 
         try tokenizer.parse();
     }
@@ -430,7 +389,18 @@ test "parses a simple key/value" {
     try expectEqual(@as(usize, 1), tokens.items.len);
     try expectEqualStrings("KEY", tokens.items[0].key.?);
     try expectEqual(@as(usize, 1), tokens.items[0].values.items.len);
-    try expectEqual(ValueKind.normalized, tokens.items[0].values.items[0].kind);
+    try expectEqual(ValueKind.literal, tokens.items[0].values.items[0].kind);
+    try expectEqualStrings("value", tokens.items[0].values.items[0].value);
+}
+
+test "parses a key/value without a trailing newline" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.run("KEY=value");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expectEqualStrings("KEY", tokens.items[0].key.?);
+    try expectEqual(ValueKind.literal, tokens.items[0].values.items[0].kind);
     try expectEqualStrings("value", tokens.items[0].values.items[0].value);
 }
 
@@ -442,10 +412,63 @@ test "parses multiple line key/values" {
     try expectEqual(@as(usize, 1), tokens.items.len);
     try expectEqualStrings("A", tokens.items[0].key.?);
     try expectEqual(@as(usize, 2), tokens.items[0].values.items.len);
-    try expectEqual(ValueKind.normalized, tokens.items[0].values.items[0].kind);
+    try expectEqual(ValueKind.literal, tokens.items[0].values.items[0].kind);
     try expectEqualStrings("123", tokens.items[0].values.items[0].value);
-    try expectEqual(ValueKind.multilined, tokens.items[0].values.items[1].kind);
+    try expectEqual(ValueKind.literal, tokens.items[0].values.items[1].kind);
     try expectEqualStrings("456", tokens.items[0].values.items[1].value);
+    try expectEqual(@as(usize, 1), tokens.items[0].values.items[0].line);
+    try expectEqual(@as(usize, 2), tokens.items[0].values.items[1].line);
+}
+
+test "parses an interpolated value inside a multiline value" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.run("KEY=abc\\\n${OTHER}def\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+
+    const values = tokens.items[0].values.items;
+    try expectEqual(@as(usize, 3), values.len);
+    try expectEqual(ValueKind.literal, values[0].kind);
+    try expectEqualStrings("abc", values[0].value);
+    try expectEqual(ValueKind.interpolated, values[1].kind);
+    try expectEqualStrings("OTHER", values[1].value);
+    try expectEqual(ValueKind.literal, values[2].kind);
+    try expectEqualStrings("def", values[2].value);
+}
+
+test "parses a multiline ssh key with interpolation and literal '=' and '$'" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.run("MULTI=ssh-rsa ABC\\\ng3HI$\\\n+jk${MESSAGE}/4\\\nLm5Mn== test@example.com\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expectEqualStrings("MULTI", tokens.items[0].key.?);
+
+    const values = tokens.items[0].values.items;
+    try expectEqual(@as(usize, 6), values.len);
+    try expectEqual(ValueKind.literal, values[0].kind);
+    try expectEqualStrings("ssh-rsa ABC", values[0].value);
+    try expectEqual(ValueKind.literal, values[1].kind);
+    try expectEqualStrings("g3HI$", values[1].value);
+    try expectEqual(ValueKind.literal, values[2].kind);
+    try expectEqualStrings("+jk", values[2].value);
+    try expectEqual(ValueKind.interpolated, values[3].kind);
+    try expectEqualStrings("MESSAGE", values[3].value);
+    try expectEqual(ValueKind.literal, values[4].kind);
+    try expectEqualStrings("/4", values[4].value);
+    try expectEqual(ValueKind.literal, values[5].kind);
+    try expectEqualStrings("Lm5Mn== test@example.com", values[5].value);
+}
+
+test "treats '=' as literal after the key is set" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    const tokens = try t.run("KEY=a==b\n");
+    try expectEqual(@as(usize, 1), tokens.items.len);
+    try expectEqualStrings("KEY", tokens.items[0].key.?);
+    try expectEqualStrings("a==b", tokens.items[0].values.items[0].value);
 }
 
 test "parses a comment" {
@@ -477,6 +500,13 @@ test "errors on unterminated interpolation" {
     try expectError(error.MissingClosingBrace, t.run("KEY=${OTHER\n"));
 }
 
+test "errors on unterminated interpolation at end of file" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.MissingClosingBrace, t.run("KEY=${OTHER"));
+}
+
 test "errors when no tokens are rund" {
     var t = TestTokenizer.init();
     defer t.deinit();
@@ -490,8 +520,8 @@ test "errors on empty key (=value)" {
 
     try expectError(error.EmptyKey, t.run("=abc123\n"));
     const out = t.output();
-    try expect(std.mem.indexOf(u8, out, "was found without a key name") != null);
-    try expect(std.mem.indexOf(u8, out, "=abc123") != null);
+    try expect(mem.indexOf(u8, out, "was found without a key name") != null);
+    try expect(mem.indexOf(u8, out, "=abc123") != null);
 }
 
 test "errors on whitespace-only key" {
@@ -499,7 +529,7 @@ test "errors on whitespace-only key" {
     defer t.deinit();
 
     try expectError(error.EmptyKey, t.run("   =value\n"));
-    try expect(std.mem.indexOf(u8, t.output(), "was found without a key name") != null);
+    try expect(mem.indexOf(u8, t.output(), "was found without a key name") != null);
 }
 
 test "errors on empty interpolation key (${})" {
@@ -508,8 +538,8 @@ test "errors on empty interpolation key (${})" {
 
     try expectError(error.EmptyInterpolationKey, t.run("KEY=abc${}123\n"));
     const out = t.output();
-    try expect(std.mem.indexOf(u8, out, "key has an invalid key interpolation") != null);
-    try expect(std.mem.indexOf(u8, out, "KEY=abc${}") != null);
+    try expect(mem.indexOf(u8, out, "key has an invalid key interpolation") != null);
+    try expect(mem.indexOf(u8, out, "KEY=abc${}") != null);
 }
 
 test "errors on unterminated interpolation (${ with no close)" {
@@ -518,6 +548,6 @@ test "errors on unterminated interpolation (${ with no close)" {
 
     try expectError(error.MissingClosingBrace, t.run("KEY=abc${XY\n"));
     const out = t.output();
-    try expect(std.mem.indexOf(u8, out, "key has an unterminated value interpolation") != null);
-    try expect(std.mem.indexOf(u8, out, "${XY") != null);
+    try expect(mem.indexOf(u8, out, "key has an unterminated value interpolation") != null);
+    try expect(mem.indexOf(u8, out, "${XY") != null);
 }

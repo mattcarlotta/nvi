@@ -4,6 +4,7 @@ const arg = @import("arg.zig");
 const token = @import("tokenizer.zig");
 const Io = std.Io;
 const Environ = std.process.Environ;
+const indexOf = std.mem.indexOf;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
@@ -18,9 +19,7 @@ pub fn parseTokens(
 ) !std.StringArrayHashMapUnmanaged([]const u8) {
     var envs: std.StringArrayHashMapUnmanaged([]const u8) = .empty;
 
-    for (tokens.items) |tkn| {
-        if (tkn.values.items.len == 0 or tkn.key == null) continue;
-
+    token_loop: for (tokens.items) |tkn| {
         var value: std.ArrayList(u8) = .empty;
         defer value.deinit(alloc);
 
@@ -51,30 +50,39 @@ pub fn parseTokens(
                 .commented => {
                     if (args.debug) {
                         try logger.print(
-                            tty.cyan ++ "info:" ++ tty.reset ++ " Skipping comment {s} ({s}:{d}:{d})\n",
-                            .{ value_token.value, tkn.file, value_token.line, value_token.byte },
+                            tty.cyan ++ "info:" ++ tty.reset ++ " Parsed a comment:" ++ tty.cyan ++ " {s} " ++ tty.reset,
+                            .{value_token.value},
+                        );
+                        try logger.print(
+                            "({s}:{d}:{d}); skipping.\n",
+                            .{ tkn.file, value_token.line, value_token.byte },
                         );
                     }
+                    continue :token_loop;
                 },
                 else => try value.appendSlice(alloc, value_token.value),
             }
-
-            if (value.items.len == 0) {
-                const key_str = if (tkn.key.?.len > 0) tkn.key.? else "(undefined)";
-                try logger.print(
-                    tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
-                    .{key_str},
-                );
-                try logger.writeAll(" key is an " ++ tty.bold_yellow ++ "undefined" ++ tty.reset);
-                try logger.print(
-                    " value ({s}:{d}:{d}); skipping.\n",
-                    .{ tkn.file, value_token.line, value_token.byte },
-                );
-            }
         }
 
-        if (value.items.len > 0) {
-            try envs.put(alloc, try alloc.dupe(u8, tkn.key.?), try alloc.dupe(u8, value.items));
+        if (value.items.len == 0) {
+            const first = tkn.values.items[0];
+            const key_str = if (tkn.key != null) tkn.key.? else "(undefined)";
+
+            try logger.print(
+                tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
+                .{key_str},
+            );
+            try logger.writeAll(" key is an " ++ tty.bold_yellow ++ "undefined" ++ tty.reset);
+            try logger.print(
+                " value ({s}:{d}:{d}); skipping.\n",
+                .{ tkn.file, first.line, first.byte },
+            );
+
+            continue :token_loop;
+        }
+
+        if (tkn.key != null) {
+            try envs.put(alloc, tkn.key.?, try value.toOwnedSlice(alloc));
         }
     }
 
@@ -89,12 +97,10 @@ pub fn parseTokens(
 
     if (args.debug) {
         try logger.print("\n" ++ tty.cyan ++ "info:" ++ tty.reset ++ " The following {d} env(s) were parsed...\n", .{env_count});
-        var i: usize = 0;
 
         var it = envs.iterator();
         while (it.next()) |entry| {
-            i += 1;
-            try logger.print("  {d}.) {s}={s}\n", .{ i, entry.key_ptr.*, entry.value_ptr.* });
+            try logger.print("  • {s}={s}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
         }
         try logger.writeByte('\n');
     }
@@ -109,11 +115,14 @@ pub fn parseTokens(
 
         if (missing.items.len > 0) {
             try logger.writeAll(tty.red ++ "error" ++ tty.reset ++ ": The following ENVs were marked as required, but weren't found after parsing: ");
+
             for (missing.items, 0..) |key, i| {
                 if (i != 0) try logger.writeAll(", ");
                 try logger.print(tty.bold_red ++ "{s}" ++ tty.reset, .{key});
             }
+
             try logger.writeAll("\nThey're either missing values or weren't set in the provided .env files.\n");
+
             return error.MissingRequiredEnvs;
         }
     }
@@ -151,6 +160,10 @@ const TestParse = struct {
         try self.tokens.append(self.alloc(), tok);
     }
 
+    fn output(self: *TestParse) []const u8 {
+        return self.logger.buffered();
+    }
+
     fn run(self: *TestParse) !std.StringArrayHashMapUnmanaged([]const u8) {
         return parseTokens(&self.environ, self.alloc(), &self.args, &self.tokens, &self.logger);
     }
@@ -161,7 +174,7 @@ test "parseTokens sets a normalized key/value" {
     tp.init();
     defer tp.deinit();
 
-    try tp.addToken("KEY", .normalized, "value");
+    try tp.addToken("KEY", .literal, "value");
 
     const envs = try tp.run();
     try expectEqual(@as(usize, 1), envs.count());
@@ -174,8 +187,8 @@ test "parseTokens concatenates multiple value tokens into one value" {
     defer tp.deinit();
 
     var tok: token.Token = .{ .key = "MULTI", .file = "testp.env" };
-    try tok.values.append(tp.alloc(), .{ .kind = .normalized, .value = "12", .line = 1, .byte = 1 });
-    try tok.values.append(tp.alloc(), .{ .kind = .multilined, .value = "34", .line = 2, .byte = 1 });
+    try tok.values.append(tp.alloc(), .{ .kind = .literal, .value = "12", .line = 1, .byte = 1 });
+    try tok.values.append(tp.alloc(), .{ .kind = .literal, .value = "34", .line = 2, .byte = 1 });
     try tp.tokens.append(tp.alloc(), tok);
 
     const envs = try tp.run();
@@ -199,7 +212,7 @@ test "parseTokens resolves interpolation from a previously parsed env" {
     tp.init();
     defer tp.deinit();
 
-    try tp.addToken("FOO", .normalized, "bar");
+    try tp.addToken("FOO", .literal, "bar");
     try tp.addToken("BAZ", .interpolated, "FOO");
 
     const envs = try tp.run();
@@ -211,7 +224,7 @@ test "parseTokens skips an undefined interpolation but keeps valid keys" {
     tp.init();
     defer tp.deinit();
 
-    try tp.addToken("VALID", .normalized, "yes");
+    try tp.addToken("VALID", .literal, "yes");
     try tp.addToken("UNDEF", .interpolated, "NOPE");
 
     const envs = try tp.run();
@@ -234,7 +247,7 @@ test "parseTokens passes when a required env is present" {
     defer tp.deinit();
 
     try tp.args.required.append(tp.alloc(), "REQUIRED");
-    try tp.addToken("REQUIRED", .normalized, "ok");
+    try tp.addToken("REQUIRED", .literal, "ok");
 
     const envs = try tp.run();
     try expectEqualStrings("ok", envs.get("REQUIRED").?);
@@ -246,7 +259,24 @@ test "parseTokens errors when a required env is missing" {
     defer tp.deinit();
 
     try tp.args.required.append(tp.alloc(), "REQUIRED");
-    try tp.addToken("OTHER", .normalized, "x");
+    try tp.addToken("OTHER", .literal, "x");
 
     try expectError(error.MissingRequiredEnvs, tp.run());
+}
+
+test "parseTokens logs skipped comments in debug mode" {
+    var tp: TestParse = undefined;
+    tp.init();
+    defer tp.deinit();
+
+    tp.args.debug = true;
+    try tp.addToken("KEY", .literal, "value");
+    try tp.addToken(null, .commented, "# a comment");
+
+    _ = try tp.run();
+
+    const out = tp.output();
+    try expect(indexOf(u8, out, "Parsed a comment") != null);
+    try expect(indexOf(u8, out, "# a comment") != null);
+    try expect(indexOf(u8, out, "testp.env:1:1") != null);
 }
