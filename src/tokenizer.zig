@@ -120,7 +120,30 @@ pub const Tokenizer = struct {
                     self.resetByte();
                 },
                 ASSIGN_OP => {
-                    token.key = try self.alloc.dupe(u8, value.items);
+                    const trimmed = std.mem.trim(u8, value.items, " \t");
+                    if (trimmed.len == 0) {
+                        try self.logger.print(
+                            tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
+                            .{ self.file_name, self.line, self.byte },
+                        );
+                        try self.logger.writeAll("An value assignment ('=') was found without a key name.\n");
+
+                        try self.logger.writeAll("   ");
+                        var len: usize = 0;
+                        while (self.peek(len)) |c| : (len += 1) {
+                            if (c == LINE_DELIMITER) break;
+                            try self.logger.writeByte(c);
+                        }
+                        try self.logger.writeByte('\n');
+
+                        try self.logger.writeAll("   " ++ tty.green ++ "^");
+                        if (len > 1) for (0..len - 1) |_| try self.logger.writeByte('~');
+                        try self.logger.writeAll(" (missing key)\n" ++ tty.reset);
+
+                        return error.EmptyKey;
+                    }
+
+                    token.key = try self.alloc.dupe(u8, trimmed);
                     value.clearRetainingCapacity();
                     // skipByte '='
                     self.skipByte(null);
@@ -168,15 +191,31 @@ pub const Tokenizer = struct {
                             },
                             LINE_DELIMITER => {
                                 try self.logger.print(
-                                    tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold ++ tty.red ++ "{s}:{d}:{d}. " ++ tty.reset,
+                                    tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
                                     .{ self.file_name, self.line, self.byte },
                                 );
+                                try self.logger.print(
+                                    "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an unterminated value interpolation.\n",
+                                    .{token.key orelse "(none)"},
+                                );
 
-                                try self.logger.print("The " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " key has an unterminated value interpolation.\n", .{token.key orelse ("none")});
-                                try self.logger.print("     ${{{s}\n", .{value.items});
-                                try self.logger.writeAll(tty.green ++ "      ^");
+                                const key: []const u8 = token.key orelse "(none)";
+                                try self.logger.print("   {s}=", .{key});
+
+                                var prefix_len: usize = key.len + 1;
+                                for (token.values.items) |v| {
+                                    if (v.kind == .partialed or v.kind == .normalized) {
+                                        try self.logger.writeAll(v.value);
+                                        prefix_len += v.value.len;
+                                    }
+                                }
+                                try self.logger.print("${{{s}\n", .{value.items});
+
+                                try self.logger.writeAll("   " ++ tty.green);
+                                for (0..prefix_len + 1) |_| try self.logger.writeByte(' ');
+                                try self.logger.writeByte('^');
                                 for (0..value.items.len) |_| try self.logger.writeByte('~');
-                                try self.logger.writeAll(tty.reset ++ " (missing a closing brace '}')\n");
+                                try self.logger.writeAll(" (missing a closing brace '}')\n" ++ tty.reset);
                                 return error.MissingClosingBrace;
                             },
                             else => {
@@ -184,6 +223,34 @@ pub const Tokenizer = struct {
                                 self.skipByte(null);
                             },
                         }
+                    }
+
+                    if (value.items.len == 0) {
+                        try self.logger.print(
+                            tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
+                            .{ self.file_name, self.line, self.byte },
+                        );
+                        try self.logger.print(
+                            "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an invalid key interpolation.\n",
+                            .{token.key orelse "none"},
+                        );
+                        const key: []const u8 = token.key orelse "(none)";
+                        try self.logger.print("     {s}=", .{key});
+
+                        var prefix_len: usize = key.len + 1;
+                        for (token.values.items) |v| {
+                            if (v.kind == .partialed or v.kind == .normalized) {
+                                try self.logger.writeAll(v.value);
+                                prefix_len += v.value.len;
+                            }
+                        }
+                        try self.logger.writeAll("${}\n");
+
+                        try self.logger.writeAll("     " ++ tty.green);
+                        for (0..prefix_len + 1) |_| try self.logger.writeByte(' ');
+                        try self.logger.writeAll("^~ (unresolvable interpolation key)\n" ++ tty.reset);
+
+                        return error.EmptyInterpolationKey;
                     }
 
                     try self.commitToken(&token, ValueKind.interpolated, value.items);
@@ -255,7 +322,7 @@ pub const Tokenizer = struct {
         }
 
         if (self.tokens.items.len == 0) {
-            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Unable to generate any tokens for " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ ". Aborting.\n", .{self.file_name});
+            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Unable to run any tokens for " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ ". Aborting.\n", .{self.file_name});
             return error.NoTokensGenerated;
         }
     }
@@ -272,7 +339,7 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
 
         const contents = Io.Dir.cwd().readFileAlloc(io, tokenizer.file_name, tokenizer.alloc, .limited(1024 * 1024)) catch {
             try tokenizer.logger.print(
-                tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " within the current directory (file not found).\n",
+                tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " within the current directory (file not found).\n",
                 .{tokenizer.file_name},
             );
             return error.FileReadFailed;
@@ -280,10 +347,10 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
 
         if (contents.len == 0) {
             try tokenizer.logger.print(
-                tty.red ++ "error:" ++ tty.reset ++ " The " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " file doesn't contain any environment variables!\n",
+                tty.red ++ "error:" ++ tty.reset ++ " The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " file doesn't contain any environment variables!\n",
                 .{tokenizer.file_name},
             );
-            return error.EmptyFile;
+            return error.EmptyEnvFile;
         }
 
         tokenizer.file = contents;
@@ -292,12 +359,12 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
     }
 
     if (args.debug) {
-        try tokenizer.logger.print(tty.cyan ++ "\ninfo: " ++ tty.reset ++ "The following {d} token(s) have been generated...", .{tokenizer.tokens.items.len});
+        try tokenizer.logger.print(tty.cyan ++ "info: " ++ tty.reset ++ "The following {d} token(s) have been created...", .{tokenizer.tokens.items.len});
 
         for (tokenizer.tokens.items, 0..) |token, ti| {
             try tokenizer.logger.print(tty.cyan ++ "\n  token #{d}:" ++ tty.reset ++ "\n", .{ti + 1});
             try tokenizer.logger.print("    • file: {s}\n", .{token.file});
-            try tokenizer.logger.print("    • key: " ++ tty.bold ++ tty.green ++ "{s}" ++ tty.reset ++ "\n", .{token.key orelse "(none)"});
+            try tokenizer.logger.print("    • key: " ++ tty.bold_green ++ "{s}" ++ tty.reset ++ "\n", .{token.key orelse "(none)"});
             try tokenizer.logger.print("    • values ({d}):", .{token.values.items.len});
 
             for (token.values.items) |value| {
@@ -314,7 +381,6 @@ pub fn parseFiles(io: Io, alloc: std.mem.Allocator, args: *const arg.Arg, logger
         }
 
         try tokenizer.logger.writeAll("\n\n");
-        try tokenizer.logger.writeByte('\n');
     }
 
     return tokenizer.tokens;
@@ -333,7 +399,11 @@ const TestTokenizer = struct {
         self.arena.deinit();
     }
 
-    fn generate(self: *TestTokenizer, content: []const u8) !std.ArrayList(Token) {
+    fn output(self: *TestTokenizer) []const u8 {
+        return self.logger.buffered();
+    }
+
+    fn run(self: *TestTokenizer, content: []const u8) !std.ArrayList(Token) {
         self.logger = .fixed(&self.logger_buf);
 
         var tokenizer: Tokenizer = .{
@@ -356,7 +426,7 @@ test "parses a simple key/value" {
     var t = TestTokenizer.init();
     defer t.deinit();
 
-    const tokens = try t.generate("KEY=value\n");
+    const tokens = try t.run("KEY=value\n");
     try expectEqual(@as(usize, 1), tokens.items.len);
     try expectEqualStrings("KEY", tokens.items[0].key.?);
     try expectEqual(@as(usize, 1), tokens.items[0].values.items.len);
@@ -368,7 +438,7 @@ test "parses multiple line key/values" {
     var t = TestTokenizer.init();
     defer t.deinit();
 
-    const tokens = try t.generate("A=123\\\n456\n");
+    const tokens = try t.run("A=123\\\n456\n");
     try expectEqual(@as(usize, 1), tokens.items.len);
     try expectEqualStrings("A", tokens.items[0].key.?);
     try expectEqual(@as(usize, 2), tokens.items[0].values.items.len);
@@ -382,7 +452,7 @@ test "parses a comment" {
     var t = TestTokenizer.init();
     defer t.deinit();
 
-    const tokens = try t.generate("# a comment\n");
+    const tokens = try t.run("# a comment\n");
     try expectEqual(@as(usize, 1), tokens.items.len);
     try expect(tokens.items[0].key == null);
     try expectEqual(ValueKind.commented, tokens.items[0].values.items[0].kind);
@@ -393,7 +463,7 @@ test "parses an interpolated value" {
     var t = TestTokenizer.init();
     defer t.deinit();
 
-    const tokens = try t.generate("KEY=${OTHER}\n");
+    const tokens = try t.run("KEY=${OTHER}\n");
     try expectEqual(@as(usize, 1), tokens.items.len);
     try expectEqualStrings("KEY", tokens.items[0].key.?);
     try expectEqual(ValueKind.interpolated, tokens.items[0].values.items[0].kind);
@@ -404,12 +474,50 @@ test "errors on unterminated interpolation" {
     var t = TestTokenizer.init();
     defer t.deinit();
 
-    try expectError(error.MissingClosingBrace, t.generate("KEY=${OTHER\n"));
+    try expectError(error.MissingClosingBrace, t.run("KEY=${OTHER\n"));
 }
 
-test "errors when no tokens are generated" {
+test "errors when no tokens are rund" {
     var t = TestTokenizer.init();
     defer t.deinit();
 
-    try expectError(error.NoTokensGenerated, t.generate("novalue\n"));
+    try expectError(error.NoTokensGenerated, t.run("novalue\n"));
+}
+
+test "errors on empty key (=value)" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.EmptyKey, t.run("=abc123\n"));
+    const out = t.output();
+    try expect(std.mem.indexOf(u8, out, "was found without a key name") != null);
+    try expect(std.mem.indexOf(u8, out, "=abc123") != null);
+}
+
+test "errors on whitespace-only key" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.EmptyKey, t.run("   =value\n"));
+    try expect(std.mem.indexOf(u8, t.output(), "was found without a key name") != null);
+}
+
+test "errors on empty interpolation key (${})" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.EmptyInterpolationKey, t.run("KEY=abc${}123\n"));
+    const out = t.output();
+    try expect(std.mem.indexOf(u8, out, "key has an invalid key interpolation") != null);
+    try expect(std.mem.indexOf(u8, out, "KEY=abc${}") != null);
+}
+
+test "errors on unterminated interpolation (${ with no close)" {
+    var t = TestTokenizer.init();
+    defer t.deinit();
+
+    try expectError(error.MissingClosingBrace, t.run("KEY=abc${XY\n"));
+    const out = t.output();
+    try expect(std.mem.indexOf(u8, out, "key has an unterminated value interpolation") != null);
+    try expect(std.mem.indexOf(u8, out, "${XY") != null);
 }

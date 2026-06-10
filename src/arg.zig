@@ -30,19 +30,19 @@ pub const Arg = struct {
 
     pub fn validateFileName(self: *Arg, f: []const u8) !void {
         if (mem.indexOf(u8, f, ".env") == null) {
-            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " is not a valid env file (file must contain '.env' extension)\n", .{f});
+            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a valid env file (file must contain '.env' extension)\n", .{f});
             return error.InvalidFileExtension;
         }
 
         if (std.fs.path.isAbsolute(f)) {
-            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " must be relative to the current directory\n", .{f});
+            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " must be relative to the current directory\n", .{f});
             return error.InvalidFilePath;
         }
 
         var it = mem.tokenizeScalar(u8, f, '/');
         while (it.next()) |component| {
             if (mem.eql(u8, component, "..")) {
-                try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " may not escape the current directory\n", .{f});
+                try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " may not escape the current directory\n", .{f});
                 return error.InvalidFilePathEscape;
             }
         }
@@ -54,7 +54,7 @@ pub const Arg = struct {
         if (self.command) |cmd| {
             for (cmd, 0..) |part, idx| {
                 if (idx != 0) try self.logger.writeByte(' ');
-                try self.logger.print(tty.bold ++ tty.green ++ "{s}" ++ tty.reset, .{part});
+                try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{part});
             }
         } else {
             try self.logger.writeAll("(undefined)");
@@ -63,20 +63,20 @@ pub const Arg = struct {
         try self.logger.writeAll("\n   files: ");
         for (self.files.items, 0..) |f, i| {
             if (i != 0) try self.logger.writeAll(", ");
-            try self.logger.print(tty.bold ++ tty.green ++ "{s}" ++ tty.reset, .{f});
+            try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
         }
 
         try self.logger.writeAll("\n   required: ");
         if (self.required.items.len > 0) {
             for (self.required.items, 0..) |f, i| {
                 if (i != 0) try self.logger.writeAll(", ");
-                try self.logger.print(tty.bold ++ tty.green ++ "{s}" ++ tty.reset, .{f});
+                try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
             try self.logger.writeAll("(undefined)");
         }
 
-        try self.logger.writeByte('\n');
+        try self.logger.writeAll("\n\n");
     }
 };
 
@@ -139,7 +139,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
             .debug => args.debug = true,
             .files => {
                 const first = iter.nextValue() orelse {
-                    try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n");
+                    try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n");
                     return error.MissingValue;
                 };
 
@@ -154,7 +154,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
             },
             .required => {
                 const first = iter.nextValue() orelse {
-                    try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold ++ tty.red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n");
+                    try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n");
                     return error.MissingValue;
                 };
 
@@ -167,12 +167,12 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
 
     for (ignored_flags.items) |entry| {
         try args.logger.print(
-            tty.yellow ++ "warning: " ++ tty.reset ++ "An unrecognized flag " ++ tty.bold ++ tty.yellow ++ "{s}" ++ tty.reset,
+            tty.yellow ++ "warning: " ++ tty.reset ++ "An unrecognized flag " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
             .{entry.flag},
         );
 
         if (entry.params.items.len > 0) {
-            try args.logger.writeAll(" with parameters " ++ tty.bold ++ tty.yellow);
+            try args.logger.writeAll(" with parameters " ++ tty.bold_yellow);
 
             for (entry.params.items, 0..) |p, idx| {
                 if (idx != 0) try args.logger.writeByte(' ');

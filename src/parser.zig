@@ -25,8 +25,6 @@ pub fn parseTokens(
         defer value.deinit(alloc);
 
         for (tkn.values.items) |value_token| {
-            if (value_token.value.len == 0) continue;
-
             switch (value_token.kind) {
                 .interpolated => {
                     const interpolated_key = value_token.value;
@@ -37,8 +35,16 @@ pub fn parseTokens(
                         try value.appendSlice(alloc, v);
                     } else if (args.debug) {
                         try logger.print(
-                            tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold ++ tty.yellow ++ "{s}" ++ tty.reset ++ " key contains an undefined or invalid key variable " ++ tty.bold ++ tty.yellow ++ "{s}" ++ tty.reset ++ " ({s}:{d}:{d}); skipping.\n",
-                            .{ tkn.key.?, interpolated_key, tkn.file, value_token.line, value_token.byte },
+                            tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
+                            .{tkn.key.?},
+                        );
+                        try logger.print(
+                            " key contains an interpolated key variable " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
+                            .{interpolated_key},
+                        );
+                        try logger.print(
+                            " ({s}:{d}:{d}) that is not defined; skipping.\n",
+                            .{ tkn.file, value_token.line, value_token.byte },
                         );
                     }
                 },
@@ -52,18 +58,23 @@ pub fn parseTokens(
                 },
                 else => try value.appendSlice(alloc, value_token.value),
             }
+
+            if (value.items.len == 0) {
+                const key_str = if (tkn.key.?.len > 0) tkn.key.? else "(undefined)";
+                try logger.print(
+                    tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
+                    .{key_str},
+                );
+                try logger.writeAll(" key is an " ++ tty.bold_yellow ++ "undefined" ++ tty.reset);
+                try logger.print(
+                    " value ({s}:{d}:{d}); skipping.\n",
+                    .{ tkn.file, value_token.line, value_token.byte },
+                );
+            }
         }
 
-        if (tkn.key.?.len > 0 and value.items.len > 0) {
+        if (value.items.len > 0) {
             try envs.put(alloc, try alloc.dupe(u8, tkn.key.?), try alloc.dupe(u8, value.items));
-        } else {
-            const key_str = if (tkn.key.?.len > 0) tkn.key.? else "(undefined)";
-            const val_str = if (value.items.len > 0) value.items else "(undefined)";
-
-            try logger.print(
-                tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold ++ tty.yellow ++ "{s}" ++ tty.reset ++ " key contains a " ++ tty.bold ++ tty.yellow ++ "{s}" ++ tty.reset ++ " value ({s}); skipping.\n",
-                .{ key_str, val_str, tkn.file },
-            );
         }
     }
 
@@ -77,7 +88,7 @@ pub fn parseTokens(
     }
 
     if (args.debug) {
-        try logger.print("\n" ++ tty.cyan ++ "info:" ++ tty.reset ++ " Parsed {d} env(s)...\n", .{env_count});
+        try logger.print("\n" ++ tty.cyan ++ "info:" ++ tty.reset ++ " The following {d} env(s) were parsed...\n", .{env_count});
         var i: usize = 0;
 
         var it = envs.iterator();
@@ -100,7 +111,7 @@ pub fn parseTokens(
             try logger.writeAll(tty.red ++ "error" ++ tty.reset ++ ": The following ENVs were marked as required, but weren't found after parsing: ");
             for (missing.items, 0..) |key, i| {
                 if (i != 0) try logger.writeAll(", ");
-                try logger.print(tty.bold ++ tty.red ++ "{s}" ++ tty.reset, .{key});
+                try logger.print(tty.bold_red ++ "{s}" ++ tty.reset, .{key});
             }
             try logger.writeAll("\nThey're either missing values or weren't set in the provided .env files.\n");
             return error.MissingRequiredEnvs;
