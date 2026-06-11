@@ -2,6 +2,8 @@ const std = @import("std");
 const tty = @import("tty.zig");
 const arg = @import("arg.zig");
 const token = @import("tokenizer.zig");
+const fmt = @import("formatter.zig");
+
 const Io = std.Io;
 const Environ = std.process.Environ;
 const indexOf = std.mem.indexOf;
@@ -98,7 +100,9 @@ pub fn parseTokens(
 
         var it = envs.iterator();
         while (it.next()) |entry| {
-            try logger.print("  • {s}={s}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
+            try logger.writeAll("  • ");
+            try fmt.printPair(logger, args.format, entry.key_ptr.*, entry.value_ptr.*);
+            try logger.writeByte('\n');
         }
         try logger.writeByte('\n');
     }
@@ -229,6 +233,20 @@ test "parseTokens skips an undefined interpolation but keeps valid keys" {
     try expectEqual(@as(usize, 1), envs.count());
     try expectEqualStrings("yes", envs.get("VALID").?);
     try expect(envs.get("UNDEF") == null);
+}
+
+test "parseTokens debug listing follows the powershell format" {
+    var tp: TestParse = undefined;
+    tp.init();
+    defer tp.deinit();
+
+    tp.args.debug = true;
+    tp.args.format = .powershell;
+    try tp.addToken("KEY", .literal, "it's ok");
+
+    _ = try tp.run();
+
+    try expect(std.mem.indexOf(u8, tp.logger.buffered(), "$env:KEY = 'it''s ok'") != null);
 }
 
 test "parseTokens errors when nothing parses" {

@@ -1,8 +1,11 @@
 const std = @import("std");
 const tty = @import("tty.zig");
+const fmt = @import("formatter.zig");
+
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 const expectError = std.testing.expectError;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
@@ -12,17 +15,20 @@ const IgnoredFlag = struct {
 };
 
 pub const Arg = struct {
-    files: std.ArrayList([]const u8) = .empty,
-    command: ?[]const [:0]const u8 = null,
+    command: []const [:0]const u8 = &.{},
     debug: bool = false,
+    files: std.ArrayList([]const u8) = .empty,
+    format: fmt.Format = .default,
     required: std.ArrayList([]const u8) = .empty,
     logger: *Io.Writer,
 
-    const Flag = enum { files, debug, required };
+    const Flag = enum { files, format, debug, required };
 
     const flags = std.StaticStringMap(Flag).initComptime(.{
         .{ "-f", .files },
         .{ "--files", .files },
+        .{ "-F", .format },
+        .{ "--format", .format },
         .{ "-d", .debug },
         .{ "--debug", .debug },
         .{ "-r", .required },
@@ -52,8 +58,9 @@ pub const Arg = struct {
     pub fn print(self: *Arg) !void {
         try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... \n");
         try self.logger.writeAll("   command: ");
-        if (self.command) |cmd| {
-            for (cmd, 0..) |part, idx| {
+        try self.logger.writeAll("   command: ");
+        if (self.command.len > 0) {
+            for (self.command, 0..) |part, idx| {
                 if (idx != 0) try self.logger.writeByte(' ');
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{part});
             }
@@ -66,6 +73,8 @@ pub const Arg = struct {
             if (i != 0) try self.logger.writeAll(", ");
             try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
         }
+
+        try self.logger.print("\n   format: " ++ tty.bold_green ++ "{t}" ++ tty.reset, .{self.format});
 
         try self.logger.writeAll("\n   required: ");
         if (self.required.items.len > 0) {
@@ -148,6 +157,18 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
                     try args.files.append(alloc, file);
                 }
             },
+            .format => {
+                const param = iter.nextValue() orelse {
+                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires a parameter (nul or powershell)\n", .{token});
+                    return error.MissingValue;
+                };
+
+                args.format = std.meta.stringToEnum(fmt.Format, param) orelse {
+                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The format flag " ++ tty.bold_red ++ "{s}" ++ tty.reset, .{param});
+                    try args.logger.writeAll(" is not a valid format. Expected " ++ tty.bold_green ++ "nul" ++ tty.reset ++ " or " ++ tty.bold_green ++ "powershell" ++ tty.reset ++ ".\n");
+                    return error.InvalidFormat;
+                };
+            },
             .required => {
                 const first = iter.nextValue() orelse {
                     try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
@@ -183,7 +204,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         try args.files.append(alloc, ".env");
     }
 
-    if (args.command == null or args.command.?.len == 0) {
+    if (args.command.len == 0) {
         try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset ++ " (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ ")\n");
         return error.MissingCommand;
     }
@@ -238,6 +259,24 @@ test "parses and sets files flag" {
     try expectEqualStrings(".env", args.files.items[1]);
 }
 
+test "parses and sets format flag" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    const args = try t.run(&.{ "nvi", "--format", "powershell", "--", "echo", "hi" });
+
+    try expectEqual(fmt.Format.powershell, args.format);
+}
+
+test "defaults format to the platform default" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    const args = try t.run(&.{ "nvi", "--", "echo", "hi" });
+
+    try expectEqual(fmt.Format.default, args.format);
+}
+
 test "errors on file flag missing .env extension" {
     var t = TestArgs.init();
     defer t.deinit();
@@ -289,4 +328,20 @@ test "errors on missing file flag parameter" {
     try expectError(error.MissingValue, t.run(&.{ "nvi", "--files", "--", "echo", "hi" }));
     try expect(mem.indexOf(u8, t.output(), "--files") != null);
     try expect(mem.indexOf(u8, t.output(), "requires at least 1 parameter") != null);
+}
+
+test "errors on an invalid format parameter" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.InvalidFormat, t.run(&.{ "nvi", "--format", "json", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "is not a valid format") != null);
+}
+
+test "errors on missing format parameter" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.MissingValue, t.run(&.{ "nvi", "--format", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "--format") != null);
 }
