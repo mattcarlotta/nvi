@@ -14,7 +14,7 @@ pub fn main(init: std.process.Init) !u8 {
 
     const argv = init.minimal.args.toSlice(arena) catch {
         try logger.writeAll("failed to read arguments (out of memory)");
-        return 2;
+        return 1;
     };
 
     const args = nvi.args(arena, argv, logger) catch {
@@ -22,16 +22,18 @@ pub fn main(init: std.process.Init) !u8 {
     };
 
     const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
-        return 2;
+        return 1;
     };
 
     const envs = nvi.parser(init.environ_map, arena, &args, &tokens, logger) catch {
-        return 2;
+        return 1;
     };
 
     var out_buf: [4096]u8 = undefined;
     var out_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &out_buf);
-    try nvi.emitter(&out_writer.interface, &args, &envs);
+    nvi.emitter(&out_writer.interface, &args, &envs) catch {
+        return 1;
+    };
 
     return 0;
 }
