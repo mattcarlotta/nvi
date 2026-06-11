@@ -1,6 +1,6 @@
 # nvi
 
-A fast, cross-platform, exec-free `.env` parser and emitter.
+A fast, cross-platform, exec-free, RegEx-free `.env` parser and emitter.
 
 - only ever reads files and writes bytes
 - never spawns a process: on Unix, `xargs` and `env` do the execution; on Windows, PowerShell does
@@ -36,9 +36,9 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 
 ### Exit codes
 
-| `0` | Parsed and emitted successfully |
-| `1` | Operational failure: file unreadable, parse error, missing required keys, or output write failure (details on stderr) |
-| `2` | Usage error: invalid flags or missing `--` command (details on stderr) |
+- `0` - Parsed and emitted successfully
+- `1` - Operational failure: file unreadable, parse error, missing required keys, or output write failure (details on stderr)
+- `2` - Usage error: invalid flags or missing `--` command (details on stderr)
 
 The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
 
@@ -183,4 +183,5 @@ nvi --files .env --format nul --debug -- <command>
 Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you typed passed through verbatim.
 On the PowerShell path, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
-[License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE)
+### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
+### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)
