@@ -49,7 +49,7 @@ pub const Arg = struct {
         }
     }
 
-    pub fn printFlags(self: *Arg) !void {
+    pub fn print(self: *Arg) !void {
         try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... \n");
         try self.logger.writeAll("   command: ");
         if (self.command) |cmd| {
@@ -74,7 +74,7 @@ pub const Arg = struct {
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
-            try self.logger.writeAll("(undefined)");
+            try self.logger.writeAll("(none)");
         }
 
         try self.logger.writeAll("\n\n");
@@ -189,7 +189,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
     }
 
     if (args.debug) {
-        try args.printFlags();
+        try args.print();
     }
 
     return args;

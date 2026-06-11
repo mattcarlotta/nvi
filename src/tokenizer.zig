@@ -17,7 +17,6 @@ const OPEN_BRACE: u8 = '{';
 const CLOSE_BRACE: u8 = '}';
 const BACK_SLASH: u8 = '\\';
 
-// every character the main loop treats specially; used to scan plain runs in one pass
 const SPECIAL_CHARS = [_]u8{ NULL_CHAR, LINE_DELIMITER, ASSIGN_OP, HASH, DOLLAR_SIGN, BACK_SLASH };
 
 pub const ValueKind = enum { literal, commented, interpolated };
@@ -41,8 +40,8 @@ pub const Tokenizer = struct {
     i: usize = 0,
     byte: usize = 0,
     line: usize = 0,
-    file: ?[]const u8 = null,
-    file_name: []const u8 = undefined,
+    file: []const u8 = "",
+    file_name: []const u8 = "",
     tokens: std.ArrayList(Token) = .empty,
 
     fn nextLine(self: *Tokenizer) void {
@@ -63,15 +62,14 @@ pub const Tokenizer = struct {
     }
 
     fn peek(self: *Tokenizer, offset: usize) ?u8 {
-        const file = self.file orelse return null;
         const index = self.i + offset;
-        if (index >= file.len) return null;
-        return file[index];
+        if (index >= self.file.len) return null;
+        return self.file[index];
     }
 
-    fn scanUntil(self: *Tokenizer, value: *std.ArrayList(u8), chars: []const u8) !void {
-        const end = mem.indexOfAnyPos(u8, self.file.?, self.i, chars) orelse self.file.?.len;
-        try value.appendSlice(self.alloc, self.file.?[self.i..end]);
+    fn scanUntil(self: *Tokenizer, value: *std.ArrayList(u8), stops: []const u8) !void {
+        const end = mem.indexOfAnyPos(u8, self.file, self.i, stops) orelse self.file.len;
+        try value.appendSlice(self.alloc, self.file[self.i..end]);
         self.next_byte(end - self.i);
         self.i = end;
     }
@@ -111,7 +109,37 @@ pub const Tokenizer = struct {
         return prefix_len;
     }
 
-    fn parse(self: *Tokenizer) !void {
+    fn print(self: *Tokenizer) !void {
+        try self.logger.print(tty.cyan ++ "info: " ++ tty.reset ++ "The following {d} token(s) have been created...", .{self.tokens.items.len});
+
+        for (self.tokens.items, 0..) |token, ti| {
+            try self.logger.print(tty.cyan ++ "\n  token #{d}:" ++ tty.reset ++ "\n", .{ti + 1});
+            try self.logger.print("    • file: {s}\n", .{token.file});
+            try self.logger.print("    • key: " ++ tty.bold_green ++ "{s}" ++ tty.reset ++ "\n", .{token.key orelse "(none)"});
+            try self.logger.print("    • values ({d}):", .{token.values.items.len});
+
+            for (token.values.items) |value| {
+                try self.logger.print(
+                    "\n     • {s} value -> " ++ tty.green ++ "{s}" ++ tty.reset ++ " (line {d}, byte {d})",
+                    .{
+                        @tagName(value.kind),
+                        value.value,
+                        value.line,
+                        value.byte,
+                    },
+                );
+            }
+        }
+
+        try self.logger.writeAll("\n\n");
+    }
+
+    fn parse(self: *Tokenizer, file: []const u8, file_name: []const u8) !void {
+        self.file_name = file_name;
+        self.file = file;
+        self.i = 0;
+        self.byte = 1;
+        self.line = 1;
         var token: Token = .{ .file = self.file_name };
 
         var value: std.ArrayList(u8) = .empty;
@@ -143,8 +171,8 @@ pub const Tokenizer = struct {
                         try self.printErrorHeader();
                         try self.logger.writeAll("A value assignment ('=') was found without a key name.\n");
 
-                        const end = mem.indexOfScalarPos(u8, self.file.?, self.i, LINE_DELIMITER) orelse self.file.?.len;
-                        const rest = self.file.?[self.i..end];
+                        const end = mem.indexOfScalarPos(u8, self.file, self.i, LINE_DELIMITER) orelse self.file.len;
+                        const rest = self.file[self.i..end];
 
                         try self.logger.print("   {s}\n", .{rest});
 
@@ -216,7 +244,7 @@ pub const Tokenizer = struct {
                     if (value.items.len == 0) {
                         try self.printErrorHeader();
                         try self.logger.print(
-                            "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an invalid key interpolation.\n",
+                            "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an undefined key interpolation.\n",
                             .{token.key orelse "(none)"},
                         );
 
@@ -276,7 +304,8 @@ pub const Tokenizer = struct {
         }
 
         if (self.tokens.items.len == 0) {
-            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Unable to run any tokens for " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ ". Aborting.\n", .{self.file_name});
+            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Unable to generate tokens for " ++ tty.bold_red ++ "{s}" ++ tty.reset, .{self.file_name});
+            try self.logger.writeAll(". Ensure the .env file is valid by following the KEY=VALUE spec. Aborting.\n");
             return error.NoTokensGenerated;
         }
     }
@@ -286,60 +315,32 @@ pub fn parseFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *I
     var tokenizer: Tokenizer = .{ .alloc = alloc, .logger = logger };
 
     for (args.files.items) |env| {
-        tokenizer.i = 0;
-        tokenizer.byte = 1;
-        tokenizer.line = 1;
-        tokenizer.file_name = env;
-
-        const contents = Io.Dir.cwd().readFileAlloc(io, tokenizer.file_name, tokenizer.alloc, .limited(1024 * 1024)) catch {
+        const file = Io.Dir.cwd().readFileAlloc(io, env, alloc, .limited(1024 * 1024)) catch {
             try tokenizer.logger.print(
                 tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " within the current directory (file not found).\n",
-                .{tokenizer.file_name},
+                .{env},
             );
             return error.FileReadFailed;
         };
 
-        if (contents.len == 0) {
+        if (file.len == 0) {
             try tokenizer.logger.print(
-                tty.red ++ "error:" ++ tty.reset ++ " The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " file doesn't contain any environment variables!\n",
-                .{tokenizer.file_name},
+                tty.red ++ "error:" ++ tty.reset ++ " Unable to generate tokens. The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " file doesn't contain any KEY=VALUE variables!\n",
+                .{env},
             );
             return error.EmptyEnvFile;
         }
 
-        tokenizer.file = contents;
-
         try tokenizer.tokens.ensureTotalCapacity(
             alloc,
-            tokenizer.tokens.items.len + mem.count(u8, contents, "\n") + 1,
+            tokenizer.tokens.items.len + mem.count(u8, file, "\n") + 1,
         );
 
-        try tokenizer.parse();
+        try tokenizer.parse(file, env);
     }
 
     if (args.debug) {
-        try tokenizer.logger.print(tty.cyan ++ "info: " ++ tty.reset ++ "The following {d} token(s) have been created...", .{tokenizer.tokens.items.len});
-
-        for (tokenizer.tokens.items, 0..) |token, ti| {
-            try tokenizer.logger.print(tty.cyan ++ "\n  token #{d}:" ++ tty.reset ++ "\n", .{ti + 1});
-            try tokenizer.logger.print("    • file: {s}\n", .{token.file});
-            try tokenizer.logger.print("    • key: " ++ tty.bold_green ++ "{s}" ++ tty.reset ++ "\n", .{token.key orelse "(none)"});
-            try tokenizer.logger.print("    • values ({d}):", .{token.values.items.len});
-
-            for (token.values.items) |value| {
-                try tokenizer.logger.print(
-                    "\n     • {s} value -> " ++ tty.green ++ "{s}" ++ tty.reset ++ " (line {d}, byte {d})",
-                    .{
-                        @tagName(value.kind),
-                        value.value,
-                        value.line,
-                        value.byte,
-                    },
-                );
-            }
-        }
-
-        try tokenizer.logger.writeAll("\n\n");
+        try tokenizer.print();
     }
 
     return tokenizer.tokens;
@@ -362,20 +363,15 @@ const TestTokenizer = struct {
         return self.logger.buffered();
     }
 
-    fn run(self: *TestTokenizer, content: []const u8) !std.ArrayList(Token) {
+    fn run(self: *TestTokenizer, file: []const u8) !std.ArrayList(Token) {
         self.logger = .fixed(&self.logger_buf);
 
         var tokenizer: Tokenizer = .{
             .alloc = self.arena.allocator(),
             .logger = &self.logger,
-            .i = 0,
-            .byte = 1,
-            .line = 1,
-            .file_name = "test.env",
-            .file = content,
         };
 
-        try tokenizer.parse();
+        try tokenizer.parse(file, "test.env");
 
         return tokenizer.tokens;
     }
@@ -538,7 +534,7 @@ test "errors on empty interpolation key (${})" {
 
     try expectError(error.EmptyInterpolationKey, t.run("KEY=abc${}123\n"));
     const out = t.output();
-    try expect(mem.indexOf(u8, out, "key has an invalid key interpolation") != null);
+    try expect(mem.indexOf(u8, out, "key has an undefined key interpolation") != null);
     try expect(mem.indexOf(u8, out, "KEY=abc${}") != null);
 }
 

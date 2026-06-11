@@ -81,9 +81,7 @@ pub fn parseTokens(
             continue :token_loop;
         }
 
-        if (tkn.key != null) {
-            try envs.put(alloc, tkn.key.?, try value.toOwnedSlice(alloc));
-        }
+        try envs.put(alloc, tkn.key.?, try value.toOwnedSlice(alloc));
     }
 
     const env_count = envs.count();
