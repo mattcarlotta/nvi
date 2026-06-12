@@ -7,7 +7,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser and emitter.
 - handles `${KEY}` interpolations
 - supports multiline values via `\` delimiter
 - can validate required keys before execution
-- can scan source files for `*_ENV` references and validate them
+- can scan source files for `*_ENV` references and mark them as required
 - reads .env files and emits ENVs to stdout
 
 ```
@@ -61,7 +61,7 @@ The exit code of *your command* is reported by the downstream consumer (`xargs`)
 
 ```sh
 # report every *_ENV reference in .mjs and .ts files, then exit
-nvi scan mjs ts
+nvi scan mjs ts --debug
 
 # check mode: scanned keys must be defined before the command is emitted
 nvi scan mjs --files .env -- npm run dev | xargs -0 -r env
