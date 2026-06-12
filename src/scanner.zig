@@ -10,7 +10,6 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 
 const SUFFIX = "_ENV";
 
-// directories never descended into
 const blacklist = std.StaticStringMap(void).initComptime(.{
     .{ ".git", {} },
     .{ "node_modules", {} },
@@ -38,7 +37,6 @@ fn isKeyChar(c: u8) bool {
     return (c >= 'A' and c <= 'Z') or (c >= '0' and c <= '9') or c == '_';
 }
 
-// finds *_ENV identifiers in `contents`; pure with respect to the filesystem
 fn scanContents(
     alloc: mem.Allocator,
     contents: []const u8,
