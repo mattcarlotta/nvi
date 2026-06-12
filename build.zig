@@ -1,4 +1,5 @@
 const std = @import("std");
+const zon = @import("build.zig.zon");
 
 // Although this function looks imperative, it does not perform the build
 // directly and instead it mutates the build graph (`b`) that will be then
@@ -141,6 +142,10 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
+
+    const options = b.addOptions();
+    options.addOption([]const u8, "version", zon.version);
+    mod.addOptions("build_options", options);
 
     // Just like flags, top level steps are also listed in the `--help` menu.
     //

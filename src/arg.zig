@@ -1,6 +1,7 @@
 const std = @import("std");
 const tty = @import("tty.zig");
 const fmt = @import("formatter.zig");
+const version = @import("build_options").version;
 
 const Io = std.Io;
 const mem = std.mem;
@@ -22,18 +23,9 @@ pub const Arg = struct {
     required: std.ArrayList([]const u8) = .empty,
     logger: *Io.Writer,
 
-    const Flag = enum { files, format, debug, required };
+    const Flag = enum { debug, files, format, help, required, version };
 
-    const flags = std.StaticStringMap(Flag).initComptime(.{
-        .{ "-f", .files },
-        .{ "--files", .files },
-        .{ "-F", .format },
-        .{ "--format", .format },
-        .{ "-d", .debug },
-        .{ "--debug", .debug },
-        .{ "-r", .required },
-        .{ "--required", .required },
-    });
+    const flags = std.StaticStringMap(Flag).initComptime(.{ .{ "help", .help }, .{ "-f", .files }, .{ "--files", .files }, .{ "-F", .format }, .{ "--format", .format }, .{ "-d", .debug }, .{ "--debug", .debug }, .{ "-r", .required }, .{ "--required", .required }, .{ "version", .version } });
 
     pub fn validateFileName(self: *Arg, f: []const u8) !void {
         if (mem.indexOf(u8, f, ".env") == null) {
@@ -116,7 +108,7 @@ const ArgvIter = struct {
     }
 };
 
-pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.Writer) !Arg {
+pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, stdout: *Io.Writer, logger: *Io.Writer) !Arg {
     var args: Arg = .{ .logger = logger };
     var iter: ArgvIter = .{ .argv = argv };
 
@@ -141,6 +133,27 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         };
 
         switch (flag) {
+            .help => {
+                try stdout.writeAll(
+                    \\Usage: nvi [flags] -- <command>
+                    \\
+                    \\Flags:
+                    \\  -f, --files <paths...>     .env files to parse, in order and space delimited (default: .env)
+                    \\  -r, --required <keys...>   keys that must be present after parsing (default: undefined)
+                    \\  -F, --format <fmt>         output format: nul or powershell (default: nul)
+                    \\  -d, --debug                print parsing details to stderr (default: false)
+                    \\
+                    \\Options:
+                    \\  help                       print this help and exit
+                    \\  version                    print the binary version and exit
+                    \\
+                    \\Example:
+                    \\  nvi --files .env -- npm run dev | xargs -0 env
+                    \\
+                );
+                try stdout.writeByte('\n');
+                return error.Help;
+            },
             .debug => args.debug = true,
             .files => {
                 const first = iter.nextValue() orelse {
@@ -178,6 +191,10 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
                 try args.required.append(alloc, first);
 
                 while (iter.nextValue()) |file| try args.required.append(alloc, file);
+            },
+            .version => {
+                try stdout.print("v{s}\n", .{version});
+                return error.Version;
             },
         }
     }
@@ -220,6 +237,8 @@ const TestArgs = struct {
     arena: std.heap.ArenaAllocator,
     logger_buf: [1024]u8 = undefined,
     logger: Io.Writer = undefined,
+    stdout_buf: [1024]u8 = undefined,
+    stdout: Io.Writer = undefined,
 
     fn init() TestArgs {
         return .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
@@ -229,13 +248,18 @@ const TestArgs = struct {
         self.arena.deinit();
     }
 
+    fn stdoutOutput(self: *TestArgs) []const u8 {
+        return self.stdout.buffered();
+    }
+
     fn output(self: *TestArgs) []const u8 {
         return self.logger.buffered();
     }
 
     fn run(self: *TestArgs, argv: []const [:0]const u8) !Arg {
+        self.stdout = .fixed(&self.stdout_buf);
         self.logger = .fixed(&self.logger_buf);
-        return argParser(self.arena.allocator(), argv, &self.logger);
+        return argParser(self.arena.allocator(), argv, &self.stdout, &self.logger);
     }
 };
 
@@ -344,4 +368,20 @@ test "errors on missing format parameter" {
 
     try expectError(error.MissingValue, t.run(&.{ "nvi", "--format", "--", "echo", "hi" }));
     try expect(mem.indexOf(u8, t.output(), "--format") != null);
+}
+
+test "help prints usage to stdout and short-circuits" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.Help, t.run(&.{ "nvi", "help" }));
+    try expect(mem.indexOf(u8, t.stdoutOutput(), "Usage: nvi [flags] -- <command>") != null);
+}
+
+test "version prints to stdout and short-circuits" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.Version, t.run(&.{ "nvi", "version" }));
+    try expect(mem.indexOf(u8, t.stdoutOutput(), "v") != null);
 }

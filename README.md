@@ -34,6 +34,15 @@ All diagnostics (errors, warnings, `--debug` output) go to **stderr**, so they n
 
 Unrecognized flags (and their parameters) are warned about on stderr and ignored.
 
+## Options
+
+| Option | Description |
+| --- | --- |
+| `help` | Prints usage help. |
+| `version` | Prints version. |
+
+Unrecognized options are warned about on stderr and ignored.
+
 ### Exit codes
 
 - `0` - Parsed and emitted successfully
@@ -183,5 +192,5 @@ nvi --files .env --format nul --debug -- <command>
 Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you typed passed through verbatim.
 On the PowerShell path, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
-### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
+### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md
 ### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)

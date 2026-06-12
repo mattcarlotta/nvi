@@ -12,13 +12,19 @@ pub fn main(init: std.process.Init) !u8 {
     const logger = &log_writer.interface;
     defer logger.flush() catch {};
 
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &stdout_buf);
+    const stdout = &stdout_writer.interface;
+    defer stdout.flush() catch {};
+
     const argv = init.minimal.args.toSlice(arena) catch {
         try logger.writeAll("failed to read arguments (out of memory)");
         return 1;
     };
 
-    const args = nvi.args(arena, argv, logger) catch {
-        return 2;
+    const args = nvi.args(arena, argv, stdout, logger) catch |err| switch (err) {
+        error.Help, error.Version => return 0,
+        else => return 2,
     };
 
     const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
@@ -29,9 +35,7 @@ pub fn main(init: std.process.Init) !u8 {
         return 1;
     };
 
-    var out_buf: [4096]u8 = undefined;
-    var out_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &out_buf);
-    nvi.emitter(&out_writer.interface, &args, &envs) catch {
+    nvi.emitter(stdout, &args, &envs) catch {
         return 1;
     };
 
