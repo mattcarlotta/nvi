@@ -34,6 +34,14 @@ All diagnostics (errors, warnings, `--debug` output) go to **stderr**, so they n
 
 Unrecognized flags (and their parameters) are warned about on stderr and ignored.
 
+### Exit codes
+
+- `0` - Parsed and emitted successfully
+- `1` - Operational failure: file unreadable, parse error, missing required keys, or output write failure (details on stderr)
+- `2` - Usage error: invalid flags or missing `--` command (details on stderr)
+
+The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
+
 ## Options
 
 | Option | Description |
@@ -42,14 +50,6 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 | `version` | Prints version. |
 
 Unrecognized options are warned about on stderr and ignored.
-
-### Exit codes
-
-- `0` - Parsed and emitted successfully
-- `1` - Operational failure: file unreadable, parse error, missing required keys, or output write failure (details on stderr)
-- `2` - Usage error: invalid flags or missing `--` command (details on stderr)
-
-The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
 
 ## `.env` syntax
 
@@ -192,5 +192,5 @@ nvi --files .env --format nul --debug -- <command>
 Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you typed passed through verbatim.
 On the PowerShell path, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
-### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md
+### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
 ### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)
