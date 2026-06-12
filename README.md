@@ -2,13 +2,12 @@
 
 A fast, cross-platform, exec-free, RegEx-free `.env` parser and emitter.
 
-- only ever reads files and writes bytes
-- never spawns a process: on Unix, `xargs` and `env` do the execution; on Windows, PowerShell does
-- it parses one or more `.env` files
-- resolves `${KEY}` interpolations
-- supports multiline values via `\`
-- validates required keys before execution
-- emits ENVs to stdout in a format a downstream consumer can use to run your command
+- 0 dependencies and language agnostic
+- parses one or more `.env` files
+- handles `${KEY}` interpolations
+- supports multiline values via `\` delimiter
+- can validate required keys before execution
+- reads .env files and emits ENVs to stdout
 
 ```
 nvi --files .env -- <command> | xargs -0 env
@@ -18,9 +17,9 @@ nvi --files .env -- <command> | xargs -0 env
 
 1. `nvi` parses and interpolates the given `.env` file(s) into `KEY=value` pairs
 2. It writes each pair to stdout, followed by the command tokens that appear after `--`
-3. A downstream consumer (`xargs -0 env` on Unix, `Invoke-Expression` on Windows) sets the variables and runs the command
+3. A downstream consumer (like `xargs -0 env` on Unix or `Invoke-Expression` on Windows) then sets the variables and runs the command
 
-All diagnostics (errors, warnings, `--debug` output) go to **stderr**, so they never contaminate the stdout stream the consumer reads.
+All diagnostics (errors, warnings, `--debug` output) go to **stderr**.
 
 ## Flags
 
@@ -64,7 +63,7 @@ De1F2\
 g3HI${MESSAGE}== user@example.com
 ```
 
-Interpolated keys resolve first from the process environment, then from keys parsed earlier (including earlier `--files`).
+Interpolated keys resolve first from the process environment and then from keys parsed earlier (including earlier `--files`).
 Undefined interpolations and keys with empty values are skipped with a warning.
 
 ## Building
@@ -87,7 +86,7 @@ zig build --release=small --prefix ~/.local
 
 ### Cross-compiling
 
-Zig cross-compiles every target from any host, no extra toolchains.
+Zig cross-compiles every target from any host without extra toolchains.
 Please note that the Windows binary defaults to `--format powershell` automatically; this is baked in at compile time.
 
 ```sh
@@ -104,7 +103,7 @@ The `-musl` Linux targets produce fully static binaries that run on any distribu
 
 ### Unix (Linux, macOS)
 
-`nvi` emits NUL-delimited records: each `KEY=value` pair, then each command token. `xargs -0` splits the records and hands them to `env`, which sets the variables and runs the command.
+`nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
 
 ```sh
 nvi --files .env -- <command> | xargs -0 env
@@ -131,8 +130,13 @@ nvi --files .env -- sh -c 'echo "$MESSAGE"' | xargs -0 env
 # debug what was parsed (stderr only)
 nvi --files .env --debug -- echo
 ```
+For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
 
-NUL delimiting means values pass through byte-exact with no quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
+```sh
+nvix() { nvi "$@" | xargs -0 -r env; }
+```
+
+NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
 
 ### Windows (PowerShell)
 
