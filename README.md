@@ -77,10 +77,7 @@ zig build
 # run all of test suites
 zig build test --summary all
 
-# production build (default): zig-out/bin/nvi
-zig build --release=small
-
-# production build & install somewhere on your $PATH
+# build & install somewhere on your $PATH
 zig build --release=small --prefix ~/.local
 ```
 ### Verify installation
