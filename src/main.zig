@@ -17,9 +17,17 @@ pub fn main(init: std.process.Init) !u8 {
         return 2;
     };
 
-    const args = nvi.args(arena, argv, logger) catch {
+    var args = nvi.args(arena, argv, logger) catch {
         return 2;
     };
+
+    if (args.scan.items.len > 0) {
+        nvi.scanner(init.io, arena, &args, logger) catch {
+            return 1;
+        };
+
+        if (args.command.len == 0) return 0;
+    }
 
     const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
         return 2;

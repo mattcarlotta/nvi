@@ -1,14 +1,15 @@
 const std = @import("std");
 const tty = @import("tty.zig");
-const fmt = @import("formatter.zig");
-const version = @import("build_options").version;
+const fm = @import("formatter.zig");
 
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
-const expectError = std.testing.expectError;
 const expectEqualStrings = std.testing.expectEqualStrings;
+const expectError = std.testing.expectError;
+
+const version = @import("build_options").version;
 
 const IgnoredFlag = struct {
     flag: []const u8,
@@ -16,16 +17,32 @@ const IgnoredFlag = struct {
 };
 
 pub const Arg = struct {
+    files: std.ArrayList([]const u8) = .empty,
     command: []const [:0]const u8 = &.{},
     debug: bool = false,
-    files: std.ArrayList([]const u8) = .empty,
-    format: fmt.Format = .default,
+    format: fm.Format = .default,
     required: std.ArrayList([]const u8) = .empty,
+    ignored: std.ArrayList([]const u8) = .empty,
+    scan: std.ArrayList([]const u8) = .empty,
     logger: *Io.Writer,
 
-    const Flag = enum { debug, files, format, help, required, version };
+    const Flag = enum { files, debug, format, ignored, required, scan, help, version };
 
-    const flags = std.StaticStringMap(Flag).initComptime(.{ .{ "help", .help }, .{ "-f", .files }, .{ "--files", .files }, .{ "-F", .format }, .{ "--format", .format }, .{ "-d", .debug }, .{ "--debug", .debug }, .{ "-r", .required }, .{ "--required", .required }, .{ "version", .version } });
+    const flags = std.StaticStringMap(Flag).initComptime(.{
+        .{ "-f", .files },
+        .{ "--files", .files },
+        .{ "-d", .debug },
+        .{ "--debug", .debug },
+        .{ "-i", .ignored },
+        .{ "--ignored", .ignored },
+        .{ "-F", .format },
+        .{ "--format", .format },
+        .{ "-r", .required },
+        .{ "--required", .required },
+        .{ "scan", .scan },
+        .{ "help", .help },
+        .{ "version", .version },
+    });
 
     pub fn validateFileName(self: *Arg, f: []const u8) !void {
         if (mem.indexOf(u8, f, ".env") == null) {
@@ -47,9 +64,21 @@ pub const Arg = struct {
         }
     }
 
-    pub fn print(self: *Arg) !void {
+    fn parseExt(self: *Arg, e: []const u8) ![]const u8 {
+        var ext = e;
+        if (mem.startsWith(u8, ext, "*.")) ext = ext[2..];
+        if (mem.startsWith(u8, ext, ".")) ext = ext[1..];
+
+        if (!isAlphanumeric(ext)) {
+            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The scan parameter " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a file extension (e.g. mjs or *.mjs). If you passed an unquoted glob, your shell may have expanded it into filenames; pass the bare extension instead\n", .{e});
+            return error.InvalidExtension;
+        }
+
+        return ext;
+    }
+
+    pub fn printFlags(self: *Arg) !void {
         try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... \n");
-        try self.logger.writeAll("   command: ");
         try self.logger.writeAll("   command: ");
         if (self.command.len > 0) {
             for (self.command, 0..) |part, idx| {
@@ -66,8 +95,6 @@ pub const Arg = struct {
             try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
         }
 
-        try self.logger.print("\n   format: " ++ tty.bold_green ++ "{t}" ++ tty.reset, .{self.format});
-
         try self.logger.writeAll("\n   required: ");
         if (self.required.items.len > 0) {
             for (self.required.items, 0..) |f, i| {
@@ -75,12 +102,56 @@ pub const Arg = struct {
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
-            try self.logger.writeAll("(none)");
+            try self.logger.writeAll("(undefined)");
         }
+
+        try self.logger.writeAll("\n   scan: ");
+        if (self.scan.items.len > 0) {
+            for (self.scan.items, 0..) |f, i| {
+                if (i != 0) try self.logger.writeAll(", ");
+                try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
+            }
+        } else {
+            try self.logger.writeAll("(undefined)");
+        }
+
+        try self.logger.print("\n   format: " ++ tty.bold_green ++ "{t}" ++ tty.reset, .{self.format});
 
         try self.logger.writeAll("\n\n");
     }
 };
+
+fn isAlphanumeric(s: []const u8) bool {
+    if (s.len == 0) return false;
+    for (s) |c| {
+        if (!std.ascii.isAlphanumeric(c)) return false;
+    }
+    return true;
+}
+
+pub fn printHelp(out: *Io.Writer) !void {
+    try out.writeAll(
+        \\Usage: nvi [flags] -- <command>
+        \\       nvi scan [ext]
+        \\
+        \\Flags:
+        \\  -f, --files <paths>     parses .env files in order (default: .env)
+        \\  -i, --ignored <keys>    ignores ENV keys that scan should not add to the required ENV key list
+        \\  -r, --required <keys>   marks a list of ENV keys that must be present after parsing
+        \\  -F, --format <fmt>      outputs ENV format (options: nul|powershell)
+        \\  -d, --debug             prints internal debug details to stderr
+        \\
+        \\Commands:
+        \\  help                    prints this help and exits
+        \\  scan <ext>              recursively scans in the root directory for ENV keys used within *.<ext> files and marks them as required
+        \\  version                 prints the version and exits
+        \\
+        \\Example:
+        \\  nvi --files .env -- cargo run | xargs -0 env
+        \\  nvi scan *.ts --ignored NODE_ENV -- npm run dev | xargs -0 env
+        \\
+    );
+}
 
 const ArgvIter = struct {
     argv: []const [:0]const u8,
@@ -101,6 +172,13 @@ const ArgvIter = struct {
         const nxt = self.peek() orelse return null;
 
         return if (mem.startsWith(u8, nxt, "-")) null else self.next();
+    }
+
+    fn requireValue(self: *ArgvIter, args: *Arg, token: []const u8) ![:0]const u8 {
+        return self.nextValue() orelse {
+            try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
+            return error.MissingValue;
+        };
     }
 
     fn rest(self: *ArgvIter) []const [:0]const u8 {
@@ -125,6 +203,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         }
 
         const flag = Arg.flags.get(token) orelse {
+            // params are contiguous in argv, so slice instead of accumulating
             const start = iter.i;
             while (iter.nextValue()) |_| {}
             try ignored_flags.append(alloc, .{ .flag = token, .params = iter.argv[start..iter.i] });
@@ -133,66 +212,50 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         };
 
         switch (flag) {
+            .debug => args.debug = true,
             .help => {
-                try args.logger.writeAll(
-                    \\Usage: nvi [flags] -- <command>
-                    \\
-                    \\Flags:
-                    \\  -f, --files <paths...>     .env files to parse, in order and space delimited (default: .env)
-                    \\  -r, --required <keys...>   keys that must be present after parsing (default: undefined)
-                    \\  -F, --format <fmt>         output format: nul or powershell (default: nul)
-                    \\  -d, --debug                print parsing details to stderr (default: false)
-                    \\
-                    \\Options:
-                    \\  help                       print this help and exit
-                    \\  version                    print the binary version and exit
-                    \\
-                    \\Example:
-                    \\  nvi --files .env -- npm run dev | xargs -0 env
-                    \\
-                );
+                try printHelp(args.logger);
                 return error.Help;
             },
-            .debug => args.debug = true,
+            .ignored => {
+                var param = try iter.requireValue(&args, token);
+                while (true) {
+                    try args.ignored.append(alloc, param);
+                    param = iter.nextValue() orelse break;
+                }
+            },
             .files => {
-                const first = iter.nextValue() orelse {
-                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
-                    return error.MissingValue;
-                };
-
-                try args.validateFileName(first);
-
-                try args.files.append(alloc, first);
-
-                while (iter.nextValue()) |file| {
-                    try args.validateFileName(file);
-                    try args.files.append(alloc, file);
+                var param = try iter.requireValue(&args, token);
+                while (true) {
+                    try args.validateFileName(param);
+                    try args.files.append(alloc, param);
+                    param = iter.nextValue() orelse break;
                 }
             },
             .format => {
-                const param = iter.nextValue() orelse {
-                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires a parameter (nul or powershell)\n", .{token});
-                    return error.MissingValue;
-                };
+                const param = try iter.requireValue(&args, token);
 
-                args.format = std.meta.stringToEnum(fmt.Format, param) orelse {
-                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The format flag " ++ tty.bold_red ++ "{s}" ++ tty.reset, .{param});
-                    try args.logger.writeAll(" is not a valid format. Expected " ++ tty.bold_green ++ "nul" ++ tty.reset ++ " or " ++ tty.bold_green ++ "powershell" ++ tty.reset ++ ".\n");
+                args.format = std.meta.stringToEnum(fm.Format, param) orelse {
+                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The format flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a valid format (expected 'nul' or 'powershell')\n", .{param});
                     return error.InvalidFormat;
                 };
             },
             .required => {
-                const first = iter.nextValue() orelse {
-                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
-                    return error.MissingValue;
-                };
-
-                try args.required.append(alloc, first);
-
-                while (iter.nextValue()) |file| try args.required.append(alloc, file);
+                var param = try iter.requireValue(&args, token);
+                while (true) {
+                    try args.required.append(alloc, param);
+                    param = iter.nextValue() orelse break;
+                }
+            },
+            .scan => {
+                var param = try iter.requireValue(&args, token);
+                while (true) {
+                    try args.scan.append(alloc, try args.parseExt(param));
+                    param = iter.nextValue() orelse break;
+                }
             },
             .version => {
-                try args.logger.print("v{s}\n", .{version});
+                try args.logger.print("nvi {s}\n", .{version});
                 return error.Version;
             },
         }
@@ -220,13 +283,13 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         try args.files.append(alloc, ".env");
     }
 
-    if (args.command.len == 0) {
-        try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset ++ " (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ ")\n");
+    if (args.scan.items.len == 0 and args.command.len == 0) {
+        try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset ++ " (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ "). See nvi help\n");
         return error.MissingCommand;
     }
 
     if (args.debug) {
-        try args.print();
+        try args.printFlags();
     }
 
     return args;
@@ -234,7 +297,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
 
 const TestArgs = struct {
     arena: std.heap.ArenaAllocator,
-    logger_buf: [1024]u8 = undefined,
+    logger_buf: [2048]u8 = undefined,
     logger: Io.Writer = undefined,
 
     fn init() TestArgs {
@@ -275,24 +338,6 @@ test "parses and sets files flag" {
     try expectEqualStrings(".env", args.files.items[1]);
 }
 
-test "parses and sets format flag" {
-    var t = TestArgs.init();
-    defer t.deinit();
-
-    const args = try t.run(&.{ "nvi", "--format", "powershell", "--", "echo", "hi" });
-
-    try expectEqual(fmt.Format.powershell, args.format);
-}
-
-test "defaults format to the platform default" {
-    var t = TestArgs.init();
-    defer t.deinit();
-
-    const args = try t.run(&.{ "nvi", "--", "echo", "hi" });
-
-    try expectEqual(fmt.Format.default, args.format);
-}
-
 test "errors on file flag missing .env extension" {
     var t = TestArgs.init();
     defer t.deinit();
@@ -328,6 +373,23 @@ test "parses and sets required envs flag" {
     try expectEqualStrings("ENV_2", args.required.items[1]);
 }
 
+test "parses and sets format flag" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    const args = try t.run(&.{ "nvi", "--format", "powershell", "--", "echo", "hi" });
+
+    try expectEqual(fm.Format.powershell, args.format);
+}
+
+test "errors on an invalid format parameter" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.InvalidFormat, t.run(&.{ "nvi", "--format", "json", "--", "echo", "hi" }));
+    try expect(mem.indexOf(u8, t.output(), "is not a valid format") != null);
+}
+
 test "warns on unknown flag" {
     var t = TestArgs.init();
     defer t.deinit();
@@ -346,23 +408,7 @@ test "errors on missing file flag parameter" {
     try expect(mem.indexOf(u8, t.output(), "requires at least 1 parameter") != null);
 }
 
-test "errors on an invalid format parameter" {
-    var t = TestArgs.init();
-    defer t.deinit();
-
-    try expectError(error.InvalidFormat, t.run(&.{ "nvi", "--format", "json", "--", "echo", "hi" }));
-    try expect(mem.indexOf(u8, t.output(), "is not a valid format") != null);
-}
-
-test "errors on missing format parameter" {
-    var t = TestArgs.init();
-    defer t.deinit();
-
-    try expectError(error.MissingValue, t.run(&.{ "nvi", "--format", "--", "echo", "hi" }));
-    try expect(mem.indexOf(u8, t.output(), "--format") != null);
-}
-
-test "help prints usage to stdout and short-circuits" {
+test "help prints usage to stderr and short-circuits" {
     var t = TestArgs.init();
     defer t.deinit();
 
@@ -370,10 +416,64 @@ test "help prints usage to stdout and short-circuits" {
     try expect(mem.indexOf(u8, t.output(), "Usage: nvi [flags] -- <command>") != null);
 }
 
-test "version prints to stdout and short-circuits" {
+test "version prints to stderr and short-circuits" {
     var t = TestArgs.init();
     defer t.deinit();
 
     try expectError(error.Version, t.run(&.{ "nvi", "version" }));
-    try expect(mem.indexOf(u8, t.output(), "v") != null);
+    try expect(mem.indexOf(u8, t.output(), "nvi ") != null);
+}
+
+test "help after the delimiter is a command token" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    const args = try t.run(&.{ "nvi", "--", "help" });
+    try expectEqualStrings("help", args.command[0]);
+}
+
+test "parses and normalizes scan extensions" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    const args = try t.run(&.{ "nvi", "scan", "*.zig", ".ts", "mjs" });
+
+    try expectEqual(@as(usize, 3), args.scan.items.len);
+    try expectEqualStrings("zig", args.scan.items[0]);
+    try expectEqualStrings("ts", args.scan.items[1]);
+    try expectEqualStrings("mjs", args.scan.items[2]);
+}
+
+test "scan does not require a command" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    _ = try t.run(&.{ "nvi", "scan", "zig" });
+}
+
+test "errors on a shell-expanded filename as a scan extension" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.InvalidExtension, t.run(&.{ "nvi", "scan", "index.mjs" }));
+    try expect(mem.indexOf(u8, t.output(), "shell may have expanded it") != null);
+}
+
+test "errors on missing scan extension parameter" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    try expectError(error.MissingValue, t.run(&.{ "nvi", "scan" }));
+    try expect(mem.indexOf(u8, t.output(), "scan") != null);
+    try expect(mem.indexOf(u8, t.output(), "requires at least 1 parameter") != null);
+}
+
+test "parses and sets ignore flag" {
+    var t = TestArgs.init();
+    defer t.deinit();
+
+    const args = try t.run(&.{ "nvi", "scan", "mjs", "--ignored", "NODE_ENV", "--", "echo", "hi" });
+
+    try expectEqual(@as(usize, 1), args.ignored.items.len);
+    try expectEqualStrings("NODE_ENV", args.ignored.items[0]);
 }

@@ -123,7 +123,7 @@ pub fn parseTokens(
                 try logger.print(tty.bold_red ++ "{s}" ++ tty.reset, .{key});
             }
 
-            try logger.writeAll("\nThey're either missing values or weren't set in the provided .env files.\n");
+            try logger.writeAll(". They're either missing values or weren't set in the provided .env files.\n");
 
             return error.MissingRequiredEnvs;
         }

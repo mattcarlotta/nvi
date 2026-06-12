@@ -7,6 +7,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser and emitter.
 - handles `${KEY}` interpolations
 - supports multiline values via `\` delimiter
 - can validate required keys before execution
+- can scan source files for `*_ENV` references and validate them
 - reads .env files and emits ENVs to stdout
 
 ```
@@ -26,12 +27,25 @@ All diagnostics (errors, warnings, `--debug` output) go to **stderr**.
 | Flag | Alias | Parameters | Description |
 | --- | --- | --- | --- |
 | `--files` | `-f` | one or more paths | `.env` files to parse, in order. Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env`. Defaults to `.env`. |
+| `--ignored` | `-i` | one or more keys | Keys that `scan` should not add to the required set (e.g. `NODE_ENV`, which is typically injected at runtime by tooling rather than defined in a `.env` file). Only meaningful together with `scan`. |
 | `--required` | `-r` | one or more keys | Keys that must exist with non-empty values after parsing. `nvi` exits with an error listing any that are missing. |
 | `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
-| `--debug` | `-d` | none | Print parsed flags, tokens, and the resolved env listing to stderr. The env listing follows the active `--format`, so it previews the exact pair syntax that will hit stdout. |
-| `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required. |
+| `--debug` | `-d` | none | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. The env listing follows the active `--format`, so it previews the exact pair syntax that will hit stdout. |
+| `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required (except for standalone `scan`, `help`, and `version`). |
 
 Unrecognized flags (and their parameters) are warned about on stderr and ignored.
+
+## Commands
+
+| Command | Parameters | Description |
+| --- | --- | --- |
+| `scan` | one or more file extensions | Recursively scans `<ext>` files from the current directory for `*_ENV` key references and marks them as required.† |
+| `help` | | Prints usage help. |
+| `version` | | Prints version. |
+
+† Without a command and with `--debug`, it'll report what it finds and exits. With a `--` command, the found keys are added to the required set and must be defined before the ENVs and command are emitted.
+
+Unrecognized commands are warned about on stderr and ignored.
 
 ### Exit codes
 
@@ -41,14 +55,28 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 
 The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
 
-## Options
+## Scanning for ENV references
 
-| Option | Description |
-| --- | --- |
-| `help` | Prints usage help. |
-| `version` | Prints version. |
+`scan` walks the file tree from the current directory and collects identifiers that end in `_ENV` (e.g. `API_KEY_ENV`, `DATABASE_URL_ENV`) from files matching the given extensions.
 
-Unrecognized options are warned about on stderr and ignored.
+```sh
+# report every *_ENV reference in .mjs and .ts files, then exit
+nvi scan mjs ts
+
+# check mode: scanned keys must be defined before the command is emitted
+nvi scan mjs --files .env -- npm run dev | xargs -0 -r env
+
+# exclude runtime-injected keys from the requirement
+nvi scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
+```
+
+Notes:
+
+- Extensions may be written as `mjs`, `.mjs`, or `*.mjs`. **Quote glob spellings** (`'*.mjs'`) or pass bare extensions; unquoted globs are expanded into filenames by your shell before `nvi` runs.
+- Matches are UPPERCASE_SNAKE identifiers ending in `_ENV`. Partial matches inside larger identifiers (`THING_ENVIRONMENT`, `my_API_ENV`) are skipped.
+- These directories are never descended into: `.git`, `node_modules`, `zig-out`, `.zig-cache`, `zig-cache`, `dist`, `build`, `vendor`, `target`, `coverage`. Symlinked directories are not followed.
+- The report goes to stderr; `--debug` adds a per-file listing of every reference with its line and byte position.
+- In scan mode, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
 
 ## `.env` syntax
 
@@ -136,6 +164,9 @@ nvi --files .env .env.local -- npm start | xargs -0 env
 
 # require keys to be present
 nvi --files .env --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
+
+# require every *_ENV key referenced in source files to be present
+nvi scan mjs --ignored NODE_ENV --files .env -- npm start | xargs -0 -r env
 
 # print a single resolved variable
 nvi --files .env -- printenv MESSAGE | xargs -0 env
