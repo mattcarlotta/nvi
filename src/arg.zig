@@ -203,7 +203,6 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         }
 
         const flag = Arg.flags.get(token) orelse {
-            // params are contiguous in argv, so slice instead of accumulating
             const start = iter.i;
             while (iter.nextValue()) |_| {}
             try ignored_flags.append(alloc, .{ .flag = token, .params = iter.argv[start..iter.i] });

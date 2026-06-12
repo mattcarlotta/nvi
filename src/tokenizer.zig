@@ -204,6 +204,7 @@ pub const Tokenizer = struct {
                     value.clearRetainingCapacity();
                 },
                 DOLLAR_SIGN => {
+                    // dollar sign inside a literal
                     if ((self.peek(1) orelse 0) != OPEN_BRACE) {
                         try value.append(self.alloc, current_char);
                         self.skipByte(1);
