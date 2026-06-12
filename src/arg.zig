@@ -108,7 +108,7 @@ const ArgvIter = struct {
     }
 };
 
-pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, stdout: *Io.Writer, logger: *Io.Writer) !Arg {
+pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.Writer) !Arg {
     var args: Arg = .{ .logger = logger };
     var iter: ArgvIter = .{ .argv = argv };
 
@@ -134,7 +134,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, stdout: *Io.W
 
         switch (flag) {
             .help => {
-                try stdout.writeAll(
+                try args.logger.writeAll(
                     \\Usage: nvi [flags] -- <command>
                     \\
                     \\Flags:
@@ -151,7 +151,6 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, stdout: *Io.W
                     \\  nvi --files .env -- npm run dev | xargs -0 env
                     \\
                 );
-                try stdout.writeByte('\n');
                 return error.Help;
             },
             .debug => args.debug = true,
@@ -193,7 +192,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, stdout: *Io.W
                 while (iter.nextValue()) |file| try args.required.append(alloc, file);
             },
             .version => {
-                try stdout.print("v{s}\n", .{version});
+                try args.logger.print("v{s}\n", .{version});
                 return error.Version;
             },
         }
@@ -237,8 +236,6 @@ const TestArgs = struct {
     arena: std.heap.ArenaAllocator,
     logger_buf: [1024]u8 = undefined,
     logger: Io.Writer = undefined,
-    stdout_buf: [1024]u8 = undefined,
-    stdout: Io.Writer = undefined,
 
     fn init() TestArgs {
         return .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
@@ -248,18 +245,13 @@ const TestArgs = struct {
         self.arena.deinit();
     }
 
-    fn stdoutOutput(self: *TestArgs) []const u8 {
-        return self.stdout.buffered();
-    }
-
     fn output(self: *TestArgs) []const u8 {
         return self.logger.buffered();
     }
 
     fn run(self: *TestArgs, argv: []const [:0]const u8) !Arg {
-        self.stdout = .fixed(&self.stdout_buf);
         self.logger = .fixed(&self.logger_buf);
-        return argParser(self.arena.allocator(), argv, &self.stdout, &self.logger);
+        return argParser(self.arena.allocator(), argv, &self.logger);
     }
 };
 
@@ -375,7 +367,7 @@ test "help prints usage to stdout and short-circuits" {
     defer t.deinit();
 
     try expectError(error.Help, t.run(&.{ "nvi", "help" }));
-    try expect(mem.indexOf(u8, t.stdoutOutput(), "Usage: nvi [flags] -- <command>") != null);
+    try expect(mem.indexOf(u8, t.output(), "Usage: nvi [flags] -- <command>") != null);
 }
 
 test "version prints to stdout and short-circuits" {
@@ -383,5 +375,5 @@ test "version prints to stdout and short-circuits" {
     defer t.deinit();
 
     try expectError(error.Version, t.run(&.{ "nvi", "version" }));
-    try expect(mem.indexOf(u8, t.stdoutOutput(), "v") != null);
+    try expect(mem.indexOf(u8, t.output(), "v") != null);
 }

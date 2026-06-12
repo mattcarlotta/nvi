@@ -80,8 +80,30 @@ zig build test --summary all
 # production build (default): zig-out/bin/nvi
 zig build --release=small
 
-# production build & install somewhere on your PATH
+# production build & install somewhere on your $PATH
 zig build --release=small --prefix ~/.local
+```
+### Verify installation
+
+Run:
+```sh
+which nvi
+# ~/.local/bin/nvi
+
+```
+If not found, then `~/.local/bin` probably isn't included in your `$PATH`:
+```sh
+echo $PATH
+```
+
+You'll need to append the `$HOME/.local/bin` path to your shell profile's `$PATH` (eg. `~/.bashrc` or `~/.zshrc`):
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then source the profile path:
+```sh
+source <profile_path>
 ```
 
 ### Cross-compiling
