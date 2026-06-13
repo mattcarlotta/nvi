@@ -43,7 +43,7 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 | `help` | | Prints usage help. |
 | `version` | | Prints version. |
 
-† Without a command and with `--debug`, it'll report what it finds and exits. With a `--` command, the found keys are added to the required ENV set and must be defined before the ENVs and command are emitted.
+† Without a `--` command, it'll report what it finds and exits. With a `--` command, the found ENV keys are added to the required ENV set and must be defined before the ENVs and command are emitted.
 
 Unrecognized commands are warned about on stderr and ignored.
 
@@ -61,7 +61,7 @@ The exit code of *your command* is reported by the downstream consumer (`xargs`)
 
 ```sh
 # report every *_ENV reference in .mjs and .ts files, then exit
-nvi scan mjs ts --debug
+nvi scan mjs ts
 
 # check mode: scanned keys must be defined before the command is emitted
 nvi scan mjs --files .env -- npm run dev | xargs -0 -r env

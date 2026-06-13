@@ -13,25 +13,11 @@ pub const emitter = em.emitter;
 pub const scanner = sc.scanFiles;
 
 test {
-    _ = arg;
-}
-
-test {
-    _ = tk;
-}
-
-test {
-    _ = pr;
-}
-
-test {
-    _ = em;
-}
-
-test {
-    _ = fmt;
-}
-
-test {
-    _ = sc;
+    _ = @import("arg_test.zig");
+    _ = @import("emitter_test.zig");
+    _ = @import("formatter_test.zig");
+    _ = @import("parser_test.zig");
+    _ = @import("scanner_test.zig");
+    _ = @import("tokenizer_test.zig");
+    _ = @import("utils_test.zig");
 }
