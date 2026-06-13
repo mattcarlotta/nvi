@@ -27,15 +27,17 @@ pub fn printHelp(out: *Io.Writer) !void {
         \\
         \\Flags:
         \\  -f, --files <paths>     parses .env files in order (default: .env)
-        \\  -i, --ignored <keys>    ignores ENV keys that scan should not add to the required ENV key list
-        \\  -r, --required <keys>   marks a list of ENV keys that must be present after parsing
+        \\  -i, --ignored <keys>    ignores ENV keys that a scan may add to the required ENV key list
+        \\  -r, --required <keys>   marks a list of ENV keys that must be present
         \\  -F, --format <fmt>      outputs ENV format (options: nul|powershell)
         \\  -d, --debug             prints internal debug details to stderr
         \\
         \\Commands:
         \\  help                    prints this help and exits
-        \\  scan <ext>              recursively scans in the root directory for ENV keys used within *.<ext> files and marks them as required
+        \\  scan <ext>              recursively scans in the root directory for ENV keys used within *.<ext> files and marks them as required †
         \\  version                 prints the version and exits
+        \\
+        \\ † without a command, scan reports what it finds and exits; with a command, the found ENV keys are added to the required ENV set
         \\
         \\Example:
         \\  nvi --files .env -- cargo run | xargs -0 env

@@ -2,7 +2,6 @@ const std = @import("std");
 const nvi = @import("nvi");
 
 const Io = std.Io;
-const exit = std.process.exit;
 
 pub fn main(init: std.process.Init) !u8 {
     const arena = init.arena.allocator();

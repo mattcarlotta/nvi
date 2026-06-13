@@ -1,6 +1,6 @@
 const std = @import("std");
 const arg = @import("arg.zig");
-const fm = @import("formatter.zig");
+const fmt = @import("formatter.zig");
 
 const Io = std.Io;
 const mem = std.mem;
@@ -93,7 +93,7 @@ test "parses and sets format flag" {
 
     const args = try t.run(&.{ "nvi", "--format", "powershell", "--", "echo", "hi" });
 
-    try expectEqual(fm.Format.powershell, args.format);
+    try expectEqual(fmt.Format.powershell, args.format);
 }
 
 test "errors on an invalid format parameter" {

@@ -1,7 +1,7 @@
 const std = @import("std");
 const arg = @import("arg.zig");
-const token = @import("tokenizer.zig");
-const p = @import("parser.zig");
+const tk = @import("tokenizer.zig");
+const pr = @import("parser.zig");
 
 const Io = std.Io;
 const Environ = std.process.Environ;
@@ -17,7 +17,7 @@ const TestParse = struct {
     logger: Io.Writer = undefined,
     environ: Environ.Map = undefined,
     args: arg.Arg = undefined,
-    tokens: std.ArrayList(token.Token) = .empty,
+    tokens: std.ArrayList(tk.Token) = .empty,
 
     fn init(self: *TestParse) void {
         self.* = .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
@@ -35,8 +35,8 @@ const TestParse = struct {
         return self.arena.allocator();
     }
 
-    fn addToken(self: *TestParse, key: ?[]const u8, kind: token.ValueKind, value: []const u8) !void {
-        var tok: token.Token = .{ .key = key, .file = "testp.env" };
+    fn addToken(self: *TestParse, key: ?[]const u8, kind: tk.ValueKind, value: []const u8) !void {
+        var tok: tk.Token = .{ .key = key, .file = "testp.env" };
         try tok.values.append(self.alloc(), .{ .kind = kind, .value = value, .line = 1, .byte = 1 });
         try self.tokens.append(self.alloc(), tok);
     }
@@ -46,7 +46,7 @@ const TestParse = struct {
     }
 
     fn run(self: *TestParse) !std.StringArrayHashMapUnmanaged([]const u8) {
-        return p.parseTokens(&self.environ, self.alloc(), &self.args, &self.tokens, &self.logger);
+        return pr.parseTokens(&self.environ, self.alloc(), &self.args, &self.tokens, &self.logger);
     }
 };
 
@@ -67,7 +67,7 @@ test "parseTokens concatenates multiple value tokens into one value" {
     tp.init();
     defer tp.deinit();
 
-    var tok: token.Token = .{ .key = "MULTI", .file = "testp.env" };
+    var tok: tk.Token = .{ .key = "MULTI", .file = "testp.env" };
     try tok.values.append(tp.alloc(), .{ .kind = .literal, .value = "12", .line = 1, .byte = 1 });
     try tok.values.append(tp.alloc(), .{ .kind = .literal, .value = "34", .line = 2, .byte = 1 });
     try tp.tokens.append(tp.alloc(), tok);

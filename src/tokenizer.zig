@@ -309,7 +309,7 @@ pub const Tokenizer = struct {
     }
 };
 
-pub fn parseFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
+pub fn tokenFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
     var tokenizer: Tokenizer = .{ .alloc = alloc, .logger = logger };
 
     for (args.files.items) |env| {

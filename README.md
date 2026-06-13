@@ -39,7 +39,7 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 
 | Command | Parameters | Description |
 | --- | --- | --- |
-| `scan` | one or more file extensions | Recursively scans `<ext>` files from the current directory for `*_ENV` key references and marks them as required.† |
+| `scan` | one or more file extensions | Recursively scans `*.<ext>` files from the current directory for `*_ENV` key references and marks them as required.† |
 | `help` | | Prints usage help. |
 | `version` | | Prints version. |
 
@@ -178,7 +178,7 @@ nvi --files .env -- env | xargs -0 env
 nvi --files .env -- sh -c 'echo "$MESSAGE"' | xargs -0 env
 
 # debug what was parsed (stderr only)
-nvi --files .env --debug -- echo
+nvi --files .env --debug -- echo $?
 ```
 For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
 

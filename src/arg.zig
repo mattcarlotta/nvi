@@ -1,6 +1,6 @@
 const std = @import("std");
 const tty = @import("tty.zig");
-const fm = @import("formatter.zig");
+const fmt = @import("formatter.zig");
 const utils = @import("utils.zig");
 const version = @import("build_options").version;
 
@@ -18,7 +18,7 @@ pub const Arg = struct {
     files: std.ArrayList([]const u8) = .empty,
     command: []const [:0]const u8 = &.{},
     debug: bool = false,
-    format: fm.Format = .default,
+    format: fmt.Format = .default,
     required: std.ArrayList([]const u8) = .empty,
     ignored: std.ArrayList([]const u8) = .empty,
     scan: std.ArrayList([]const u8) = .empty,
@@ -191,7 +191,7 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
             .format => {
                 const param = try args.requireValue(token);
 
-                args.format = std.meta.stringToEnum(fm.Format, param) orelse {
+                args.format = std.meta.stringToEnum(fmt.Format, param) orelse {
                     try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The format flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a valid format (expected 'nul' or 'powershell')\n", .{param});
                     return error.InvalidFormat;
                 };

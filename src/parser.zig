@@ -1,7 +1,7 @@
 const std = @import("std");
 const tty = @import("tty.zig");
 const arg = @import("arg.zig");
-const token = @import("tokenizer.zig");
+const tk = @import("tokenizer.zig");
 const fmt = @import("formatter.zig");
 
 const Io = std.Io;
@@ -11,7 +11,7 @@ pub fn parseTokens(
     environ: *Environ.Map,
     alloc: std.mem.Allocator,
     args: *const arg.Arg,
-    tokens: *const std.ArrayList(token.Token),
+    tokens: *const std.ArrayList(tk.Token),
     logger: *Io.Writer,
 ) !std.StringArrayHashMapUnmanaged([]const u8) {
     var envs: std.StringArrayHashMapUnmanaged([]const u8) = .empty;

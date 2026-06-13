@@ -3,6 +3,7 @@ const arg = @import("arg.zig");
 const sc = @import("scanner.zig");
 
 const Io = std.Io;
+const mem = std.mem;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
@@ -20,7 +21,13 @@ const TestScan = struct {
     }
 
     fn run(self: *TestScan, contents: []const u8) ![]const sc.Match {
-        try sc.scanContents(self.arena.allocator(), contents, &self.matches);
+        var scanner: sc.Scanner = .{
+            .io = undefined,
+            .alloc = self.arena.allocator(),
+            .args = undefined,
+            .logger = undefined,
+        };
+        try scanner.scanContents(contents, &self.matches);
         return self.matches.items;
     }
 };
@@ -58,11 +65,23 @@ test "scanContents skips mid-identifier, bare, and mixed-case-tail matches" {
     try expectEqualStrings("OK_ENV", matches[0].key);
 }
 
+fn extMatch(alloc: mem.Allocator, name: []const u8, exts: []const []const u8) !bool {
+    var args: arg.Arg = .{ .argv = &.{}, .command = &.{}, .logger = undefined };
+    for (exts) |e| try args.scan.append(alloc, e);
+
+    var scanner: sc.Scanner = .{ .io = undefined, .alloc = alloc, .args = &args, .logger = undefined };
+    return scanner.matchesExt(name);
+}
+
 test "matchesExt compares the file extension" {
-    try expect(sc.matchesExt("main.zig", &.{"zig"}));
-    try expect(sc.matchesExt("a.test.ts", &.{ "zig", "ts" }));
-    try expect(!sc.matchesExt("main.zig", &.{"ts"}));
-    try expect(!sc.matchesExt("Makefile", &.{"zig"}));
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    try expect(try extMatch(alloc, "main.zig", &.{"zig"}));
+    try expect(try extMatch(alloc, "a.test.ts", &.{ "zig", "ts" }));
+    try expect(!try extMatch(alloc, "main.zig", &.{"ts"}));
+    try expect(!try extMatch(alloc, "Makefile", &.{"zig"}));
 }
 
 test "mergeRequired skips ignored keys" {
@@ -76,8 +95,8 @@ test "mergeRequired skips ignored keys" {
     try args.ignored.append(alloc, "NODE_ENV");
 
     var scanner: sc.Scanner = .{ .io = undefined, .alloc = alloc, .args = &args, .logger = &logger };
-    try scanner.counts.put(alloc, "NODE_ENV", 3);
-    try scanner.counts.put(alloc, "API_KEY_ENV", 1);
+    try scanner.envs.put(alloc, "NODE_ENV", 3);
+    try scanner.envs.put(alloc, "API_KEY_ENV", 1);
 
     try scanner.mergeRequired();
 
