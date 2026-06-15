@@ -8,14 +8,14 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 const js = [_]ac.Accessor{
-    .{ .prefix = "process.env.", .extract = .ident },
-    .{ .prefix = "process.env[", .extract = .quoted },
+    .{ .prefix = "process.env.", .pattern = .ident },
+    .{ .prefix = "process.env[", .pattern = .quoted },
 };
 const py = [_]ac.Accessor{
-    .{ .prefix = "os.getenv(", .extract = .quoted },
+    .{ .prefix = "os.getenv(", .pattern = .quoted },
 };
 const perl = [_]ac.Accessor{
-    .{ .prefix = "$ENV{", .extract = .braced },
+    .{ .prefix = "$ENV{", .pattern = .braced },
 };
 
 const TestScan = struct {
@@ -42,7 +42,7 @@ const TestScan = struct {
     }
 };
 
-test "scanContents extracts an ident key with location" {
+test "scanContents.patterns an ident key with location" {
     var t = TestScan.init();
     defer t.deinit();
 
@@ -53,7 +53,7 @@ test "scanContents extracts an ident key with location" {
     try expectEqual(@as(usize, 23), matches[0].byte);
 }
 
-test "scanContents extracts a bracket-quoted key with location" {
+test "scanContents.patterns a bracket-quoted key with location" {
     var t = TestScan.init();
     defer t.deinit();
 
@@ -106,11 +106,11 @@ test "scanContents strips optional quotes inside a braced key" {
     try expectEqualStrings("BAR", matches[1].key);
 }
 
-test "scanContents works with a real table from accessors.forExt" {
+test "scanContents works with a real table from accessors.extensions" {
     var t = TestScan.init();
     defer t.deinit();
 
-    const accessors = ac.forExt("ts").?;
+    const accessors = ac.extensions.get("ts").?;
     const matches = try t.run("const u = process.env.DATABASE_URL;\n", accessors);
     try expectEqual(@as(usize, 1), matches.len);
     try expectEqualStrings("DATABASE_URL", matches[0].key);

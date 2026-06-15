@@ -179,7 +179,7 @@ Supported language extensions:
 - C (`c`)
 - Clojure (`clj`, `cljs`, `cljc`)
 - Crystal (`cr`)
-- C++ ( `cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`)
+- C++ (`cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`)
 - C# (`cs`)
 - D (`d`)
 - Dart (`dart`)
@@ -232,7 +232,7 @@ Notes:
 - Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
 - Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
 - Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
-- The report goes to stderr; `--debug` adds a per-file listing of every reference with its line and byte position.
+- The report goes to stderr;
 - When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
 
 > [!TIP]

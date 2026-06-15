@@ -1,108 +1,146 @@
 const std = @import("std");
 const ac = @import("accessors.zig");
+const sc = @import("scanner.zig");
 
-const mem = std.mem;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
 
-fn shapeOf(table: []const ac.Accessor, prefix: []const u8) ?ac.Extract {
-    for (table) |a| {
-        if (mem.eql(u8, a.prefix, prefix)) return a.extract;
-    }
-    return null;
-}
+fn expectKeys(ext: []const u8, src: []const u8, expected: []const []const u8) !void {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
 
-test "forExt returns null for unknown or non-source extensions" {
-    try expect(ac.forExt("xyz") == null);
-    try expect(ac.forExt("txt") == null);
-    try expect(ac.forExt("md") == null);
-    try expect(ac.forExt("json") == null);
-    try expect(ac.forExt("") == null);
-}
-
-test "forExt resolves the common languages" {
-    const known = [_][]const u8{
-        "ts",  "js",   "py",  "go",  "rs",   "rb",
-        "zig", "java", "kt",  "cs",  "php",  "swift",
-        "lua", "rs",   "ex",  "erl", "hs",   "ml",
-        "c",   "cpp",  "ps1", "pl",  "tcl",  "nim",
-        "d",   "cr",   "jl",  "r",   "dart",
+    const table = ac.extensions.get(ext) orelse {
+        try expect(expected.len == 0);
+        return;
     };
-    for (known) |ext| {
-        try expect(ac.forExt(ext) != null);
+
+    var scanner: sc.Scanner = .{
+        .io = undefined,
+        .alloc = alloc,
+        .args = undefined,
+        .logger = undefined,
+    };
+    var matches: std.ArrayList(sc.Scanner.Match) = .empty;
+    try scanner.scanContents(src, table, &matches);
+
+    try expectEqual(expected.len, matches.items.len);
+    for (expected, matches.items) |want, got| {
+        try expectEqualStrings(want, got.key);
     }
 }
 
-test "shell extensions are opt-in and not mapped by default" {
-    try expect(ac.forExt("sh") == null);
-    try expect(ac.forExt("bash") == null);
-    try expect(ac.forExt("zsh") == null);
-    try expect(ac.forExt("ksh") == null);
+test "unmapped extensions.type nothing" {
+    try expectKeys("xyz", "process.env.NOPE os.getenv(\"NOPE\")", &[_][]const u8{});
+    try expectKeys("txt", "ENV[\"NOPE\"]", &[_][]const u8{});
+    try expectKeys("sh", "$FOO ${BAR}", &[_][]const u8{});
 }
 
-test "extensions that share a language share one table" {
-    const ts = ac.forExt("ts").?;
-    try expectEqual(ts.ptr, ac.forExt("js").?.ptr);
-    try expectEqual(ts.ptr, ac.forExt("mjs").?.ptr);
-    try expectEqual(ts.ptr, ac.forExt("tsx").?.ptr);
-    try expectEqual(ts.ptr, ac.forExt("cts").?.ptr);
-
-    try expectEqual(ac.forExt("java").?.ptr, ac.forExt("kt").?.ptr);
-    try expectEqual(ac.forExt("java").?.ptr, ac.forExt("groovy").?.ptr);
-
-    const cpp = ac.forExt("cpp").?;
-    try expectEqual(cpp.ptr, ac.forExt("cc").?.ptr);
-    try expectEqual(cpp.ptr, ac.forExt("hpp").?.ptr);
-    try expectEqual(cpp.ptr, ac.forExt("h").?.ptr);
-
-    try expectEqual(ac.forExt("cs").?.ptr, ac.forExt("fs").?.ptr);
-
-    try expectEqual(ac.forExt("f90").?.ptr, ac.forExt("f").?.ptr);
+test "JavaScript / TypeScript: ident, bracket, and Vite forms" {
+    try expectKeys("ts",
+        \\const a = process.env.API_KEY;
+        \\const b = process.env["DB_URL"];
+        \\const c = import.meta.env.VITE_MODE;
+    , &[_][]const u8{ "API_KEY", "DB_URL", "VITE_MODE" });
 }
 
-test "C and C++ are distinct tables" {
-    try expect(ac.forExt("c").?.ptr != ac.forExt("cpp").?.ptr);
+test "JavaScript: dynamic and aliased reads are not.typeed" {
+    try expectKeys("ts",
+        \\const x = process.env[dynamic];
+        \\const e = process.env;
+        \\const y = process.env.OK;
+    , &[_][]const u8{"OK"});
 }
 
-test "JavaScript table carries the expected accessors and shapes" {
-    const t = ac.forExt("ts").?;
-    try expectEqual(ac.Extract.ident, shapeOf(t, "process.env.").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "process.env[").?);
-    try expectEqual(ac.Extract.ident, shapeOf(t, "import.meta.env.").?);
+test "shared tables behave identically across their extensions" {
+    // JS/TS variants resolve to one table -> same result.
+    try expectKeys("ts", "process.env.SAME;", &[_][]const u8{"SAME"});
+    try expectKeys("js", "process.env.SAME;", &[_][]const u8{"SAME"});
+    try expectKeys("mjs", "process.env.SAME;", &[_][]const u8{"SAME"});
+
+    // Kotlin and Groovy reuse the Java table.
+    try expectKeys("java", "System.getenv(\"A\")", &[_][]const u8{"A"});
+    try expectKeys("kt", "System.getenv(\"A\")", &[_][]const u8{"A"});
+    try expectKeys("groovy", "System.getenv(\"A\")", &[_][]const u8{"A"});
 }
 
-test "Python table carries the expected accessors" {
-    const t = ac.forExt("py").?;
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "os.getenv(").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "os.environ[").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "os.environ.get(").?);
+test "Python: getenv and environ forms" {
+    try expectKeys("py",
+        \\x = os.getenv("A")
+        \\y = os.environ["B"]
+        \\z = os.environ.get("C")
+    , &[_][]const u8{ "A", "B", "C" });
 }
 
-test "Go and Ruby tables carry the expected accessors" {
-    const g = ac.forExt("go").?;
-    try expectEqual(ac.Extract.quoted, shapeOf(g, "os.Getenv(").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(g, "os.LookupEnv(").?);
-
-    const r = ac.forExt("rb").?;
-    try expectEqual(ac.Extract.quoted, shapeOf(r, "ENV[").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(r, "ENV.fetch(").?);
+test "Go: Getenv and LookupEnv" {
+    try expectKeys("go",
+        \\a := os.Getenv("A")
+        \\b, ok := os.LookupEnv("B")
+    , &[_][]const u8{ "A", "B" });
 }
 
-test "Rust compile-time macros extract a quoted key" {
-    const t = ac.forExt("rs").?;
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "env!(").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "option_env!(").?);
-    try expectEqual(ac.Extract.quoted, shapeOf(t, "std::env::var(").?);
+test "Rust: var and compile-time macros" {
+    try expectKeys("rs",
+        \\let a = env::var("A").unwrap();
+        \\let b = env!("B");
+        \\let c = option_env!("C");
+    , &[_][]const u8{ "A", "B", "C" });
 }
 
-test "sigil-based languages use the right extraction shapes" {
-    try expectEqual(ac.Extract.ident, shapeOf(ac.forExt("ps1").?, "$env:").?);
-    try expectEqual(ac.Extract.braced, shapeOf(ac.forExt("pl").?, "$ENV{").?);
-    try expectEqual(ac.Extract.parened, shapeOf(ac.forExt("tcl").?, "$env(").?);
-    try expectEqual(ac.Extract.ident, shapeOf(ac.forExt("nu").?, "$env.").?);
+test "Ruby: ENV index and fetch" {
+    try expectKeys("rb",
+        \\a = ENV["A"]
+        \\b = ENV.fetch("B")
+    , &[_][]const u8{ "A", "B" });
 }
 
-test "an absent accessor reports null via shapeOf" {
-    const t = ac.forExt("go").?;
-    try expect(shapeOf(t, "process.env.") == null);
+test "C and C++: getenv resolves under both, incl. ambiguous .h" {
+    try expectKeys("c", "char *a = getenv(\"A\");", &[_][]const u8{"A"});
+    try expectKeys("h", "auto a = std::getenv(\"A\");", &[_][]const u8{"A"});
+}
+
+test "PHP: getenv and superglobals" {
+    try expectKeys("php",
+        \\$a = getenv("A");
+        \\$b = $_ENV["B"];
+    , &[_][]const u8{ "A", "B" });
+}
+
+test "Perl: braced form strips optional quotes" {
+    try expectKeys("pl", "my $a = $ENV{A}; my $b = $ENV{'B'};", &[_][]const u8{ "A", "B" });
+}
+
+test "PowerShell: sigil ident and .NET accessor" {
+    try expectKeys("ps1",
+        \\$a = $env:A
+        \\$b = [Environment]::GetEnvironmentVariable("B")
+    , &[_][]const u8{ "A", "B" });
+}
+
+test "Tcl paren form and Nushell dotted form" {
+    try expectKeys("tcl", "set a $env(A)", &[_][]const u8{"A"});
+    try expectKeys("nu", "let a = $env.A", &[_][]const u8{"A"});
+}
+
+test "Elixir: get_env and fetch_env!" {
+    try expectKeys("ex",
+        \\a = System.get_env("A")
+        \\b = System.fetch_env!("B")
+    , &[_][]const u8{ "A", "B" });
+}
+
+test "Haskell and OCaml: space-call accessors" {
+    try expectKeys("hs",
+        \\a <- getEnv "A"
+        \\b <- lookupEnv "B"
+    , &[_][]const u8{ "A", "B" });
+    try expectKeys("ml", "let a = Sys.getenv \"A\"", &[_][]const u8{"A"});
+}
+
+test "D: index form is caught, `in environment` is not" {
+    try expectKeys("d",
+        \\auto a = environment["A"];
+        \\bool b = ("MISS" in environment);
+    , &[_][]const u8{"A"});
 }

@@ -1,5 +1,6 @@
 const std = @import("std");
 const tty = @import("tty.zig");
+const char = @import("char.zig");
 
 const Io = std.Io;
 const mem = std.mem;
@@ -13,17 +14,17 @@ pub fn isAlphanumeric(s: []const u8) bool {
 }
 
 pub fn isIdentChar(c: u8) bool {
-    return std.ascii.isAlphanumeric(c) or c == '_';
+    return std.ascii.isAlphanumeric(c) or c == char.UNDERLINE;
 }
 
 pub fn isKeyChar(c: u8) bool {
-    return (c >= 'A' and c <= 'Z') or (c >= '0' and c <= '9') or c == '_';
+    return (c >= char.A and c <= char.Z) or (c >= char.ZERO and c <= char.NINE) or c == char.UNDERLINE;
 }
 
 pub fn printHelp(out: *Io.Writer) !void {
     try out.writeAll(
         \\Usage: nvi [flags] -- <command>
-        \\       nvi scan [ext]
+        \\       nvi scan [ext] [ext] ...etc
         \\
         \\Flags:
         \\  -f, --files <paths>     parses .env files in order (default: .env)
@@ -42,9 +43,45 @@ pub fn printHelp(out: *Io.Writer) !void {
         \\
         \\ † without a command, scan reports what it finds and exits; with a command, the found ENV keys are added to the required ENV set
         \\
-        \\Example:
-        \\  nvi --files .env -- cargo run | xargs -0 env
-        \\  nvi scan *.ts --ignored NODE_ENV -- npm run dev | xargs -0 env
+        \\Supported scan file extensions:
+        \\ • C -> c
+        \\ • Clojure -> clj, cljs, cljc
+        \\ • Crystal -> cr
+        \\ • C++ -> cc, cpp, cxx, h, hh, hpp, hxx
+        \\ • C# -> cs
+        \\ • D -> d
+        \\ • Dart -> dart
+        \\ • Elixir -> ex, exs
+        \\ • Erlang -> erl, hrl
+        \\ • Fortran -> f, f90, f95, f03, f08, for
+        \\ • F# -> fs, fsi, fsx
+        \\ • Go -> go
+        \\ • Groovy -> groovy
+        \\ • Haskell -> hs, lhs
+        \\ • Java -> java, gradle
+        \\ • JavaScript/TypeScript -> cjs, cts, js, jsx, mjs, mts, ts, tsx
+        \\ • Julia -> jl
+        \\ • Kotlin -> kt, kts
+        \\ • Lua -> lua
+        \\ • Nim -> nim
+        \\ • Nushell -> nu
+        \\ • Objective-C -> m, mm
+        \\ • OCaml -> ml, mli
+        \\ • Pascal/Delphi -> ldpr, pas, pp
+        \\ • Perl -> pl, pm, t
+        \\ • PHP -> php
+        \\ • PowerShell -> ps1, psm1, psd1
+        \\ • Python -> py, pyi
+        \\ • R -> r
+        \\ • Ruby -> gemspec, rb, rake
+        \\ • Rust -> rs
+        \\ • Scala -> sc, scala
+        \\ • Swift -> swift
+        \\ • Tcl -> tcl
+        \\ • V -> v
+        \\ • Visual Basic -> vb
+        \\ • Zig -> zig
+        \\
         \\
     );
 }

@@ -303,7 +303,7 @@ pub fn tokenFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *I
     var tokenizer: Tokenizer = .{ .alloc = alloc, .logger = logger };
 
     for (args.files.items) |env| {
-        const file = Io.Dir.cwd().readFileAlloc(io, env, alloc, .limited(1024 * 1024)) catch {
+        const file = Io.Dir.cwd().readFileAlloc(io, env, alloc, .limited(10 * 1024 * 1024)) catch {
             try tokenizer.logger.print(
                 tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " within the current directory (file not found).\n",
                 .{env},

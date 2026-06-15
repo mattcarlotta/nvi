@@ -40,9 +40,9 @@ pub const Scanner = struct {
         byte: usize,
     };
 
-    const Extracted = struct {
+    const Env = struct {
         key: []const u8,
-        key_off: usize,
+        start: usize,
         end: usize,
     };
 
@@ -54,8 +54,9 @@ pub const Scanner = struct {
     files_scanned: usize = 0,
     references: usize = 0,
     envs: std.StringArrayHashMapUnmanaged(usize) = .empty,
+    exts: std.StringArrayHashMapUnmanaged([]const ac.Accessor) = .empty,
 
-    pub fn scan(self: *Scanner) !void {
+    pub fn run(self: *Scanner) !void {
         if (self.debug) {
             try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "Scanning for environment variables in");
             for (self.args.scan.items, 0..) |ext, i| {
@@ -65,10 +66,12 @@ pub const Scanner = struct {
             try self.logger.writeAll(" files...\n\n");
         }
 
+        try self.resolveExts();
+
         var root = try Io.Dir.cwd().openDir(self.io, ".", .{ .iterate = true });
         defer root.close(self.io);
 
-        try self.walk(root, "");
+        try self.walkFileTree(root, "");
 
         if (self.debug) {
             try self.logger.print(
@@ -80,18 +83,34 @@ pub const Scanner = struct {
         try self.mergeRequired();
     }
 
-    fn walk(self: *Scanner, dir: Io.Dir, prefix: []const u8) !void {
+    fn resolveExts(self: *Scanner) !void {
+        for (self.args.scan.items) |ext| {
+            if (ac.extensions.get(ext)) |accessors| {
+                try self.exts.put(self.alloc, ext, accessors);
+                continue;
+            }
+
+            if (self.debug) {
+                try self.logger.print(
+                    tty.yellow ++ "warning: " ++ tty.reset ++ "No accessor patterns were found for " ++ tty.bold_yellow ++ "*.{s}" ++ tty.reset ++ ", skipping.\n\n",
+                    .{ext},
+                );
+            }
+        }
+    }
+
+    fn walkFileTree(self: *Scanner, dir: Io.Dir, prefix: []const u8) !void {
         var it = dir.iterate();
         while (try it.next(self.io)) |entry| {
             switch (entry.kind) {
                 .directory => {
-                    if ((entry.name.len > 0 and entry.name[0] == '.') or blacklist.has(entry.name)) continue;
+                    if ((entry.name.len > 0 and entry.name[0] == char.DOT) or blacklist.has(entry.name)) continue;
 
                     var child = try dir.openDir(self.io, entry.name, .{ .iterate = true });
                     defer child.close(self.io);
 
                     const child_prefix = try std.fs.path.join(self.alloc, &.{ prefix, entry.name });
-                    try self.walk(child, child_prefix);
+                    try self.walkFileTree(child, child_prefix);
                 },
                 .file => try self.scanFile(dir, prefix, entry.name),
                 else => {},
@@ -100,9 +119,15 @@ pub const Scanner = struct {
     }
 
     fn scanFile(self: *Scanner, dir: Io.Dir, prefix: []const u8, name: []const u8) !void {
-        const accessors = self.accessorsFor(name) orelse return;
+        const accessors = self.getAccessors(name) orelse return;
 
-        const contents = dir.readFileAlloc(self.io, name, self.alloc, .limited(10 * 1024 * 1024)) catch return;
+        const contents = dir.readFileAlloc(self.io, name, self.alloc, .limited(10 * 1024 * 1024)) catch {
+            try self.logger.print(
+                tty.yellow ++ "warning: " ++ tty.reset ++ "The " ++ tty.bold_yellow ++ "{s}" ++ tty.reset ++ " file exceeds 10MB, skipping.\n",
+                .{name},
+            );
+            return;
+        };
 
         self.files_scanned += 1;
 
@@ -112,33 +137,24 @@ pub const Scanner = struct {
         try self.scanContents(contents, accessors, &matches);
         if (matches.items.len == 0) return;
 
-        if (self.args.debug) {
+        if (self.debug) {
             try self.printMatches(prefix, name, matches.items);
         }
 
         for (matches.items) |m| {
             self.references += 1;
-            const gop = try self.envs.getOrPut(self.alloc, try self.alloc.dupe(u8, m.key));
-            if (!gop.found_existing) gop.value_ptr.* = 0;
-            gop.value_ptr.* += 1;
+            const env = try self.envs.getOrPut(self.alloc, try self.alloc.dupe(u8, m.key));
+            if (!env.found_existing) env.value_ptr.* = 0;
+            env.value_ptr.* += 1;
         }
     }
 
-    fn accessorsFor(self: *Scanner, name: []const u8) ?[]const ac.Accessor {
+    fn getAccessors(self: *Scanner, name: []const u8) ?[]const ac.Accessor {
         const dot_ext = std.fs.path.extension(name);
+
         if (dot_ext.len < 2) return null;
-        const ext = dot_ext[1..];
 
-        var requested = false;
-        for (self.args.scan.items) |e| {
-            if (mem.eql(u8, e, ext)) {
-                requested = true;
-                break;
-            }
-        }
-        if (!requested) return null;
-
-        return ac.forExt(ext);
+        return self.exts.get(dot_ext[1..]);
     }
 
     pub fn scanContents(
@@ -165,90 +181,93 @@ pub const Scanner = struct {
             };
 
             const key_start = i + acc.prefix.len;
-            if (self.extractKey(contents, key_start, acc.extract)) |res| {
+            if (self.extractKey(contents, key_start, acc.pattern)) |res| {
                 try matches.append(self.alloc, .{
                     .key = res.key,
                     .line = line,
-                    .byte = res.key_off - line_start + 1,
+                    .byte = res.start - line_start + 1,
                 });
                 i = res.end;
-            } else {
-                i += acc.prefix.len;
+                continue;
             }
+
+            i += acc.prefix.len;
         }
     }
 
-    fn matchPrefix(self: *Scanner, contents: []const u8, i: usize, accessors: []const ac.Accessor) ?ac.Accessor {
-        _ = self;
+    fn matchPrefix(_: *Scanner, contents: []const u8, i: usize, accessors: []const ac.Accessor) ?ac.Accessor {
         for (accessors) |acc| {
             if (!mem.startsWith(u8, contents[i..], acc.prefix)) continue;
+
             if (i > 0 and utils.isIdentChar(contents[i - 1]) and utils.isIdentChar(acc.prefix[0])) continue;
+
             return acc;
         }
         return null;
     }
 
-    fn extractKey(self: *Scanner, contents: []const u8, start: usize, kind: ac.Extract) ?Extracted {
-        _ = self;
+    fn extractKey(_: *Scanner, contents: []const u8, start: usize, kind: ac.Pattern) ?Env {
         switch (kind) {
-            // FOO immediately follows: process.env.FOO  $env:FOO
             .ident => {
                 var e = start;
                 while (e < contents.len and utils.isIdentChar(contents[e])) e += 1;
                 if (e == start) return null;
-                return .{ .key = contents[start..e], .key_off = start, .end = e };
+                return .{ .key = contents[start..e], .start = start, .end = e };
             },
-            // first string literal follows: getenv("FOO")  ENV['FOO']
             .quoted => {
                 var p = start;
-                while (p < contents.len and (contents[p] == ' ' or contents[p] == '\t')) p += 1;
+                while (p < contents.len and (contents[p] == char.SPACE or contents[p] == char.CARRIAGE_RETURN)) p += 1;
                 if (p >= contents.len) return null;
 
                 const q = contents[p];
-                if (q != '"' and q != '\'') return null; // dynamic key; skip
+                if (q != char.DOUBLE_QOUTE and q != char.SINGLE_QOUTE) return null; // dynamic key; skip
 
-                const ks = p + 1;
-                const close = mem.indexOfScalarPos(u8, contents, ks, q) orelse return null;
-                if (sameLineOnly(contents, ks, close)) {} else return null;
-                if (close == ks) return null; // empty string
+                const key_start = p + 1;
+                const close = mem.indexOfScalarPos(u8, contents, key_start, q) orelse return null;
 
-                return .{ .key = contents[ks..close], .key_off = ks, .end = close + 1 };
+                if (sameLineOnly(contents, key_start, close)) {} else return null;
+
+                if (close == key_start) return null;
+
+                return .{ .key = contents[key_start..close], .start = key_start, .end = close + 1 };
             },
-            // token up to '}', optional surrounding quotes: $ENV{FOO}  ${FOO}
             .braced => {
-                const close = mem.indexOfScalarPos(u8, contents, start, '}') orelse return null;
+                const close = mem.indexOfScalarPos(u8, contents, start, char.CLOSE_BRACE) orelse return null;
                 if (!sameLineOnly(contents, start, close)) return null;
 
-                var ks = start;
-                var ke = close;
-                if (ke > ks and (contents[ks] == '\'' or contents[ks] == '"') and contents[ke - 1] == contents[ks]) {
-                    ks += 1;
-                    ke -= 1;
+                var key_start = start;
+                var key_end = close;
+                if (key_end > key_start and (contents[key_start] == char.SINGLE_QOUTE or contents[key_start] == char.DOUBLE_QOUTE) and contents[key_end - 1] == contents[key_start]) {
+                    key_start += 1;
+                    key_end -= 1;
                 }
-                if (ke <= ks) return null;
 
-                return .{ .key = contents[ks..ke], .key_off = ks, .end = close + 1 };
+                if (key_end <= key_start) return null;
+
+                return .{ .key = contents[key_start..key_end], .start = key_start, .end = close + 1 };
             },
-            // bareword up to ')': $env(FOO)
             .parened => {
-                const close = mem.indexOfScalarPos(u8, contents, start, ')') orelse return null;
+                const close = mem.indexOfScalarPos(u8, contents, start, char.CLOSE_PAREN) orelse return null;
+
                 if (!sameLineOnly(contents, start, close)) return null;
+
                 if (close == start) return null;
 
-                return .{ .key = contents[start..close], .key_off = start, .end = close + 1 };
+                return .{ .key = contents[start..close], .start = start, .end = close + 1 };
             },
         }
     }
 
     fn sameLineOnly(contents: []const u8, from: usize, to: usize) bool {
-        return mem.indexOfScalarPos(u8, contents, from, '\n') == null or
-            mem.indexOfScalarPos(u8, contents, from, '\n').? >= to;
+        return mem.indexOfScalarPos(u8, contents, from, char.LINE_DELIMITER) == null or
+            mem.indexOfScalarPos(u8, contents, from, char.LINE_DELIMITER).? >= to;
     }
 
     fn isIgnored(self: *Scanner, key: []const u8) bool {
         for (self.args.ignored.items) |ig| {
             if (mem.eql(u8, ig, key)) return true;
         }
+
         return false;
     }
 
@@ -259,7 +278,9 @@ pub const Scanner = struct {
 
         for (self.envs.keys()) |key| {
             if (self.isIgnored(key)) continue;
+
             try self.args.required.append(self.alloc, key);
+
             if (self.debug) try self.logger.print("    •" ++ tty.bold_green ++ " {s}" ++ tty.reset ++ "\n", .{key});
         }
 
@@ -267,10 +288,7 @@ pub const Scanner = struct {
     }
 
     fn printMatches(self: *Scanner, prefix: []const u8, name: []const u8, matches: []const Match) !void {
-        const rel = if (prefix.len == 0)
-            name
-        else
-            try std.fs.path.join(self.alloc, &.{ prefix, name });
+        const rel = if (prefix.len == 0) name else try std.fs.path.join(self.alloc, &.{ prefix, name });
 
         try self.logger.print(
             tty.cyan ++ "info: " ++ tty.reset ++ "Scanned {s} and found {d} key(s)...\n",
@@ -289,9 +307,7 @@ pub const Scanner = struct {
 };
 
 pub fn scanFiles(io: Io, alloc: mem.Allocator, args: *arg.Arg, logger: *Io.Writer) !void {
-    const debug = args.debug or args.command.len == 0;
+    var scanner: Scanner = .{ .io = io, .alloc = alloc, .args = args, .debug = args.debug or args.command.len == 0, .logger = logger };
 
-    var scanner: Scanner = .{ .io = io, .alloc = alloc, .args = args, .debug = debug, .logger = logger };
-
-    try scanner.scan();
+    try scanner.run();
 }
