@@ -68,7 +68,7 @@ nvi --files .env -- <command> | xargs -0 env
 ```
 
 > [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if using WSL, you'll need to use `--format nul`.
+> Windows builds will default to the powershell format. Therefore, if using WSL, you'll need to override the format with `--format nul`.
 
 For Windows Non-WSL users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
 
@@ -79,22 +79,22 @@ More examples:
 nvi --files .env .env.local -- npm start | xargs -0 env
 
 # require keys to be present
-nvi --files .env --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
+nvi --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
 
 # require every env key referenced in source files to be present
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm start | xargs -0 -r env
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
 
 # print a single resolved variable
-nvi --files .env -- printenv MESSAGE | xargs -0 env
+nvi -- printenv MESSAGE | xargs -0 env
 
 # inspect the full child environment
-nvi --files .env -- env | xargs -0 env
+nvi -- env | xargs -0 env
 
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
-nvi --files .env -- sh -c 'echo "$MESSAGE"' | xargs -0 env
+nvi -- sh -c 'echo "$MESSAGE"' | xargs -0 env
 
 # debug what was parsed (stderr only)
-nvi --files .env --debug -- echo $?
+nvi --debug -- echo $?
 ```
 For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
 
@@ -135,10 +135,9 @@ Unrecognized commands are warned about on stderr and ignored.
 
 ### Exit codes
 
-- `0` - Ok: Parsed and emitted successfully
+- `0` - Ok: Parsed/emitted ENVs successfully or prints information and exits (help, scan, version)
 - `1` - Operational failure: out of memory, file unreadable, parse error, missing required keys, or output write failure
 - `2` - Usage error: invalid flags or missing `--` command
-- `3` - Info: Prints help, scan details or version
 
 The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
 
@@ -310,10 +309,12 @@ Notes for Windows users:
 
 ```sh
 # preview PowerShell ENV format
-nvi --files .env --format powershell --debug -- echo $?
+nvi --format powershell --debug
+# nvi --format powershell -- echo $?
 
 # preview Unix ENV format
-nvi --files .env --format nul --debug -- echo $?
+nvi --format nul --debug
+# nvi --format nul -- echo $?
 ```
 
 ## Security model

@@ -253,11 +253,11 @@ pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.W
         try args.files.append(alloc, ".env");
     }
 
-    if (args.scan.items.len == 0 and args.command.len == 0) {
-        try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset);
-        try args.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ "). See nvi help\n");
-        return error.MissingCommand;
-    }
+    // if (args.scan.items.len == 0 and args.command.len == 0) {
+    //     try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset);
+    //     try args.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ "). See nvi help\n");
+    //     return error.MissingCommand;
+    // }
 
     if (args.debug) {
         try args.printFlags();
