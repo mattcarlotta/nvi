@@ -43,6 +43,8 @@ pub fn main(init: std.process.Init) u8 {
         return @intFromEnum(Result.operation_failure);
     };
 
+    logger.flush() catch {};
+
     var out_buf: [4096]u8 = undefined;
     var out_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &out_buf);
     nvi.emitter(&out_writer.interface, &args, &envs) catch {
