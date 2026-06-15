@@ -176,43 +176,43 @@ $ENV{DATABASE_URL}                # Perl
 The language is chosen by file extension.
 
 Supported languages include:
-- C
-- Clojure
-- Crystal
-- C++
-- C#
-- D
-- Dart
-- Elixir
-- Erlang
-- Fortran
-- F#
-- Go
-- Groovy
-- Haskell
-- Java
-- JavaScript/TypeScript
-- Julia
-- Kotlin
-- Lua
-- Nim
-- Nushell
-- Objective-C
-- OCaml
-- Pascal/Delphi
-- Perl
-- PHP
-- PowerShell
-- Python
-- R
-- Ruby
-- Rust
-- Scala
-- Swift
-- Tcl
-- V
-- Visual Basic
-- Zig
+- C (`c`)
+- Clojure (`clj`, `cljs`, `cljc`)
+- Crystal (`cr`)
+- C++ ( `cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`)
+- C# (`cs`)
+- D (`d`)
+- Dart (`dart`)
+- Elixir (`ex`, `exs`)
+- Erlang (`erl`, `hrl`)
+- Fortran (`f`, `f90`, `f95`, `f03`, `f08`, `for`)
+- F# (`fs`, `fsi`, `fsx`)
+- Go (`go`)
+- Groovy (`groovy`)
+- Haskell (`hs`, `lhs`)
+- Java (`java`, `gradle`)
+- JavaScript/TypeScript (`cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`)
+- Julia (`jl`)
+- Kotlin (`kt`, `kts`)
+- Lua (`lua`)
+- Nim (`nim`)
+- Nushell (`nu`)
+- Objective-C (`m`, `mm`)
+- OCaml (`ml`, `mli`)
+- Pascal/Delphi (`dpr`, `pas`, `pp`)
+- Perl (`pl`, `pm`, `t`)
+- PHP (`php`)
+- PowerShell (`ps1`, `psm1`, `psd1`)
+- Python (`py`, `pyi`)
+- R (`r`)
+- Ruby (`gemspec`, `rb`, `rake`)
+- Rust (`rs`)
+- Scala (`sc`, `scala`)
+- Swift (`swift`)
+- Tcl (`tcl`)
+- V (`v`)
+- Visual Basic (`vb`)
+- Zig (`zig`)
 
 Examples:
 
