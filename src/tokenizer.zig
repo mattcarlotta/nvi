@@ -1,20 +1,10 @@
 const std = @import("std");
 const tty = @import("tty.zig");
 const arg = @import("arg.zig");
+const char = @import("char.zig");
 
 const Io = std.Io;
 const mem = std.mem;
-
-const NULL_CHAR: u8 = 0;
-const LINE_DELIMITER: u8 = '\n';
-const ASSIGN_OP: u8 = '=';
-const HASH: u8 = '#';
-const DOLLAR_SIGN: u8 = '$';
-const OPEN_BRACE: u8 = '{';
-const CLOSE_BRACE: u8 = '}';
-const BACK_SLASH: u8 = '\\';
-
-const SPECIAL_CHARS = [_]u8{ NULL_CHAR, LINE_DELIMITER, ASSIGN_OP, HASH, DOLLAR_SIGN, BACK_SLASH };
 
 pub const ValueKind = enum { literal, commented, interpolated };
 
@@ -144,8 +134,8 @@ pub const Tokenizer = struct {
 
         while (self.peek(0)) |current_char| {
             switch (current_char) {
-                NULL_CHAR => self.skipByte(1),
-                LINE_DELIMITER => {
+                char.NULL_CHAR => self.skipByte(1),
+                char.LINE_DELIMITER => {
                     if (token.key != null) {
                         try self.commitToken(&token, ValueKind.literal, value.items);
                         try self.appendToken(&token);
@@ -155,7 +145,7 @@ pub const Tokenizer = struct {
                     self.skipByte(1);
                     self.resetByte();
                 },
-                ASSIGN_OP => {
+                char.ASSIGN_OP => {
                     // '=' inside a value is literal
                     if (token.key != null) {
                         try value.append(self.alloc, current_char);
@@ -168,7 +158,7 @@ pub const Tokenizer = struct {
                         try self.printErrorHeader();
                         try self.logger.writeAll("A value assignment ('=') was found without a key name.\n");
 
-                        const end = mem.indexOfScalarPos(u8, self.file, self.i, LINE_DELIMITER) orelse self.file.len;
+                        const end = mem.indexOfScalarPos(u8, self.file, self.i, char.LINE_DELIMITER) orelse self.file.len;
                         const rest = self.file[self.i..end];
 
                         try self.logger.print("   {s}\n", .{rest});
@@ -185,7 +175,7 @@ pub const Tokenizer = struct {
                     // skipByte '='
                     self.skipByte(1);
                 },
-                HASH => {
+                char.HASH => {
                     // hash inside a literal
                     if (token.key != null) {
                         try value.append(self.alloc, current_char);
@@ -199,9 +189,9 @@ pub const Tokenizer = struct {
                     try self.appendToken(&token);
                     value.clearRetainingCapacity();
                 },
-                DOLLAR_SIGN => {
+                char.DOLLAR_SIGN => {
                     // dollar sign inside a literal
-                    if ((self.peek(1) orelse 0) != OPEN_BRACE) {
+                    if ((self.peek(1) orelse 0) != char.OPEN_BRACE) {
                         try value.append(self.alloc, current_char);
                         self.skipByte(1);
                         continue;
@@ -218,7 +208,7 @@ pub const Tokenizer = struct {
 
                     try self.scanUntil(&value, "}\n");
 
-                    if ((self.peek(0) orelse LINE_DELIMITER) != CLOSE_BRACE) {
+                    if ((self.peek(0) orelse char.LINE_DELIMITER) != char.CLOSE_BRACE) {
                         try self.printErrorHeader();
                         try self.logger.print(
                             "The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " key has an unterminated value interpolation.\n",
@@ -258,7 +248,7 @@ pub const Tokenizer = struct {
 
                     try self.commitToken(&token, ValueKind.interpolated, value.items);
 
-                    if ((self.peek(0) orelse 0) == LINE_DELIMITER) {
+                    if ((self.peek(0) orelse 0) == char.LINE_DELIMITER) {
                         try self.appendToken(&token);
                         self.nextLine();
                         // skipByte '\n'
@@ -267,8 +257,8 @@ pub const Tokenizer = struct {
                     }
                     value.clearRetainingCapacity();
                 },
-                BACK_SLASH => {
-                    if (self.peek(1) != null and (self.peek(1) orelse 0) != LINE_DELIMITER) {
+                char.BACK_SLASH => {
+                    if (self.peek(1) != null and (self.peek(1) orelse 0) != char.LINE_DELIMITER) {
                         try value.append(self.alloc, current_char);
                         self.skipByte(1);
                         continue;
@@ -288,7 +278,7 @@ pub const Tokenizer = struct {
                     self.resetByte();
                 },
                 else => {
-                    try self.scanUntil(&value, &SPECIAL_CHARS);
+                    try self.scanUntil(&value, &char.SPECIAL_CHARS);
                 },
             }
         }

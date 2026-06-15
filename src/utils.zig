@@ -31,6 +31,9 @@ pub fn printHelp(out: *Io.Writer) !void {
         \\  -r, --required <keys>   marks a list of ENV keys that must be present
         \\  -F, --format <fmt>      outputs ENV format (options: nul|powershell)
         \\  -d, --debug             prints internal debug details to stderr
+        \\  -h, --help              prints this help and exits
+        \\  -s, --scan <ext>        recursively scans in the root directory for ENV keys used within *.<ext> files and marks them as required †
+        \\  -v, --version           prints the version and exits
         \\
         \\Commands:
         \\  help                    prints this help and exits

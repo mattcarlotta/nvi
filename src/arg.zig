@@ -29,14 +29,28 @@ pub const Arg = struct {
     const flags = std.StaticStringMap(Flag).initComptime(.{
         .{ "-f", .files },
         .{ "--files", .files },
+
         .{ "-d", .debug },
         .{ "--debug", .debug },
+
+        .{ "-h", .help },
+        .{ "--help", .help },
+
         .{ "-i", .ignored },
         .{ "--ignored", .ignored },
+
         .{ "-F", .format },
         .{ "--format", .format },
+
         .{ "-r", .required },
         .{ "--required", .required },
+
+        .{ "-s", .scan },
+        .{ "--scan", .scan },
+
+        .{ "-v", .version },
+        .{ "--version", .version },
+
         .{ "scan", .scan },
         .{ "help", .help },
         .{ "version", .version },

@@ -6,21 +6,9 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 - language agnostic
 - parses one or more `.env` files
 - handles `${KEY}` interpolations
-- supports multiline values via `\` delimiter
-- can validate required keys before execution
-- can scan source files for `*_ENV` references and mark them as required before a command runs
-
-```
-nvi --files .env -- <command> | xargs -0 env
-```
-
-## How it works
-
-1. `nvi` parses and interpolates the given `.env` file(s) into `KEY=value` pairs
-2. It writes each pair to stdout, followed by the command tokens that appear after `--`
-3. A downstream consumer (like `xargs -0 env` on Unix or `Invoke-Expression` on Windows) then sets the variables and runs the command
-
-All diagnostics (errors, warnings, `--debug` output) go to **stderr**.
+- supports multiline values via `\` (backslash-newline) delimiter
+- can scan project files for environment-variable references across many languages and mark them as required
+- can validate required keys before command execution
 
 ## Installation
 
@@ -103,8 +91,8 @@ nvi --files .env .env.local -- npm start | xargs -0 env
 # require keys to be present
 nvi --files .env --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
 
-# require every *_ENV key referenced in source files to be present
-nvi scan mjs --ignored NODE_ENV --files .env -- npm start | xargs -0 -r env
+# require every env key referenced in source files to be present
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm start | xargs -0 -r env
 
 # print a single resolved variable
 nvi --files .env -- printenv MESSAGE | xargs -0 env
@@ -134,7 +122,9 @@ NUL delimiting means values pass through byte-exact without quoting or escaping:
 | `--ignored` | `-i` | one or more keys | Keys that `scan` should not add to the required ENV set (e.g. `NODE_ENV`, which is typically injected at runtime by tooling rather than defined in a `.env` file). Only meaningful together with `scan`. |
 | `--required` | `-r` | one or more keys | Keys that must exist with non-empty values after parsing. `nvi` exits with an error listing any that are missing. |
 | `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
-| `--debug` | `-d` | none | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. The env listing follows the active `--format`, so it previews the exact pair syntax that will hit stdout. |
+| `--debug` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. The env listing follows the active `--format`, so it previews the exact pair syntax that will hit stdout. |
+| `--help` | `-h` | | Prints usage help and exits. |
+| `--version` | `-v` | | Prints versions and exits. |
 | `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required (except for standalone `scan`, `help`, and `version`). |
 
 Unrecognized flags (and their parameters) are warned about on stderr and ignored.
@@ -143,7 +133,7 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 
 | Command | Parameters | Description |
 | --- | --- | --- |
-| `scan` | one or more file extensions | Recursively scans `*.<ext>` files from the current directory for `*_ENV` key references and marks them as required.† |
+| `scan` | one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
 | `help` | | Prints usage help. |
 | `version` | | Prints version. |
 
@@ -161,45 +151,128 @@ The exit code of *your command* is reported by the downstream consumer (`xargs`)
 
 ## Scanning for ENV keys
 
-`scan` walks the file tree from the current directory and collects ENV keys that end in `_ENV` (e.g. `API_KEY_ENV`, `DATABASE_URL_ENV`) from files matching the given extensions.
+`-s`, `--scan` or just `scan` walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
+
+> [!IMPORTANT]
+> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
+
+For example, every line below is recognized and yields the key `DATABASE_URL`:
+
+```
+process.env.DATABASE_URL          # JavaScript / TypeScript
+process.env["DATABASE_URL"]
+import.meta.env.DATABASE_URL      # Vite
+os.getenv("DATABASE_URL")         # Python
+os.Getenv("DATABASE_URL")         # Go
+env::var("DATABASE_URL")          # Rust
+ENV["DATABASE_URL"]               # Ruby
+System.getenv("DATABASE_URL")     # Java / Kotlin
+$env:DATABASE_URL                 # PowerShell
+$ENV{DATABASE_URL}                # Perl
+```
+
+The language is chosen by file extension.
+
+Supported languages include:
+- C
+- Clojure
+- Crystal
+- C++
+- C#
+- D
+- Dart
+- Elixir
+- Erlang
+- Fortran
+- F#
+- Go
+- Groovy
+- Haskell
+- Java
+- JavaScript/TypeScript
+- Julia
+- Kotlin
+- Lua
+- Nim
+- Nushell
+- Objective-C
+- OCaml
+- Pascal/Delphi
+- Perl
+- PHP
+- PowerShell
+- Python
+- R
+- Ruby
+- Rust
+- Scala
+- Swift
+- Tcl
+- V
+- Visual Basic
+- Zig
+
+Examples:
 
 ```sh
-# report every *_ENV reference in .mjs and .ts files, then exit
-nvi scan mjs ts
+# report every env reference in .mjs and .ts files, then exit
+nvi --scan mjs ts
 
-# scanned keys must are required and must be defined before the 'npm run dev' command is emitted
-nvi scan mjs --files .env -- npm run dev | xargs -0 -r env
+# scanned keys are required and must be defined before 'npm run dev' is emitted
+nvi --scan mjs --files .env -- npm run dev | xargs -0 -r env
 
-# exclude runtime-injected keys from the requirement
-nvi scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
+# exclude runtime-injected keys from the command environment
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
 ```
 
 Notes:
 
-- Extensions may be written as `ext`, `.ext`, or `*.ext`. **Quote glob spellings** (`'*.ext'`) or pass bare extensions; unquoted globs are expanded into filenames by your shell before `nvi` runs.
-- Matches are UPPERCASE_SNAKE identifiers ending in `_ENV`. Partial matches inside larger identifiers (`THING_ENVIRONMENT`, `my_API_ENV`) are skipped.
-- These directories are never descended into: `.git`, `node_modules`, `zig-out`, `.zig-cache`, `zig-cache`, `dist`, `build`, `vendor`, `target`, `coverage`. Symlinked directories are not followed.
+- Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
+- Statically written keys are detected at their access site.
+- Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
 - The report goes to stderr; `--debug` adds a per-file listing of every reference with its line and byte position.
-- In scan mode, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
+- When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
+
+> [!TIP]
+> When using `*.ext` globs, use quotes (`'*.ext'`) or just pass bare extensions; unquoted globs are expanded into filenames by your shell before `nvi` runs.
+
+> [!CAUTION]
+> Dynamic keys (`process.env[name]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be reported.
 
 ## `.env` file syntax
 
+Here are some examples of how ENVs can be defined an `.env` file:
+
 ```dotenv
-# comments start with a hash
-MESSAGE=hello                                                           # a literal value
-GREETING=${MESSAGE} world                                               # a '${KEY}' represents an interpolation from a KEY in an .env file or from the process environment
-BASE64_OK=abc==                                                         # an equal sign '=' after a key is literal
-PRICE=$5                                                                # '$' without braces '{' is a literal
-SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\                        # backslash-newline continues the value; interpolation still works
+# comments start with a hash (inline comments not supported)
+
+# a literal value
+MESSAGE=hello
+
+# an interpolation ${KEY} represents a value from either the shell
+# environment or from a KEY in an .env file (must be defined before use)
+# for example: ${MESSSAGE} world -> hello world
+GREETING=${MESSAGE} world
+
+# an equal sign after a key is a literal '=' (not a nested key)
+BASE64_OK=abc==
+
+# a dollar sign without braces is a literal '$' (not an interpolated key)
+PRICE=$5.00
+
+# backslash-newline continues the value (interpolation keys still work)
+SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
 oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\
 owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
------END RSA PRIVATE KEY-----                                           # no backslash with just a new-line indicates end of multi-line
+-----END RSA PRIVATE KEY-----
+# no backslash with just a new-line/EOF indicates the end of a multi-line value
 
 ```
 
-Interpolated keys resolve first from the process environment and then from keys parsed earlier (including earlier `--files`).
+Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `--files`).
 Undefined interpolations and keys with empty values are skipped with a warning.
 
 
@@ -248,18 +321,18 @@ Notes for Windows users:
 `--format` overrides the platform default in either direction:
 
 ```sh
-# preview the PowerShell ENV emission
+# preview PowerShell ENV format
 nvi --files .env --format powershell --debug -- <command>
 
-# preview the Unix ENV emission
+# preview Unix ENV format
 nvi --files .env --format nul --debug -- <command>
 ```
 
 ## Security model
 
-`nvi` performs no exec-like operations: no `exec`/`syscall`, no process spawning nor shell invocation. It reads the `.env` files you provide and writes bytes to stdout.
+`nvi` doesn't perform execution operations (like `exec`/`syscall`), no process spawning nor shell invocation. It reads the `.env` files you provide and writes them as bytes to stdout.
 Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
-On the PowerShell path, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
+For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
 ### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)

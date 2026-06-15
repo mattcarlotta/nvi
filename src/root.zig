@@ -11,6 +11,7 @@ pub const emitter = em.emitter;
 pub const scanner = sc.scanFiles;
 
 test {
+    _ = @import("accessors.zig");
     _ = @import("arg_test.zig");
     _ = @import("emitter_test.zig");
     _ = @import("formatter_test.zig");

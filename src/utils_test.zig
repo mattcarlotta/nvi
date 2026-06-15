@@ -75,8 +75,6 @@ test "parseExt accepts bare, dotted, and glob spellings" {
     try expectEqualStrings("mjs", try utils.parseExt("mjs", &logger));
     try expectEqualStrings("ts", try utils.parseExt(".ts", &logger));
     try expectEqualStrings("zig", try utils.parseExt("*.zig", &logger));
-    // any alphanumeric token is a valid extension, even an unlikely one;
-    // it simply matches no files during the walk
     try expectEqualStrings("Makefile", try utils.parseExt("Makefile", &logger));
 }
 

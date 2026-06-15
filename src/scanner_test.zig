@@ -1,16 +1,26 @@
 const std = @import("std");
 const arg = @import("arg.zig");
 const sc = @import("scanner.zig");
+const ac = @import("accessors.zig");
 
 const Io = std.Io;
-const mem = std.mem;
-const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
+const js = [_]ac.Accessor{
+    .{ .prefix = "process.env.", .extract = .ident },
+    .{ .prefix = "process.env[", .extract = .quoted },
+};
+const py = [_]ac.Accessor{
+    .{ .prefix = "os.getenv(", .extract = .quoted },
+};
+const perl = [_]ac.Accessor{
+    .{ .prefix = "$ENV{", .extract = .braced },
+};
+
 const TestScan = struct {
     arena: std.heap.ArenaAllocator,
-    matches: std.ArrayList(sc.Match) = .empty,
+    matches: std.ArrayList(sc.Scanner.Match) = .empty,
 
     fn init() TestScan {
         return .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
@@ -20,68 +30,90 @@ const TestScan = struct {
         self.arena.deinit();
     }
 
-    fn run(self: *TestScan, contents: []const u8) ![]const sc.Match {
+    fn run(self: *TestScan, contents: []const u8, accessors: []const ac.Accessor) ![]const sc.Scanner.Match {
         var scanner: sc.Scanner = .{
             .io = undefined,
             .alloc = self.arena.allocator(),
             .args = undefined,
             .logger = undefined,
         };
-        try scanner.scanContents(contents, &self.matches);
+        try scanner.scanContents(contents, accessors, &self.matches);
         return self.matches.items;
     }
 };
 
-test "scanContents finds a key with location" {
+test "scanContents extracts an ident key with location" {
     var t = TestScan.init();
     defer t.deinit();
 
-    const matches = try t.run("const k = env.get(\"API_KEY_ENV\");\n");
+    const matches = try t.run("const k = process.env.API_KEY;\n", &js);
     try expectEqual(@as(usize, 1), matches.len);
-    try expectEqualStrings("API_KEY_ENV", matches[0].key);
+    try expectEqualStrings("API_KEY", matches[0].key);
     try expectEqual(@as(usize, 1), matches[0].line);
-    try expectEqual(@as(usize, 20), matches[0].byte);
+    try expectEqual(@as(usize, 23), matches[0].byte);
 }
 
-test "scanContents tracks lines and finds multiple keys" {
+test "scanContents extracts a bracket-quoted key with location" {
     var t = TestScan.init();
     defer t.deinit();
 
-    const matches = try t.run("x\ny\nA_ENV and B_ENV\n");
-    try expectEqual(@as(usize, 2), matches.len);
-    try expectEqualStrings("A_ENV", matches[0].key);
-    try expectEqual(@as(usize, 3), matches[0].line);
-    try expectEqual(@as(usize, 1), matches[0].byte);
-    try expectEqualStrings("B_ENV", matches[1].key);
-    try expectEqual(@as(usize, 11), matches[1].byte);
-}
-
-test "scanContents skips mid-identifier, bare, and mixed-case-tail matches" {
-    var t = TestScan.init();
-    defer t.deinit();
-
-    const matches = try t.run("THING_ENVIRONMENT A_ENV_B my_ENV \"_ENV\" OK_ENV\n");
+    const matches = try t.run("const k = process.env[\"API_KEY\"];\n", &js);
     try expectEqual(@as(usize, 1), matches.len);
-    try expectEqualStrings("OK_ENV", matches[0].key);
+    try expectEqualStrings("API_KEY", matches[0].key);
+    try expectEqual(@as(usize, 1), matches[0].line);
+    try expectEqual(@as(usize, 24), matches[0].byte);
 }
 
-fn extMatch(alloc: mem.Allocator, name: []const u8, exts: []const []const u8) !bool {
-    var args: arg.Arg = .{ .argv = &.{}, .command = &.{}, .logger = undefined };
-    for (exts) |e| try args.scan.append(alloc, e);
+test "scanContents tracks lines across multiple quoted keys" {
+    var t = TestScan.init();
+    defer t.deinit();
 
-    var scanner: sc.Scanner = .{ .io = undefined, .alloc = alloc, .args = &args, .logger = undefined };
-    return scanner.matchesExt(name);
+    const matches = try t.run("\n\nos.getenv(\"FOO\")\nos.getenv(\"BAR\")\n", &py);
+    try expectEqual(@as(usize, 2), matches.len);
+    try expectEqualStrings("FOO", matches[0].key);
+    try expectEqual(@as(usize, 3), matches[0].line);
+    try expectEqual(@as(usize, 12), matches[0].byte);
+    try expectEqualStrings("BAR", matches[1].key);
+    try expectEqual(@as(usize, 4), matches[1].line);
+    try expectEqual(@as(usize, 12), matches[1].byte);
 }
 
-test "matchesExt compares the file extension" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
+test "scanContents skips dynamic (non-literal) keys" {
+    var t = TestScan.init();
+    defer t.deinit();
 
-    try expect(try extMatch(alloc, "main.zig", &.{"zig"}));
-    try expect(try extMatch(alloc, "a.test.ts", &.{ "zig", "ts" }));
-    try expect(!try extMatch(alloc, "main.zig", &.{"ts"}));
-    try expect(!try extMatch(alloc, "Makefile", &.{"zig"}));
+    const matches = try t.run("os.getenv(name) os.getenv(\"REAL\")\n", &py);
+    try expectEqual(@as(usize, 1), matches.len);
+    try expectEqualStrings("REAL", matches[0].key);
+}
+
+test "scanContents skips a prefix that begins mid-identifier" {
+    var t = TestScan.init();
+    defer t.deinit();
+
+    const matches = try t.run("xprocess.env.FAKE process.env.REAL\n", &js);
+    try expectEqual(@as(usize, 1), matches.len);
+    try expectEqualStrings("REAL", matches[0].key);
+}
+
+test "scanContents strips optional quotes inside a braced key" {
+    var t = TestScan.init();
+    defer t.deinit();
+
+    const matches = try t.run("$ENV{FOO} $ENV{'BAR'}\n", &perl);
+    try expectEqual(@as(usize, 2), matches.len);
+    try expectEqualStrings("FOO", matches[0].key);
+    try expectEqualStrings("BAR", matches[1].key);
+}
+
+test "scanContents works with a real table from accessors.forExt" {
+    var t = TestScan.init();
+    defer t.deinit();
+
+    const accessors = ac.forExt("ts").?;
+    const matches = try t.run("const u = process.env.DATABASE_URL;\n", accessors);
+    try expectEqual(@as(usize, 1), matches.len);
+    try expectEqualStrings("DATABASE_URL", matches[0].key);
 }
 
 test "mergeRequired skips ignored keys" {
@@ -96,10 +128,10 @@ test "mergeRequired skips ignored keys" {
 
     var scanner: sc.Scanner = .{ .io = undefined, .alloc = alloc, .args = &args, .logger = &logger };
     try scanner.envs.put(alloc, "NODE_ENV", 3);
-    try scanner.envs.put(alloc, "API_KEY_ENV", 1);
+    try scanner.envs.put(alloc, "API_KEY", 1);
 
     try scanner.mergeRequired();
 
     try expectEqual(@as(usize, 1), args.required.items.len);
-    try expectEqualStrings("API_KEY_ENV", args.required.items[0]);
+    try expectEqualStrings("API_KEY", args.required.items[0]);
 }
