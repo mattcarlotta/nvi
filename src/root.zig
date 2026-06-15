@@ -3,8 +3,10 @@ const tk = @import("tokenizer.zig");
 const pr = @import("parser.zig");
 const em = @import("emitter.zig");
 const sc = @import("scanner.zig");
+const ty = @import("tty.zig");
 
 pub const args = arg.argParser;
+pub const tty = ty;
 pub const tokenizer = tk.tokenFiles;
 pub const parser = pr.parseTokens;
 pub const emitter = em.emitter;

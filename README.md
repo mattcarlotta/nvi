@@ -7,7 +7,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 - parses one or more `.env` files
 - handles `${KEY}` interpolations
 - supports multiline values via `\` (backslash-newline) delimiter
-- can scan project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-language-extensions) and mark them as required
+- can scan project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and mark them as required
 - can validate required keys before command execution
 
 ## Installation
@@ -130,7 +130,7 @@ Unrecognized commands are warned about on stderr and ignored.
 
 ### Exit codes
 
-- `0` - Parsed and emitted successfully
+- `0` - Ok: Parsed and emitted successfully or printed standalone scan details
 - `1` - Operational failure: file unreadable, parse error, missing required keys, or output write failure (details on stderr)
 - `2` - Usage error: invalid flags or missing `--` command (details on stderr)
 
@@ -160,44 +160,44 @@ $ENV{DATABASE_URL}                # Perl
 > [!CAUTION]
 > Dynamic keys (`process.env[name]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be reported.
 
-### Supported language extensions:
-- C (`c`)
-- Clojure (`clj`, `cljs`, `cljc`)
-- Crystal (`cr`)
-- C++ (`cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`)
-- C# (`cs`)
-- D (`d`)
-- Dart (`dart`)
-- Elixir (`ex`, `exs`)
-- Erlang (`erl`, `hrl`)
-- Fortran (`f`, `f90`, `f95`, `f03`, `f08`, `for`)
-- F# (`fs`, `fsi`, `fsx`)
-- Go (`go`)
-- Groovy (`groovy`)
-- Haskell (`hs`, `lhs`)
-- Java (`java`, `gradle`)
-- JavaScript/TypeScript (`cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`)
-- Julia (`jl`)
-- Kotlin (`kt`, `kts`)
-- Lua (`lua`)
-- Nim (`nim`)
-- Nushell (`nu`)
-- Objective-C (`m`, `mm`)
-- OCaml (`ml`, `mli`)
-- Pascal/Delphi (`dpr`, `pas`, `pp`)
-- Perl (`pl`, `pm`, `t`)
-- PHP (`php`)
-- PowerShell (`ps1`, `psm1`, `psd1`)
-- Python (`py`, `pyi`)
-- R (`r`)
-- Ruby (`gemspec`, `rb`, `rake`)
-- Rust (`rs`)
-- Scala (`sc`, `scala`)
-- Swift (`swift`)
-- Tcl (`tcl`)
-- V (`v`)
-- Visual Basic (`vb`)
-- Zig (`zig`)
+### Supported file extensions:
+- C -> `c`
+- Clojure -> `clj`, `cljs`, `cljc`
+- Crystal -> `cr`
+- C++ -> `cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`
+- C# -> `cs`
+- D -> `d`
+- Dart -> `dart`
+- Elixir -> `ex`, `exs`
+- Erlang -> `erl`, `hrl`
+- Fortran -> `f`, `f90`, `f95`, `f03`, `f08`, `for`
+- F# -> `fs`, `fsi`, `fsx`
+- Go -> `go`
+- Groovy -> `groovy`
+- Haskell -> `hs`, `lhs`
+- Java -> `java`, `gradle`
+- JavaScript/TypeScript -> `cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`
+- Julia -> `jl`
+- Kotlin -> `kt`, `kts`
+- Lua -> `lua`
+- Nim -> `nim`
+- Nushell -> `nu`
+- Objective-C -> `m`, `mm`
+- OCaml -> `ml`, `mli`
+- Pascal/Delphi -> `dpr`, `pas`, `pp`
+- Perl -> `pl`, `pm`, `t`
+- PHP -> `php`
+- PowerShell -> `ps1`, `psm1`, `psd1`
+- Python -> `py`, `pyi`
+- R -> `r`
+- Ruby -> `gemspec`, `rb`, `rake`
+- Rust -> `rs`
+- Scala -> `sc`, `scala`
+- Swift -> `swift`
+- Tcl -> `tcl`
+- V -> `v`
+- Visual Basic -> `vb`
+- Zig -> `zig`
 
 Examples:
 

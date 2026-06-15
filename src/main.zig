@@ -3,7 +3,9 @@ const nvi = @import("nvi");
 
 const Io = std.Io;
 
-pub fn main(init: std.process.Init) !u8 {
+const Result = enum(u8) { ok = 0, operation_failure = 1, usage_error = 2 };
+
+pub fn main(init: std.process.Init) u8 {
     const arena = init.arena.allocator();
 
     var log_buf: [4096]u8 = undefined;
@@ -12,35 +14,35 @@ pub fn main(init: std.process.Init) !u8 {
     defer logger.flush() catch {};
 
     const argv = init.minimal.args.toSlice(arena) catch {
-        try logger.writeAll("failed to read arguments (out of memory)");
-        return 2;
+        logger.writeAll(nvi.tty.red ++ "error" ++ nvi.tty.reset ++ ": Failed to read arguments (out of memory)") catch {};
+        return @intFromEnum(Result.usage_error);
     };
 
     var args = nvi.args(arena, argv, logger) catch {
-        return 2;
+        return @intFromEnum(Result.usage_error);
     };
 
     if (args.scan.items.len > 0) {
         nvi.scanner(init.io, arena, &args, logger) catch {
-            return 1;
+            return @intFromEnum(Result.operation_failure);
         };
 
-        if (args.command.len == 0) return 0;
+        if (args.command.len == 0) return @intFromEnum(Result.ok);
     }
 
     const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
-        return 2;
+        return @intFromEnum(Result.usage_error);
     };
 
     const envs = nvi.parser(init.environ_map, arena, &args, &tokens, logger) catch {
-        return 1;
+        return @intFromEnum(Result.operation_failure);
     };
 
     var out_buf: [4096]u8 = undefined;
     var out_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &out_buf);
     nvi.emitter(&out_writer.interface, &args, &envs) catch {
-        return 1;
+        return @intFromEnum(Result.operation_failure);
     };
 
-    return 0;
+    return @intFromEnum(Result.ok);
 }
