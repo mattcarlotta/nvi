@@ -7,7 +7,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 - parses one or more `.env` files
 - handles `${KEY}` interpolations
 - supports multiline values via `\` (backslash-newline) delimiter
-- can scan project files for environment-variable references across many languages and mark them as required
+- can scan project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-language-extensions) and mark them as required
 - can validate required keys before command execution
 
 ## Installation
@@ -56,21 +56,6 @@ Then source the profile path:
 ```sh
 source <profile_path>
 ```
-
-### Cross-compiling
-
-Zig cross-compiles every target from any host without extra toolchains.
-Please note that the Windows binary defaults to `--format powershell` automatically; this is baked in at compile time.
-
-```sh
-zig build --release=small -Dtarget=aarch64-macos
-zig build --release=small -Dtarget=x86_64-macos
-zig build --release=small -Dtarget=x86_64-linux-musl
-zig build --release=small -Dtarget=aarch64-linux-musl
-zig build --release=small -Dtarget=x86_64-windows
-```
-
-The `-musl` Linux targets produce fully static binaries that run on any distribution.
 
 ## Running
 
@@ -175,7 +160,7 @@ $ENV{DATABASE_URL}                # Perl
 > [!CAUTION]
 > Dynamic keys (`process.env[name]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be reported.
 
-Supported language extensions:
+### Supported language extensions:
 - C (`c`)
 - Clojure (`clj`, `cljs`, `cljc`)
 - Crystal (`cr`)
@@ -231,8 +216,7 @@ Notes:
 
 - Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
 - Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
-- The report goes to stderr;
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L12-L35)).
 - When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
 
 > [!TIP]
