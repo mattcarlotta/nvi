@@ -59,13 +59,18 @@ source <profile_path>
 
 ## Running
 
-### Unix (Linux, macOS)
+### Unix (Linux, macOS, WSL)
 
 `nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
 
 ```sh
 nvi --files .env -- <command> | xargs -0 env
 ```
+
+> [!NOTE]
+> Windows builds will default to the powershell format. Therefore, if using WSL, you'll need to use `--format nul`.
+
+For Windows Non-WSL users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
 
 More examples:
 
@@ -130,9 +135,10 @@ Unrecognized commands are warned about on stderr and ignored.
 
 ### Exit codes
 
-- `0` - Ok: Parsed and emitted successfully or printed standalone scan details
-- `1` - Operational failure: file unreadable, parse error, missing required keys, or output write failure (details on stderr)
-- `2` - Usage error: invalid flags or missing `--` command (details on stderr)
+- `0` - Ok: Parsed and emitted successfully
+- `1` - Operational failure: out of memory, file unreadable, parse error, missing required keys, or output write failure
+- `2` - Usage error: invalid flags or missing `--` command
+- `3` - Info: Prints help, scan details or version
 
 The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
 
@@ -216,7 +222,7 @@ Notes:
 
 - Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
 - Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L12-L35)).
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L12-L35)). Symlinked directories are not followed.
 - When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
 
 > [!TIP]
@@ -258,7 +264,7 @@ Interpolated keys resolve first from the shell environment and then from keys pa
 Undefined interpolations and keys with empty values are skipped with a warning.
 
 
-### Windows (PowerShell)
+### PowerShell Usage
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
 PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
@@ -304,10 +310,10 @@ Notes for Windows users:
 
 ```sh
 # preview PowerShell ENV format
-nvi --files .env --format powershell --debug -- <command>
+nvi --files .env --format powershell --debug -- echo $?
 
 # preview Unix ENV format
-nvi --files .env --format nul --debug -- <command>
+nvi --files .env --format nul --debug -- echo $?
 ```
 
 ## Security model

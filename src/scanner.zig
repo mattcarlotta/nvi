@@ -135,6 +135,7 @@ pub const Scanner = struct {
         defer matches.deinit(self.alloc);
 
         try self.scanContents(contents, accessors, &matches);
+
         if (matches.items.len == 0) return;
 
         if (self.debug) {
@@ -143,8 +144,11 @@ pub const Scanner = struct {
 
         for (matches.items) |m| {
             self.references += 1;
+
             const env = try self.envs.getOrPut(self.alloc, try self.alloc.dupe(u8, m.key));
+
             if (!env.found_existing) env.value_ptr.* = 0;
+
             env.value_ptr.* += 1;
         }
     }
@@ -291,7 +295,7 @@ pub const Scanner = struct {
         const rel = if (prefix.len == 0) name else try std.fs.path.join(self.alloc, &.{ prefix, name });
 
         try self.logger.print(
-            tty.cyan ++ "info: " ++ tty.reset ++ "Scanned {s} and found {d} key(s)...\n",
+            tty.cyan ++ "info: " ++ tty.reset ++ "Scanned " ++ tty.italic ++ "{s}" ++ tty.reset ++ " and found {d} key(s)...\n",
             .{ rel, matches.len },
         );
 
