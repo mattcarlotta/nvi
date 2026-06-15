@@ -155,9 +155,6 @@ The exit code of *your command* is reported by the downstream consumer (`xargs`)
 
 `-s`, `--scan` or just `scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
-> [!IMPORTANT]
-> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
-
 For example, every line below is recognized and yields the key `DATABASE_URL`:
 
 ```
@@ -172,6 +169,12 @@ System.getenv("DATABASE_URL")     # Java / Kotlin
 $env:DATABASE_URL                 # PowerShell
 $ENV{DATABASE_URL}                # Perl
 ```
+> [!IMPORTANT]
+> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
+
+> [!CAUTION]
+> Dynamic keys (`process.env[name]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be reported.
+
 Supported language extensions:
 - C (`c`)
 - Clojure (`clj`, `cljs`, `cljc`)
@@ -227,7 +230,6 @@ nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
 Notes:
 
 - Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
-- Statically written keys are detected at their access site.
 - Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
 - Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
 - The report goes to stderr; `--debug` adds a per-file listing of every reference with its line and byte position.
@@ -235,9 +237,6 @@ Notes:
 
 > [!TIP]
 > When using `*.ext` globs, use quotes (`'*.ext'`) or just pass bare extensions; unquoted globs are expanded into filenames by your shell before `nvi` runs.
-
-> [!CAUTION]
-> Dynamic keys (`process.env[name]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be reported.
 
 ## `.env` file syntax
 
