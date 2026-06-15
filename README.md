@@ -124,6 +124,7 @@ NUL delimiting means values pass through byte-exact without quoting or escaping:
 | `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
 | `--debug` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. The env listing follows the active `--format`, so it previews the exact pair syntax that will hit stdout. |
 | `--help` | `-h` | | Prints usage help and exits. |
+| `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
 | `--version` | `-v` | | Prints versions and exits. |
 | `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required (except for standalone `scan`, `help`, and `version`). |
 
@@ -137,7 +138,8 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 | `help` | | Prints usage help. |
 | `version` | | Prints version. |
 
-† Without a `--` command, it'll report what it finds and exits. With a `--` command, the found ENV keys are added to the required ENV set and must be defined before the ENVs and command are emitted.
+> [!NOTE]
+> † Without a `--` command, it'll report what it finds and exits. With a `--` command, the found ENV keys are added to the required ENV set and must be defined before the ENVs and command are emitted.
 
 Unrecognized commands are warned about on stderr and ignored.
 
