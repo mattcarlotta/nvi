@@ -129,7 +129,7 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 | `version` | | Prints version. |
 
 > [!NOTE]
-> † Without a `--` command, it'll report what it finds and exits. With a `--` command, the found ENV keys are added to the required ENV set and must be defined before the ENVs and command are emitted.
+> † Without a `--` command, scan reports what it finds and exits. With a `--` command, scan sets the found ENV keys to the required ENV set.
 
 Unrecognized commands are warned about on stderr and ignored.
 

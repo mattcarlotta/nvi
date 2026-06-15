@@ -27,12 +27,14 @@ pub fn main(init: std.process.Init) !u8 {
         }
     };
 
+    const no_command = args.command.len == 0;
+
     if (args.scan.items.len > 0) {
         nvi.scanner(init.io, arena, &args, logger) catch {
             return @intFromEnum(Result.operation_failure);
         };
 
-        if (args.command.len == 0) return @intFromEnum(Result.ok);
+        if (no_command) return @intFromEnum(Result.ok);
     }
 
     const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
@@ -45,7 +47,7 @@ pub fn main(init: std.process.Init) !u8 {
 
     logger.flush() catch {};
 
-    if (args.command.len == 0) {
+    if (no_command) {
         try args.logger.writeAll(nvi.tty.red ++ "error:" ++ nvi.tty.reset ++ " An " ++ nvi.tty.italic ++ "end of options delimiter" ++ nvi.tty.reset);
         try args.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ nvi.tty.green ++ " -- <command>" ++ nvi.tty.reset ++ "). See nvi help.\n");
         return @intFromEnum(Result.usage_error);
