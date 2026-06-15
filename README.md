@@ -153,7 +153,7 @@ The exit code of *your command* is reported by the downstream consumer (`xargs`)
 
 ## Scanning for ENV keys
 
-`-s`, `--scan` or just `scan` walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
+`-s`, `--scan` or just `scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
 > [!IMPORTANT]
 > An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
@@ -172,10 +172,7 @@ System.getenv("DATABASE_URL")     # Java / Kotlin
 $env:DATABASE_URL                 # PowerShell
 $ENV{DATABASE_URL}                # Perl
 ```
-
-The language is chosen by file extension.
-
-Supported languages include:
+Supported language extensions:
 - C (`c`)
 - Clojure (`clj`, `cljs`, `cljc`)
 - Crystal (`cr`)
