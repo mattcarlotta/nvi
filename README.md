@@ -19,12 +19,13 @@ Requires
 Optional:
 - [ZLS](https://zigtools.org/zls/install/)
 
+Install:
 ```sh
 cd ~/Documents
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
-# build for production & install in a directory (should be recongized by the shell $PATH)
+# build for production & install in a directory (should be recognized by the shell $PATH)
 make install DIR=<directory>
 ```
 
@@ -52,7 +53,7 @@ zig build test --summary all
 # build for release: ./zig-out/bin/nvi (default)
 zig build --release=small
 
-# build for release and install in DIR (should be recongized by the shell $PATH)
+# build for release and install in DIR (should be recognized by the shell $PATH)
 zig build --release=small --prefix <DIR>
 ```
 
@@ -111,33 +112,6 @@ For day-to-day use, you may want to add a function to your shell profile (eg. `~
 nvix() { nvi "$@" | xargs -0 -r env; }
 ```
 
-### Usage examples
-
-```sh
-# multiple files; later files override earlier ones
-nvi --files .env .env.local -- npm start | xargs -0 env
-
-# require keys to be present
-nvi --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
-
-# require every env key referenced in source files to be present
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
-
-# print a single resolved variable
-nvi -- printenv MESSAGE | xargs -0 env
-
-# inspect the full child environment
-nvi -- env | xargs -0 env
-
-# shell expansion inside the command (single-quote so your shell doesn't expand first)
-nvi -- sh -c 'echo "$MESSAGE"' | xargs -0 env
-
-# dry run what was parsed (stderr only)
-nvi --dry-run
-```
-
-NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
-
 ## Flags
 
 | Flag | Alias | Parameters | Description |
@@ -166,6 +140,32 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 > † Without a `--` command, scan reports what it finds and exits. With a `--` command, scan sets the found ENV keys to the required ENV set.
 
 Unrecognized commands are warned about on stderr and ignored.
+
+### Usage examples
+
+```sh
+# multiple files; later files override earlier ones
+nvi --files .env .env.local -- npm start | xargs -0 env
+
+# require keys to be present
+nvi --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
+
+# require every env key referenced in source files to be present
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
+
+# print a single resolved variable
+nvi -- printenv MESSAGE | xargs -0 env
+
+# inspect the full child environment
+nvi -- env | xargs -0 env
+
+# shell expansion inside the command (single-quote so your shell doesn't expand first)
+nvi -- sh -c 'echo "$MESSAGE"' | xargs -0 env
+
+# dry run what was parsed (stderr only)
+nvi --dry-run
+```
+NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
 
 ### Exit codes
 
