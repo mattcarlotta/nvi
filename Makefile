@@ -28,7 +28,7 @@ define strip_bin
 endef
 
 guard-zig:
-	@command -v zig >/dev/null 2>&1 || { echo "error: 'zig' not found in PATH; ensure Zig 0.16.0+ is installed and on your PATH" >&2; exit 1; }
+	@command -v zig >/dev/null 2>&1 || { echo "error: 'zig' not found in PATH; ensure Zig 0.16.0+ is installed and on your shell PATH" >&2; exit 1; }
 
 release: guard-zig
 	zig build --release=$(MODE) $(TARGET_FLAG)
@@ -40,5 +40,10 @@ install: guard-zig
 	zig build --release=$(MODE) $(TARGET_FLAG) --prefix $(DIR)
 	$(call strip_bin,$(DIR)/bin/nvi)
 	@ls -AFGhl $(DIR)/bin/nvi
+	@if [ -z "$(TARGET)" ]; then \
+		$(DIR)/bin/nvi --version; \
+	else \
+		echo "cross-compiled for $(TARGET); skipping version check (cannot run on host)"; \
+	fi
 
 .PHONY: guard-zig release install
