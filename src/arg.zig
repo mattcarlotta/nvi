@@ -1,14 +1,14 @@
 const std = @import("std");
-const tty = @import("tty.zig");
-const fmt = @import("formatter.zig");
-const utils = @import("utils.zig");
-const char = @import("char.zig");
-const builtin = @import("builtin");
-const version = @import("build_options").version;
-
 const Io = std.Io;
 const mem = std.mem;
 const path = std.fs.path;
+const builtin = @import("builtin");
+const version = @import("build_options").version;
+
+const char = @import("char.zig");
+const fmt = @import("formatter.zig");
+const tty = @import("tty.zig");
+const utils = @import("utils.zig");
 
 const IgnoredFlag = struct {
     flag: []const u8,

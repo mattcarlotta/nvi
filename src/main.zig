@@ -1,7 +1,7 @@
 const std = @import("std");
-const nvi = @import("nvi");
-
 const Io = std.Io;
+
+const nvi = @import("nvi");
 
 const Result = enum(u8) { ok = 0, operation_failure = 1, usage_error = 2 };
 

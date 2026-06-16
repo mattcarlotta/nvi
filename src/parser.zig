@@ -1,12 +1,12 @@
 const std = @import("std");
-const tty = @import("tty.zig");
-const arg = @import("arg.zig");
-const tk = @import("tokenizer.zig");
-const fmt = @import("formatter.zig");
-
 const Io = std.Io;
 const mem = std.mem;
 const Environ = std.process.Environ;
+
+const arg = @import("arg.zig");
+const fmt = @import("formatter.zig");
+const tk = @import("tokenizer.zig");
+const tty = @import("tty.zig");
 
 pub const Parser = struct {
     environ: *Environ.Map,

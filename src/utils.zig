@@ -1,9 +1,9 @@
 const std = @import("std");
-const tty = @import("tty.zig");
-const char = @import("char.zig");
-
 const Io = std.Io;
 const mem = std.mem;
+
+const char = @import("char.zig");
+const tty = @import("tty.zig");
 
 pub fn isAlphanumeric(s: []const u8) bool {
     if (s.len == 0) return false;

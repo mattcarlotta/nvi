@@ -1,10 +1,10 @@
 const std = @import("std");
-const ac = @import("accessors.zig");
-const sc = @import("scanner.zig");
-
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
+
+const ac = @import("accessors.zig");
+const sc = @import("scanner.zig");
 
 fn expectKeys(ext: []const u8, src: []const u8, expected: []const []const u8) !void {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

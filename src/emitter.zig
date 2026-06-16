@@ -1,8 +1,8 @@
 const std = @import("std");
+const Io = std.Io;
+
 const arg = @import("arg.zig");
 const fmt = @import("formatter.zig");
-
-const Io = std.Io;
 
 pub fn emitter(
     out: *Io.Writer,

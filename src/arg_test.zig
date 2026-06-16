@@ -1,13 +1,13 @@
 const std = @import("std");
-const arg = @import("arg.zig");
-const fmt = @import("formatter.zig");
-
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const expectError = std.testing.expectError;
+
+const arg = @import("arg.zig");
+const fmt = @import("formatter.zig");
 
 const TestArgs = struct {
     arena: std.heap.ArenaAllocator,

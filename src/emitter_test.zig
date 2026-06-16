@@ -1,10 +1,10 @@
 const std = @import("std");
-const arg = @import("arg.zig");
-const fmt = @import("formatter.zig");
-const em = @import("emitter.zig");
-
 const Io = std.Io;
 const expectEqualStrings = std.testing.expectEqualStrings;
+
+const arg = @import("arg.zig");
+const em = @import("emitter.zig");
+const fmt = @import("formatter.zig");
 
 const TestEmit = struct {
     arena: std.heap.ArenaAllocator,

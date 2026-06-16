@@ -1,10 +1,10 @@
 const std = @import("std");
-const builtin = @import("builtin");
-const fmt = @import("formatter.zig");
-
 const Io = std.Io;
 const mem = std.mem;
 const expectEqualStrings = std.testing.expectEqualStrings;
+const builtin = @import("builtin");
+
+const fmt = @import("formatter.zig");
 
 const TestFormat = struct {
     buf: [256]u8 = undefined,

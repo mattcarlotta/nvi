@@ -1,8 +1,7 @@
 const std = @import("std");
-const builtin = @import("builtin");
-
 const Io = std.Io;
 const mem = std.mem;
+const builtin = @import("builtin");
 
 pub const Format = enum {
     nul,

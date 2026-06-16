@@ -1,8 +1,4 @@
 const std = @import("std");
-const arg = @import("arg.zig");
-const tokenizer = @import("tokenizer.zig");
-const Parser = @import("parser.zig").Parser;
-
 const Io = std.Io;
 const Environ = std.process.Environ;
 const indexOf = std.mem.indexOf;
@@ -10,6 +6,10 @@ const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const expectError = std.testing.expectError;
+
+const arg = @import("arg.zig");
+const Parser = @import("parser.zig").Parser;
+const tokenizer = @import("tokenizer.zig");
 
 const TestParse = struct {
     arena: std.heap.ArenaAllocator,

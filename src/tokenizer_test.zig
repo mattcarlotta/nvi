@@ -1,12 +1,12 @@
 const std = @import("std");
-const tk = @import("tokenizer.zig");
-
 const Io = std.Io;
 const mem = std.mem;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const expectError = std.testing.expectError;
+
+const tk = @import("tokenizer.zig");
 
 const TestTokenizer = struct {
     arena: std.heap.ArenaAllocator,

@@ -1,10 +1,10 @@
 const std = @import("std");
-const tty = @import("tty.zig");
-const arg = @import("arg.zig");
-const char = @import("char.zig");
-
 const Io = std.Io;
 const mem = std.mem;
+
+const arg = @import("arg.zig");
+const char = @import("char.zig");
+const tty = @import("tty.zig");
 
 pub const ValueKind = enum { literal, commented, interpolated };
 

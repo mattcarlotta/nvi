@@ -1,11 +1,11 @@
 const std = @import("std");
-const arg = @import("arg.zig");
-const sc = @import("scanner.zig");
-const ac = @import("accessors.zig");
-
 const Io = std.Io;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
+
+const ac = @import("accessors.zig");
+const arg = @import("arg.zig");
+const sc = @import("scanner.zig");
 
 const js = [_]ac.Accessor{
     .{ .prefix = "process.env.", .pattern = .ident },

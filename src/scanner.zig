@@ -1,13 +1,13 @@
 const std = @import("std");
-const tty = @import("tty.zig");
-const arg = @import("arg.zig");
-const utils = @import("utils.zig");
-const ac = @import("accessors.zig");
-const char = @import("char.zig");
-
 const Io = std.Io;
 const mem = std.mem;
 const path = std.fs.path;
+
+const ac = @import("accessors.zig");
+const arg = @import("arg.zig");
+const char = @import("char.zig");
+const tty = @import("tty.zig");
+const utils = @import("utils.zig");
 
 const Env = struct {
     key: []const u8,
