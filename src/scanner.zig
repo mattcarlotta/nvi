@@ -225,6 +225,8 @@ pub const Scanner = struct {
     }
 
     pub fn mergeRequiredEnvs(self: *Scanner) !void {
+        if (self.envs.count() == 0) return;
+
         if (self.dry_run) try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following ENV keys have been marked as required... \n");
 
         for (self.envs.keys()) |key| {

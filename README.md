@@ -2,7 +2,7 @@
 
 A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
-- 0 dependencies
+- 0 dependencies & statically linked
 - language agnostic
 - parses one or more `.env` files
 - handles `${KEY}` interpolations
@@ -12,27 +12,51 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 
 ## Installation
 
-Requires [Zig](https://ziglang.org/download/) `0.16.0` or later (optionally install [ZLS](https://zigtools.org/zls/install/) for linting).
+Requires
+- [Zig](https://ziglang.org/download/) `0.16.0` or later
+- [GNU Make](https://www.gnu.org/software/make/#download) `3.81` or later (alternatively, you can build and install using `zig`)
+
+Optional:
+- [ZLS](https://zigtools.org/zls/install/)
 
 ```sh
 cd ~/Documents
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
-# build for production & install somewhere on your $PATH
-zig build --release=small --prefix <path>
+# build for production & install in a directory (should be recongized by the shell $PATH)
+make install DIR=<directory>
 ```
 
-For testing/debugging:
+Or custom configurations (`release` and `install` share the same flags):
 ```sh
-# debug build (default): zig-out/bin/nvi
+# DIR=./zig-out/bin (default)
+# MODE=safe (default)
+# TARGET=native (default)
+make release
+
+# DIR: path/to/system/directory
+# MODE (compiler): fast, safe, small
+# TARGET (architecture): aarch64-macos, x86_64-macos, aarch64-linux-musl, x86_64-linux-musl, x86_64-windows
+make install DIR=$HOME/.local MODE=fast TARGET=aarch64-linux-gnu
+```
+
+Custom builds/testing using zig:
+```sh
+# debug build: ./zig-out/bin/nvi (default)
 zig build
 
 # run all test suites
 zig build test --summary all
+
+# build for release: ./zig-out/bin/nvi (default)
+zig build --release=small
+
+# build for release and install in DIR (should be recongized by the shell $PATH)
+zig build --release=small --prefix <DIR>
 ```
 
-For cross-compiling:
+Cross-compiling using zig:
 ```
 zig build --release=small -Dtarget=aarch64-macos
 zig build --release=small -Dtarget=x86_64-macos
@@ -265,7 +289,7 @@ oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\
 owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
-# no backslash with just a new-line/EOF indicates the end of a multi-line value
+# no backslash with just a new-line/EOF indicates the end of a multiline value
 ```
 
 Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `--files`).
