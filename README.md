@@ -8,7 +8,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 - handles `${KEY}` interpolations
 - supports multiline values via `\` (backslash-newline) delimiter
 - can scan project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and mark them as required
-- can validate required keys before command execution
+- can validate required keys are defined before command execution
 
 ## Installation
 
@@ -43,7 +43,7 @@ zig build --release=small -Dtarget=x86_64-windows
 The `-musl` Linux targets produce fully static binaries that run on any distribution.
 
 > [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format with `--format nul`.
+> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format with `--format nul` or compile for Linux.
 
 ### Verify system installation
 
@@ -64,7 +64,7 @@ export PATH="<path>:$PATH"
 # for example, export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Then source the profile path:
+Then source the profile path (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
 source <profile_path>
 ```
@@ -79,9 +79,15 @@ source <profile_path>
 nvi --files .env -- <command> | xargs -0 env
 ```
 
-For Windows Non-WSL users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
+For Windows (Non-WSL) users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
 
-More examples:
+For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
+
+```sh
+nvix() { nvi "$@" | xargs -0 -r env; }
+```
+
+### Usage examples
 
 ```sh
 # multiple files; later files override earlier ones
@@ -103,12 +109,7 @@ nvi -- env | xargs -0 env
 nvi -- sh -c 'echo "$MESSAGE"' | xargs -0 env
 
 # dry run what was parsed (stderr only)
-nvi --dry-run -- echo $?
-```
-For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
-
-```sh
-nvix() { nvi "$@" | xargs -0 -r env; }
+nvi --dry-run
 ```
 
 NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
@@ -285,12 +286,7 @@ For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`
 ```powershell
 function nvix { nvi @args | Out-String | Invoke-Expression }
 ```
-
-then usage:
-
-```powershell
-nvix --files .env -- <command>
-```
+See [Usage Examples](https://github.com/mattcarlotta/nvi-bin#usage-examples) for more information.
 
 Example of what the emitted structure looks like:
 
