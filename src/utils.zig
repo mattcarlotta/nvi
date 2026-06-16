@@ -28,10 +28,10 @@ pub fn printHelp(out: *Io.Writer) !void {
         \\
         \\Flags:
         \\  -f, --files <paths>     parses .env files in order (default: .env)
-        \\  -i, --ignored <keys>    ignores ENV keys that a scan may add to the required ENV key list
-        \\  -r, --required <keys>   marks a list of ENV keys that must be present
+        \\  -i, --ignored <keys>    ignores ENV keys that a scan may find and add to a required ENV key list
+        \\  -r, --required <keys>   marks a list of ENV keys that must be present before the command is emitted
         \\  -F, --format <fmt>      outputs ENV format (options: nul|powershell)
-        \\  -d, --debug             prints internal debug details to stderr
+        \\  -d, --dry-run           print parsed flags, tokens, scan results, and the resolved env listing to stderr
         \\  -h, --help              prints this help and exits
         \\  -s, --scan <ext>        recursively scans in the root directory for ENV keys used within *.<ext> files and marks them as required †
         \\  -v, --version           prints the version and exits
@@ -41,7 +41,7 @@ pub fn printHelp(out: *Io.Writer) !void {
         \\  scan <ext>              recursively scans in the root directory for ENV keys used within *.<ext> files and marks them as required †
         \\  version                 prints the version and exits
         \\
-        \\ † without a command, scan reports what it finds and exits; with a command, the found ENV keys are added to the required ENV set
+        \\ † without a command, scan reports what it finds and exits; with a command, the found ENV keys are added to a required ENV key list
         \\
         \\Supported scan file extensions:
         \\ • C -> c
@@ -86,13 +86,12 @@ pub fn printHelp(out: *Io.Writer) !void {
     );
 }
 
-pub fn parseExt(e: []const u8, logger: *Io.Writer) ![]const u8 {
+pub fn parseExt(e: []const u8) ![]const u8 {
     var ext = e;
     if (mem.startsWith(u8, ext, "*.")) ext = ext[2..];
     if (mem.startsWith(u8, ext, ".")) ext = ext[1..];
 
     if (!isAlphanumeric(ext)) {
-        try logger.print(tty.red ++ "error:" ++ tty.reset ++ " The scan parameter " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a file extension (e.g. mjs or *.mjs). If you passed an unquoted glob, your shell may have expanded it into filenames; pass the bare extension instead\n", .{e});
         return error.InvalidExtension;
     }
 

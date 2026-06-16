@@ -52,7 +52,7 @@ test "isKeyChar rejects lowercase (the boundary that splits keys from identifier
 }
 
 test "printHelp writes the usage, flags, and commands" {
-    var buf: [2048]u8 = undefined;
+    var buf: [4096]u8 = undefined;
     var out: Io.Writer = .fixed(&buf);
 
     try utils.printHelp(&out);
@@ -63,35 +63,24 @@ test "printHelp writes the usage, flags, and commands" {
     try expect(mem.indexOf(u8, help, "-i, --ignored") != null);
     try expect(mem.indexOf(u8, help, "-r, --required") != null);
     try expect(mem.indexOf(u8, help, "-F, --format") != null);
-    try expect(mem.indexOf(u8, help, "-d, --debug") != null);
+    try expect(mem.indexOf(u8, help, "-d, --dry-run") != null);
+    try expect(mem.indexOf(u8, help, "-h, --help") != null);
+    try expect(mem.indexOf(u8, help, "-v, --version") != null);
+    try expect(mem.indexOf(u8, help, "help") != null);
     try expect(mem.indexOf(u8, help, "scan <ext>") != null);
     try expect(mem.indexOf(u8, help, "version") != null);
 }
 
 test "parseExt accepts bare, dotted, and glob spellings" {
-    var buf: [512]u8 = undefined;
-    var logger: Io.Writer = .fixed(&buf);
-
-    try expectEqualStrings("mjs", try utils.parseExt("mjs", &logger));
-    try expectEqualStrings("ts", try utils.parseExt(".ts", &logger));
-    try expectEqualStrings("zig", try utils.parseExt("*.zig", &logger));
-    try expectEqualStrings("Makefile", try utils.parseExt("Makefile", &logger));
+    try expectEqualStrings("mjs", try utils.parseExt("mjs"));
+    try expectEqualStrings("ts", try utils.parseExt(".ts"));
+    try expectEqualStrings("zig", try utils.parseExt("*.zig"));
+    try expectEqualStrings("Makefile", try utils.parseExt("Makefile"));
 }
 
 test "parseExt errors on empty and prefix-only inputs" {
-    var buf: [2048]u8 = undefined;
-    var logger: Io.Writer = .fixed(&buf);
-
-    try expectError(error.InvalidExtension, utils.parseExt("", &logger));
-    try expectError(error.InvalidExtension, utils.parseExt(".", &logger));
-    try expectError(error.InvalidExtension, utils.parseExt("*.", &logger));
-    try expectError(error.InvalidExtension, utils.parseExt("src/", &logger));
-}
-
-test "parseExt errors on a shell-expanded filename with a hint" {
-    var buf: [512]u8 = undefined;
-    var logger: Io.Writer = .fixed(&buf);
-
-    try expectError(error.InvalidExtension, utils.parseExt("index.mjs", &logger));
-    try expect(mem.indexOf(u8, logger.buffered(), "shell may have expanded") != null);
+    try expectError(error.InvalidExtension, utils.parseExt(""));
+    try expectError(error.InvalidExtension, utils.parseExt("."));
+    try expectError(error.InvalidExtension, utils.parseExt("*."));
+    try expectError(error.InvalidExtension, utils.parseExt("src/"));
 }

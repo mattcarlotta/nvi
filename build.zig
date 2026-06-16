@@ -1,5 +1,13 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const zon = @import("build.zig.zon");
+
+comptime {
+    const required = std.SemanticVersion{ .major = 0, .minor = 16, .patch = 0 };
+    if (builtin.zig_version.order(required) == .lt) {
+        @compileError("nvi requires Zig 0.16.0 or newer; found " ++ builtin.zig_version.string);
+    }
+}
 
 // Although this function looks imperative, it does not perform the build
 // directly and instead it mutates the build graph (`b`) that will be then

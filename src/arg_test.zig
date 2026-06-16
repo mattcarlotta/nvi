@@ -11,7 +11,7 @@ const expectError = std.testing.expectError;
 
 const TestArgs = struct {
     arena: std.heap.ArenaAllocator,
-    logger_buf: [2048]u8 = undefined,
+    logger_buf: [4096]u8 = undefined,
     logger: Io.Writer = undefined,
 
     fn init() TestArgs {
@@ -36,13 +36,13 @@ const TestArgs = struct {
     }
 };
 
-test "parses and sets debug flag" {
+test "parses and sets dry-run flag" {
     var t = TestArgs.init();
     defer t.deinit();
 
-    const args = try t.run(&.{ "nvi", "--debug", "--", "echo", "hi" });
+    const args = try t.run(&.{ "nvi", "--dry-run", "--", "echo", "hi" });
 
-    try expect(args.debug);
+    try expect(args.dry_run);
 }
 
 test "parses and sets files flag" {
@@ -139,7 +139,10 @@ test "version prints to stderr and short-circuits" {
     defer t.deinit();
 
     try expectError(error.Version, t.run(&.{ "nvi", "version" }));
-    try expect(mem.indexOf(u8, t.output(), "nvi ") != null);
+    try expect(mem.indexOf(u8, t.output(), "nvi") != null);
+    try expect(mem.indexOf(u8, t.output(), "Build type") != null);
+    try expect(mem.indexOf(u8, t.output(), "Zig") != null);
+    try expect(mem.indexOf(u8, t.output(), "Target") != null);
 }
 
 test "help after the delimiter is a command token" {

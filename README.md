@@ -20,8 +20,7 @@ cd ~/Documents
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
 # build for production & install somewhere on your $PATH
-zig build --release=small --prefix ~/.local
-
+zig build --release=small --prefix <path>
 ```
 
 For testing/debugging:
@@ -31,8 +30,20 @@ zig build
 
 # run all test suites
 zig build test --summary all
-
 ```
+
+For cross-compiling:
+```
+zig build --release=small -Dtarget=aarch64-macos
+zig build --release=small -Dtarget=x86_64-macos
+zig build --release=small -Dtarget=x86_64-linux-musl
+zig build --release=small -Dtarget=aarch64-linux-musl
+zig build --release=small -Dtarget=x86_64-windows
+```
+The `-musl` Linux targets produce fully static binaries that run on any distribution.
+
+> [!NOTE]
+> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format with `--format nul`.
 
 ### Verify system installation
 
@@ -42,14 +53,15 @@ which nvi
 # ~/.local/bin/nvi
 
 ```
-If not found, then `~/.local/bin` probably isn't included in your `$PATH`:
+If not found, then your install path probably isn't included in your `$PATH`:
 ```sh
 echo $PATH
 ```
 
-You'll need to append the `$HOME/.local/bin` path to your shell profile's `$PATH` (eg. `~/.bashrc` or `~/.zshrc`):
+You'll need to append that install `<path>` to your shell profile's `$PATH` (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="<path>:$PATH"
+# for example, export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Then source the profile path:
@@ -66,9 +78,6 @@ source <profile_path>
 ```sh
 nvi --files .env -- <command> | xargs -0 env
 ```
-
-> [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if using WSL, you'll need to override the format with `--format nul`.
 
 For Windows Non-WSL users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
 
@@ -93,8 +102,8 @@ nvi -- env | xargs -0 env
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
 nvi -- sh -c 'echo "$MESSAGE"' | xargs -0 env
 
-# debug what was parsed (stderr only)
-nvi --debug -- echo $?
+# dry run what was parsed (stderr only)
+nvi --dry-run -- echo $?
 ```
 For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
 
@@ -112,7 +121,7 @@ NUL delimiting means values pass through byte-exact without quoting or escaping:
 | `--ignored` | `-i` | one or more keys | Keys that `scan` should not add to the required ENV set (e.g. `NODE_ENV`, which is typically injected at runtime by tooling rather than defined in a `.env` file). Only meaningful together with `scan`. |
 | `--required` | `-r` | one or more keys | Keys that must exist with non-empty values after parsing. `nvi` exits with an error listing any that are missing. |
 | `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
-| `--debug` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. The env listing follows the active `--format`, so it previews the exact pair syntax that will hit stdout. |
+| `--dry-run` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. |
 | `--help` | `-h` | | Prints usage help and exits. |
 | `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
 | `--version` | `-v` | | Prints versions and exits. |
@@ -256,7 +265,6 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
 # no backslash with just a new-line/EOF indicates the end of a multi-line value
-
 ```
 
 Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `--files`).
@@ -309,12 +317,10 @@ Notes for Windows users:
 
 ```sh
 # preview PowerShell ENV format
-nvi --format powershell --debug
-# nvi --format powershell -- echo $?
+nvi --format powershell -- echo $?
 
 # preview Unix ENV format
-nvi --format nul --debug
-# nvi --format nul -- echo $?
+nvi --format nul -- echo $?
 ```
 
 ## Security model

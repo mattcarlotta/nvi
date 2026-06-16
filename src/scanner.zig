@@ -51,16 +51,16 @@ pub const Scanner = struct {
     alloc: mem.Allocator,
     args: *arg.Arg,
     logger: *Io.Writer,
-    debug: bool = false,
+    dry_run: bool = false,
     files_scanned: usize = 0,
     references: usize = 0,
     envs: std.StringArrayHashMapUnmanaged(usize) = .empty,
     exts: std.StringArrayHashMapUnmanaged([]const ac.Accessor) = .empty,
 
     pub fn run(self: *Scanner) !void {
-        self.debug = self.args.debug or self.args.command.len == 0;
+        self.dry_run = self.args.dry_run or self.args.command.len == 0;
 
-        if (self.debug) {
+        if (self.dry_run) {
             try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "Scanning for environment variables in");
 
             for (self.args.scan.items, 0..) |ext, i| {
@@ -77,7 +77,7 @@ pub const Scanner = struct {
                 continue;
             }
 
-            if (self.debug) {
+            if (self.dry_run) {
                 try self.logger.print(
                     tty.yellow ++ "warning: " ++ tty.reset ++ "No accessor patterns were found for " ++ tty.bold_yellow ++ "*.{s}" ++ tty.reset ++ ", skipping.\n\n",
                     .{ext},
@@ -90,16 +90,16 @@ pub const Scanner = struct {
 
         try self.walkFileTree(root, "");
 
-        if (self.debug) {
+        if (self.dry_run) {
             try self.logger.print(
                 tty.cyan ++ "info: " ++ tty.reset ++ "Scanned {d} file(s) and found {d} reference(s) to {d} unique key(s)\n\n",
                 .{ self.files_scanned, self.references, self.envs.count() },
             );
         }
 
-        if (self.args.command.len == 0) return error.NoCommand;
-
         try self.mergeRequiredEnvs();
+
+        if (self.args.command.len == 0) return error.NoCommand;
     }
 
     fn walkFileTree(self: *Scanner, dir: Io.Dir, prefix: []const u8) !void {
@@ -141,7 +141,7 @@ pub const Scanner = struct {
 
         if (matches.items.len == 0) return;
 
-        if (self.debug) {
+        if (self.dry_run) {
             try self.printMatches(prefix, name, matches.items);
         }
 
@@ -225,17 +225,17 @@ pub const Scanner = struct {
     }
 
     pub fn mergeRequiredEnvs(self: *Scanner) !void {
-        if (self.debug) try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following ENV keys have been marked as required... \n");
+        if (self.dry_run) try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following ENV keys have been marked as required... \n");
 
         for (self.envs.keys()) |key| {
             if (self.isIgnoredKey(key)) continue;
 
             try self.args.required.append(self.alloc, key);
 
-            if (self.debug) try self.logger.print("    •" ++ tty.bold_green ++ " {s}" ++ tty.reset ++ "\n", .{key});
+            if (self.dry_run) try self.logger.print("    •" ++ tty.bold_green ++ " {s}" ++ tty.reset ++ "\n", .{key});
         }
 
-        if (self.debug) try self.logger.writeByte('\n');
+        if (self.dry_run) try self.logger.writeByte('\n');
     }
 
     fn printMatches(self: *Scanner, prefix: []const u8, name: []const u8, matches: []const Match) !void {

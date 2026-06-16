@@ -39,7 +39,7 @@ pub const Parser = struct {
             return error.NoParsedEnvs;
         }
 
-        if (self.args.debug) try self.printListing();
+        if (self.args.dry_run) try self.printListing();
 
         try self.checkRequired();
     }
@@ -54,7 +54,7 @@ pub const Parser = struct {
                         try value.appendSlice(self.alloc, v);
                     } else if (self.envs.get(interpolated_key)) |v| {
                         try value.appendSlice(self.alloc, v);
-                    } else if (self.args.debug) {
+                    } else if (self.args.dry_run) {
                         try self.logger.print(
                             tty.yellow ++ "warning:" ++ tty.reset ++ " The " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
                             .{tkn.key.?},
@@ -70,7 +70,7 @@ pub const Parser = struct {
                     }
                 },
                 .commented => {
-                    if (self.args.debug) {
+                    if (self.args.dry_run) {
                         try self.logger.print(
                             tty.cyan ++ "info:" ++ tty.reset ++ " Parsed a comment:" ++ tty.cyan ++ " {s} " ++ tty.reset,
                             .{value_token.value},

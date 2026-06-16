@@ -59,7 +59,7 @@ pub const Tokenizer = struct {
             try self.parse(file, env);
         }
 
-        if (self.args.debug) {
+        if (self.args.dry_run) {
             try self.print();
         }
     }

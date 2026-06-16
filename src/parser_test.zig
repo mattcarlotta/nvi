@@ -124,12 +124,12 @@ test "parseTokens skips an undefined interpolation but keeps valid keys" {
     try expect(envs.get("UNDEF") == null);
 }
 
-test "parseTokens debug listing follows the powershell format" {
+test "parseTokens dry_run listing follows the powershell format" {
     var tp: TestParse = undefined;
     tp.init();
     defer tp.deinit();
 
-    tp.args.debug = true;
+    tp.args.dry_run = true;
     tp.args.format = .powershell;
     try tp.addToken("KEY", .literal, "it's ok");
 
@@ -169,12 +169,12 @@ test "parseTokens errors when a required env is missing" {
     try expectError(error.MissingRequiredEnvs, tp.run());
 }
 
-test "parseTokens logs skipped comments in debug mode" {
+test "parseTokens logs skipped comments in dry_run mode" {
     var tp: TestParse = undefined;
     tp.init();
     defer tp.deinit();
 
-    tp.args.debug = true;
+    tp.args.dry_run = true;
     try tp.addToken("KEY", .literal, "value");
     try tp.addToken(null, .commented, "# a comment");
 

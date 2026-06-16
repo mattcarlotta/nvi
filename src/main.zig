@@ -52,6 +52,10 @@ pub fn main(init: std.process.Init) u8 {
         return @intFromEnum(Result.operation_failure);
     };
 
+    if (args.dry_run) {
+        return @intFromEnum(Result.ok);
+    }
+
     if (args.command.len == 0) {
         args.printMissingCommand();
         return @intFromEnum(Result.usage_error);

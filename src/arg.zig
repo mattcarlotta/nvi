@@ -3,6 +3,7 @@ const tty = @import("tty.zig");
 const fmt = @import("formatter.zig");
 const utils = @import("utils.zig");
 const char = @import("char.zig");
+const builtin = @import("builtin");
 const version = @import("build_options").version;
 
 const Io = std.Io;
@@ -20,21 +21,21 @@ pub const Arg = struct {
     i: usize = 0,
     files: std.ArrayList([]const u8) = .empty,
     command: []const [:0]const u8 = &.{},
-    debug: bool = false,
+    dry_run: bool = false,
     format: fmt.Format = .default,
     required: std.ArrayList([]const u8) = .empty,
     ignored: std.ArrayList([]const u8) = .empty,
     scan: std.ArrayList([]const u8) = .empty,
     logger: *Io.Writer,
 
-    const Flag = enum { files, debug, format, ignored, required, scan, help, version };
+    const Flag = enum { files, dry_run, format, ignored, required, scan, help, version };
 
     const flags = std.StaticStringMap(Flag).initComptime(.{
         .{ "-f", .files },
         .{ "--files", .files },
 
-        .{ "-d", .debug },
-        .{ "--debug", .debug },
+        .{ "-d", .dry_run },
+        .{ "--dry-run", .dry_run },
 
         .{ "-h", .help },
         .{ "--help", .help },
@@ -68,7 +69,19 @@ pub const Arg = struct {
 
         while (self.next()) |token| {
             if (mem.eql(u8, token, "--")) {
-                self.command = self.rest();
+                const cmd = self.rest();
+
+                if (self.dry_run) {
+                    try self.logger.writeAll(tty.yellow ++ "warning" ++ tty.reset ++ ": The " ++ tty.bold_yellow);
+                    for (cmd, 0..) |part, i| {
+                        if (i != 0) try self.logger.writeByte(' ');
+                        try self.logger.writeAll(part);
+                    }
+                    try self.logger.writeAll(tty.reset ++ " command will not be emitted in dry-run mode; skipped.\n\n");
+                    break;
+                }
+
+                self.command = cmd;
                 break;
             }
 
@@ -81,7 +94,7 @@ pub const Arg = struct {
             };
 
             switch (flag) {
-                .debug => self.debug = true,
+                .dry_run => self.dry_run = true,
                 .help => {
                     try utils.printHelp(self.logger);
                     return error.Help;
@@ -119,12 +132,22 @@ pub const Arg = struct {
                 .scan => {
                     var param = try self.requireValue(token);
                     while (true) {
-                        try self.scan.append(self.alloc, try utils.parseExt(param, self.logger));
+                        const ext = utils.parseExt(param) catch |err| {
+                            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The scan parameter " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a file extension (e.g. mjs or *.mjs). If you passed an unquoted glob, your shell may have expanded it into filenames; pass the bare extension instead\n", .{param});
+                            return err;
+                        };
+                        try self.scan.append(self.alloc, ext);
                         param = self.nextValue() orelse break;
                     }
                 },
                 .version => {
                     try self.logger.print("nvi {s}\n", .{version});
+                    try self.logger.print("Build type: {s}\n", .{@tagName(builtin.mode)});
+                    try self.logger.print("Zig {f}\n", .{builtin.zig_version});
+                    try self.logger.print("Target: {s}-{s}\n", .{
+                        @tagName(builtin.target.cpu.arch),
+                        @tagName(builtin.target.os.tag),
+                    });
                     return error.Version;
                 },
             }
@@ -152,7 +175,7 @@ pub const Arg = struct {
             try self.files.append(self.alloc, ".env");
         }
 
-        if (self.debug) {
+        if (self.dry_run) {
             try self.printFlags();
         }
     }
