@@ -2,7 +2,7 @@
 
 A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
-- 0 dependencies & statically linked
+- 0 dependencies and statically linked
 - language agnostic
 - parses one or more `.env` files
 - handles `${KEY}` interpolations
@@ -78,7 +78,7 @@ which nvi
 # ~/.local/bin/nvi
 
 ```
-If not found, then your install path probably isn't included in your `$PATH`:
+If not found, then your install path probably isn't included in your shell's `$PATH`:
 ```sh
 echo $PATH
 ```
