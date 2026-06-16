@@ -1,7 +1,7 @@
 const std = @import("std");
 const arg = @import("arg.zig");
-const tk = @import("tokenizer.zig");
-const pr = @import("parser.zig");
+const tokenizer = @import("tokenizer.zig");
+const Parser = @import("parser.zig").Parser;
 
 const Io = std.Io;
 const Environ = std.process.Environ;
@@ -17,14 +17,14 @@ const TestParse = struct {
     logger: Io.Writer = undefined,
     environ: Environ.Map = undefined,
     args: arg.Arg = undefined,
-    tokens: std.ArrayList(tk.Token) = .empty,
+    tokens: std.ArrayList(tokenizer.Token) = .empty,
 
     fn init(self: *TestParse) void {
         self.* = .{ .arena = std.heap.ArenaAllocator.init(std.testing.allocator) };
         const a = self.arena.allocator();
         self.logger = .fixed(&self.logger_buf);
         self.environ = Environ.Map.init(a);
-        self.args = .{ .argv = &.{}, .logger = &self.logger };
+        self.args = .{ .alloc = self.arena.allocator(), .argv = &.{}, .logger = &self.logger };
     }
 
     fn deinit(self: *TestParse) void {
@@ -35,8 +35,8 @@ const TestParse = struct {
         return self.arena.allocator();
     }
 
-    fn addToken(self: *TestParse, key: ?[]const u8, kind: tk.ValueKind, value: []const u8) !void {
-        var tok: tk.Token = .{ .key = key, .file = "testp.env" };
+    fn addToken(self: *TestParse, key: ?[]const u8, kind: tokenizer.ValueKind, value: []const u8) !void {
+        var tok: tokenizer.Token = .{ .key = key, .file = "testp.env" };
         try tok.values.append(self.alloc(), .{ .kind = kind, .value = value, .line = 1, .byte = 1 });
         try self.tokens.append(self.alloc(), tok);
     }
@@ -46,7 +46,17 @@ const TestParse = struct {
     }
 
     fn run(self: *TestParse) !std.StringArrayHashMapUnmanaged([]const u8) {
-        return pr.parseTokens(&self.environ, self.alloc(), &self.args, &self.tokens, &self.logger);
+        var p: Parser = .{
+            .environ = &self.environ,
+            .alloc = self.alloc(),
+            .args = &self.args,
+            .tokens = &self.tokens,
+            .logger = &self.logger,
+        };
+
+        try p.run();
+
+        return p.envs;
     }
 };
 
@@ -67,7 +77,7 @@ test "parseTokens concatenates multiple value tokens into one value" {
     tp.init();
     defer tp.deinit();
 
-    var tok: tk.Token = .{ .key = "MULTI", .file = "testp.env" };
+    var tok: tokenizer.Token = .{ .key = "MULTI", .file = "testp.env" };
     try tok.values.append(tp.alloc(), .{ .kind = .literal, .value = "12", .line = 1, .byte = 1 });
     try tok.values.append(tp.alloc(), .{ .kind = .literal, .value = "34", .line = 2, .byte = 1 });
     try tp.tokens.append(tp.alloc(), tok);

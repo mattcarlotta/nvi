@@ -5,20 +5,22 @@ const Io = std.Io;
 
 const Result = enum(u8) { ok = 0, operation_failure = 1, usage_error = 2 };
 
-pub fn main(init: std.process.Init) !u8 {
-    const arena = init.arena.allocator();
+pub fn main(init: std.process.Init) u8 {
+    const alloc = init.arena.allocator();
 
-    var log_buf: [4096]u8 = undefined;
-    var log_writer: Io.File.Writer = Io.File.stderr().writer(init.io, &log_buf);
-    const logger = &log_writer.interface;
-    defer logger.flush() catch {};
+    var stderr_buf: [4096]u8 = undefined;
+    var stderr_writer: Io.File.Writer = Io.File.stderr().writer(init.io, &stderr_buf);
+    const stderr = &stderr_writer.interface;
+    defer stderr.flush() catch {};
 
-    const argv = init.minimal.args.toSlice(arena) catch {
-        try logger.writeAll(nvi.tty.red ++ "error" ++ nvi.tty.reset ++ ": Failed to read arguments (out of memory)");
+    const argv = init.minimal.args.toSlice(alloc) catch {
+        stderr.writeAll(nvi.tty.red ++ "error" ++ nvi.tty.reset ++ ": Failed to read arguments (out of memory)") catch {};
         return @intFromEnum(Result.operation_failure);
     };
 
-    var args = nvi.args(arena, argv, logger) catch |err| {
+    var args: nvi.Arg = .{ .alloc = alloc, .argv = argv, .logger = stderr };
+
+    args.run() catch |err| {
         switch (err) {
             error.Help, error.Version => return @intFromEnum(Result.ok),
             else => {
@@ -27,37 +29,46 @@ pub fn main(init: std.process.Init) !u8 {
         }
     };
 
-    const no_command = args.command.len == 0;
-
     if (args.scan.items.len > 0) {
-        nvi.scanner(init.io, arena, &args, logger) catch {
-            return @intFromEnum(Result.operation_failure);
-        };
+        var scanner: nvi.Scanner = .{ .alloc = alloc, .args = &args, .io = init.io, .logger = stderr };
 
-        if (no_command) return @intFromEnum(Result.ok);
+        scanner.run() catch |err| {
+            switch (err) {
+                error.NoCommand => return @intFromEnum(Result.ok),
+                else => return @intFromEnum(Result.operation_failure),
+            }
+        };
     }
 
-    const tokens = nvi.tokenizer(init.io, arena, &args, logger) catch {
+    var tokenizer: nvi.Tokenizer = .{ .alloc = alloc, .args = &args, .io = init.io, .logger = stderr };
+
+    tokenizer.run() catch {
         return @intFromEnum(Result.usage_error);
     };
 
-    const envs = nvi.parser(init.environ_map, arena, &args, &tokens, logger) catch {
+    var parser: nvi.Parser = .{ .alloc = alloc, .args = &args, .environ = init.environ_map, .tokens = &tokenizer.tokens, .logger = stderr };
+
+    parser.run() catch {
         return @intFromEnum(Result.operation_failure);
     };
 
-    logger.flush() catch {};
-
-    if (no_command) {
-        try args.logger.writeAll(nvi.tty.red ++ "error:" ++ nvi.tty.reset ++ " An " ++ nvi.tty.italic ++ "end of options delimiter" ++ nvi.tty.reset);
-        try args.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ nvi.tty.green ++ " -- <command>" ++ nvi.tty.reset ++ "). See nvi help.\n");
+    if (args.command.len == 0) {
+        args.printMissingCommand();
         return @intFromEnum(Result.usage_error);
     }
+
+    stderr.flush() catch {};
 
     var stdout_buf: [4096]u8 = undefined;
     var stdout_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &stdout_buf);
-    nvi.emitter(&stdout_writer.interface, &args, &envs) catch {
+    const stdout = &stdout_writer.interface;
+    defer stdout.flush() catch {};
+
+    nvi.emitter(stdout, &args, &parser.envs) catch {
         return @intFromEnum(Result.operation_failure);
     };
+
+    stdout.flush() catch {};
 
     return @intFromEnum(Result.ok);
 }

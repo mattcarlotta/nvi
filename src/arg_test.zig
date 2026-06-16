@@ -28,7 +28,11 @@ const TestArgs = struct {
 
     fn run(self: *TestArgs, argv: []const [:0]const u8) !arg.Arg {
         self.logger = .fixed(&self.logger_buf);
-        return arg.argParser(self.arena.allocator(), argv, &self.logger);
+        var args: arg.Arg = .{ .alloc = self.arena.allocator(), .argv = argv, .logger = &self.logger };
+
+        try args.run();
+
+        return args;
     }
 };
 

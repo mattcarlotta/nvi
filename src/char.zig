@@ -7,14 +7,15 @@ pub const LINE_DELIMITER: u8 = '\n';
 pub const ASSIGN_OP: u8 = '=';
 pub const HASH: u8 = '#';
 pub const UNDERLINE: u8 = '_';
+pub const FORWARD_SLASH: u8 = '/';
 pub const DOLLAR_SIGN: u8 = '$';
 pub const OPEN_BRACE: u8 = '{';
 pub const CLOSE_BRACE: u8 = '}';
 pub const CLOSE_PAREN: u8 = ')';
 pub const BACK_SLASH: u8 = '\\';
-pub const DOUBLE_QOUTE: u8 = '"';
-pub const SINGLE_QOUTE: u8 = '\'';
-pub const CARRIAGE_RETURN: u8 = '\t';
+pub const DOUBLE_QUOTE: u8 = '"';
+pub const SINGLE_QUOTE: u8 = '\'';
+pub const TAB: u8 = '\t';
 pub const SPACE: u8 = ' ';
 pub const DOT: u8 = '.';
 

@@ -31,6 +31,7 @@ const TestEmit = struct {
         self.logger = .fixed(&self.logger_buf);
 
         const args: arg.Arg = .{
+            .alloc = self.arena.allocator(),
             .argv = &.{},
             .logger = &self.logger,
             .format = format,
@@ -38,6 +39,9 @@ const TestEmit = struct {
         };
 
         try em.emitter(&self.out, &args, &self.envs);
+
+        try self.out.flush();
+
         return self.out.buffered();
     }
 };

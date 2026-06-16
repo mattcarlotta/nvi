@@ -98,3 +98,8 @@ pub fn parseExt(e: []const u8, logger: *Io.Writer) ![]const u8 {
 
     return ext;
 }
+
+pub fn sameLineOnly(contents: []const u8, from: usize, to: usize) bool {
+    return mem.indexOfScalarPos(u8, contents, from, char.LINE_DELIMITER) == null or
+        mem.indexOfScalarPos(u8, contents, from, char.LINE_DELIMITER).? >= to;
+}

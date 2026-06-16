@@ -22,14 +22,47 @@ pub const Token = struct {
 };
 
 pub const Tokenizer = struct {
+    io: Io,
     alloc: mem.Allocator,
     logger: *Io.Writer,
+    args: *const arg.Arg,
     i: usize = 0,
     byte: usize = 0,
     line: usize = 0,
     file: []const u8 = "",
     file_name: []const u8 = "",
     tokens: std.ArrayList(Token) = .empty,
+
+    pub fn run(self: *Tokenizer) !void {
+        for (self.args.files.items) |env| {
+            const file = Io.Dir.cwd().readFileAlloc(self.io, env, self.alloc, .limited(10 * 1024 * 1024)) catch {
+                try self.logger.print(
+                    tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a(n) " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " file within the current directory (file not found).\n",
+                    .{env},
+                );
+                return error.FileReadFailed;
+            };
+
+            if (file.len == 0) {
+                try self.logger.print(
+                    tty.red ++ "error:" ++ tty.reset ++ " Unable to generate tokens. The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " file doesn't contain any KEY=VALUE variables!\n",
+                    .{env},
+                );
+                return error.EmptyEnvFile;
+            }
+
+            try self.tokens.ensureTotalCapacity(
+                self.alloc,
+                self.tokens.items.len + mem.count(u8, file, "\n") + 1,
+            );
+
+            try self.parse(file, env);
+        }
+
+        if (self.args.debug) {
+            try self.print();
+        }
+    }
 
     fn nextLine(self: *Tokenizer) void {
         self.line += 1;
@@ -300,36 +333,9 @@ pub const Tokenizer = struct {
 };
 
 pub fn tokenFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
-    var tokenizer: Tokenizer = .{ .alloc = alloc, .logger = logger };
+    var tokenizer: Tokenizer = .{ .args = args, .alloc = alloc, .io = io, .logger = logger };
 
-    for (args.files.items) |env| {
-        const file = Io.Dir.cwd().readFileAlloc(io, env, alloc, .limited(10 * 1024 * 1024)) catch {
-            try tokenizer.logger.print(
-                tty.red ++ "error:" ++ tty.reset ++ " Unable to locate a " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " within the current directory (file not found).\n",
-                .{env},
-            );
-            return error.FileReadFailed;
-        };
-
-        if (file.len == 0) {
-            try tokenizer.logger.print(
-                tty.red ++ "error:" ++ tty.reset ++ " Unable to generate tokens. The " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " file doesn't contain any KEY=VALUE variables!\n",
-                .{env},
-            );
-            return error.EmptyEnvFile;
-        }
-
-        try tokenizer.tokens.ensureTotalCapacity(
-            alloc,
-            tokenizer.tokens.items.len + mem.count(u8, file, "\n") + 1,
-        );
-
-        try tokenizer.parse(file, env);
-    }
-
-    if (args.debug) {
-        try tokenizer.print();
-    }
+    try tokenizer.run();
 
     return tokenizer.tokens;
 }

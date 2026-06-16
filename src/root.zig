@@ -1,16 +1,16 @@
 const arg = @import("arg.zig");
-const tk = @import("tokenizer.zig");
-const pr = @import("parser.zig");
-const em = @import("emitter.zig");
-const sc = @import("scanner.zig");
+const tokenizer = @import("tokenizer.zig").Tokenizer;
+const parser = @import("parser.zig").Parser;
+const em = @import("emitter.zig").emitter;
+const scanner = @import("scanner.zig").Scanner;
 const ty = @import("tty.zig");
 
-pub const args = arg.argParser;
+pub const Arg = arg.Arg;
 pub const tty = ty;
-pub const tokenizer = tk.tokenFiles;
-pub const parser = pr.parseTokens;
-pub const emitter = em.emitter;
-pub const scanner = sc.scanFiles;
+pub const Tokenizer = tokenizer;
+pub const Parser = parser;
+pub const emitter = em;
+pub const Scanner = scanner;
 
 test {
     _ = @import("accessors.zig");

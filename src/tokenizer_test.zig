@@ -29,7 +29,9 @@ const TestTokenizer = struct {
         self.logger = .fixed(&self.logger_buf);
 
         var tokenizer: tk.Tokenizer = .{
+            .args = undefined,
             .alloc = self.arena.allocator(),
+            .io = undefined,
             .logger = &self.logger,
         };
 

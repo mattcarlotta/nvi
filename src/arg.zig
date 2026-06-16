@@ -2,10 +2,12 @@ const std = @import("std");
 const tty = @import("tty.zig");
 const fmt = @import("formatter.zig");
 const utils = @import("utils.zig");
+const char = @import("char.zig");
 const version = @import("build_options").version;
 
 const Io = std.Io;
 const mem = std.mem;
+const path = std.fs.path;
 
 const IgnoredFlag = struct {
     flag: []const u8,
@@ -13,6 +15,7 @@ const IgnoredFlag = struct {
 };
 
 pub const Arg = struct {
+    alloc: mem.Allocator,
     argv: []const [:0]const u8,
     i: usize = 0,
     files: std.ArrayList([]const u8) = .empty,
@@ -56,6 +59,104 @@ pub const Arg = struct {
         .{ "version", .version },
     });
 
+    pub fn run(self: *Arg) !void {
+        var invalid_flags: std.ArrayList(IgnoredFlag) = .empty;
+        defer invalid_flags.deinit(self.alloc);
+
+        // skipping program name at argv[0]
+        _ = self.next();
+
+        while (self.next()) |token| {
+            if (mem.eql(u8, token, "--")) {
+                self.command = self.rest();
+                break;
+            }
+
+            const flag = Arg.flags.get(token) orelse {
+                const start = self.i;
+                while (self.nextValue()) |_| {}
+                try invalid_flags.append(self.alloc, .{ .flag = token, .params = self.argv[start..self.i] });
+
+                continue;
+            };
+
+            switch (flag) {
+                .debug => self.debug = true,
+                .help => {
+                    try utils.printHelp(self.logger);
+                    return error.Help;
+                },
+                .ignored => {
+                    var param = try self.requireValue(token);
+                    while (true) {
+                        try self.ignored.append(self.alloc, param);
+                        param = self.nextValue() orelse break;
+                    }
+                },
+                .files => {
+                    var param = try self.requireValue(token);
+                    while (true) {
+                        try self.validateFileName(param);
+                        try self.files.append(self.alloc, param);
+                        param = self.nextValue() orelse break;
+                    }
+                },
+                .format => {
+                    const param = try self.requireValue(token);
+
+                    self.format = std.meta.stringToEnum(fmt.Format, param) orelse {
+                        try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The format flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a valid format (expected 'nul' or 'powershell')\n", .{param});
+                        return error.InvalidFormat;
+                    };
+                },
+                .required => {
+                    var param = try self.requireValue(token);
+                    while (true) {
+                        try self.required.append(self.alloc, param);
+                        param = self.nextValue() orelse break;
+                    }
+                },
+                .scan => {
+                    var param = try self.requireValue(token);
+                    while (true) {
+                        try self.scan.append(self.alloc, try utils.parseExt(param, self.logger));
+                        param = self.nextValue() orelse break;
+                    }
+                },
+                .version => {
+                    try self.logger.print("nvi {s}\n", .{version});
+                    return error.Version;
+                },
+            }
+        }
+
+        for (invalid_flags.items) |entry| {
+            try self.logger.print(
+                tty.yellow ++ "warning: " ++ tty.reset ++ "An unrecognized flag " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
+                .{entry.flag},
+            );
+
+            if (entry.params.len > 0) {
+                try self.logger.writeAll(" with parameters " ++ tty.bold_yellow);
+
+                for (entry.params, 0..) |p, idx| {
+                    if (idx != 0) try self.logger.writeByte(' ');
+                    try self.logger.writeAll(p);
+                }
+            }
+
+            try self.logger.writeAll(tty.reset ++ " was ignored \n");
+        }
+
+        if (self.files.items.len == 0) {
+            try self.files.append(self.alloc, ".env");
+        }
+
+        if (self.debug) {
+            try self.printFlags();
+        }
+    }
+
     fn next(self: *Arg) ?[:0]const u8 {
         if (self.i >= self.argv.len) return null;
         defer self.i += 1;
@@ -85,23 +186,31 @@ pub const Arg = struct {
     }
 
     pub fn validateFileName(self: *Arg, f: []const u8) !void {
-        if (mem.indexOf(u8, f, ".env") == null) {
+        const base = path.basename(f);
+        const env_file = mem.eql(u8, base, ".env") or mem.startsWith(u8, base, ".env.") or mem.endsWith(u8, base, ".env");
+
+        if (!env_file) {
             try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a valid env file (file must contain '.env' extension)\n", .{f});
             return error.InvalidFileExtension;
         }
 
-        if (std.fs.path.isAbsolute(f)) {
+        if (path.isAbsolute(f)) {
             try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " must be relative to the current directory\n", .{f});
             return error.InvalidFilePath;
         }
 
-        var it = mem.tokenizeScalar(u8, f, '/');
+        var it = mem.tokenizeScalar(u8, f, char.FORWARD_SLASH);
         while (it.next()) |component| {
             if (mem.eql(u8, component, "..")) {
                 try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The file flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " may not escape the current directory\n", .{f});
                 return error.InvalidFilePathEscape;
             }
         }
+    }
+
+    pub fn printMissingCommand(self: *Arg) void {
+        self.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset) catch {};
+        self.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ "). See nvi help.\n") catch {};
     }
 
     pub fn printFlags(self: *Arg) !void {
@@ -157,111 +266,3 @@ pub const Arg = struct {
         try self.logger.writeAll("\n\n");
     }
 };
-
-pub fn argParser(alloc: mem.Allocator, argv: []const [:0]const u8, logger: *Io.Writer) !Arg {
-    var args: Arg = .{ .argv = argv, .logger = logger };
-
-    var ignored_flags: std.ArrayList(IgnoredFlag) = .empty;
-    defer ignored_flags.deinit(alloc);
-
-    // skipping program name at argv[0]
-    _ = args.next();
-
-    while (args.next()) |token| {
-        if (mem.eql(u8, token, "--")) {
-            args.command = args.rest();
-            break;
-        }
-
-        const flag = Arg.flags.get(token) orelse {
-            const start = args.i;
-            while (args.nextValue()) |_| {}
-            try ignored_flags.append(alloc, .{ .flag = token, .params = args.argv[start..args.i] });
-
-            continue;
-        };
-
-        switch (flag) {
-            .debug => args.debug = true,
-            .help => {
-                try utils.printHelp(args.logger);
-                return error.Help;
-            },
-            .ignored => {
-                var param = try args.requireValue(token);
-                while (true) {
-                    try args.ignored.append(alloc, param);
-                    param = args.nextValue() orelse break;
-                }
-            },
-            .files => {
-                var param = try args.requireValue(token);
-                while (true) {
-                    try args.validateFileName(param);
-                    try args.files.append(alloc, param);
-                    param = args.nextValue() orelse break;
-                }
-            },
-            .format => {
-                const param = try args.requireValue(token);
-
-                args.format = std.meta.stringToEnum(fmt.Format, param) orelse {
-                    try args.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The format flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a valid format (expected 'nul' or 'powershell')\n", .{param});
-                    return error.InvalidFormat;
-                };
-            },
-            .required => {
-                var param = try args.requireValue(token);
-                while (true) {
-                    try args.required.append(alloc, param);
-                    param = args.nextValue() orelse break;
-                }
-            },
-            .scan => {
-                var param = try args.requireValue(token);
-                while (true) {
-                    try args.scan.append(alloc, try utils.parseExt(param, logger));
-                    param = args.nextValue() orelse break;
-                }
-            },
-            .version => {
-                try args.logger.print("nvi {s}\n", .{version});
-                return error.Version;
-            },
-        }
-    }
-
-    for (ignored_flags.items) |entry| {
-        try args.logger.print(
-            tty.yellow ++ "warning: " ++ tty.reset ++ "An unrecognized flag " ++ tty.bold_yellow ++ "{s}" ++ tty.reset,
-            .{entry.flag},
-        );
-
-        if (entry.params.len > 0) {
-            try args.logger.writeAll(" with parameters " ++ tty.bold_yellow);
-
-            for (entry.params, 0..) |p, idx| {
-                if (idx != 0) try args.logger.writeByte(' ');
-                try args.logger.writeAll(p);
-            }
-        }
-
-        try args.logger.writeAll(tty.reset ++ " was ignored \n");
-    }
-
-    if (args.files.items.len == 0) {
-        try args.files.append(alloc, ".env");
-    }
-
-    // if (args.scan.items.len == 0 and args.command.len == 0) {
-    //     try args.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset);
-    //     try args.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ "). See nvi help\n");
-    //     return error.MissingCommand;
-    // }
-
-    if (args.debug) {
-        try args.printFlags();
-    }
-
-    return args;
-}

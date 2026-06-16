@@ -116,21 +116,21 @@ test "scanContents works with a real table from accessors.extensions" {
     try expectEqualStrings("DATABASE_URL", matches[0].key);
 }
 
-test "mergeRequired skips ignored keys" {
+test "mergeRequiredEnvs skips ignored keys" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
     var logger_buf: [256]u8 = undefined;
     var logger: Io.Writer = .fixed(&logger_buf);
-    var args: arg.Arg = .{ .argv = &.{}, .command = &.{"test"}, .logger = &logger };
+    var args: arg.Arg = .{ .alloc = arena.allocator(), .argv = &.{}, .command = &.{"test"}, .logger = &logger };
     try args.ignored.append(alloc, "NODE_ENV");
 
     var scanner: sc.Scanner = .{ .io = undefined, .alloc = alloc, .args = &args, .logger = &logger };
     try scanner.envs.put(alloc, "NODE_ENV", 3);
     try scanner.envs.put(alloc, "API_KEY", 1);
 
-    try scanner.mergeRequired();
+    try scanner.mergeRequiredEnvs();
 
     try expectEqual(@as(usize, 1), args.required.items.len);
     try expectEqualStrings("API_KEY", args.required.items[0]);
