@@ -19,6 +19,8 @@ else
   TARGET_FLAG := -Dtarget=$(TARGET)
 endif
 
+SUMMARY ?= all
+
 define strip_bin
 	@if command -v strip >/dev/null 2>&1; then \
 		strip $(STRIP_FLAGS) $(1); \
@@ -46,4 +48,13 @@ install: guard-zig
 		echo "cross-compiled for $(TARGET); skipping version check (cannot run on host)"; \
 	fi
 
-.PHONY: guard-zig release install
+test: guard-zig
+	zig build test --summary $(SUMMARY)
+
+unit: guard-zig
+	zig build unit --summary $(SUMMARY)
+
+integration: guard-zig
+	zig build integration --summary $(SUMMARY)
+
+.PHONY: guard-zig release install test unit integration

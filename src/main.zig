@@ -43,7 +43,7 @@ pub fn main(init: std.process.Init) u8 {
     var tokenizer: nvi.Tokenizer = .{ .alloc = alloc, .args = &args, .io = init.io, .logger = stderr };
 
     tokenizer.run() catch {
-        return @intFromEnum(Result.usage_error);
+        return @intFromEnum(Result.operation_failure);
     };
 
     var parser: nvi.Parser = .{ .alloc = alloc, .args = &args, .environ = init.environ_map, .tokens = &tokenizer.tokens, .logger = stderr };

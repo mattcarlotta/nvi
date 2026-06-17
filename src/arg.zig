@@ -245,7 +245,7 @@ pub const Arg = struct {
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{part});
             }
         } else {
-            try self.logger.writeAll("(undefined)");
+            try self.logger.writeAll(tty.dark_gray ++ "(undefined)" ++ tty.reset);
         }
 
         try self.logger.writeAll("\n   files: ");
@@ -261,7 +261,7 @@ pub const Arg = struct {
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
-            try self.logger.writeAll("(undefined)");
+            try self.logger.writeAll(tty.dark_gray ++ "(undefined)" ++ tty.reset);
         }
 
         try self.logger.writeAll("\n   ignored: ");
@@ -271,7 +271,7 @@ pub const Arg = struct {
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
-            try self.logger.writeAll("(undefined)");
+            try self.logger.writeAll(tty.dark_gray ++ "(undefined)" ++ tty.reset);
         }
 
         try self.logger.writeAll("\n   scan: ");
@@ -281,7 +281,7 @@ pub const Arg = struct {
                 try self.logger.print(tty.bold_green ++ "{s}" ++ tty.reset, .{f});
             }
         } else {
-            try self.logger.writeAll("(undefined)");
+            try self.logger.writeAll(tty.dark_gray ++ "(undefined)" ++ tty.reset);
         }
 
         try self.logger.print("\n   format: " ++ tty.bold_green ++ "{t}" ++ tty.reset, .{self.format});

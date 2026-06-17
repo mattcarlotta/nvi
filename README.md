@@ -29,26 +29,23 @@ git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 make install DIR=<directory>
 ```
 
-Or custom configurations (`release` and `install` share the same flags):
+Or custom configurations (`make release` and `make install` share the same flags: `DIR`, `MODE`, `TARGET`):
 ```sh
 # DIR=./zig-out/bin (default)
 # MODE=safe (default)
 # TARGET=native (default)
 make release
 
-# DIR: path/to/system/directory
+# DIR: $HOME/.local/bin
 # MODE (compiler): fast, safe, small
 # TARGET (architecture): aarch64-macos, x86_64-macos, aarch64-linux-musl, x86_64-linux-musl, x86_64-windows
 make install DIR=$HOME/.local MODE=fast TARGET=aarch64-linux-gnu
 ```
 
-Custom builds/testing using zig:
+Custom builds using zig:
 ```sh
 # debug build: ./zig-out/bin/nvi (default)
 zig build
-
-# run all test suites
-zig build test --summary all
 
 # build for release: ./zig-out/bin/nvi (default)
 zig build --release=small
@@ -68,7 +65,7 @@ zig build --release=small -Dtarget=x86_64-windows
 The `-musl` Linux targets produce fully static binaries that run on any distribution.
 
 > [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format with `--format nul` or compile for Linux.
+> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format flag with `--format nul` or compile for Linux.
 
 ### Verify system installation
 
@@ -78,15 +75,15 @@ which nvi
 # ~/.local/bin/nvi
 
 ```
-If not found, then your install path probably isn't included in your shell's `$PATH`:
+If not found, then your install `DIR` path probably isn't included in your shell's `$PATH`:
 ```sh
 echo $PATH
 ```
 
-You'll need to append that install `<path>` to your shell profile's `$PATH` (eg. `~/.bashrc` or `~/.zshrc`):
+You'll need to append that install `DIR` path to your shell profile's `$PATH` (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
-export PATH="<path>:$PATH"
-# for example, export PATH="$HOME/.local/bin:$PATH"
+export PATH="<DIR>:$PATH"
+# for example: export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Then source the profile path (eg. `~/.bashrc` or `~/.zshrc`):
@@ -169,9 +166,9 @@ NUL delimiting means values pass through byte-exact without quoting or escaping:
 
 ### Exit codes
 
-- `0` - Ok: Parsed/emitted ENVs successfully or prints information and exits (help, scan, version)
-- `1` - Operational failure: out of memory, file unreadable, parse error, missing required keys, or output write failure
-- `2` - Usage error: invalid flags or missing `--` command
+- `0` - Ok: Parsed/emitted ENVs successfully or dry run that prints information and exits (help, scan, version)
+- `1` - Operational failure: out of memory, file unreadable, parser error, required keys are undefined, or output write failure
+- `2` - Usage error: flags missing required params or a missing `--` command
 
 The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
 
@@ -197,7 +194,7 @@ $ENV{DATABASE_URL}                # Perl
 > An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
 
 > [!CAUTION]
-> Dynamic keys (`process.env[name]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be reported.
+> Dynamic keys (`const key = "DATABASE_URL"; process.env[key]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be found.
 
 ### Supported file extensions:
 - C -> `c`
@@ -238,16 +235,16 @@ $ENV{DATABASE_URL}                # Perl
 - Visual Basic -> `vb`
 - Zig -> `zig`
 
-Examples:
+Scan Examples:
 
 ```sh
-# report every env reference in .mjs and .ts files, then exit
+# reports every env accessor in .mjs and .ts files, then exits
 nvi --scan mjs ts
 
-# scanned keys are required and must be defined before 'npm run dev' is emitted
+# collects scanned keys to be required and defined before 'npm run dev' command is emitted
 nvi --scan mjs --files .env -- npm run dev | xargs -0 -r env
 
-# exclude runtime-injected keys from the command environment
+# excludes runtime-injected ENVs found within the 'npm run dev' command environment
 nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
 ```
 
@@ -341,6 +338,19 @@ nvi --format powershell -- echo $?
 
 # preview Unix ENV format
 nvi --format nul -- echo $?
+```
+## Testing
+
+To run tests, use the following `make` or `zig build` commands:
+```sh
+make test
+# zig build test --summary all
+
+make unit
+# zig build unit --summary all
+
+make integration
+# zig build integration --summary all
 ```
 
 ## Security model
