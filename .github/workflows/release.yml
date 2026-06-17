@@ -1,0 +1,136 @@
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+    # branches: ["main"]
+
+env:
+  ZIG_VERSION: "0.16.0"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Zig
+        run: |
+          arch=x86_64-linux
+          if [[ "$ZIG_VERSION" == *dev* ]]; then
+            url="https://ziglang.org/builds/zig-${arch}-${ZIG_VERSION}.tar.xz"
+          else
+            url="https://ziglang.org/download/${ZIG_VERSION}/zig-${arch}-${ZIG_VERSION}.tar.xz"
+          fi
+          echo "Downloading $url"
+          curl -fsSL "$url" -o zig.tar.xz
+          tar -xf zig.tar.xz
+          echo "$PWD/zig-${arch}-${ZIG_VERSION}" >> "$GITHUB_PATH"
+
+      - name: Verify Zig
+        run: zig version
+
+      - name: Check formatting
+        run: zig fmt --check .
+
+      - name: Run tests
+        run: zig build test --summary all
+
+  build:
+    name: Build ${{ matrix.target.archive }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target:
+          - { archive: "linux-x86_64",   zig: "x86_64-linux-musl",  ext: "",     format: "tar.gz" }
+          - { archive: "linux-aarch64",  zig: "aarch64-linux-musl", ext: "",     format: "tar.gz" }
+          # - { archive: "macos-x86_64",   zig: "x86_64-macos",       ext: "",     format: "tar.gz" }
+          - { archive: "macos-aarch64",  zig: "aarch64-macos",      ext: "",     format: "tar.gz" }
+          - { archive: "windows-x86_64", zig: "x86_64-windows",     ext: ".exe", format: "zip" }
+          # - { archive: "windows-aarch64", zig: "aarch64-windows",  ext: ".exe", format: "zip" }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Zig
+        run: |
+          arch=x86_64-linux
+          if [[ "$ZIG_VERSION" == *dev* ]]; then
+            url="https://ziglang.org/builds/zig-${arch}-${ZIG_VERSION}.tar.xz"
+          else
+            url="https://ziglang.org/download/${ZIG_VERSION}/zig-${arch}-${ZIG_VERSION}.tar.xz"
+          fi
+          echo "Downloading $url"
+          curl -fsSL "$url" -o zig.tar.xz
+          tar -xf zig.tar.xz
+          echo "$PWD/zig-${arch}-${ZIG_VERSION}" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: |
+          zig build \
+            -Dtarget=${{ matrix.target.zig }} \
+            -Doptimize=ReleaseSafe \
+            --prefix zig-out/${{ matrix.target.archive }}
+
+      # Carried over from your Rust workflow. Skipped for Windows (a .1 man page is
+      # meaningless there). Delete this step entirely if docs/nvi.1.md is gone.
+      # - name: Build man page
+      #   if: matrix.target.format != 'zip'
+      #   run: |
+      #     sudo apt-get -y update
+      #     sudo apt-get -y install pandoc
+      #     pandoc --standalone --to man docs/nvi.1.md -o docs/nvi.1
+
+      - name: Package
+        run: |
+          bin="nvi${{ matrix.target.ext }}"
+          mkdir -p nvi/bin
+          cp "zig-out/${{ matrix.target.archive }}/bin/${bin}" "nvi/bin/${bin}"
+          if [ "${{ matrix.target.format }}" = "zip" ]; then
+            zip -r "nvi-${{ matrix.target.archive }}.zip" nvi
+          else
+            # mkdir -p nvi/man
+            # cp docs/nvi.1 nvi/man/
+            tar -czvf "nvi-${{ matrix.target.archive }}.tar.gz" nvi
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nvi-${{ matrix.target.archive }}
+          path: nvi-${{ matrix.target.archive }}.${{ matrix.target.format }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: nvi-*
+          merge-multiple: true
+
+      - name: Publish release
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release create "$TAG" \
+            --generate-notes \
+            --title "$TAG" \
+            dist/*
