@@ -14,7 +14,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 
 Download a precompiled binary from [Releases](https://github.com/mattcarlotta/nvi-bin/releases/)
 
-Then place the binary in one of the directories (owned by you, not by `root`) located in your shell `$PATH`:
+Then place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
@@ -26,8 +26,8 @@ mkdir -p $HOME/.local/bin
 
 Then edit and update your shell  profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
 ```sh
-typeset -U path # remove duplicate directories in $PATH
-export PATH="$HOME/.local/bin:$PATH"
+typeset -U path # optionally remove duplicate directories in $PATH
+path+=("$HOME/.local/bin")
 ```
 
 Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
