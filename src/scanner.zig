@@ -9,6 +9,21 @@ const char = @import("char.zig");
 const tty = @import("tty.zig");
 const utils = @import("utils.zig");
 
+// Recursively walks the working directory and collects environment-variable
+// keys referenced in source files, so they can be marked required.
+//
+// For each file whose extension maps to a set of accessors (see accessors.zig), the
+// contents are read once into memory, scanned linearly for accessor prefixes,
+// and each match's key is extracted and counted. The unique keys are then
+// appended to the required list (minus any the user ignored).
+//
+// Files are read and closed one at a time; only the current root-to-leaf chain
+// of directory handles is open at once. Blacklisted and dot directories are
+// skipped. Files over 10MB are skipped with a warning, since a silently
+// unscanned file could hide a key.
+//
+// Without a command, scan runs as a report (dry-run) and returns error.NoCommand.
+
 const Env = struct {
     key: []const u8,
     start: usize,

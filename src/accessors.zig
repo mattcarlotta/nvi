@@ -1,7 +1,7 @@
 const std = @import("std");
 
 // Env-variable access patterns, grouped by language and keyed by file
-// extension. The scanner matches `prefix` at a position, then.patterns the key
+// extension. The scanner matches `prefix` at a position, then patterns the key
 // using .pattern`. This replaces convention-based suffix matching (`_ENV`) with
 // intent-based matching: a token is an env var because it is read through a
 // known environment accessor, not because of how it is spelled.

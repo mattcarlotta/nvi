@@ -3,6 +3,13 @@ const Io = std.Io;
 
 const nvi = @import("nvi");
 
+// Entry point and pipeline orchestrator. Sets up the stderr writer, parses
+// args, then runs scan (optional) -> tokenize -> parse -> emit, mapping each
+// stage's outcome to a process exit code (ok/operation_failure/usage_error).
+//
+// Diagnostics buffer on stderr and are flushed before any data is written to
+// stdout, so the two streams never interleave; stdout is reserved for the emit.
+
 const Result = enum(u8) { ok = 0, operation_failure = 1, usage_error = 2 };
 
 pub fn main(init: std.process.Init) u8 {

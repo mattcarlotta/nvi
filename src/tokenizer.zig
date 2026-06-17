@@ -6,6 +6,15 @@ const arg = @import("arg.zig");
 const char = @import("char.zig");
 const tty = @import("tty.zig");
 
+// Turns raw .env file bytes into tokens. A single linear pass tracks line and
+// byte position and splits each KEY=VALUE into a key plus an ordered list of
+// value-tokens (literal, interpolated `${...}`, or commented).
+//
+// Handles quoting, `#` comments, `${VAR}` interpolation, line continuations, and reports
+// position-tagged errors (empty key, unterminated interpolation). Keys and
+// value bytes are duped onto the allocator, so tokens own their text and don't
+// alias the file buffer.
+
 pub const ValueKind = enum { literal, commented, interpolated };
 
 const ValueToken = struct {

@@ -8,6 +8,19 @@ const fmt = @import("formatter.zig");
 const tk = @import("tokenizer.zig");
 const tty = @import("tty.zig");
 
+// Resolves tokens into the final set of environment variables to emit. Each
+// token's value-tokens are concatenated in order; interpolations (`${KEY}`)
+// resolve against the process environment first, then against keys parsed
+// earlier in this run, so later .env entries can reference earlier ones.
+//
+// Commented and empty-valued tokens are skipped. The result is owned: keys come
+// from the tokenizer's duped slices and values from `toOwnedSlice`, so nothing
+// stored aliases a transient buffer.
+//
+// NOTE: last definition wins. A key repeated across files overwrites the
+// earlier value (the original owned key is kept). Required-key validation runs
+// after parsing so it sees the fully merged set.
+
 pub const Parser = struct {
     environ: *Environ.Map,
     alloc: mem.Allocator,
