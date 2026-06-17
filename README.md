@@ -14,9 +14,9 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 
 Requires
 - [Zig](https://ziglang.org/download/) `0.16.0` or later
-- [GNU Make](https://www.gnu.org/software/make/#download) `3.81` or later (alternatively, you can build and install using `zig`)
 
 Optional:
+- [GNU Make](https://www.gnu.org/software/make/#download) `3.81` or later (alternatively, you can build and install using `zig`)
 - [ZLS](https://zigtools.org/zls/install/)
 
 Install:
@@ -25,7 +25,7 @@ cd ~/Documents
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
-# build for production & install in a directory (should be recognized by the shell $PATH)
+# build for production and install in a directory (should be recognized by the shell $PATH)
 make install DIR=<directory>
 ```
 
@@ -95,14 +95,13 @@ source <profile_path>
 
 ### Unix (Linux, macOS, WSL)
 
+For Windows (Non-WSL) users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
+
 `nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
 
 ```sh
-nvi --files .env -- <command> | xargs -0 env
+nvi [flags|command] -- [command] | xargs -0 env
 ```
-
-For Windows (Non-WSL) users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
-
 For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
 
 ```sh
@@ -138,26 +137,72 @@ Unrecognized flags (and their parameters) are warned about on stderr and ignored
 
 Unrecognized commands are warned about on stderr and ignored.
 
-### Usage examples
+## PowerShell Usage
+
+The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
+PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
+
+```powershell
+nvi [flags|command] -- [command] | Out-String | Invoke-Expression
+```
+
+For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`:
+
+```powershell
+function nvix { nvi @args | Out-String | Invoke-Expression }
+```
+
+Example of what the emitted structure looks like:
+
+```powershell
+$env:MESSAGE = 'hello'
+$env:MULTI = 'line1
+line2'
+& 'npm' 'run' 'dev'
+```
+
+Values are single-quoted with PowerShell's one escaping rule (`'` doubled to `''`), so apostrophes, `$`, backticks, and newlines are all literal.
+
+Notes for Windows users:
+
+- **Persistence:** `$env:` assignments apply to the invoking PowerShell session, so the variables remain set after the command exits. For an isolated, throwaway environment, run the pipeline inside `pwsh -Command "..."`.
+- **Encoding:** PowerShell decodes nvi's output using the console encoding. PowerShell 7+ defaults to UTF-8; on Windows PowerShell 5.1, set `[Console]::OutputEncoding` to UTF-8 if your values contain non-ASCII characters.
+- **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the Unix pipeline directly with `--format nul`.
+- **WSL:** use the Linux binary and the Unix pipeline.
+- `cmd.exe` is not supported.
+
+### Choosing a format explicitly
+
+`--format` overrides the platform default in either direction:
+
+```sh
+# preview PowerShell ENV format
+nvi --format powershell -- echo $?
+
+# preview Unix ENV format
+nvi --format nul -- echo $?
+```
+
+## Usage examples
 
 ```sh
 # multiple files; later files override earlier ones
-nvi --files .env .env.local -- npm start | xargs -0 env
+nvi --files .env .env.local -- npm start | <consumer>
 
 # require keys to be present
-nvi --required API_KEY DATABASE_URL -- cargo run | xargs -0 env
+nvi --required API_KEY DATABASE_URL -- cargo run | <consumer>
 
 # require every env key referenced in source files to be present
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 
 # print a single resolved variable
-nvi -- printenv MESSAGE | xargs -0 env
+nvi -- printenv MESSAGE | <consumer>
 
 # inspect the full child environment
-nvi -- env | xargs -0 env
+nvi -- env | <consumer>
 
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
-nvi -- sh -c 'echo "$MESSAGE"' | xargs -0 env
+nvi -- sh -c 'echo "$MESSAGE"' | <consumer>
 
 # dry run what was parsed (stderr only)
 nvi --dry-run
@@ -166,7 +211,7 @@ NUL delimiting means values pass through byte-exact without quoting or escaping:
 
 ### Exit codes
 
-- `0` - Ok: Parsed/emitted ENVs successfully or dry run that prints information and exits (help, scan, version)
+- `0` - Ok: Parsed/emitted ENVs successfully or prints information and exits (help, scan, version)
 - `1` - Operational failure: out of memory, file unreadable, parser error, required keys are undefined, or output write failure
 - `2` - Usage error: flags missing required params or a missing `--` command
 
@@ -288,57 +333,9 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
 # no backslash with just a new-line/EOF indicates the end of a multiline value
 ```
-
 Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `--files`).
 Undefined interpolations and keys with empty values are skipped with a warning.
 
-
-### PowerShell Usage
-
-The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
-PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
-
-```powershell
-nvi --files .env -- npm run dev | Out-String | Invoke-Expression
-```
-
-For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`:
-
-```powershell
-function nvix { nvi @args | Out-String | Invoke-Expression }
-```
-See [Usage Examples](https://github.com/mattcarlotta/nvi-bin#usage-examples) for more information.
-
-Example of what the emitted structure looks like:
-
-```powershell
-$env:MESSAGE = 'hello'
-$env:MULTI = 'line1
-line2'
-& 'npm' 'run' 'dev'
-```
-
-Values are single-quoted with PowerShell's one escaping rule (`'` doubled to `''`), so apostrophes, `$`, backticks, and newlines are all literal.
-
-Notes for Windows users:
-
-- **Persistence:** `$env:` assignments apply to the invoking PowerShell session, so the variables remain set after the command exits. For an isolated, throwaway environment, run the pipeline inside `pwsh -Command "..."`.
-- **Encoding:** PowerShell decodes nvi's output using the console encoding. PowerShell 7+ defaults to UTF-8; on Windows PowerShell 5.1, set `[Console]::OutputEncoding` to UTF-8 if your values contain non-ASCII characters.
-- **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the Unix pipeline directly with `--format nul`.
-- **WSL:** use the Linux binary and the Unix pipeline.
-- `cmd.exe` is not supported.
-
-### Choosing a format explicitly
-
-`--format` overrides the platform default in either direction:
-
-```sh
-# preview PowerShell ENV format
-nvi --format powershell -- echo $?
-
-# preview Unix ENV format
-nvi --format nul -- echo $?
-```
 ## Testing
 
 To run tests, use the following `make` or `zig build` commands:
