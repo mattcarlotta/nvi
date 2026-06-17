@@ -12,6 +12,31 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 
 ## Installation
 
+Download a precompiled binary from [Releases](https://github.com/mattcarlotta/nvi-bin/releases/)
+
+Then place the binary in one of the directories (owned by you, not by `root`) located in your shell `$PATH`:
+```sh
+echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
+```
+
+Optionally, create a self-owned local bin directory:
+```sh
+mkdir -p $HOME/.local/bin
+```
+
+Then edit and update your shell  profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
+```sh
+typeset -U path # remove duplicate directories in $PATH
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
+```sh
+source <profile_url>
+```
+
+## Build from source
+
 Requires
 - [Zig](https://ziglang.org/download/) `0.16.0` or later
 
@@ -19,9 +44,9 @@ Optional:
 - [GNU Make](https://www.gnu.org/software/make/#download) `3.81` or later (alternatively, you can build and install using `zig`)
 - [ZLS](https://zigtools.org/zls/install/)
 
-Install:
+
 ```sh
-cd ~/Documents
+cd ~/Downloads
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
@@ -29,7 +54,7 @@ git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 make install DIR=<directory>
 ```
 
-Or custom configurations (`make release` and `make install` share the same flags: `DIR`, `MODE`, `TARGET`):
+Or create custom builds using make (`make release` and `make install` share the same flags: `DIR`, `MODE`, `TARGET`):
 ```sh
 # DIR=./zig-out/bin (default)
 # MODE=safe (default)
@@ -42,26 +67,26 @@ make release
 make install DIR=$HOME/.local MODE=fast TARGET=aarch64-linux-gnu
 ```
 
-Custom builds using zig:
+Or custom builds using zig:
 ```sh
 # debug build: ./zig-out/bin/nvi (default)
 zig build
 
 # build for release: ./zig-out/bin/nvi (default)
+# release: fast, safe, small
 zig build --release=small
 
-# build for release and install in DIR (should be recognized by the shell $PATH)
+# build for release and install in a DIR (should be recognized by the shell $PATH)
 zig build --release=small --prefix <DIR>
-```
 
-Cross-compiling using zig:
-```
+# build for different architectures
 zig build --release=small -Dtarget=aarch64-macos
 zig build --release=small -Dtarget=x86_64-macos
 zig build --release=small -Dtarget=x86_64-linux-musl
 zig build --release=small -Dtarget=aarch64-linux-musl
 zig build --release=small -Dtarget=x86_64-windows
 ```
+
 The `-musl` Linux targets produce fully static binaries that run on any distribution.
 
 > [!NOTE]
