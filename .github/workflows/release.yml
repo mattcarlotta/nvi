@@ -77,8 +77,6 @@ jobs:
             -Doptimize=ReleaseSmall \
             --prefix zig-out/${{ matrix.target.archive }}
 
-      # Carried over from your Rust workflow. Skipped for Windows (a .1 man page is
-      # meaningless there). Delete this step entirely if docs/nvi.1.md is gone.
       # - name: Build man page
       #   if: matrix.target.format != 'zip'
       #   run: |

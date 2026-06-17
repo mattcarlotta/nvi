@@ -99,22 +99,13 @@ Run:
 which nvi
 # ~/.local/bin/nvi
 
+nvi version
+# nvi <build_version>
+# Build type: <release>
+# Zig <minimum_version>
+# Target: <architecture>
 ```
-If not found, then your install `DIR` path probably isn't included in your shell's `$PATH`:
-```sh
-echo $PATH
-```
-
-You'll need to append that install `DIR` path to your shell profile's `$PATH` (eg. `~/.bashrc` or `~/.zshrc`):
-```sh
-export PATH="<DIR>:$PATH"
-# for example: export PATH="$HOME/.local/bin:$PATH"
-```
-
-Then source the profile path (eg. `~/.bashrc` or `~/.zshrc`):
-```sh
-source <profile_path>
-```
+If not found, then view [Installation](https://github.com/mattcarlotta/nvi-bin#installation) steps.
 
 ## Running
 
@@ -322,7 +313,7 @@ Notes:
 
 - Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
 - Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L12-L35)). Symlinked directories are not followed.
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L19-L42)). Symlinked directories are not followed.
 - When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
 
 > [!TIP]
@@ -330,7 +321,7 @@ Notes:
 
 ## `.env` file syntax
 
-Here are some examples of how ENVs can be defined an `.env` file:
+Here are some examples of how ENVs can be defined in an `.env` file:
 
 ```dotenv
 # comments start with a hash (inline comments not supported)
