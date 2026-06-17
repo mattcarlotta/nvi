@@ -74,7 +74,7 @@ jobs:
         run: |
           zig build \
             -Dtarget=${{ matrix.target.zig }} \
-            -Doptimize=ReleaseSafe \
+            -Doptimize=ReleaseSmall \
             --prefix zig-out/${{ matrix.target.archive }}
 
       # Carried over from your Rust workflow. Skipped for Windows (a .1 man page is
