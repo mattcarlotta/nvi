@@ -368,7 +368,7 @@ make integration
 
 ## Security model
 
-`nvi` doesn't perform execution operations (like `exec`/`syscall`), no process spawning nor shell invocation. It reads the `.env` files you provide and writes them as bytes to stdout.
+`nvi` doesn't perform execution operations (like `exec`), no process spawning nor shell invocation. It reads the `.env` files you provide and writes them as bytes to stdout.
 Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
