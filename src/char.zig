@@ -6,6 +6,7 @@ pub const NULL_CHAR: u8 = 0;
 pub const LINE_DELIMITER: u8 = '\n';
 pub const ASSIGN_OP: u8 = '=';
 pub const HASH: u8 = '#';
+pub const DASH: u8 = '-';
 pub const UNDERLINE: u8 = '_';
 pub const FORWARD_SLASH: u8 = '/';
 pub const DOLLAR_SIGN: u8 = '$';

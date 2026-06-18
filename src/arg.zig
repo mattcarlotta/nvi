@@ -20,6 +20,8 @@ const utils = @import("utils.zig");
 // `help`/`version` short-circuit via error.Help/error.Version. Emits its
 // own usage diagnostics, so main only maps errors to exit codes.
 
+const DEFAULT_ENV_FILE: *const [4:0]u8 = ".env";
+
 const IgnoredFlag = struct {
     flag: []const u8,
     params: []const [:0]const u8 = &.{},
@@ -28,7 +30,8 @@ const IgnoredFlag = struct {
 pub const Arg = struct {
     alloc: mem.Allocator,
     argv: []const [:0]const u8,
-    i: usize = 0,
+    // skipping program name at argv[0]
+    i: usize = 1,
     files: std.ArrayList([]const u8) = .empty,
     command: []const [:0]const u8 = &.{},
     dry_run: bool = false,
@@ -74,9 +77,6 @@ pub const Arg = struct {
         var invalid_flags: std.ArrayList(IgnoredFlag) = .empty;
         defer invalid_flags.deinit(self.alloc);
 
-        // skipping program name at argv[0]
-        _ = self.next();
-
         while (self.next()) |token| {
             if (mem.eql(u8, token, "--")) {
                 const cmd = self.rest();
@@ -97,7 +97,9 @@ pub const Arg = struct {
 
             const flag = Arg.flags.get(token) orelse {
                 const start = self.i;
-                while (self.nextValue()) |_| {}
+
+                self.skipToNextFlag();
+
                 try invalid_flags.append(self.alloc, .{ .flag = token, .params = self.argv[start..self.i] });
 
                 continue;
@@ -110,18 +112,18 @@ pub const Arg = struct {
                     return error.Help;
                 },
                 .ignored => {
-                    var param = try self.requireValue(token);
-                    while (true) {
-                        try self.ignored.append(self.alloc, param);
-                        param = self.nextValue() orelse break;
+                    var param: ?[:0]const u8 = try self.requireValue(token);
+
+                    while (param) |p| : (param = self.nextValue()) {
+                        try self.ignored.append(self.alloc, p);
                     }
                 },
                 .files => {
-                    var param = try self.requireValue(token);
-                    while (true) {
-                        try self.validateFileName(param);
-                        try self.files.append(self.alloc, param);
-                        param = self.nextValue() orelse break;
+                    var param: ?[:0]const u8 = try self.requireValue(token);
+
+                    while (param) |p| : (param = self.nextValue()) {
+                        try self.validateFileName(p);
+                        try self.files.append(self.alloc, p);
                     }
                 },
                 .format => {
@@ -133,21 +135,21 @@ pub const Arg = struct {
                     };
                 },
                 .required => {
-                    var param = try self.requireValue(token);
-                    while (true) {
-                        try self.required.append(self.alloc, param);
-                        param = self.nextValue() orelse break;
+                    var param: ?[:0]const u8 = try self.requireValue(token);
+
+                    while (param) |p| : (param = self.nextValue()) {
+                        try self.required.append(self.alloc, p);
                     }
                 },
                 .scan => {
-                    var param = try self.requireValue(token);
-                    while (true) {
-                        const ext = utils.parseExt(param) catch |err| {
-                            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The scan parameter " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a file extension (e.g. mjs or *.mjs). If you passed an unquoted glob, your shell may have expanded it into filenames; pass the bare extension instead\n", .{param});
+                    var param: ?[:0]const u8 = try self.requireValue(token);
+
+                    while (param) |p| : (param = self.nextValue()) {
+                        const ext = utils.parseExt(p) catch |err| {
+                            try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " The scan parameter " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " is not a file extension (e.g. mjs or *.mjs). If you passed an unquoted glob, your shell may have expanded it into filenames; pass the bare extension instead\n", .{p});
                             return err;
                         };
                         try self.scan.append(self.alloc, ext);
-                        param = self.nextValue() orelse break;
                     }
                 },
                 .version => {
@@ -182,7 +184,7 @@ pub const Arg = struct {
         }
 
         if (self.files.items.len == 0) {
-            try self.files.append(self.alloc, ".env");
+            try self.files.append(self.alloc, DEFAULT_ENV_FILE);
         }
 
         if (self.dry_run) {
@@ -204,7 +206,11 @@ pub const Arg = struct {
     fn nextValue(self: *Arg) ?[:0]const u8 {
         const nxt = self.peek() orelse return null;
 
-        return if (mem.startsWith(u8, nxt, "-")) null else self.next();
+        return if (nxt.len > 0 and nxt[0] == char.DASH) null else self.next();
+    }
+
+    fn skipToNextFlag(self: *Arg) void {
+        while (self.nextValue()) |_| {}
     }
 
     fn requireValue(self: *Arg, token: []const u8) ![:0]const u8 {
@@ -215,6 +221,8 @@ pub const Arg = struct {
     }
 
     fn rest(self: *Arg) []const [:0]const u8 {
+        defer self.i = self.argv.len - 1;
+
         return self.argv[self.i..];
     }
 
