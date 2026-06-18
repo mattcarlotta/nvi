@@ -3,8 +3,7 @@ const Io = std.Io;
 const mem = std.mem;
 const builtin = @import("builtin");
 
-// Shared formatting for a single KEY=VALUE pair, used by both the parser's
-// debug listing and the emitter. `nul` writes `KEY=VALUE` (caller appends the
+// Shared formatting for a single KEY=VALUE pair. `nul` writes `KEY=VALUE` (caller appends the
 // NUL); `powershell` writes `$env:KEY = 'VALUE'` with single quotes doubled for
 // escaping. Pure format output helpers, no state.
 

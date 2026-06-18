@@ -10,15 +10,10 @@ const fmt = @import("formatter.zig");
 const tty = @import("tty.zig");
 const utils = @import("utils.zig");
 
-// Parses argv into the Arg config that drives the rest of the pipeline: files,
-// required/ignored keys, scan extensions, output format, dry-run, and the
-// command after `--`.
+// Parses argv flags for: files, required/ignored keys, scan extensions, output format, dry-run,
+// and the command after `--`.
 //
-// Flags accept multiple values until the next dash-prefixed
-// token.
-//
-// `help`/`version` short-circuit via error.Help/error.Version. Emits its
-// own usage diagnostics, so main only maps errors to exit codes.
+// NOTE: `help`/`version` short-circuit flag parsing
 
 const DEFAULT_ENV_FILE: *const [4:0]u8 = ".env";
 

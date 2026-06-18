@@ -1,21 +1,20 @@
 const std = @import("std");
 
 // Env-variable access patterns, grouped by language and keyed by file
-// extension. The scanner matches `prefix` at a position, then patterns the key
-// using .pattern`. This replaces convention-based suffix matching (`_ENV`) with
+// extension. This replaces convention-based suffix matching (`_ENV`) with
 // intent-based matching: a token is an env var because it is read through a
 // known environment accessor, not because of how it is spelled.
 //
-// WHAT THIS CANNOT CATCH (true of every language, lexical limit):
+// NOTE: WHAT THIS CANNOT CATCH:
 //   - destructuring:   const { DATABASE_URL } = process.env
 //   - aliasing:        const e = process.env; e.FOO
-//   - dynamic keys:    process.env[name]        os.getenv(var)
+//   - dynamic keys:    const key = "DATABASE_URL"; process.env[key]        os.getenv(key)
 
 pub const Pattern = enum {
-    ident, // bareword identifier follows the prefix:        process.env.FOO
-    quoted, // first string literal ("..."/'...') follows:    getenv("FOO")
-    braced, // token (bareword or quoted) up to '}':          $ENV{FOO}  ${FOO}
-    parened, // bareword up to ')':                            $env(FOO)
+    ident, // identifier follows the prefix:                   process.env.FOO
+    quoted, // first string literal ("..."/'...') follows:      getenv("FOO")
+    braced, // interpolated identifier within '{' up to '}':               $ENV{FOO}  ${FOO}
+    parened, // indentifier within '(' up to ')':                $env(FOO)
 };
 
 pub const Accessor = struct {

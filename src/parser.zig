@@ -13,9 +13,7 @@ const tty = @import("tty.zig");
 // resolve against the process environment first, then against keys parsed
 // earlier in this run, so later .env entries can reference earlier ones.
 //
-// Commented and empty-valued tokens are skipped. The result is owned: keys come
-// from the tokenizer's duped slices and values from `toOwnedSlice`, so nothing
-// stored aliases a transient buffer.
+// Commented and empty-valued tokens are skipped.
 //
 // NOTE: last definition wins. A key repeated across files overwrites the
 // earlier value (the original owned key is kept). Required-key validation runs
@@ -34,7 +32,6 @@ pub const Parser = struct {
             var value: std.ArrayList(u8) = .empty;
             defer value.deinit(self.alloc);
 
-            // a commented token contributes nothing and is skipped whole
             if (try self.resolveValue(tkn, &value)) continue;
 
             if (value.items.len == 0) {

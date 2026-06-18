@@ -7,7 +7,7 @@ const fmt = @import("formatter.zig");
 // Writes the resolved environment to stdout in the chosen format: NUL-delimited
 // `KEY=VALUE` pairs followed by the command tokens (for `xargs -0 env`), or
 // PowerShell `$env:` assignments followed by the command. Pure transformation
-// from (envs, command, format) to bytes; the caller owns flushing.
+// from (envs, command, format) to bytes; the caller owns buffer flushing.
 
 pub fn emitter(
     out: *Io.Writer,
