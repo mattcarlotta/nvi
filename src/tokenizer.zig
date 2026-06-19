@@ -336,11 +336,3 @@ pub const Tokenizer = struct {
         }
     }
 };
-
-pub fn tokenFiles(io: Io, alloc: mem.Allocator, args: *const arg.Arg, logger: *Io.Writer) !std.ArrayList(Token) {
-    var tokenizer: Tokenizer = .{ .args = args, .alloc = alloc, .io = io, .logger = logger };
-
-    try tokenizer.run();
-
-    return tokenizer.tokens;
-}
