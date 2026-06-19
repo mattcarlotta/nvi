@@ -3,7 +3,7 @@ const Io = std.Io;
 const mem = std.mem;
 const path = std.fs.path;
 const builtin = @import("builtin");
-const version = @import("build_options").version;
+const bopts = @import("build_options");
 
 const char = @import("char.zig");
 const fmt = @import("formatter.zig");
@@ -148,13 +148,14 @@ pub const Arg = struct {
                     }
                 },
                 .version => {
-                    try self.logger.print("nvi {s}\n", .{version});
-                    try self.logger.print("Build type: {s}\n", .{@tagName(builtin.mode)});
-                    try self.logger.print("Zig {f}\n", .{builtin.zig_version});
-                    try self.logger.print("Target: {s}-{s}\n", .{
+                    try self.logger.print("nvi {s} ({s})\n", .{ bopts.version, @tagName(builtin.mode) });
+                    try self.logger.print("commit {s}\n", .{bopts.commit});
+                    try self.logger.print("zig {f}\n", .{builtin.zig_version});
+                    try self.logger.print("{s}-{s}\n", .{
                         @tagName(builtin.target.cpu.arch),
                         @tagName(builtin.target.os.tag),
                     });
+                    try self.logger.writeAll("run \"nvi help\" for more info\n");
                     return error.Version;
                 },
             }

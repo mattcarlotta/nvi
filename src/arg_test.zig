@@ -140,9 +140,8 @@ test "version prints to stderr and short-circuits" {
 
     try expectError(error.Version, t.run(&.{ "nvi", "version" }));
     try expect(mem.indexOf(u8, t.output(), "nvi") != null);
-    try expect(mem.indexOf(u8, t.output(), "Build type") != null);
-    try expect(mem.indexOf(u8, t.output(), "Zig") != null);
-    try expect(mem.indexOf(u8, t.output(), "Target") != null);
+    try expect(mem.indexOf(u8, t.output(), "commit") != null);
+    try expect(mem.indexOf(u8, t.output(), "zig") != null);
 }
 
 test "help after the delimiter is a command token" {

@@ -33,10 +33,10 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(exe);
 
-    // build_options carries the version into the binary (arg.zig reads it).
-    // Defined up here because the per-file unit test modules below also need it.
+    // build_options carries the version and commit into the binary
     const options = b.addOptions();
     options.addOption([]const u8, "version", zon.version);
+    options.addOption([]const u8, "commit", gitCommit(b));
     mod.addOptions("build_options", options);
 
     const run_step = b.step("run", "Run the app");
@@ -106,7 +106,7 @@ pub fn build(b: *std.Build) void {
     addExitCase(b, exe, integration_step, "usage: missing command (exit 2)", &.{ "--files", "fixtures/test.env" }, 2, "must be defined and followed by a command");
     addExitCase(b, exe, integration_step, "usage: invalid format (exit 2)", &.{ "--format", "bogus", "--", "true" }, 2, "is not a valid format");
     addExitCase(b, exe, integration_step, "help (exit 0)", &.{"--help"}, 0, "Usage: nvi [flags]");
-    addExitCase(b, exe, integration_step, "version (exit 0)", &.{"--version"}, 0, "Build type:");
+    addExitCase(b, exe, integration_step, "version (exit 0)", &.{"--version"}, 0, "nvi");
 }
 
 // Registers a Run step that launches the compiled binary with `args`, names it
@@ -147,4 +147,17 @@ fn addExitCase(
     run.addCheck(.{ .expect_stderr_match = stderr_match });
     run.setName(name);
     step.dependOn(&run.step);
+}
+
+// Best-effort short commit hash. Returns "" if git is missing, this isn't a
+// repo, or the host can't spawn (e.g. some cross-compilation setups).
+fn gitCommit(b: *std.Build) []const u8 {
+    if (!std.process.can_spawn) return "";
+    var code: u8 = undefined;
+    const out = b.runAllowFail(
+        &.{ "git", "-C", b.build_root.path orelse ".", "rev-parse", "--short", "HEAD" },
+        &code,
+        .ignore,
+    ) catch return "";
+    return std.mem.trimEnd(u8, out, "\n");
 }
