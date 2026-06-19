@@ -6,19 +6,21 @@ const nvi = @import("nvi");
 const Result = enum(u8) { ok = 0, operation_failure = 1, usage_error = 2 };
 
 pub fn main(init: std.process.Init) u8 {
+    const io = init.io;
     const alloc = init.arena.allocator();
 
+    const stderr: Io.File = .stderr();
     var stderr_buf: [4096]u8 = undefined;
-    var stderr_writer: Io.File.Writer = Io.File.stderr().writer(init.io, &stderr_buf);
-    const stderr = &stderr_writer.interface;
-    defer stderr.flush() catch {};
+    var stderr_writer = stderr.writer(io, &stderr_buf);
+    const werr = &stderr_writer.interface;
+    defer werr.flush() catch {};
 
     const argv = init.minimal.args.toSlice(alloc) catch {
-        stderr.writeAll(nvi.tty.red ++ "error" ++ nvi.tty.reset ++ ": Failed to read arguments (out of memory)") catch {};
+        werr.writeAll(nvi.tty.red ++ "error" ++ nvi.tty.reset ++ ": Failed to read arguments (out of memory)") catch {};
         return @intFromEnum(Result.operation_failure);
     };
 
-    var args: nvi.Arg = .{ .alloc = alloc, .argv = argv, .logger = stderr };
+    var args: nvi.Arg = .{ .alloc = alloc, .argv = argv, .logger = werr };
 
     args.run() catch |err| {
         switch (err) {
@@ -30,7 +32,7 @@ pub fn main(init: std.process.Init) u8 {
     };
 
     if (args.scan.items.len > 0) {
-        var scanner: nvi.Scanner = .{ .alloc = alloc, .args = &args, .io = init.io, .logger = stderr };
+        var scanner: nvi.Scanner = .{ .alloc = alloc, .args = &args, .io = io, .logger = werr };
 
         scanner.run() catch |err| {
             switch (err) {
@@ -40,13 +42,13 @@ pub fn main(init: std.process.Init) u8 {
         };
     }
 
-    var tokenizer: nvi.Tokenizer = .{ .alloc = alloc, .args = &args, .io = init.io, .logger = stderr };
+    var tokenizer: nvi.Tokenizer = .{ .alloc = alloc, .args = &args, .io = io, .logger = werr };
 
     tokenizer.run() catch {
         return @intFromEnum(Result.operation_failure);
     };
 
-    var parser: nvi.Parser = .{ .alloc = alloc, .args = &args, .environ = init.environ_map, .tokens = &tokenizer.tokens, .logger = stderr };
+    var parser: nvi.Parser = .{ .alloc = alloc, .args = &args, .environ = init.environ_map, .tokens = &tokenizer.tokens, .logger = werr };
 
     parser.run() catch {
         return @intFromEnum(Result.operation_failure);
@@ -61,18 +63,23 @@ pub fn main(init: std.process.Init) u8 {
         return @intFromEnum(Result.usage_error);
     }
 
-    stderr.flush() catch {};
-
-    var stdout_buf: [4096]u8 = undefined;
-    var stdout_writer: Io.File.Writer = Io.File.stdout().writer(init.io, &stdout_buf);
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
-
-    nvi.emitter(stdout, &args, &parser.envs) catch {
+    werr.flush() catch {
         return @intFromEnum(Result.operation_failure);
     };
 
-    stdout.flush() catch {};
+    const stdout: Io.File = .stdout();
+    var stdout_buf: [4096]u8 = undefined;
+    var stdout_writer = stdout.writer(io, &stdout_buf);
+    const wout = &stdout_writer.interface;
+    defer wout.flush() catch {};
+
+    nvi.emitter(wout, &args, &parser.envs) catch {
+        return @intFromEnum(Result.operation_failure);
+    };
+
+    wout.flush() catch {
+        return @intFromEnum(Result.operation_failure);
+    };
 
     return @intFromEnum(Result.ok);
 }
