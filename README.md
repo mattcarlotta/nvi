@@ -100,10 +100,11 @@ which nvi
 # ~/.local/bin/nvi
 
 nvi version
-# nvi <build_version>
-# Build type: <release>
-# Zig <minimum_version>
-# Target: <architecture>
+# nvi <version> (<build_type>)
+# commit <commit>
+# zig <minimum_version>
+# <architecture>
+# run "nvi help" for more info
 ```
 If not found, then view [Installation](https://github.com/mattcarlotta/nvi-bin#installation) steps.
 
