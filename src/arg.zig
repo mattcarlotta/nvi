@@ -23,6 +23,7 @@ const IgnoredFlag = struct {
 };
 
 pub const Arg = struct {
+    const Self = @This();
     alloc: mem.Allocator,
     argv: []const [:0]const u8,
     // skipping program name at argv[0]
@@ -68,7 +69,7 @@ pub const Arg = struct {
         .{ "version", .version },
     });
 
-    pub fn run(self: *Arg) !void {
+    pub fn run(self: *Self) !void {
         var invalid_flags: std.ArrayList(IgnoredFlag) = .empty;
         defer invalid_flags.deinit(self.alloc);
 
@@ -188,41 +189,41 @@ pub const Arg = struct {
         }
     }
 
-    fn next(self: *Arg) ?[:0]const u8 {
+    fn next(self: *Self) ?[:0]const u8 {
         if (self.i >= self.argv.len) return null;
         defer self.i += 1;
 
         return self.argv[self.i];
     }
 
-    fn peek(self: *Arg) ?[:0]const u8 {
+    fn peek(self: *Self) ?[:0]const u8 {
         return if (self.i < self.argv.len) self.argv[self.i] else null;
     }
 
-    fn nextValue(self: *Arg) ?[:0]const u8 {
+    fn nextValue(self: *Self) ?[:0]const u8 {
         const nxt = self.peek() orelse return null;
 
         return if (nxt.len > 0 and nxt[0] == char.DASH) null else self.next();
     }
 
-    fn skipToNextFlag(self: *Arg) void {
+    fn skipToNextFlag(self: *Self) void {
         while (self.nextValue()) |_| {}
     }
 
-    fn requireValue(self: *Arg, token: []const u8) ![:0]const u8 {
+    fn requireValue(self: *Self, token: []const u8) ![:0]const u8 {
         return self.nextValue() orelse {
             try self.logger.print(tty.red ++ "error:" ++ tty.reset ++ " Flag " ++ tty.bold_red ++ "{s}" ++ tty.reset ++ " requires at least 1 parameter\n", .{token});
             return error.MissingValue;
         };
     }
 
-    fn rest(self: *Arg) []const [:0]const u8 {
+    fn rest(self: *Self) []const [:0]const u8 {
         defer self.i = self.argv.len - 1;
 
         return self.argv[self.i..];
     }
 
-    pub fn validateFileName(self: *Arg, f: []const u8) !void {
+    pub fn validateFileName(self: *Self, f: []const u8) !void {
         const base = path.basename(f);
         const env_file = mem.eql(u8, base, ".env") or mem.startsWith(u8, base, ".env.") or mem.endsWith(u8, base, ".env");
 
@@ -245,12 +246,12 @@ pub const Arg = struct {
         }
     }
 
-    pub fn printMissingCommand(self: *Arg) void {
+    pub fn printMissingCommand(self: *Self) void {
         self.logger.writeAll(tty.red ++ "error:" ++ tty.reset ++ " An " ++ tty.italic ++ "end of options delimiter" ++ tty.reset) catch {};
         self.logger.writeAll(" (--) must be defined and followed by a command (e.g., nvi <flags>" ++ tty.green ++ " -- <command>" ++ tty.reset ++ "). See nvi help.\n") catch {};
     }
 
-    pub fn printFlags(self: *Arg) !void {
+    pub fn printFlags(self: *Self) !void {
         try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following flags have been set... \n");
         try self.logger.writeAll("   command: ");
         if (self.command.len > 0) {

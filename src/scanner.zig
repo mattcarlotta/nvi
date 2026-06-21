@@ -21,6 +21,7 @@ const Env = struct {
 };
 
 pub const Scanner = struct {
+    const Self = @This();
     const blacklist = std.StaticStringMap(void).initComptime(.{
         .{ "node_modules", {} },
         .{ "bower_components", {} },
@@ -62,7 +63,7 @@ pub const Scanner = struct {
     envs: std.StringArrayHashMapUnmanaged(usize) = .empty,
     exts: std.StringArrayHashMapUnmanaged([]const ac.Accessor) = .empty,
 
-    pub fn run(self: *Scanner) !void {
+    pub fn run(self: *Self) !void {
         self.dry_run = self.args.dry_run or self.args.command.len == 0;
 
         if (self.dry_run) {
@@ -107,7 +108,7 @@ pub const Scanner = struct {
         if (self.args.command.len == 0) return error.NoCommand;
     }
 
-    fn walkFileTree(self: *Scanner, dir: Io.Dir, prefix: []const u8) !void {
+    fn walkFileTree(self: *Self, dir: Io.Dir, prefix: []const u8) !void {
         var it = dir.iterate();
         while (try it.next(self.io)) |entry| {
             switch (entry.kind) {
@@ -126,7 +127,7 @@ pub const Scanner = struct {
         }
     }
 
-    fn scanFile(self: *Scanner, dir: Io.Dir, prefix: []const u8, name: []const u8) !void {
+    fn scanFile(self: *Self, dir: Io.Dir, prefix: []const u8, name: []const u8) !void {
         const accessors = self.getAccessors(name) orelse return;
 
         const contents = dir.readFileAlloc(self.io, name, self.alloc, .limited(10 * 1024 * 1024)) catch {
@@ -163,7 +164,7 @@ pub const Scanner = struct {
         }
     }
 
-    fn getAccessors(self: *Scanner, name: []const u8) ?[]const ac.Accessor {
+    fn getAccessors(self: *Self, name: []const u8) ?[]const ac.Accessor {
         const dot_ext = path.extension(name);
 
         if (dot_ext.len < 2) return null;
@@ -172,7 +173,7 @@ pub const Scanner = struct {
     }
 
     pub fn scanContents(
-        self: *Scanner,
+        self: *Self,
         contents: []const u8,
         accessors: []const ac.Accessor,
         matches: *std.ArrayList(Match),
@@ -209,7 +210,7 @@ pub const Scanner = struct {
         }
     }
 
-    fn matchPrefix(_: *Scanner, contents: []const u8, i: usize, accessors: []const ac.Accessor) ?ac.Accessor {
+    fn matchPrefix(_: *Self, contents: []const u8, i: usize, accessors: []const ac.Accessor) ?ac.Accessor {
         for (accessors) |acc| {
             if (!mem.startsWith(u8, contents[i..], acc.prefix)) continue;
 
@@ -221,7 +222,7 @@ pub const Scanner = struct {
         return null;
     }
 
-    fn isIgnoredKey(self: *Scanner, key: []const u8) bool {
+    fn isIgnoredKey(self: *Self, key: []const u8) bool {
         for (self.args.ignored.items) |ig| {
             if (mem.eql(u8, ig, key)) return true;
         }
@@ -229,7 +230,7 @@ pub const Scanner = struct {
         return false;
     }
 
-    pub fn mergeRequiredEnvs(self: *Scanner) !void {
+    pub fn mergeRequiredEnvs(self: *Self) !void {
         if (self.envs.count() == 0) return;
 
         if (self.dry_run) try self.logger.writeAll(tty.cyan ++ "info: " ++ tty.reset ++ "The following ENV keys will be marked as required... \n");
@@ -245,7 +246,7 @@ pub const Scanner = struct {
         if (self.dry_run) try self.logger.writeByte('\n');
     }
 
-    fn printMatches(self: *Scanner, prefix: []const u8, name: []const u8, matches: []const Match) !void {
+    fn printMatches(self: *Self, prefix: []const u8, name: []const u8, matches: []const Match) !void {
         const file = if (prefix.len == 0) name else try path.join(self.alloc, &.{ prefix, name });
 
         try self.logger.print(

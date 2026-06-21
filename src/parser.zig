@@ -20,6 +20,7 @@ const tty = @import("tty.zig");
 // after parsing so it sees the fully merged set.
 
 pub const Parser = struct {
+    const Self = @This();
     environ: *Environ.Map,
     alloc: mem.Allocator,
     args: *const arg.Arg,
@@ -27,7 +28,7 @@ pub const Parser = struct {
     logger: *Io.Writer,
     envs: std.StringArrayHashMapUnmanaged([]const u8) = .empty,
 
-    pub fn run(self: *Parser) !void {
+    pub fn run(self: *Self) !void {
         for (self.tokens.items) |tkn| {
             var value: std.ArrayList(u8) = .empty;
             defer value.deinit(self.alloc);
@@ -54,7 +55,7 @@ pub const Parser = struct {
         try self.checkRequired();
     }
 
-    fn resolveValue(self: *Parser, tkn: tk.Token, value: *std.ArrayList(u8)) !bool {
+    fn resolveValue(self: *Self, tkn: tk.Token, value: *std.ArrayList(u8)) !bool {
         for (tkn.values.items) |value_token| {
             switch (value_token.kind) {
                 .interpolated => {
@@ -99,7 +100,7 @@ pub const Parser = struct {
         return false;
     }
 
-    fn warnUndefined(self: *Parser, tkn: tk.Token) !void {
+    fn warnUndefined(self: *Self, tkn: tk.Token) !void {
         const first = tkn.values.items[0];
         const key_str = if (tkn.key != null) tkn.key.? else "(undefined)";
 
@@ -114,7 +115,7 @@ pub const Parser = struct {
         );
     }
 
-    fn printListing(self: *Parser) !void {
+    fn printListing(self: *Self) !void {
         try self.logger.print(
             "\n" ++ tty.cyan ++ "info:" ++ tty.reset ++ " The following {d} env(s) were parsed and will be emitted...\n",
             .{self.envs.count()},
@@ -130,7 +131,7 @@ pub const Parser = struct {
         try self.logger.writeByte('\n');
     }
 
-    fn checkRequired(self: *Parser) !void {
+    fn checkRequired(self: *Self) !void {
         if (self.args.required.items.len == 0) return;
 
         var missing: std.ArrayList([]const u8) = .empty;

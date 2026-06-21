@@ -27,6 +27,7 @@ pub const Token = struct {
 };
 
 pub const Tokenizer = struct {
+    const Self = @This();
     io: Io,
     alloc: mem.Allocator,
     logger: *Io.Writer,
@@ -38,7 +39,7 @@ pub const Tokenizer = struct {
     file_name: []const u8 = "",
     tokens: std.ArrayList(Token) = .empty,
 
-    pub fn run(self: *Tokenizer) !void {
+    pub fn run(self: *Self) !void {
         for (self.args.files.items) |env| {
             const file = Io.Dir.cwd().readFileAlloc(self.io, env, self.alloc, .limited(10 * 1024 * 1024)) catch {
                 try self.logger.print(
@@ -69,37 +70,37 @@ pub const Tokenizer = struct {
         }
     }
 
-    fn nextLine(self: *Tokenizer) void {
+    fn nextLine(self: *Self) void {
         self.line += 1;
     }
 
-    fn resetByte(self: *Tokenizer) void {
+    fn resetByte(self: *Self) void {
         self.byte = 1;
     }
 
-    fn next_byte(self: *Tokenizer, offset: usize) void {
+    fn next_byte(self: *Self, offset: usize) void {
         self.byte += offset;
     }
 
-    fn skipByte(self: *Tokenizer, offset: usize) void {
+    fn skipByte(self: *Self, offset: usize) void {
         self.next_byte(offset);
         self.i += offset;
     }
 
-    fn peek(self: *Tokenizer, offset: usize) ?u8 {
+    fn peek(self: *Self, offset: usize) ?u8 {
         const index = self.i + offset;
         if (index >= self.file.len) return null;
         return self.file[index];
     }
 
-    fn scanUntil(self: *Tokenizer, value: *std.ArrayList(u8), stops: []const u8) !void {
+    fn scanUntil(self: *Self, value: *std.ArrayList(u8), stops: []const u8) !void {
         const end = mem.indexOfAnyPos(u8, self.file, self.i, stops) orelse self.file.len;
         try value.appendSlice(self.alloc, self.file[self.i..end]);
         self.next_byte(end - self.i);
         self.i = end;
     }
 
-    fn commitToken(self: *Tokenizer, token: *Token, kind: ValueKind, bytes: []const u8) !void {
+    fn commitToken(self: *Self, token: *Token, kind: ValueKind, bytes: []const u8) !void {
         try token.values.append(self.alloc, .{
             .kind = kind,
             .value = try self.alloc.dupe(u8, bytes),
@@ -108,19 +109,19 @@ pub const Tokenizer = struct {
         });
     }
 
-    fn appendToken(self: *Tokenizer, token: *Token) !void {
+    fn appendToken(self: *Self, token: *Token) !void {
         try self.tokens.append(self.alloc, token.*);
         token.* = .{ .file = self.file_name };
     }
 
-    fn printErrorHeader(self: *Tokenizer) !void {
+    fn printErrorHeader(self: *Self) !void {
         try self.logger.print(
             tty.red ++ "error:" ++ tty.reset ++ " A tokenizing error occurred in " ++ tty.bold_red ++ "{s}:{d}:{d}" ++ tty.reset ++ ". ",
             .{ self.file_name, self.line, self.byte },
         );
     }
 
-    fn printTokenLine(self: *Tokenizer, token: *const Token) !usize {
+    fn printTokenLine(self: *Self, token: *const Token) !usize {
         const key: []const u8 = token.key orelse "(none)";
         try self.logger.print("   {s}=", .{key});
 
@@ -134,7 +135,7 @@ pub const Tokenizer = struct {
         return prefix_len;
     }
 
-    fn print(self: *Tokenizer) !void {
+    fn print(self: *Self) !void {
         try self.logger.print(tty.cyan ++ "info: " ++ tty.reset ++ "The following {d} token(s) have been created...", .{self.tokens.items.len});
 
         for (self.tokens.items, 0..) |token, ti| {
@@ -159,7 +160,7 @@ pub const Tokenizer = struct {
         try self.logger.writeAll("\n\n");
     }
 
-    pub fn parse(self: *Tokenizer, file: []const u8, file_name: []const u8) !void {
+    pub fn parse(self: *Self, file: []const u8, file_name: []const u8) !void {
         self.file_name = file_name;
         self.file = file;
         self.i = 0;
