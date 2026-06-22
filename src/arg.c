@@ -1,6 +1,7 @@
 #include "arg.h"
+#include "errors.h"
+#include "format.h"
 #include "list.h"
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -41,62 +42,138 @@ void set_flag_params(arg_t *args, list_t *list) {
     }
 }
 
-arg_t arg_parser(int argc, char **argv) {
-    arg_t args = {.i = 1,
-                  .argc = argc,
-                  .argv = argv,
-                  .command = {.count = 0, .items = NULL},
-                  .dry_run = false,
-                  .files = {0},
-                  .ignored = {0},
-                  .required = {0},
-                  .scan = {0}};
+void print_flags(arg_t *args) {
+    fprintf(stderr, "info: The following flags have been set... \n");
+    fprintf(stderr, "    • command: ");
+    if (args->command.count > 0) {
+        for (size_t i = 0; i < args->command.count; ++i) {
+            if (i != 0)
+                fprintf(stderr, " ");
+            fprintf(stderr, "%s", args->command.items[i]);
+        }
+    } else {
+        fprintf(stderr, "(undefined)");
+    }
 
-    while (args.i < args.argc) {
-        if (strcmp(args.argv[args.i], "--") == 0) {
-            size_t start = args.i + 1;
-            args.command.count = args.argc - start;
-            args.command.items = &args.argv[start];
+    fprintf(stderr, "\n    • files: ");
+    for (size_t i = 0; i < args->files.count; ++i) {
+        if (i != 0)
+            fprintf(stderr, ", ");
+        fprintf(stderr, "%s", args->files.items[i]);
+    }
+
+    fprintf(stderr, "\n    • required ENVs: ");
+    if (args->required.count > 0) {
+        for (size_t i = 0; i < args->required.count; ++i) {
+            if (i != 0)
+                fprintf(stderr, ", ");
+            fprintf(stderr, "%s", args->required.items[i]);
+        }
+    } else {
+        fprintf(stderr, "(undefined)");
+    }
+
+    fprintf(stderr, "\n    • ignored ENVs: ");
+    if (args->ignored.count > 0) {
+        for (size_t i = 0; i < args->ignored.count; ++i) {
+            if (i != 0)
+                fprintf(stderr, ", ");
+            fprintf(stderr, "%s", args->ignored.items[i]);
+        }
+    } else {
+        fprintf(stderr, "(undefined)");
+    }
+
+    fprintf(stderr, "\n    • scan extensions: ");
+    if (args->scan_exts.count > 0) {
+        for (size_t i = 0; i < args->scan_exts.count; ++i) {
+            if (i != 0)
+                fprintf(stderr, ", ");
+            fprintf(stderr, "%s", args->scan_exts.items[i]);
+        }
+    } else {
+        fprintf(stderr, "(undefined)");
+    }
+
+    fprintf(stderr, "\n    • format: %s\n", format_name(args->format));
+}
+
+int arg_parser(arg_t *args) {
+    // skip program name
+    args->i = 1;
+
+    while (args->i < args->argc) {
+
+        // end of options delimiter
+        if (strcmp(args->argv[args->i], "--") == 0) {
+            args->command.count = args->argc - (args->i + 1);
+            args->command.items = &args->argv[args->i + 1];
             break;
         }
 
-        switch (get_flag(args.argv[args.i])) {
+        switch (get_flag(args->argv[args->i])) {
             case FILES: {
-                set_flag_params(&args, &args.files);
+                set_flag_params(args, &args->files);
                 break;
             }
             case DRY_RUN: {
-                args.dry_run = true;
+                args->dry_run = true;
                 break;
             }
             case FORMAT: {
+                ++args->i;
 
+                if (args->i >= args->argc) {
+                    return usage_error("option '--format' requires an argument", NULL);
+                }
+
+                const format_t format = get_format(args->argv[args->i]);
+                if (format == FORMAT_UNKNOWN) {
+                    return usage_error("invalid format '%s' (expected: nul|powershell)", args->argv[args->i]);
+                }
+
+                args->format = format;
                 break;
             }
             case IGNORED: {
-                set_flag_params(&args, &args.ignored);
+                set_flag_params(args, &args->ignored);
                 break;
             }
             case REQUIRED: {
-                set_flag_params(&args, &args.required);
+                set_flag_params(args, &args->required);
                 break;
             }
             case SCAN: {
-
+                set_flag_params(args, &args->scan_exts);
                 break;
             }
             case HELP: {
-
+                // Print help
                 break;
             }
             case VERSION:
             default: {
-
+                // Print version
                 break;
             }
         }
-        ++args.i;
+        ++args->i;
     }
 
-    return args;
+    if (args->files.count == 0) {
+        list_append(&args->files, ".env");
+    }
+
+    if (args->dry_run) {
+        print_flags(args);
+    }
+
+    return 0;
+}
+
+void free_args(arg_t *args) {
+    free_list(&args->files);
+    free_list(&args->ignored);
+    free_list(&args->required);
+    free_list(&args->scan_exts);
 }

@@ -22,4 +22,11 @@ static inline void list_append(list_t *list, const char *value) {
     }
     list->items[list->count++] = value;
 }
+
+static inline void free_list(list_t *list) {
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
 #endif

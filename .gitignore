@@ -1,3 +1,10 @@
+zig-out/
+.zig-cache/
+*.o
+build/
+build-*/
+docgen-tmp/
+
 # Compiled objects and intermediates
 *.o
 *.obj
