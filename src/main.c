@@ -4,53 +4,24 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-    printf("Arg count %d \n", argc);
-    int i = 1;
-    while (i < argc) {
-        if (strcmp(argv[i], "--") == 0) {
-            printf("End of options delimiter\n");
-            break;
-        }
+    arg_t args = arg_parser(argc, argv);
 
-        switch (get_flag(argv[i])) {
-        case FILES: {
-            printf("Flag: %s\n", argv[i]);
-            while (i + 1 < argc && argv[i + 1][0] != '-') {
-                ++i;
-                printf("Params: %s\n", argv[i]);
-            }
-        }
-        case DRY_RUN: {
-
-            break;
-        }
-        case FORMAT: {
-
-            break;
-        }
-        case IGNORED: {
-
-            break;
-        }
-        case REQUIRED: {
-
-            break;
-        }
-        case SCAN: {
-
-            break;
-        }
-        case HELP: {
-
-            break;
-        }
-        case VERSION:
-        default: {
-
-            break;
-        }
-        }
-        ++i;
+    fprintf(stderr, "[INFO] files: ");
+    for (size_t i = 0; i < args.files.count; ++i) {
+        fprintf(stderr, "%s", args.files.items[i]);
+        if (i + 1 < args.files.count)
+            fprintf(stderr, " ");
     }
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "[INFO] command: ");
+    for (size_t i = 0; i < args.command.count; ++i) {
+        fprintf(stderr, "%s", args.command.items[i]);
+        if (i + 1 < args.command.count)
+            fprintf(stderr, " ");
+    }
+    fprintf(stderr, "\n");
+    fflush(stderr);
+
     return 0;
 }
