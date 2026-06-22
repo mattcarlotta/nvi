@@ -1,0 +1,14 @@
+CompileFlags:
+  Add: [-std=c17, -I, src]
+
+---
+If:
+  PathMatch: .*\.h
+CompileFlags:
+  Add: [-xc]
+
+---
+If:
+  PathMatch: src/.*\.c
+CompileFlags:
+  Add: [-Wall, -Wextra, -Wpedantic, -Werror]

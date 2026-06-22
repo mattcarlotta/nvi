@@ -1,6 +1,33 @@
-zig-out/
-.zig-cache/
+# Compiled objects and intermediates
 *.o
-build/
-build-*/
-docgen-tmp/
+*.obj
+*.lo
+*.slo
+*.ko
+
+# Libraries
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug info
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Build output / dependency files
+*.d
+
+/nvi
+
+/nob
+nob.old
