@@ -17,11 +17,12 @@ int main(int argc, char **argv) {
 
     if (!arg_res.ok) {
         fflush(stderr);
-        free_args(&args);
+        args_free(&args);
         return arg_res.errcode;
     }
 
-    free_args(&args);
+    fflush(stderr);
+    args_free(&args);
 
     return 0;
 }

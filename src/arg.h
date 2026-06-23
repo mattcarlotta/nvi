@@ -32,11 +32,9 @@ typedef struct {
 } arg_t;
 
 void print_flags(arg_t *args);
-void print_help(void);
-void print_version(void);
 flag_t get_flag(const char *arg);
 result_t set_flag_params(arg_t *args, list_t *list, char *flag);
 result_t arg_parser(arg_t *args);
-void free_args(arg_t *args);
+void args_free(arg_t *args);
 
 #endif

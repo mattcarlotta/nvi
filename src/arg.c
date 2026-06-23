@@ -52,59 +52,27 @@ result_t set_flag_params(arg_t *args, list_t *list, char *flag) {
     return (result_t){.ok = true, .errcode = 2};
 }
 
-void print_flags(arg_t *args) {
-    fprintf(stderr, "info: The following flags have been set... \n");
-    fprintf(stderr, "    \u2022 command: ");
-    if (args->command.count > 0) {
-        for (size_t i = 0; i < args->command.count; ++i) {
-            if (i != 0)
-                fprintf(stderr, " ");
-            fprintf(stderr, "%s", args->command.items[i]);
-        }
-    } else {
-        fprintf(stderr, "(undefined)");
+static void print_items(const char *label, const char *const *items, size_t count, const char *sep,
+                        const char *empty_text) {
+    fprintf(stderr, "\n    \u2022 %s: ", label);
+    if (count == 0) {
+        fprintf(stderr, "%s", empty_text);
+        return;
     }
-
-    fprintf(stderr, "\n    \u2022 files: ");
-    for (size_t i = 0; i < args->files.count; ++i) {
+    for (size_t i = 0; i < count; i++) {
         if (i != 0)
-            fprintf(stderr, ", ");
-        fprintf(stderr, "%s", args->files.items[i]);
+            fprintf(stderr, "%s", sep);
+        fprintf(stderr, "%s", items[i]);
     }
+}
 
-    fprintf(stderr, "\n    \u2022 required ENVs: ");
-    if (args->required.count > 0) {
-        for (size_t i = 0; i < args->required.count; ++i) {
-            if (i != 0)
-                fprintf(stderr, ", ");
-            fprintf(stderr, "%s", args->required.items[i]);
-        }
-    } else {
-        fprintf(stderr, "(undefined)");
-    }
-
-    fprintf(stderr, "\n    \u2022 ignored ENVs: ");
-    if (args->ignored.count > 0) {
-        for (size_t i = 0; i < args->ignored.count; ++i) {
-            if (i != 0)
-                fprintf(stderr, ", ");
-            fprintf(stderr, "%s", args->ignored.items[i]);
-        }
-    } else {
-        fprintf(stderr, "(undefined)");
-    }
-
-    fprintf(stderr, "\n    \u2022 scan extensions: ");
-    if (args->scan_exts.count > 0) {
-        for (size_t i = 0; i < args->scan_exts.count; ++i) {
-            if (i != 0)
-                fprintf(stderr, ", ");
-            fprintf(stderr, "%s", args->scan_exts.items[i]);
-        }
-    } else {
-        fprintf(stderr, "(undefined)");
-    }
-
+void print_flags(arg_t *args) {
+    fprintf(stderr, "info: The following flags have been set...");
+    print_items("command", (const char *const *)args->command.items, args->command.count, " ", "(undefined)");
+    print_items("files", args->files.items, args->files.count, ", ", ".env (default)");
+    print_items("ignore ENVs", args->ignored.items, args->ignored.count, ", ", "(undefined)");
+    print_items("require ENVs", args->required.items, args->required.count, ", ", "(undefined)");
+    print_items("scan extensions", args->scan_exts.items, args->scan_exts.count, ", ", "(undefined)");
     fprintf(stderr, "\n    \u2022 format: %s\n", format_name(args->format));
 }
 
@@ -197,9 +165,9 @@ result_t arg_parser(arg_t *args) {
     return (result_t){.ok = true};
 }
 
-void free_args(arg_t *args) {
-    free_list(&args->files);
-    free_list(&args->ignored);
-    free_list(&args->required);
-    free_list(&args->scan_exts);
+void args_free(arg_t *args) {
+    list_free(&args->files);
+    list_free(&args->ignored);
+    list_free(&args->required);
+    list_free(&args->scan_exts);
 }

@@ -35,6 +35,7 @@ docgen-tmp/
 *.d
 
 /nvi
+.nvi_commit
 
 /nob
 nob.old

@@ -1,4 +1,3 @@
-
 #ifndef RESULT_H
 #define RESULT_H
 #include <stdbool.h>
