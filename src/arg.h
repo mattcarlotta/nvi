@@ -2,6 +2,7 @@
 #define ARG_H
 #include "format.h"
 #include "list.h"
+#include "result.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -31,9 +32,10 @@ typedef struct {
 } arg_t;
 
 void print_flags(arg_t *args);
+void print_help(void);
 flag_t get_flag(const char *arg);
 void set_flag_params(arg_t *args, list_t *list);
-int arg_parser(arg_t *args);
+result_t arg_parser(arg_t *args);
 void free_args(arg_t *args);
 
 #endif

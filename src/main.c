@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "result.h"
 #include <stdio.h>
 
 int main(int argc, char **argv) {
@@ -12,12 +13,13 @@ int main(int argc, char **argv) {
                   .required = {0},
                   .scan_exts = {0}};
 
-    const int err = arg_parser(&args);
-    if (err != 0) {
-        return err;
-    }
+    const result_t arg_res = arg_parser(&args);
 
-    fflush(stderr);
+    if (!arg_res.ok) {
+        fflush(stderr);
+        free_args(&args);
+        return arg_res.errcode;
+    }
 
     free_args(&args);
 

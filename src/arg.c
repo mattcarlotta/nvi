@@ -2,6 +2,7 @@
 #include "errors.h"
 #include "format.h"
 #include "list.h"
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -42,9 +43,75 @@ void set_flag_params(arg_t *args, list_t *list) {
     }
 }
 
+void print_help(void) {
+    fputs("Usage: nvi [flags] -- <command>\n"
+          "       nvi scan [ext] [ext] ...etc\n"
+          "\n"
+          "Flags:\n"
+          "  -f, --files <paths>     parses .env files in order (default: .env)\n"
+          "  -i, --ignored <keys>    ignores ENV keys that a scan may find and add to a required ENV key list\n"
+          "  -r, --required <keys>   marks a list of ENV keys that must be present before the command is emitted\n"
+          "  -F, --format <fmt>      outputs ENV format (options: nul|powershell)\n"
+          "  -d, --dry-run           print parsed flags, tokens, scan results, and the resolved env listing to stderr\n"
+          "  -h, --help              prints this help and exits\n"
+          "  -s, --scan <ext>        recursively scans in the root directory for ENV keys used within *.<ext> files "
+          "and marks them as required \u2020\n"
+          "  -v, --version           prints the version and exits\n"
+          "\n"
+          "Commands:\n"
+          "  help                    prints this help and exits\n"
+          "  scan <ext>              recursively scans in the root directory for ENV keys used within *.<ext> files "
+          "and marks them as required \u2020\n"
+          "  version                 prints the version and exits\n"
+          "\n"
+          " \u2020 without a command, scan reports what it finds and exits; with a command, the found ENV keys are "
+          "added to a required ENV key list\n"
+          "\n"
+          "Supported scan file extensions:\n"
+          " \u2022 C -> c\n"
+          " \u2022 Clojure -> clj, cljs, cljc\n"
+          " \u2022 Crystal -> cr\n"
+          " \u2022 C++ -> cc, cpp, cxx, h, hh, hpp, hxx\n"
+          " \u2022 C# -> cs\n"
+          " \u2022 D -> d\n"
+          " \u2022 Dart -> dart\n"
+          " \u2022 Elixir -> ex, exs\n"
+          " \u2022 Erlang -> erl, hrl\n"
+          " \u2022 Fortran -> f, f90, f95, f03, f08, for\n"
+          " \u2022 F# -> fs, fsi, fsx\n"
+          " \u2022 Go -> go\n"
+          " \u2022 Groovy -> groovy\n"
+          " \u2022 Haskell -> hs, lhs\n"
+          " \u2022 Java -> java, gradle\n"
+          " \u2022 JavaScript/TypeScript -> cjs, cts, js, jsx, mjs, mts, ts, tsx\n"
+          " \u2022 Julia -> jl\n"
+          " \u2022 Kotlin -> kt, kts\n"
+          " \u2022 Lua -> lua\n"
+          " \u2022 Nim -> nim\n"
+          " \u2022 Nushell -> nu\n"
+          " \u2022 Objective-C -> m, mm\n"
+          " \u2022 OCaml -> ml, mli\n"
+          " \u2022 Pascal/Delphi -> ldpr, pas, pp\n"
+          " \u2022 Perl -> pl, pm, t\n"
+          " \u2022 PHP -> php\n"
+          " \u2022 PowerShell -> ps1, psm1, psd1\n"
+          " \u2022 Python -> py, pyi\n"
+          " \u2022 R -> r\n"
+          " \u2022 Ruby -> gemspec, rb, rake\n"
+          " \u2022 Rust -> rs\n"
+          " \u2022 Scala -> sc, scala\n"
+          " \u2022 Swift -> swift\n"
+          " \u2022 Tcl -> tcl\n"
+          " \u2022 V -> v\n"
+          " \u2022 Visual Basic -> vb\n"
+          " \u2022 Zig -> zig\n"
+          "\n",
+          stdout);
+}
+
 void print_flags(arg_t *args) {
     fprintf(stderr, "info: The following flags have been set... \n");
-    fprintf(stderr, "    • command: ");
+    fprintf(stderr, "    \u2022 command: ");
     if (args->command.count > 0) {
         for (size_t i = 0; i < args->command.count; ++i) {
             if (i != 0)
@@ -55,14 +122,14 @@ void print_flags(arg_t *args) {
         fprintf(stderr, "(undefined)");
     }
 
-    fprintf(stderr, "\n    • files: ");
+    fprintf(stderr, "\n    \u2022 files: ");
     for (size_t i = 0; i < args->files.count; ++i) {
         if (i != 0)
             fprintf(stderr, ", ");
         fprintf(stderr, "%s", args->files.items[i]);
     }
 
-    fprintf(stderr, "\n    • required ENVs: ");
+    fprintf(stderr, "\n    \u2022 required ENVs: ");
     if (args->required.count > 0) {
         for (size_t i = 0; i < args->required.count; ++i) {
             if (i != 0)
@@ -73,7 +140,7 @@ void print_flags(arg_t *args) {
         fprintf(stderr, "(undefined)");
     }
 
-    fprintf(stderr, "\n    • ignored ENVs: ");
+    fprintf(stderr, "\n    \u2022 ignored ENVs: ");
     if (args->ignored.count > 0) {
         for (size_t i = 0; i < args->ignored.count; ++i) {
             if (i != 0)
@@ -84,7 +151,7 @@ void print_flags(arg_t *args) {
         fprintf(stderr, "(undefined)");
     }
 
-    fprintf(stderr, "\n    • scan extensions: ");
+    fprintf(stderr, "\n    \u2022 scan extensions: ");
     if (args->scan_exts.count > 0) {
         for (size_t i = 0; i < args->scan_exts.count; ++i) {
             if (i != 0)
@@ -95,10 +162,12 @@ void print_flags(arg_t *args) {
         fprintf(stderr, "(undefined)");
     }
 
-    fprintf(stderr, "\n    • format: %s\n", format_name(args->format));
+    fprintf(stderr, "\n    \u2022 format: %s\n", format_name(args->format));
 }
 
-int arg_parser(arg_t *args) {
+result_t arg_parser(arg_t *args) {
+    result_t res = {.ok = true, .errcode = 0};
+
     // skip program name
     args->i = 1;
 
@@ -148,13 +217,14 @@ int arg_parser(arg_t *args) {
                 break;
             }
             case HELP: {
-                // Print help
-                break;
+                print_help();
+                res.ok = false;
+                return res;
             }
             case VERSION:
             default: {
-                // Print version
-                break;
+                res.ok = false;
+                return res;
             }
         }
         ++args->i;
@@ -168,7 +238,7 @@ int arg_parser(arg_t *args) {
         print_flags(args);
     }
 
-    return 0;
+    return res;
 }
 
 void free_args(arg_t *args) {
