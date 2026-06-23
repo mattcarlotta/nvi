@@ -21,7 +21,9 @@ static const char *git_commit(void) {
         return "unknown";
 
     Nob_String_Builder sb = {0};
-    if (!nob_read_entire_file(".nvi_commit", &sb))
+    bool read_ok = nob_read_entire_file(".nvi_commit", &sb);
+    nob_delete_file(".nvi_commit");
+    if (!read_ok)
         return "unknown";
 
     while (sb.count > 0 && (sb.items[sb.count - 1] == '\n' || sb.items[sb.count - 1] == '\r'))
@@ -155,7 +157,6 @@ int main(int argc, char **argv) {
             return 1;
     } else if (strcmp(subcmd, "clean") == 0) {
         nob_delete_file(OUT_BIN);
-        nob_delete_file(".nvi_commit");
 #ifdef __APPLE__
         remove_dir_recursively(OUT_BIN ".dSYM");
 #endif
