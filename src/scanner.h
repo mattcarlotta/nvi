@@ -3,21 +3,7 @@
 #include "accessors.h"
 #include "arg.h"
 #include "list.h"
-#include "result.h"
 #include <stdbool.h>
-#include <stddef.h>
-
-typedef struct {
-    const char *key;
-    const size_t start;
-    const size_t end;
-} env_t;
-
-struct {
-    const char *key;
-    const size_t line;
-    const size_t byte;
-} env_match_t;
 
 typedef struct {
     const char *ext;
@@ -32,6 +18,7 @@ typedef struct {
 } ext_map;
 
 typedef struct {
+    size_t dirs_scanned;
     size_t files_scanned;
     size_t references;
     bool dry_run;

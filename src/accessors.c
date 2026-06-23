@@ -1,7 +1,7 @@
 #include "accessors.h"
+#include "macros.h"
 #include <string.h>
 
-#define ARRLEN(a) (sizeof(a) / sizeof((a)[0]))
 #define ENTRY(ext, arr) {(ext), (arr), ARRLEN(arr)}
 
 static const accessor_t javascript[] = {

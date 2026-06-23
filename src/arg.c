@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "da.h"
 #include "errors.h"
 #include "format.h"
 #include "info.h"
@@ -25,7 +26,7 @@ static const flag_entry flags[] = {
     {.name = "-v", .value = VERSION},  {.name = "--version", .value = VERSION},   {.name = "version", .value = VERSION},
 };
 
-flag_t get_flag(const char *arg) {
+static flag_t get_flag(const char *arg) {
     size_t n = sizeof(flags) / sizeof(flags[0]);
 
     for (size_t i = 0; i < n; ++i) {
@@ -37,12 +38,12 @@ flag_t get_flag(const char *arg) {
     return UNKNOWN;
 }
 
-result_t set_flag_params(args_t *args, list_t *list, char *flag) {
+static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
     size_t current_count = list->count;
 
     while (args->i + 1 < args->argc && args->argv[args->i + 1][0] != '-') {
         ++(args->i);
-        list_append(list, args->argv[args->i]);
+        DA_APPEND(list, args->argv[args->i]);
     }
 
     if (list->count == current_count) {
@@ -68,7 +69,7 @@ static void print_items(const char *label, const list_t *list, const char *sep, 
     }
 }
 
-void print_flags(args_t *args) {
+static void print_flags(args_t *args) {
     fprintf(stderr, "[INFO] The following flags have been set...");
     print_items("command", (const list_t *)&args->command, " ", "(undefined)");
     print_items("files", &args->files, ", ", ".env (default)");
@@ -161,7 +162,7 @@ result_t arg_parser(args_t *args) {
     }
 
     if (args->files.count == 0) {
-        list_append(&args->files, ".env");
+        DA_APPEND(&args->files, ".env");
     }
 
     if (args->dry_run) {

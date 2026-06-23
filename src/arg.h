@@ -31,9 +31,6 @@ typedef struct {
     command_t command;
 } args_t;
 
-void print_flags(args_t *args);
-flag_t get_flag(const char *arg);
-result_t set_flag_params(args_t *args, list_t *list, char *flag);
 result_t arg_parser(args_t *args);
 void args_free(args_t *args);
 

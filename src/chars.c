@@ -1,0 +1,4 @@
+#include "chars.h"
+
+const char SPECIAL_CHARS[] = {NULL_CHAR, LINE_DELIMITER, ASSIGN_OP, HASH, DOLLAR_SIGN, BACK_SLASH};
+const size_t SPECIAL_CHARS_LEN = sizeof(SPECIAL_CHARS) / sizeof(SPECIAL_CHARS[0]);
