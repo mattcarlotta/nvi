@@ -29,12 +29,12 @@ typedef struct {
     list_t ignored;
     list_t scan_exts;
     command_t command;
-} arg_t;
+} args_t;
 
-void print_flags(arg_t *args);
+void print_flags(args_t *args);
 flag_t get_flag(const char *arg);
-result_t set_flag_params(arg_t *args, list_t *list, char *flag);
-result_t arg_parser(arg_t *args);
-void args_free(arg_t *args);
+result_t set_flag_params(args_t *args, list_t *list, char *flag);
+result_t arg_parser(args_t *args);
+void args_free(args_t *args);
 
 #endif

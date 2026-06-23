@@ -37,7 +37,7 @@ flag_t get_flag(const char *arg) {
     return UNKNOWN;
 }
 
-result_t set_flag_params(arg_t *args, list_t *list, char *flag) {
+result_t set_flag_params(args_t *args, list_t *list, char *flag) {
     size_t current_count = list->count;
 
     while (args->i + 1 < args->argc && args->argv[args->i + 1][0] != '-') {
@@ -52,31 +52,33 @@ result_t set_flag_params(arg_t *args, list_t *list, char *flag) {
     return (result_t){.ok = true, .errcode = 2};
 }
 
-static void print_items(const char *label, const char *const *items, size_t count, const char *sep,
-                        const char *empty_text) {
-    fprintf(stderr, "\n    \u2022 %s: ", label);
-    if (count == 0) {
+static void print_items(const char *label, const list_t *list, const char *sep, const char *empty_text) {
+    fprintf(stderr, "\n \u2022 %s: ", label);
+
+    if (list->count == 0) {
         fprintf(stderr, "%s", empty_text);
         return;
     }
-    for (size_t i = 0; i < count; i++) {
-        if (i != 0)
+
+    for (size_t i = 0; i < list->count; i++) {
+        if (i != 0) {
             fprintf(stderr, "%s", sep);
-        fprintf(stderr, "%s", items[i]);
+        }
+        fprintf(stderr, "%s", list->items[i]);
     }
 }
 
-void print_flags(arg_t *args) {
-    fprintf(stderr, "info: The following flags have been set...");
-    print_items("command", (const char *const *)args->command.items, args->command.count, " ", "(undefined)");
-    print_items("files", args->files.items, args->files.count, ", ", ".env (default)");
-    print_items("ignore ENVs", args->ignored.items, args->ignored.count, ", ", "(undefined)");
-    print_items("require ENVs", args->required.items, args->required.count, ", ", "(undefined)");
-    print_items("scan extensions", args->scan_exts.items, args->scan_exts.count, ", ", "(undefined)");
-    fprintf(stderr, "\n    \u2022 format: %s\n", format_name(args->format));
+void print_flags(args_t *args) {
+    fprintf(stderr, "[INFO] The following flags have been set...");
+    print_items("command", (const list_t *)&args->command, " ", "(undefined)");
+    print_items("files", &args->files, ", ", ".env (default)");
+    print_items("ignore ENVs", &args->ignored, ", ", "(undefined)");
+    print_items("require ENVs", &args->required, ", ", "(undefined)");
+    print_items("scan extensions", &args->scan_exts, ", ", "(undefined)");
+    fprintf(stderr, "\n \u2022 format: %s\n\n", format_name(args->format));
 }
 
-result_t arg_parser(arg_t *args) {
+result_t arg_parser(args_t *args) {
     // skip program name
     args->i = 1;
 
@@ -92,8 +94,9 @@ result_t arg_parser(arg_t *args) {
         switch (get_flag(args->argv[args->i])) {
             case FILES: {
                 result_t r = set_flag_params(args, &args->files, "files");
-                if (!r.ok)
+                if (!r.ok) {
                     return r;
+                }
                 break;
             }
             case DRY_RUN: {
@@ -117,29 +120,32 @@ result_t arg_parser(arg_t *args) {
             }
             case IGNORED: {
                 result_t r = set_flag_params(args, &args->ignored, "ignored");
-                if (!r.ok)
+                if (!r.ok) {
                     return r;
+                }
                 break;
             }
             case REQUIRED: {
                 result_t r = set_flag_params(args, &args->required, "required");
-                if (!r.ok)
+                if (!r.ok) {
                     return r;
+                }
                 break;
             }
             case SCAN: {
                 result_t r = set_flag_params(args, &args->scan_exts, "scan");
-                if (!r.ok)
+                if (!r.ok) {
                     return r;
+                }
                 break;
             }
             case HELP: {
                 print_help();
-                return (result_t){.ok = false, .errcode = 0};
+                return (result_t){.ok = false};
             }
             case VERSION: {
                 print_version();
-                return (result_t){.ok = false, .errcode = 0};
+                return (result_t){.ok = false};
             }
             default: {
                 const char *token = args->argv[args->i];
@@ -165,7 +171,7 @@ result_t arg_parser(arg_t *args) {
     return (result_t){.ok = true};
 }
 
-void args_free(arg_t *args) {
+void args_free(args_t *args) {
     list_free(&args->files);
     list_free(&args->ignored);
     list_free(&args->required);
