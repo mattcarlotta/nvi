@@ -1,6 +1,7 @@
 #include "arg.h"
 #include "errors.h"
 #include "format.h"
+#include "info.h"
 #include "list.h"
 #include <stdio.h>
 #include <string.h>
@@ -36,77 +37,19 @@ flag_t get_flag(const char *arg) {
     return UNKNOWN;
 }
 
-void set_flag_params(arg_t *args, list_t *list) {
+result_t set_flag_params(arg_t *args, list_t *list, char *flag) {
+    size_t current_count = list->count;
+
     while (args->i + 1 < args->argc && args->argv[args->i + 1][0] != '-') {
         ++(args->i);
         list_append(list, args->argv[args->i]);
     }
-}
 
-void print_help(void) {
-    fputs("Usage: nvi [flags] -- <command>\n"
-          "       nvi scan [ext] [ext] ...etc\n"
-          "\n"
-          "Flags:\n"
-          "  -f, --files <paths>     parses .env files in order (default: .env)\n"
-          "  -i, --ignored <keys>    ignores ENV keys that a scan may find and add to a required ENV key list\n"
-          "  -r, --required <keys>   marks a list of ENV keys that must be present before the command is emitted\n"
-          "  -F, --format <fmt>      outputs ENV format (options: nul|powershell)\n"
-          "  -d, --dry-run           print parsed flags, tokens, scan results, and the resolved env listing to stderr\n"
-          "  -h, --help              prints this help and exits\n"
-          "  -s, --scan <ext>        recursively scans in the root directory for ENV keys used within *.<ext> files "
-          "and marks them as required \u2020\n"
-          "  -v, --version           prints the version and exits\n"
-          "\n"
-          "Commands:\n"
-          "  help                    prints this help and exits\n"
-          "  scan <ext>              recursively scans in the root directory for ENV keys used within *.<ext> files "
-          "and marks them as required \u2020\n"
-          "  version                 prints the version and exits\n"
-          "\n"
-          " \u2020 without a command, scan reports what it finds and exits; with a command, the found ENV keys are "
-          "added to a required ENV key list\n"
-          "\n"
-          "Supported scan file extensions:\n"
-          " \u2022 C -> c\n"
-          " \u2022 Clojure -> clj, cljs, cljc\n"
-          " \u2022 Crystal -> cr\n"
-          " \u2022 C++ -> cc, cpp, cxx, h, hh, hpp, hxx\n"
-          " \u2022 C# -> cs\n"
-          " \u2022 D -> d\n"
-          " \u2022 Dart -> dart\n"
-          " \u2022 Elixir -> ex, exs\n"
-          " \u2022 Erlang -> erl, hrl\n"
-          " \u2022 Fortran -> f, f90, f95, f03, f08, for\n"
-          " \u2022 F# -> fs, fsi, fsx\n"
-          " \u2022 Go -> go\n"
-          " \u2022 Groovy -> groovy\n"
-          " \u2022 Haskell -> hs, lhs\n"
-          " \u2022 Java -> java, gradle\n"
-          " \u2022 JavaScript/TypeScript -> cjs, cts, js, jsx, mjs, mts, ts, tsx\n"
-          " \u2022 Julia -> jl\n"
-          " \u2022 Kotlin -> kt, kts\n"
-          " \u2022 Lua -> lua\n"
-          " \u2022 Nim -> nim\n"
-          " \u2022 Nushell -> nu\n"
-          " \u2022 Objective-C -> m, mm\n"
-          " \u2022 OCaml -> ml, mli\n"
-          " \u2022 Pascal/Delphi -> ldpr, pas, pp\n"
-          " \u2022 Perl -> pl, pm, t\n"
-          " \u2022 PHP -> php\n"
-          " \u2022 PowerShell -> ps1, psm1, psd1\n"
-          " \u2022 Python -> py, pyi\n"
-          " \u2022 R -> r\n"
-          " \u2022 Ruby -> gemspec, rb, rake\n"
-          " \u2022 Rust -> rs\n"
-          " \u2022 Scala -> sc, scala\n"
-          " \u2022 Swift -> swift\n"
-          " \u2022 Tcl -> tcl\n"
-          " \u2022 V -> v\n"
-          " \u2022 Visual Basic -> vb\n"
-          " \u2022 Zig -> zig\n"
-          "\n",
-          stdout);
+    if (list->count == current_count) {
+        return usage_error("option '%s' requires at least one argument", flag);
+    }
+
+    return (result_t){.ok = true, .errcode = 2};
 }
 
 void print_flags(arg_t *args) {
@@ -166,8 +109,6 @@ void print_flags(arg_t *args) {
 }
 
 result_t arg_parser(arg_t *args) {
-    result_t res = {.ok = true, .errcode = 0};
-
     // skip program name
     args->i = 1;
 
@@ -182,7 +123,9 @@ result_t arg_parser(arg_t *args) {
 
         switch (get_flag(args->argv[args->i])) {
             case FILES: {
-                set_flag_params(args, &args->files);
+                result_t r = set_flag_params(args, &args->files, "files");
+                if (!r.ok)
+                    return r;
                 break;
             }
             case DRY_RUN: {
@@ -205,26 +148,39 @@ result_t arg_parser(arg_t *args) {
                 break;
             }
             case IGNORED: {
-                set_flag_params(args, &args->ignored);
+                result_t r = set_flag_params(args, &args->ignored, "ignored");
+                if (!r.ok)
+                    return r;
                 break;
             }
             case REQUIRED: {
-                set_flag_params(args, &args->required);
+                result_t r = set_flag_params(args, &args->required, "required");
+                if (!r.ok)
+                    return r;
                 break;
             }
             case SCAN: {
-                set_flag_params(args, &args->scan_exts);
+                result_t r = set_flag_params(args, &args->scan_exts, "scan");
+                if (!r.ok)
+                    return r;
                 break;
             }
             case HELP: {
                 print_help();
-                res.ok = false;
-                return res;
+                return (result_t){.ok = false, .errcode = 0};
             }
-            case VERSION:
+            case VERSION: {
+                print_version();
+                return (result_t){.ok = false, .errcode = 0};
+            }
             default: {
-                res.ok = false;
-                return res;
+                const char *token = args->argv[args->i];
+
+                if (token[0] == '-') {
+                    return usage_error("unrecognized flag '%s'", token);
+                }
+
+                return usage_error("unexpected argument '%s'", token);
             }
         }
         ++args->i;
@@ -238,7 +194,7 @@ result_t arg_parser(arg_t *args) {
         print_flags(args);
     }
 
-    return res;
+    return (result_t){.ok = true};
 }
 
 void free_args(arg_t *args) {

@@ -271,9 +271,10 @@ $ENV{DATABASE_URL}                # Perl
 - Fortran -> `f`, `f90`, `f95`, `f03`, `f08`, `for`
 - F# -> `fs`, `fsi`, `fsx`
 - Go -> `go`
+- Gradle -> `gradle`
 - Groovy -> `groovy`
 - Haskell -> `hs`, `lhs`
-- Java -> `java`, `gradle`
+- Java -> `java`
 - JavaScript/TypeScript -> `cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`
 - Julia -> `jl`
 - Kotlin -> `kt`, `kts`
