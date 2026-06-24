@@ -26,8 +26,7 @@ typedef struct {
     ext_map scan_exts;
 } scanner_t;
 
-bool is_blacklisted(const char *name);
 result_t run_scanner(args_t *args, scanner_t *scanner);
-void scanner_free(scanner_t *scanner);
+void free_scanner(scanner_t *scanner);
 
 #endif

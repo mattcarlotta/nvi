@@ -267,7 +267,7 @@ static const ext_entry extensions[] = {
 };
 
 const ext_entry *find_ext(const char *ext) {
-    for (size_t i = 0; i < ARRLEN(extensions); i++) {
+    for (size_t i = 0; i < ARRLEN(extensions); ++i) {
         if (strcmp(ext, extensions[i].ext) == 0) {
             return &extensions[i];
         }

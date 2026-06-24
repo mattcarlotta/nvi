@@ -31,7 +31,7 @@ typedef struct {
     command_t command;
 } args_t;
 
-result_t arg_parser(args_t *args);
-void args_free(args_t *args);
+result_t parse_args(args_t *args);
+void free_args(args_t *args);
 
 #endif

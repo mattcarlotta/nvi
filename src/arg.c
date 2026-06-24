@@ -1,5 +1,5 @@
 #include "arg.h"
-#include "da.h"
+#include "dynarr.h"
 #include "errors.h"
 #include "format.h"
 #include "info.h"
@@ -43,7 +43,7 @@ static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
 
     while (args->i + 1 < args->argc && args->argv[args->i + 1][0] != '-') {
         ++(args->i);
-        DA_APPEND(list, args->argv[args->i]);
+        DYN_ARR_APPEND(list, args->argv[args->i]);
     }
 
     if (list->count == current_count) {
@@ -61,7 +61,7 @@ static void print_items(const char *label, const list_t *list, const char *sep, 
         return;
     }
 
-    for (size_t i = 0; i < list->count; i++) {
+    for (size_t i = 0; i < list->count; ++i) {
         if (i != 0) {
             fprintf(stderr, "%s", sep);
         }
@@ -79,7 +79,7 @@ static void print_flags(args_t *args) {
     fprintf(stderr, "\n \u2022 format: %s\n\n", format_name(args->format));
 }
 
-result_t arg_parser(args_t *args) {
+result_t parse_args(args_t *args) {
     // skip program name
     args->i = 1;
 
@@ -162,7 +162,7 @@ result_t arg_parser(args_t *args) {
     }
 
     if (args->files.count == 0) {
-        DA_APPEND(&args->files, ".env");
+        DYN_ARR_APPEND(&args->files, ".env");
     }
 
     if (args->dry_run) {
@@ -172,9 +172,9 @@ result_t arg_parser(args_t *args) {
     return (result_t){.ok = true};
 }
 
-void args_free(args_t *args) {
-    list_free(&args->files);
-    list_free(&args->ignored);
-    list_free(&args->required);
-    list_free(&args->scan_exts);
+void free_args(args_t *args) {
+    free_list(&args->files);
+    free_list(&args->ignored);
+    free_list(&args->required);
+    free_list(&args->scan_exts);
 }

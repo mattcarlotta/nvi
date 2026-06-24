@@ -1,24 +1,14 @@
 #include "matcher.h"
+#include "accessors.h"
 #include "chars.h"
-#include "da.h"
+#include "dynarr.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
 
-void print_matches(const char *path, const env_matches_t *matches) {
-    fprintf(stderr, "info: Scanned %s and found %zu key%s...\n", path, matches->count, matches->count != 1 ? "s" : "");
-
-    for (size_t i = 0; i < matches->count; i++) {
-        const env_match_t *m = &matches->items[i];
-        fprintf(stderr, "    \u2022 %.*s (line %zu, byte %zu)\n", (int)m->key_len, m->key, m->line, m->byte);
-    }
-
-    fprintf(stderr, "\n");
-}
-
 static const accessor_t *match_prefix(const char *contents, size_t len, size_t i, const accessor_t *accessors,
                                       size_t accessor_count) {
-    for (size_t a = 0; a < accessor_count; a++) {
+    for (size_t a = 0; a < accessor_count; ++a) {
         const accessor_t *acc = &accessors[a];
         size_t plen = strlen(acc->prefix);
 
@@ -26,7 +16,7 @@ static const accessor_t *match_prefix(const char *contents, size_t len, size_t i
             continue;
         }
 
-        // reject mid-identifier matches: prev char and prefix[0] both ident chars
+        // reject mid-identifier matches
         if (i > 0 && is_ident_char(contents[i - 1]) && is_ident_char(acc->prefix[0])) {
             continue;
         }
@@ -42,7 +32,7 @@ static env_t extract_key(const char *contents, size_t len, size_t start, pattern
             size_t end = start;
 
             while (end < len && is_ident_char(contents[end])) {
-                end++;
+                ++end;
             }
 
             if (end == start) {
@@ -54,7 +44,7 @@ static env_t extract_key(const char *contents, size_t len, size_t start, pattern
         case quoted: {
             size_t cursor = start;
             while (cursor < len && (contents[cursor] == SPACE || contents[cursor] == TAB)) {
-                cursor++;
+                ++cursor;
             }
 
             if (cursor >= len) {
@@ -67,6 +57,10 @@ static env_t extract_key(const char *contents, size_t len, size_t start, pattern
             }
 
             size_t key_start = cursor + 1;
+            if (key_start >= len || !is_ident_start(contents[key_start])) {
+                return (env_t){0};
+            }
+
             size_t key_end = index_of(contents, len, key_start, quote);
             if (key_end == len || !is_same_line(contents, len, key_start, key_end) || key_end == key_start) {
                 return (env_t){0};
@@ -87,8 +81,8 @@ static env_t extract_key(const char *contents, size_t len, size_t start, pattern
             // strip a matching pair of surrounding quotes: $ENV{'FOO'} -> FOO
             if (key_end > key_start && (contents[key_start] == SINGLE_QUOTE || contents[key_start] == DOUBLE_QUOTE) &&
                 contents[key_end - 1] == contents[key_start]) {
-                key_start++;
-                key_end--;
+                ++key_start;
+                --key_end;
             }
 
             if (key_end <= key_start) {
@@ -109,23 +103,23 @@ static env_t extract_key(const char *contents, size_t len, size_t start, pattern
     }
 }
 
-void scan_content(const char *contents, size_t len, const accessor_t *accessors, size_t accessor_count,
-                  env_matches_t *matches) {
+void scan_file_content(const char *contents, size_t len, const accessor_t *accessors, size_t accessor_count,
+                       env_matches_t *matches) {
     size_t i = 0;
     size_t line = 1;
     size_t line_start = 0;
 
     while (i < len) {
         if (contents[i] == LINE_DELIMITER) {
-            line++;
+            ++line;
             line_start = i + 1;
-            i++;
+            ++i;
             continue;
         }
 
         const accessor_t *acc = match_prefix(contents, len, i, accessors, accessor_count);
         if (acc == NULL) {
-            i++;
+            ++i;
             continue;
         }
 
@@ -145,7 +139,7 @@ void scan_content(const char *contents, size_t len, const accessor_t *accessors,
             .byte = env.start - line_start + 1,
         };
 
-        DA_APPEND(matches, m);
+        DYN_ARR_APPEND(matches, m);
 
         i = env.end;
     }

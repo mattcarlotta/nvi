@@ -1,10 +1,13 @@
 #include "scanner.h"
+#include "accessors.h"
 #include "arg.h"
-#include "da.h"
+#include "chars.h"
+#include "dynarr.h"
 #include "errors.h"
 #include "list.h"
 #include "macros.h"
 #include "matcher.h"
+#include "utils.h"
 #include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -28,10 +31,10 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-#define MAX_FILE_BYTES (10 * 1024 * 1024)
+#define MAX_FILE_SIZE ((size_t)(10 * 1024 * 1024))
 
 static const ext_pair *ext_map_get(const ext_map *map, const char *ext) {
-    for (size_t i = 0; i < map->count; i++) {
+    for (size_t i = 0; i < map->count; ++i) {
         if (strcmp(map->items[i].ext, ext) == 0) {
             return &map->items[i];
         }
@@ -49,44 +52,33 @@ static void ext_map_put(ext_map *map, const ext_entry *entry) {
         .accessors = entry->accessors,
         .accessor_count = entry->count,
     };
-    DA_APPEND(map, pair);
-}
-
-static void ext_map_free(ext_map *map) {
-    free(map->items);
-    map->items = NULL;
-    map->count = 0;
-    map->capacity = 0;
+    DYN_ARR_APPEND(map, pair);
 }
 
 static const ext_pair *get_file_accessors(const scanner_t *scanner, const char *name) {
-    const char *dot = strrchr(name, '.');
+    const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
         return NULL;
     }
+
     return ext_map_get(&scanner->scan_exts, dot + 1);
 }
 
-static bool envs_contains(const list_t *envs, const char *key, size_t key_len) {
-    for (size_t i = 0; i < envs->count; i++) {
+static bool envs_are_unique(list_t *envs, const char *key, size_t key_len) {
+    for (size_t i = 0; i < envs->count; ++i) {
         const char *stored = envs->items[i];
         if (strlen(stored) == key_len && strncmp(stored, key, key_len) == 0) {
             return true;
         }
     }
-    return false;
-}
 
-static bool envs_are_unique(list_t *envs, const char *key, size_t key_len) {
-    if (envs_contains(envs, key, key_len)) {
-        return true;
-    }
     char *copy = strndup(key, key_len);
     if (copy == NULL) {
         return false;
     }
 
-    DA_APPEND(envs, copy);
+    DYN_ARR_APPEND(envs, copy);
+
     return true;
 }
 
@@ -103,50 +95,63 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
     }
 
     fseek(f, 0, SEEK_END);
-    long size = ftell(f);
+    size_t size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
     if (size < 0) {
         fclose(f);
         return (result_t){.ok = true};
     }
-    if ((size_t)size > MAX_FILE_BYTES) {
+
+    if (size > MAX_FILE_SIZE) {
         if (scanner->dry_run) {
-            fprintf(stderr, "warning: '%s' exceeds %d bytes, skipping.\n", path, MAX_FILE_BYTES);
+            fprintf(stderr, "warning: '%s' exceeds %zu bytes, skipping.\n", path, MAX_FILE_SIZE);
         }
+
         fclose(f);
+
         return (result_t){.ok = true};
     }
 
-    char *contents = malloc((size_t)size + 1);
+    char *contents = malloc(size + 1);
     if (contents == NULL) {
         fclose(f);
         abort();
     }
-    size_t read = fread(contents, 1, (size_t)size, f);
+
+    size_t read = fread(contents, 1, size, f);
     contents[read] = '\0';
     fclose(f);
 
-    scanner->files_scanned++;
+    ++scanner->files_scanned;
 
     env_matches_t matches = {0};
-    scan_content(contents, read, match->accessors, match->accessor_count, &matches);
+    scan_file_content(contents, read, match->accessors, match->accessor_count, &matches);
 
     if (scanner->dry_run && matches.count > 0) {
-        print_matches(path, &matches);
+        fprintf(stderr, "[INFO] Scanned %s and found %zu key%s...\n", path, matches.count,
+                ISPLURAL(matches.count) ? "s" : "");
+
+        for (size_t i = 0; i < matches.count; ++i) {
+            const env_match_t *m = &matches.items[i];
+            fprintf(stderr, "    \u2022 %.*s (line %zu, byte %zu)\n", (int)m->key_len, m->key, m->line, m->byte);
+        }
+
+        fprintf(stderr, "\n");
     }
 
-    for (size_t i = 0; i < matches.count; i++) {
-        scanner->references++;
+    for (size_t i = 0; i < matches.count; ++i) {
+        ++scanner->references;
         if (!envs_are_unique(&scanner->envs, matches.items[i].key, matches.items[i].key_len)) {
-            free(matches.items);
+            free_env_matches(&matches);
             free(contents);
             abort();
         }
     }
 
-    free(matches.items);
+    free_env_matches(&matches);
     free(contents);
+
     return (result_t){.ok = true};
 }
 
@@ -186,12 +191,15 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     if (n < 0 || (size_t)n >= sizeof(pattern)) {
         return operation_error("path too long: '%s'", path);
     }
-    WIN32_FIND_DATA fd;
+
+    WIN32_FIND_DYN_ARRTA fd;
     HANDLE h = FindFirstFile(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) {
         return operation_error("cannot open directory '%s'", path);
     }
-    scanner->dirs_scanned++;
+
+    ++scanner->dirs_scanned;
+
     do {
         res = handle_entry(scanner, path, fd.cFileName);
         if (!res.ok) {
@@ -204,7 +212,9 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     if (dir == NULL) {
         return operation_error("cannot open directory '%s'", path);
     }
-    scanner->dirs_scanned++;
+
+    ++scanner->dirs_scanned;
+
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
         res = handle_entry(scanner, path, entry->d_name);
@@ -212,6 +222,7 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
             break;
         }
     }
+
     closedir(dir);
 #endif
 
@@ -233,9 +244,7 @@ static result_t merge_required_envs(scanner_t *scanner, args_t *args) {
         return (result_t){.ok = true};
     }
 
-    if (scanner->dry_run) {
-        fprintf(stderr, "info: The following ENV keys will be marked as required...\n");
-    }
+    bool printed_header = false;
 
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         const char *key = scanner->envs.items[i];
@@ -243,19 +252,24 @@ static result_t merge_required_envs(scanner_t *scanner, args_t *args) {
             continue;
         }
 
-        char *owned = strdup(key);
-        if (owned == NULL) {
+        char *new_key = strdup(key);
+        if (new_key == NULL) {
+            fprintf(stderr, "[ERROR] Failed to copy key '%s' from file; aborting.\n", key);
             abort();
         }
 
-        DA_APPEND(&args->required, owned);
+        DYN_ARR_APPEND(&args->required, new_key);
 
         if (scanner->dry_run) {
-            fprintf(stderr, "  \u2022 %s\n", owned);
+            if (!printed_header) {
+                fprintf(stderr, "[INFO] The following ENV keys would be marked as required...\n");
+                printed_header = true;
+            }
+            fprintf(stderr, "  \u2022 %s\n", new_key);
         }
     }
 
-    if (scanner->dry_run) {
+    if (scanner->dry_run && printed_header) {
         fprintf(stderr, "\n");
     }
 
@@ -279,20 +293,22 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
     for (size_t i = 0; i < args->scan_exts.count; ++i) {
         const char *ext = args->scan_exts.items[i];
         const ext_entry *entry = find_ext(ext);
+
         if (entry == NULL) {
             return usage_error("unsupported scan file extension '%s'", ext);
         }
+
         ext_map_put(&scanner->scan_exts, entry);
     }
 
-    result_t walk_res = walk_file_tree(scanner, ".");
-    if (!walk_res.ok) {
-        return walk_res;
+    result_t walk_result = walk_file_tree(scanner, ".");
+    if (!walk_result.ok) {
+        return walk_result;
     }
 
     if (scanner->dry_run) {
         fprintf(stderr,
-                "[INFO] Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
+                "[INFO] Walked %zu director%s, checked %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
                 scanner->dirs_scanned, ISPLURAL(scanner->dirs_scanned) ? "ies" : "y", scanner->files_scanned,
                 ISPLURAL(scanner->files_scanned) ? "s" : "", scanner->references,
                 ISPLURAL(scanner->references) ? "s" : "", scanner->envs.count, scanner->envs.count != 1 ? "s" : "");
@@ -301,10 +317,15 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
     return merge_required_envs(scanner, args);
 }
 
-void scanner_free(scanner_t *scanner) {
-    ext_map_free(&scanner->scan_exts);
+void free_scanner(scanner_t *scanner) {
+    free(scanner->scan_exts.items);
+    scanner->scan_exts.items = NULL;
+    scanner->scan_exts.count = 0;
+    scanner->scan_exts.capacity = 0;
+
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         free((void *)scanner->envs.items[i]);
     }
-    list_free(&scanner->envs);
+
+    free_list(&scanner->envs);
 }

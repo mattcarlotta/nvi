@@ -1,6 +1,7 @@
 #ifndef MATCHER_H
 #define MATCHER_H
 #include "accessors.h"
+#include "dynarr.h"
 
 typedef struct {
     const char *key;
@@ -21,9 +22,8 @@ typedef struct {
     size_t count, capacity;
 } env_matches_t;
 
-void scan_content(const char *contents, size_t len, const accessor_t *accessors, size_t accessor_count,
-                  env_matches_t *matches);
-void print_matches(const char *path, const env_matches_t *matches);
-void env_matches_free(env_matches_t *m);
+void scan_file_content(const char *contents, size_t len, const accessor_t *accessors, size_t accessor_count,
+                       env_matches_t *matches);
+static inline void free_env_matches(env_matches_t *m) { DYN_ARR_FREE(m); }
 
 #endif

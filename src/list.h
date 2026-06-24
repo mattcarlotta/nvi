@@ -1,6 +1,6 @@
 #ifndef LIST_H
 #define LIST_H
-#include <stddef.h>
+#include "dynarr.h"
 #include <stdlib.h>
 
 typedef struct {
@@ -9,11 +9,6 @@ typedef struct {
     size_t capacity;
 } list_t;
 
-static inline void list_free(list_t *list) {
-    free(list->items);
-    list->items = NULL;
-    list->count = 0;
-    list->capacity = 0;
-}
+static inline void free_list(list_t *list) { DYN_ARR_FREE(list); }
 
 #endif

@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
                    .scan_exts = {0}};
     scanner_t scanner = {0};
 
-    const result_t arg_res = arg_parser(&args);
+    const result_t arg_res = parse_args(&args);
     if (!arg_res.ok) {
         exit_code = arg_res.errcode;
         goto cleanup;
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 
 cleanup:
     fflush(stderr);
-    args_free(&args);
-    scanner_free(&scanner);
+    free_args(&args);
+    free_scanner(&scanner);
     return exit_code;
 }
