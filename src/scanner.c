@@ -64,22 +64,21 @@ static const ext_pair *get_file_accessors(const scanner_t *scanner, const char *
     return ext_map_get(&scanner->scan_exts, dot + 1);
 }
 
-static bool envs_are_unique(list_t *envs, const char *key, size_t key_len) {
+static void append_unique_envs(list_t *envs, env_match_t *env) {
     for (size_t i = 0; i < envs->count; ++i) {
         const char *stored = envs->items[i];
-        if (strlen(stored) == key_len && strncmp(stored, key, key_len) == 0) {
-            return true;
+        if (strlen(stored) == env->key_len && strncmp(stored, env->key, env->key_len) == 0) {
+            return;
         }
     }
 
-    char *copy = strndup(key, key_len);
+    char *copy = strndup(env->key, env->key_len);
     if (copy == NULL) {
-        return false;
+        fprintf(stderr, "[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
+        abort();
     }
 
     DYN_ARR_APPEND(envs, copy);
-
-    return true;
 }
 
 static result_t scan_file(scanner_t *scanner, const char *path, const char *name) {
@@ -105,7 +104,7 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 
     if (size > MAX_FILE_SIZE) {
         if (scanner->dry_run) {
-            fprintf(stderr, "warning: '%s' exceeds %zu bytes, skipping.\n", path, MAX_FILE_SIZE);
+            fprintf(stderr, "[WARNING] The file '%s' exceeds %zu bytes, skipping.\n", path, MAX_FILE_SIZE);
         }
 
         fclose(f);
@@ -115,6 +114,7 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 
     char *contents = malloc(size + 1);
     if (contents == NULL) {
+        fprintf(stderr, "[ERROR] Failed to load file '%s' (file may be empty or not found); aborting.\n", path);
         fclose(f);
         abort();
     }
@@ -142,11 +142,7 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 
     for (size_t i = 0; i < matches.count; ++i) {
         ++scanner->references;
-        if (!envs_are_unique(&scanner->envs, matches.items[i].key, matches.items[i].key_len)) {
-            free_env_matches(&matches);
-            free(contents);
-            abort();
-        }
+        append_unique_envs(&scanner->envs, &matches.items[i]);
     }
 
     free_env_matches(&matches);
@@ -176,9 +172,11 @@ static result_t handle_entry(scanner_t *scanner, const char *parent, const char 
     if (S_ISDIR(st.st_mode)) {
         return walk_file_tree(scanner, child);
     }
+
     if (S_ISREG(st.st_mode)) {
         return scan_file(scanner, child, name);
     }
+
     return (result_t){.ok = true};
 }
 

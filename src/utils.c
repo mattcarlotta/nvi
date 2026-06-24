@@ -60,7 +60,7 @@ bool is_valid_key(const char *key, size_t len) {
     for (size_t i = 0; i < len; ++i) {
         char c = key[i];
         // env names should match alphanumberic and underscore only
-        if (!(isalnum((unsigned char)c) || c == UNDERLINE)) {
+        if (!is_ident_char(c)) {
             return false;
         }
     }

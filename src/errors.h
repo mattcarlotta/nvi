@@ -10,7 +10,7 @@ static inline result_t operation_error(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
-    fprintf(stderr, "error: ");
+    fprintf(stderr, "[ERROR] ");
     vfprintf(stderr, fmt, args);
 
     va_end(args);
@@ -22,7 +22,7 @@ static inline result_t usage_error(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
-    fprintf(stderr, "error: ");
+    fprintf(stderr, "[ERROR] ");
     vfprintf(stderr, fmt, args);
     fprintf(stderr, "\nTry 'nvi --help' for more information.\n");
 

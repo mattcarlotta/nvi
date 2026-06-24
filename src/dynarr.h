@@ -1,5 +1,6 @@
 #ifndef DYN_ARR_H
 #define DYN_ARR_H
+#include <stdio.h>
 #include <stdlib.h>
 
 #define DYN_ARR_INIT_CAP 8
@@ -10,6 +11,7 @@
             size_t _new_cap = (da)->capacity == 0 ? DYN_ARR_INIT_CAP : (da)->capacity * 2;                             \
             void *_p = realloc((da)->items, _new_cap * sizeof(*(da)->items));                                          \
             if (_p == NULL) {                                                                                          \
+                fprintf(stderr, "[ERROR] Failed to reallocate memory (system of out memory?); aborting.\n");           \
                 abort();                                                                                               \
             }                                                                                                          \
             (da)->items = _p;                                                                                          \
