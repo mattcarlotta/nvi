@@ -14,6 +14,15 @@ static const char *blacklist[] = {
 
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
+size_t index_of_scalar(const char *s, size_t len, size_t pos, int ch) {
+    for (size_t k = pos; k < len; k++) {
+        if ((unsigned char)s[k] == (unsigned char)ch) {
+            return k;
+        }
+    }
+    return len;
+}
+
 bool ends_with(const char *name, const char *suffix) {
     size_t nlen = strlen(name);
     size_t slen = strlen(suffix);
@@ -21,12 +30,12 @@ bool ends_with(const char *name, const char *suffix) {
 }
 
 bool is_blacklisted(const char *name) {
-    for (size_t i = 0; i < ARRLEN(blacklist_suffixes); ++i) {
+    for (size_t i = 0; i < ARR_LEN(blacklist_suffixes); ++i) {
         if (ends_with(name, blacklist_suffixes[i])) {
             return true;
         }
     }
-    for (size_t i = 0; i < ARRLEN(blacklist); ++i) {
+    for (size_t i = 0; i < ARR_LEN(blacklist); ++i) {
         if (strcmp(name, blacklist[i]) == 0) {
             return true;
         }

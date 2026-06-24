@@ -4,7 +4,9 @@
 #include "chars.h"
 #include "dynarr.h"
 #include "errors.h"
+#include "file.h"
 #include "list.h"
+#include "log.h"
 #include "macros.h"
 #include "matcher.h"
 #include "utils.h"
@@ -30,8 +32,6 @@
 #ifndef S_ISREG
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
-
-#define MAX_FILE_SIZE ((size_t)(10 * 1024 * 1024))
 
 static const ext_pair *ext_map_get(const ext_map *map, const char *ext) {
     for (size_t i = 0; i < map->count; ++i) {
@@ -74,7 +74,7 @@ static void append_unique_envs(list_t *envs, env_match_t *env) {
 
     char *copy = strndup(env->key, env->key_len);
     if (copy == NULL) {
-        fprintf(stderr, "[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
+        log_error("[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
         abort();
     }
 
@@ -82,62 +82,32 @@ static void append_unique_envs(list_t *envs, env_match_t *env) {
 }
 
 static result_t scan_file(scanner_t *scanner, const char *path, const char *name) {
+    result_t result = {.ok = true, .errcode = 0};
     const ext_pair *match = get_file_accessors(scanner, name);
     if (match == NULL) {
-        return (result_t){.ok = true};
+        return result;
     }
 
-    FILE *f = fopen(path, "rb");
-    if (f == NULL) {
-        fprintf(stderr, "warning: cannot open '%s': %s\n", path, strerror(errno));
-        return (result_t){.ok = true};
+    file_details_t file = open_file(path, scanner->dry_run);
+    if (file.contents == NULL || file.len <= 0) {
+        return result;
     }
-
-    fseek(f, 0, SEEK_END);
-    size_t size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    if (size < 0) {
-        fclose(f);
-        return (result_t){.ok = true};
-    }
-
-    if (size > MAX_FILE_SIZE) {
-        if (scanner->dry_run) {
-            fprintf(stderr, "[WARNING] The file '%s' exceeds %zu bytes, skipping.\n", path, MAX_FILE_SIZE);
-        }
-
-        fclose(f);
-
-        return (result_t){.ok = true};
-    }
-
-    char *contents = malloc(size + 1);
-    if (contents == NULL) {
-        fprintf(stderr, "[ERROR] Failed to load file '%s' (file may be empty or not found); aborting.\n", path);
-        fclose(f);
-        abort();
-    }
-
-    size_t read = fread(contents, 1, size, f);
-    contents[read] = '\0';
-    fclose(f);
 
     ++scanner->files_scanned;
 
     env_matches_t matches = {0};
-    scan_file_content(contents, read, match->accessors, match->accessor_count, &matches);
+    scan_file_content(file.contents, file.len, match->accessors, match->accessor_count, &matches);
 
     if (scanner->dry_run && matches.count > 0) {
-        fprintf(stderr, "[INFO] Scanned %s and found %zu key%s...\n", path, matches.count,
-                ISPLURAL(matches.count) ? "s" : "");
+        log_info("[INFO]");
+        log_f(" Scanned %s and found %zu key%s...\n", path, matches.count, TO_PLURAL(matches.count));
 
         for (size_t i = 0; i < matches.count; ++i) {
             const env_match_t *m = &matches.items[i];
-            fprintf(stderr, "    \u2022 %.*s (line %zu, byte %zu)\n", (int)m->key_len, m->key, m->line, m->byte);
+            log_f("    \u2022 %.*s (%zu:%zu)\n", (int)m->key_len, m->key, m->line, m->byte);
         }
 
-        fprintf(stderr, "\n");
+        log_f("\n");
     }
 
     for (size_t i = 0; i < matches.count; ++i) {
@@ -146,9 +116,9 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
     }
 
     free_env_matches(&matches);
-    free(contents);
+    free(file.contents);
 
-    return (result_t){.ok = true};
+    return result;
 }
 
 static result_t walk_file_tree(scanner_t *scanner, const char *path);
@@ -181,7 +151,7 @@ static result_t handle_entry(scanner_t *scanner, const char *parent, const char 
 }
 
 static result_t walk_file_tree(scanner_t *scanner, const char *path) {
-    result_t res = {.ok = true};
+    result_t result = {.ok = true};
 
 #ifdef _WIN32
     char pattern[PATH_MAX];
@@ -193,14 +163,14 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     WIN32_FIND_DYN_ARRTA fd;
     HANDLE h = FindFirstFile(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) {
-        return operation_error("cannot open directory '%s'", path);
+        return operation_error("cannot open directory '%s'; aborting.", path);
     }
 
     ++scanner->dirs_scanned;
 
     do {
-        res = handle_entry(scanner, path, fd.cFileName);
-        if (!res.ok) {
+        result = handle_entry(scanner, path, fd.cFileName);
+        if (!result.ok) {
             break;
         }
     } while (FindNextFile(h, &fd));
@@ -208,15 +178,15 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
 #else
     DIR *dir = opendir(path);
     if (dir == NULL) {
-        return operation_error("cannot open directory '%s'", path);
+        return operation_error("cannot open directory '%s'; aborting.", path);
     }
 
     ++scanner->dirs_scanned;
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        res = handle_entry(scanner, path, entry->d_name);
-        if (!res.ok) {
+        result = handle_entry(scanner, path, entry->d_name);
+        if (!result.ok) {
             break;
         }
     }
@@ -224,7 +194,7 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     closedir(dir);
 #endif
 
-    return res;
+    return result;
 }
 
 static bool is_ignored_key(const args_t *args, const char *key) {
@@ -237,12 +207,10 @@ static bool is_ignored_key(const args_t *args, const char *key) {
     return false;
 }
 
-static result_t merge_required_envs(scanner_t *scanner, args_t *args) {
+static void merge_required_envs(scanner_t *scanner, args_t *args) {
     if (scanner->envs.count == 0) {
-        return (result_t){.ok = true};
+        return;
     }
-
-    bool printed_header = false;
 
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         const char *key = scanner->envs.items[i];
@@ -252,40 +220,50 @@ static result_t merge_required_envs(scanner_t *scanner, args_t *args) {
 
         char *new_key = strdup(key);
         if (new_key == NULL) {
-            fprintf(stderr, "[ERROR] Failed to copy key '%s' from file; aborting.\n", key);
+            log_error("[ERROR] Failed to copy key '%s' (system out of memory?); aborting.\n", key);
             abort();
         }
 
         DYN_ARR_APPEND(&args->required, new_key);
+    }
 
-        if (scanner->dry_run) {
-            if (!printed_header) {
-                fprintf(stderr, "[INFO] The following ENV keys would be marked as required...\n");
-                printed_header = true;
+    if (scanner->dry_run) {
+        log_info("[INFO]");
+        log_f(" The following ENV keys are marked as required...\n");
+
+        if (args->required.count > 0) {
+            for (size_t i = 0; i < args->required.count; ++i) {
+                log_f("    \u2022 %s\n", args->required.items[i]);
             }
-            fprintf(stderr, "  \u2022 %s\n", new_key);
+        } else {
+            log_f("    \u2022 (none)\n");
         }
-    }
 
-    if (scanner->dry_run && printed_header) {
-        fprintf(stderr, "\n");
+        log_f("\n");
     }
-
-    return (result_t){.ok = true};
 }
 
 result_t run_scanner(args_t *args, scanner_t *scanner) {
+    result_t result = {.ok = true, .errcode = 0};
     scanner->dry_run = args->dry_run || args->command.count == 0;
 
     if (scanner->dry_run) {
-        fprintf(stderr, "[INFO] Scanning for environment variables in ");
+        log_info("[INFO]");
+        log_f(" Scanning for environment variables in");
+
         for (size_t i = 0; i < args->scan_exts.count; ++i) {
-            if (i != 0) {
-                fprintf(stderr, ", ");
+            if (i != 0 && args->scan_exts.count > 2) {
+                log_f(",");
             }
-            fprintf(stderr, "*.%s", args->scan_exts.items[i]);
+
+            if (i == args->scan_exts.count - 1 && args->scan_exts.count > 1) {
+                log_f(" and");
+            }
+
+            log_f(" *.%s", args->scan_exts.items[i]);
         }
-        fprintf(stderr, " files...\n\n");
+
+        log_f(" files...\n\n");
     }
 
     for (size_t i = 0; i < args->scan_exts.count; ++i) {
@@ -293,26 +271,28 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
         const ext_entry *entry = find_ext(ext);
 
         if (entry == NULL) {
-            return usage_error("unsupported scan file extension '%s'", ext);
+            return usage_error("Unsupported scan file extension '%s'", ext);
         }
 
         ext_map_put(&scanner->scan_exts, entry);
     }
 
-    result_t walk_result = walk_file_tree(scanner, ".");
-    if (!walk_result.ok) {
-        return walk_result;
+    result = walk_file_tree(scanner, ".");
+    if (!result.ok) {
+        return result;
     }
 
     if (scanner->dry_run) {
-        fprintf(stderr,
-                "[INFO] Walked %zu director%s, checked %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
-                scanner->dirs_scanned, ISPLURAL(scanner->dirs_scanned) ? "ies" : "y", scanner->files_scanned,
-                ISPLURAL(scanner->files_scanned) ? "s" : "", scanner->references,
-                ISPLURAL(scanner->references) ? "s" : "", scanner->envs.count, scanner->envs.count != 1 ? "s" : "");
+        log_info("[INFO]");
+        log_f(" Walked %zu director%s, checked %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
+              scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
+              TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references),
+              scanner->envs.count, TO_PLURAL(scanner->envs.count));
     }
 
-    return merge_required_envs(scanner, args);
+    merge_required_envs(scanner, args);
+
+    return result;
 }
 
 void free_scanner(scanner_t *scanner) {

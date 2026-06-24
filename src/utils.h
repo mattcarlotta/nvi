@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+size_t index_of_scalar(const char *s, size_t len, size_t pos, int ch);
 bool ends_with(const char *name, const char *suffix);
 bool is_blacklisted(const char *name);
 size_t index_of(const char *contents, size_t len, size_t from, char ch);

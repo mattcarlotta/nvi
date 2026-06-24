@@ -2,7 +2,7 @@
 #include "macros.h"
 #include <string.h>
 
-#define ENTRY(ext, arr) {(ext), (arr), ARRLEN(arr)}
+#define ENTRY(ext, arr) {(ext), (arr), ARR_LEN(arr)}
 
 static const accessor_t javascript[] = {
     {.prefix = "process.env.", .pattern = ident},     {.prefix = "process.env[", .pattern = quoted},
@@ -267,7 +267,7 @@ static const ext_entry extensions[] = {
 };
 
 const ext_entry *find_ext(const char *ext) {
-    for (size_t i = 0; i < ARRLEN(extensions); ++i) {
+    for (size_t i = 0; i < ARR_LEN(extensions); ++i) {
         if (strcmp(ext, extensions[i].ext) == 0) {
             return &extensions[i];
         }

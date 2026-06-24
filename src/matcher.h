@@ -19,7 +19,8 @@ typedef struct {
 
 typedef struct {
     env_match_t *items;
-    size_t count, capacity;
+    size_t count;
+    size_t capacity;
 } env_matches_t;
 
 void scan_file_content(const char *contents, size_t len, const accessor_t *accessors, size_t accessor_count,

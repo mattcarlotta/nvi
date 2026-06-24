@@ -27,7 +27,11 @@ enum {
     DOT = '.',
 };
 
-extern const char SPECIAL_CHARS[];
-extern const size_t SPECIAL_CHARS_LEN;
+extern const unsigned char LITERAL_STOPS[];
+extern const size_t LITERAL_STOPS_LEN;
+extern const unsigned char STOP_NL[];
+extern const size_t STOP_NL_LEN;
+extern const unsigned char STOP_BRACE_NL[];
+extern const size_t STOP_BRACE_NL_LEN;
 
 #endif

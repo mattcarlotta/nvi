@@ -4,6 +4,7 @@
 #include "format.h"
 #include "info.h"
 #include "list.h"
+#include "log.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -53,30 +54,32 @@ static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
     return (result_t){.ok = true, .errcode = 2};
 }
 
-static void print_items(const char *label, const list_t *list, const char *sep, const char *empty_text) {
-    fprintf(stderr, "\n \u2022 %s: ", label);
+static void print_items(const char *label, const list_t *list, const char *sep) {
+    log_info("\n \u2022 %s: ", label);
 
     if (list->count == 0) {
-        fprintf(stderr, "%s", empty_text);
+        log_undefined();
         return;
     }
 
     for (size_t i = 0; i < list->count; ++i) {
         if (i != 0) {
-            fprintf(stderr, "%s", sep);
+            log_f("%s", sep);
         }
-        fprintf(stderr, "%s", list->items[i]);
+        log_f("%s", list->items[i]);
     }
 }
 
 static void print_flags(args_t *args) {
-    fprintf(stderr, "[INFO] The following flags have been set...");
-    print_items("command", (const list_t *)&args->command, " ", "(undefined)");
-    print_items("files", &args->files, ", ", ".env (default)");
-    print_items("ignore ENVs", &args->ignored, ", ", "(undefined)");
-    print_items("require ENVs", &args->required, ", ", "(undefined)");
-    print_items("scan extensions", &args->scan_exts, ", ", "(undefined)");
-    fprintf(stderr, "\n \u2022 format: %s\n\n", format_name(args->format));
+    log_info("[INFO]");
+    log_f(" The following flags have been set...");
+    print_items("command", (const list_t *)&args->command, " ");
+    print_items("files", &args->files, ", ");
+    print_items("ignore ENVs", &args->ignored, ", ");
+    print_items("require ENVs", &args->required, ", ");
+    print_items("scan extensions", &args->scan_exts, ", ");
+    log_info("\n \u2022 format: ");
+    log_f("%s\n\n", format_name(args->format));
 }
 
 result_t parse_args(args_t *args) {
@@ -87,6 +90,11 @@ result_t parse_args(args_t *args) {
 
         // end of options delimiter
         if (strcmp(args->argv[args->i], "--") == 0) {
+            if (args->dry_run) {
+                log_warning("[WARNING]");
+                log_f(" Found a command with dry-run enabled; skipping.\n\n", stderr);
+                break;
+            }
             args->command.count = args->argc - (args->i + 1);
             args->command.items = &args->argv[args->i + 1];
             break;
