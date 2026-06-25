@@ -95,6 +95,8 @@ result_t parse_args(int argc, char **argv, args_t *args) {
     args->format = get_default_format();
     args->dry_run = false;
 
+    result_t result = {.ok = true, .errcode = 0};
+
     while (args->i < args->argc) {
 
         // end of options delimiter
@@ -104,6 +106,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 log_f(" Found a command with dry-run enabled; skipping.\n", stderr);
                 break;
             }
+
             args->command.count = args->argc - (args->i + 1);
             args->command.items = &args->argv[args->i + 1];
             break;
@@ -111,10 +114,11 @@ result_t parse_args(int argc, char **argv, args_t *args) {
 
         switch (get_flag(args->argv[args->i])) {
             case FILES: {
-                result_t r = set_flag_params(args, &args->files, "files");
-                if (!r.ok) {
-                    return r;
+                result = set_flag_params(args, &args->files, "files");
+                if (!result.ok) {
+                    goto done;
                 }
+
                 break;
             }
             case DRY_RUN: {
@@ -137,33 +141,40 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 break;
             }
             case IGNORED: {
-                result_t r = set_flag_params(args, &args->ignored, "ignored");
-                if (!r.ok) {
-                    return r;
+                result = set_flag_params(args, &args->ignored, "ignored");
+                if (!result.ok) {
+                    goto done;
                 }
+
                 break;
             }
             case REQUIRED: {
-                result_t r = set_flag_params(args, &args->required, "required");
-                if (!r.ok) {
-                    return r;
+                result = set_flag_params(args, &args->required, "required");
+                if (!result.ok) {
+                    goto done;
                 }
+
                 break;
             }
             case SCAN: {
-                result_t r = set_flag_params(args, &args->scan_exts, "scan");
-                if (!r.ok) {
-                    return r;
+                result = set_flag_params(args, &args->scan_exts, "scan");
+                if (!result.ok) {
+                    goto done;
                 }
+
                 break;
             }
             case HELP: {
                 print_help();
-                return (result_t){.ok = false};
+
+                result.ok = false;
+                goto done;
             }
             case VERSION: {
                 print_version();
-                return (result_t){.ok = false};
+
+                result.ok = false;
+                goto done;
             }
             default: {
                 const char *token = args->argv[args->i];
@@ -175,6 +186,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 return usage_error("unexpected argument '%s'", token);
             }
         }
+
         ++args->i;
     }
 
@@ -182,7 +194,10 @@ result_t parse_args(int argc, char **argv, args_t *args) {
         print_flags(args);
     }
 
-    return (result_t){.ok = true};
+    goto done;
+
+done:
+    return result;
 }
 
 void free_args(args_t *args) {

@@ -251,7 +251,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     if (scanner->dry_run) {
         log_info("[INFO]");
-        log_f(" Scanning for environment variables in");
+        log_f(" Scanning for environment keys in");
 
         for (size_t i = 0; i < args->scan_exts.count; ++i) {
             if (i != 0 && args->scan_exts.count > 2) {
