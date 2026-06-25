@@ -53,7 +53,7 @@ static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
     }
 
     if (list->count == current_count) {
-        return usage_error("option '%s' requires at least one argument", flag);
+        return usage_error("The '%s' flag requires at least one argument", flag);
     }
 
     return (result_t){.ok = true, .errcode = 2};
