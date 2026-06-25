@@ -13,7 +13,7 @@ file_details_t open_file(const char *path, bool dry_run) {
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
         log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
-        goto file_return;
+        goto done;
     }
 
     fseek(file, 0, SEEK_END);
@@ -24,7 +24,7 @@ file_details_t open_file(const char *path, bool dry_run) {
         if (dry_run) {
             log_error("[ERROR] The file '%s' appears to be empty.\n", path);
         }
-        goto file_return;
+        goto done;
     }
 
     if ((size_t)size > MAX_FILE_SIZE) {
@@ -33,7 +33,7 @@ file_details_t open_file(const char *path, bool dry_run) {
             log_f("The file '%s' exceeds %zu bytes, skipping.\n", path, MAX_FILE_SIZE);
         }
 
-        goto file_return;
+        goto done;
     }
 
     file_details.contents = malloc(size + 1);
@@ -45,9 +45,9 @@ file_details_t open_file(const char *path, bool dry_run) {
 
     file_details.len = fread(file_details.contents, 1, size, file);
     file_details.contents[file_details.len] = '\0';
-    goto file_return;
+    goto done;
 
-file_return:
+done:
     if (file != NULL) {
         fclose(file);
     }

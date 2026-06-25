@@ -15,7 +15,7 @@ static const char *blacklist[] = {
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
 size_t index_of_scalar(const char *s, size_t len, size_t pos, int ch) {
-    for (size_t k = pos; k < len; k++) {
+    for (size_t k = pos; k < len; ++k) {
         if ((unsigned char)s[k] == (unsigned char)ch) {
             return k;
         }

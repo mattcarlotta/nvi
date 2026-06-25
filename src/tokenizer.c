@@ -55,7 +55,7 @@ static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigne
         end++;
     }
 
-    for (size_t k = tokenizer->i; k < end; k++) {
+    for (size_t k = tokenizer->i; k < end; ++k) {
         DYN_ARR_APPEND(value, tokenizer->file[k]);
     }
 
@@ -91,7 +91,7 @@ static void append_token(tokenizer_t *tokenizer, token_t *token) {
 static void free_token(token_t *token) {
     free(token->key);
 
-    for (size_t k = 0; k < token->values.count; k++) {
+    for (size_t k = 0; k < token->values.count; ++k) {
         free(token->values.items[k].value);
     }
 
@@ -116,7 +116,7 @@ static size_t print_token_line(const token_t *token) {
     log_f("   %s=", key);
 
     size_t prefix_len = strlen(key) + 1;
-    for (size_t k = 0; k < token->values.count; k++) {
+    for (size_t k = 0; k < token->values.count; ++k) {
         const value_token_t *v = &token->values.items[k];
         if (v->kind == LITERAL) {
             fwrite(v->value, 1, v->value_len, stderr);
@@ -209,10 +209,10 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
                 size_t lo = 0;
                 size_t hi = value.count;
                 while (lo < hi && (value.items[lo] == ' ' || value.items[lo] == '\t')) {
-                    lo++;
+                    ++lo;
                 }
                 while (hi > lo && (value.items[hi - 1] == ' ' || value.items[hi - 1] == '\t')) {
-                    hi--;
+                    --hi;
                 }
 
                 if (hi - lo == 0) {
@@ -424,7 +424,7 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
 }
 
 void free_tokenizer(tokenizer_t *tokenizer) {
-    for (size_t i = 0; i < tokenizer->tokens.count; i++) {
+    for (size_t i = 0; i < tokenizer->tokens.count; ++i) {
         free_token(&tokenizer->tokens.items[i]);
     }
     free(tokenizer->tokens.items);
