@@ -32,7 +32,7 @@ typedef struct {
 } args_t;
 
 void print_dry_run_message(void);
-result_t parse_args(args_t *args);
+result_t parse_args(int arg, char **argv, args_t *args);
 void free_args(args_t *args);
 
 #endif

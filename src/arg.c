@@ -87,9 +87,13 @@ static void print_flags(args_t *args) {
     log_f("%s\n\n", format_name(args->format));
 }
 
-result_t parse_args(args_t *args) {
+result_t parse_args(int argc, char **argv, args_t *args) {
     // skip program name
     args->i = 1;
+    args->argc = argc;
+    args->argv = argv;
+    args->format = get_default_format();
+    args->dry_run = false;
 
     while (args->i < args->argc) {
 
