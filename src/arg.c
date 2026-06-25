@@ -174,10 +174,6 @@ result_t parse_args(args_t *args) {
         ++args->i;
     }
 
-    if (args->files.count == 0) {
-        DYN_ARR_APPEND(&args->files, ".env");
-    }
-
     if (args->dry_run) {
         print_flags(args);
     }

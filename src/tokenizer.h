@@ -43,6 +43,19 @@ typedef struct {
     token_list_t tokens;
 } tokenizer_t;
 
+static inline const char *value_kind_name(value_kind_t kind) {
+    switch (kind) {
+        case LITERAL:
+            return "literal value";
+        case COMMENTED:
+            return "commented line";
+        case INTERPOLATED:
+            return "interpolated key";
+    }
+
+    return "unknown";
+}
+
 result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer);
 result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *file);
 void free_tokenizer(tokenizer_t *tokenizer);

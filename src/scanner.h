@@ -9,13 +9,13 @@ typedef struct {
     const char *ext;
     const accessor_t *accessors;
     size_t accessor_count;
-} ext_pair;
+} file_ext_t;
 
 typedef struct {
-    ext_pair *items;
+    file_ext_t *items;
     size_t count;
     size_t capacity;
-} ext_map;
+} file_ext_map_t;
 
 typedef struct {
     size_t dirs_scanned;
@@ -23,7 +23,7 @@ typedef struct {
     size_t references;
     bool dry_run;
     list_t envs;
-    ext_map scan_exts;
+    file_ext_map_t scan_exts;
 } scanner_t;
 
 result_t run_scanner(args_t *args, scanner_t *scanner);

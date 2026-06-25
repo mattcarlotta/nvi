@@ -2,9 +2,9 @@
 #include "arg.h"
 #include "chars.h"
 #include "dynarr.h"
-#include "errors.h"
 #include "file.h"
 #include "log.h"
+#include "macros.h"
 #include "result.h"
 #include "tty.h"
 #include "utils.h"
@@ -16,23 +16,6 @@ typedef struct {
     size_t count;
     size_t capacity;
 } byte_list_t;
-
-static const char *value_kind_name(value_kind_t kind) {
-    switch (kind) {
-        case LITERAL:
-            return "literal";
-        case COMMENTED:
-            return "commented";
-        case INTERPOLATED:
-            return "interpolated";
-    }
-
-    return "unknown";
-}
-
-static void next_line(tokenizer_t *tokenizer) { tokenizer->line += 1; }
-
-static void reset_byte(tokenizer_t *tokenizer) { tokenizer->byte = 1; }
 
 static void skip_byte(tokenizer_t *tokenizer, size_t offset) {
     tokenizer->byte += offset;
@@ -63,11 +46,13 @@ static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigne
     tokenizer->i = end;
 }
 
-static result_t commit_token(tokenizer_t *tokenizer, token_t *token, value_kind_t kind, const byte_list_t *value) {
+static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *token, const byte_list_t *value) {
     const char *src = value->count ? value->items : "";
+
     char *copy = strndup(src, value->count);
     if (copy == NULL) {
-        return operation_error("Unable to copy token value (not enough system memory?); aborting.", NULL);
+        log_error("Unable to copy token value (not enough system memory?); aborting.");
+        abort();
     }
 
     value_token_t vt = {
@@ -79,8 +64,6 @@ static result_t commit_token(tokenizer_t *tokenizer, token_t *token, value_kind_
     };
 
     DYN_ARR_APPEND(&token->values, vt);
-
-    return (result_t){.ok = true};
 }
 
 static void append_token(tokenizer_t *tokenizer, token_t *token) {
@@ -98,12 +81,6 @@ static void free_token(token_t *token) {
     free(token->values.items);
     token->key = NULL;
     token->values = (value_token_list_t){0};
-}
-
-static void fput_repeat(FILE *f, char c, size_t n) {
-    while (n--) {
-        fputc(c, f);
-    }
 }
 
 static void print_error_header(tokenizer_t *tokenizer) {
@@ -125,38 +102,6 @@ static size_t print_token_line(const token_t *token) {
     }
 
     return prefix_len;
-}
-
-static void print_tokens(tokenizer_t *tokenizer) {
-    log_info("[INFO]");
-    log_f(" The following %zu token(s) have been generated from .env files...\n", tokenizer->tokens.count);
-
-    for (size_t ti = 0; ti < tokenizer->tokens.count; ++ti) {
-        const token_t *token = &tokenizer->tokens.items[ti];
-
-        log_info("\n[INFO]");
-        log_f(" Token #%zu\n", ti + 1);
-        log_f("    \u2022 file: %s\n", token->file);
-        log_f("    \u2022 key: ");
-        log_bold_info("%s \n", token->key ? token->key : "(none)");
-        log_f("    \u2022 value:", token->values.count);
-
-        for (size_t vi = 0; vi < token->values.count; ++vi) {
-            const value_token_t *v = &token->values.items[vi];
-            bool is_last_value_token = vi == token->values.count - 1;
-            char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
-
-            log_f("\n      %s\u2500 ", sub_stem_sym);
-            log_info("%s value \u21A0 ", value_kind_name(v->kind));
-            log_f("%.*s (%zu:%zu)", (int)v->value_len, v->value, v->line, v->byte);
-        }
-
-        if (ti != tokenizer->tokens.count - 1) {
-            log_f("\n");
-        }
-    }
-
-    log_f("\n\n");
 }
 
 result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *file) {
@@ -185,16 +130,13 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
 
             case LINE_DELIMITER:
                 if (token.key != NULL) {
-                    result = commit_token(tokenizer, &token, LITERAL, &value);
-                    if (!result.ok) {
-                        goto done;
-                    }
+                    commit_token(LITERAL, tokenizer, &token, &value);
                     append_token(tokenizer, &token);
                 }
                 value.count = 0;
-                next_line(tokenizer);
+                ++tokenizer->line;
                 skip_byte(tokenizer, 1);
-                reset_byte(tokenizer);
+                tokenizer->byte = 1;
                 break;
 
             case ASSIGN_OP: {
@@ -208,10 +150,10 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
                 // trim surrounding spaces/tabs off the pending key
                 size_t lo = 0;
                 size_t hi = value.count;
-                while (lo < hi && (value.items[lo] == ' ' || value.items[lo] == '\t')) {
+                while (lo < hi && (value.items[lo] == SPACE || value.items[lo] == TAB)) {
                     ++lo;
                 }
-                while (hi > lo && (value.items[hi - 1] == ' ' || value.items[hi - 1] == '\t')) {
+                while (hi > lo && (value.items[hi - 1] == SPACE || value.items[hi - 1] == TAB)) {
                     --hi;
                 }
 
@@ -242,7 +184,8 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
                     goto done;
                 }
                 value.count = 0;
-                skip_byte(tokenizer, 1); // '='
+                // skip '='
+                skip_byte(tokenizer, 1);
                 break;
             }
 
@@ -256,10 +199,7 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
 
                 scan_until(tokenizer, &value, STOP_NL, STOP_NL_LEN);
 
-                result = commit_token(tokenizer, &token, COMMENTED, &value);
-                if (!result.ok) {
-                    goto done;
-                }
+                commit_token(COMMENTED, tokenizer, &token, &value);
                 append_token(tokenizer, &token);
                 value.count = 0;
                 break;
@@ -274,19 +214,19 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
 
                 // commit anything accumulated before the "${"
                 if (value.count != 0) {
-                    result = commit_token(tokenizer, &token, LITERAL, &value);
-                    if (!result.ok) {
-                        goto done;
-                    }
+                    commit_token(LITERAL, tokenizer, &token, &value);
                     value.count = 0;
                 }
 
-                skip_byte(tokenizer, 2); // "${"
+                // skip "${"
+                skip_byte(tokenizer, 2);
+
                 scan_until(tokenizer, &value, STOP_BRACE_NL, STOP_BRACE_NL_LEN);
 
                 if (peek(tokenizer, 0) != CLOSE_BRACE) {
                     print_error_header(tokenizer);
-                    log_f("The %s key has an unterminated value interpolation.\n", token.key ? token.key : "(none)");
+                    log_error("The %s key has an unterminated value interpolation.\n",
+                              token.key ? token.key : "(none)");
                     size_t prefix_len = print_token_line(&token);
                     log_f("${%.*s\n", (int)value.count, value.items);
 
@@ -301,11 +241,12 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
                     goto done;
                 }
 
-                skip_byte(tokenizer, 1); // '}'
+                // skip '}'
+                skip_byte(tokenizer, 1);
 
                 if (value.count == 0) {
                     print_error_header(tokenizer);
-                    log_f("The %s key has an undefined key interpolation.\n", token.key ? token.key : "(none)");
+                    log_error("The %s key has an undefined key interpolation.\n", token.key ? token.key : "(none)");
 
                     size_t prefix_len = print_token_line(&token);
                     log_f("${}\n");
@@ -319,16 +260,14 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
                     goto done;
                 }
 
-                result = commit_token(tokenizer, &token, INTERPOLATED, &value);
-                if (!result.ok) {
-                    goto done;
-                }
+                commit_token(INTERPOLATED, tokenizer, &token, &value);
 
                 if (peek(tokenizer, 0) == LINE_DELIMITER) {
                     append_token(tokenizer, &token);
-                    next_line(tokenizer);
-                    skip_byte(tokenizer, 1); // '\n'
-                    reset_byte(tokenizer);
+                    ++tokenizer->line;
+                    // skip '\n'
+                    skip_byte(tokenizer, 1);
+                    tokenizer->byte = 1;
                 }
                 value.count = 0;
                 break;
@@ -346,15 +285,14 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
                 // the same token, so '$', '#', and '=' on continuation lines are
                 // handled normally by the main loop
                 if (value.count != 0) {
-                    result = commit_token(tokenizer, &token, LITERAL, &value);
-                    if (!result.ok) {
-                        goto done;
-                    }
+                    commit_token(LITERAL, tokenizer, &token, &value);
                 }
+
                 value.count = 0;
-                skip_byte(tokenizer, 2); // "\\\n"
-                next_line(tokenizer);
-                reset_byte(tokenizer);
+                // skip "\\\n"
+                skip_byte(tokenizer, 2);
+                ++tokenizer->line;
+                tokenizer->byte = 1;
                 break;
             }
 
@@ -367,10 +305,7 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
     // flush a pending token if the file doesn't end with a newline
     if (token.key != NULL) {
         if (value.count > 0 || token.values.count == 0) {
-            result = commit_token(tokenizer, &token, LITERAL, &value);
-            if (!result.ok) {
-                goto done;
-            }
+            commit_token(LITERAL, tokenizer, &token, &value);
         }
 
         append_token(tokenizer, &token);
@@ -395,6 +330,13 @@ done:
 result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
     result_t result = {.ok = true, .errcode = 0};
 
+    if (args->dry_run && args->files.count == 0) {
+        log_warning("[WARNING]");
+        log_f(" The '--files' flag was not set during a dry-run, therefore no .env files will be tokenized. If "
+              "just testing '--scan' results, please omit the dry-run flag.\n\n");
+        goto done;
+    }
+
     for (size_t fi = 0; fi < args->files.count; ++fi) {
         const char *path = args->files.items[fi];
 
@@ -402,24 +344,53 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
         if (file.contents == NULL) {
             result.ok = false;
             result.errcode = 1;
-            return result;
+            goto done;
         }
 
         result = generate_tokens(args, tokenizer, &file);
         free(file.contents);
         tokenizer->file = NULL;
 
-        if (result.ok) {
-            continue;
+        if (!result.ok) {
+            goto done;
         }
-
-        return result;
     }
 
     if (args->dry_run) {
-        print_tokens(tokenizer);
+        log_info("[INFO]");
+        log_f(" The following %zu token(s) have been generated from .env files...\n", tokenizer->tokens.count);
+
+        for (size_t ti = 0; ti < tokenizer->tokens.count; ++ti) {
+            const token_t *token = &tokenizer->tokens.items[ti];
+
+            log_info("\n[INFO]");
+            log_f(" Token #%zu\n", ti + 1);
+            log_f("    \u2022 file: %s\n", token->file);
+            log_f("    \u2022 key: ");
+            log_bold_info("%s \n", token->key ? token->key : "(none)");
+            log_f("    \u2022 value%s:", TO_PLURAL(token->values.count));
+
+            for (size_t vi = 0; vi < token->values.count; ++vi) {
+                const value_token_t *v = &token->values.items[vi];
+                bool is_last_value_token = vi == token->values.count - 1;
+                char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
+
+                log_f("\n      %s\u2500 ", sub_stem_sym);
+                log_info("%s \u21A0 ", value_kind_name(v->kind));
+                log_f("%.*s (%zu:%zu)", (int)v->value_len, v->value, v->line, v->byte);
+            }
+
+            if (ti != tokenizer->tokens.count - 1) {
+                log_f("\n");
+            }
+        }
+
+        log_f("\n\n");
     }
 
+    goto done;
+
+done:
     return result;
 }
 

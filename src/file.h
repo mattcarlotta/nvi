@@ -8,7 +8,7 @@
 typedef struct {
     char *contents;
     const char *path;
-    long len;
+    size_t len;
 } file_details_t;
 
 file_details_t open_file(const char *path, bool dry_run);

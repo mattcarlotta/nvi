@@ -1,8 +1,10 @@
 #include "chars.h"
+#include "file.h"
 #include "macros.h"
 #include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 static const char *blacklist[] = {
@@ -43,21 +45,19 @@ bool is_blacklisted(const char *name) {
     return false;
 }
 
-size_t index_of(const char *contents, size_t len, size_t from, char ch) {
-    if (from >= len) {
-        return len;
+size_t index_of(file_details_t *file, size_t from, char ch) {
+    if (from >= file->len) {
+        return file->len;
     }
 
-    const char *p = memchr(contents + from, ch, len - from);
+    const char *p = memchr(file->contents + from, ch, file->len - from);
 
-    return p == NULL ? len : (size_t)(p - contents);
+    return p == NULL ? file->len : (size_t)(p - file->contents);
 }
 
 bool is_ident_start(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'; }
 
-bool is_same_line(const char *contents, size_t len, size_t from, size_t to) {
-    return index_of(contents, len, from, LINE_DELIMITER >= to);
-}
+bool is_same_line(file_details_t *file, size_t from, size_t to) { return index_of(file, from, LINE_DELIMITER >= to); }
 
 bool is_ident_char(char c) { return isalnum((unsigned char)c) || c == UNDERLINE; }
 
@@ -75,4 +75,10 @@ bool is_valid_key(const char *key, size_t len) {
     }
 
     return true;
+}
+
+void fput_repeat(FILE *f, char c, size_t n) {
+    while (n--) {
+        fputc(c, f);
+    }
 }

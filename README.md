@@ -129,12 +129,12 @@ nvix() { nvi "$@" | xargs -0 -r env; }
 
 | Flag | Alias | Parameters | Description |
 | --- | --- | --- | --- |
-| `--files` | `-f` | one or more paths | `.env` files to parse, in order. Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env`. Defaults to `.env`. |
+| `--dry-run` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. |
+| `--files` | `-f` | one or more paths | Required `.env` files to parse, in order. Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env`. |
+| `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
+| `--help` | `-h` | | Prints usage help and exits. |
 | `--ignored` | `-i` | one or more keys | Keys that `scan` should not add to the required ENV set (e.g. `NODE_ENV`, which is typically injected at runtime by tooling rather than defined in a `.env` file). Only meaningful together with `scan`. |
 | `--required` | `-r` | one or more keys | Keys that must exist with non-empty values after parsing. `nvi` exits with an error listing any that are missing. |
-| `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
-| `--dry-run` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. |
-| `--help` | `-h` | | Prints usage help and exits. |
 | `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
 | `--version` | `-v` | | Prints versions and exits. |
 | `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required (except for standalone `scan`, `help`, and `version`). |
@@ -207,22 +207,16 @@ nvi --format nul -- echo $?
 nvi --files .env .env.local -- npm start | <consumer>
 
 # require keys to be present
-nvi --required API_KEY DATABASE_URL -- cargo run | <consumer>
+nvi --files .env --required API_KEY DATABASE_URL -- cargo run | <consumer>
+
+# shows a dry run what was scanned, tokenized, and parsed (stderr only)
+nvi --files .env --scan ts --dry-run
 
 # require every env key referenced in source files to be present
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
-
-# print a single resolved variable
-nvi -- printenv MESSAGE | <consumer>
-
-# inspect the full child environment
-nvi -- env | <consumer>
+nvi --files .env --scan mjs --ignored NODE_ENV  -- npm run dev | <consumer>
 
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
-nvi -- sh -c 'echo "$MESSAGE"' | <consumer>
-
-# dry run what was parsed (stderr only)
-nvi --dry-run
+nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 ```
 NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
 

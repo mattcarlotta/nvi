@@ -33,35 +33,37 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-static const ext_pair *ext_map_get(const ext_map *map, const char *ext) {
-    for (size_t i = 0; i < map->count; ++i) {
-        if (strcmp(map->items[i].ext, ext) == 0) {
-            return &map->items[i];
+static const file_ext_t *get_file_ext(const file_ext_map_t *file_exts, const char *file_ext) {
+    for (size_t i = 0; i < file_exts->count; ++i) {
+        if (strcmp(file_exts->items[i].ext, file_ext) == 0) {
+            return &file_exts->items[i];
         }
     }
+
     return NULL;
 }
 
-static void ext_map_put(ext_map *map, const ext_entry *entry) {
-    if (ext_map_get(map, entry->ext) != NULL) {
+static void file_ext_append(file_ext_map_t *file_exts, const ext_entry *entry) {
+    if (get_file_ext(file_exts, entry->ext) != NULL) {
         return;
     }
 
-    ext_pair pair = {
+    file_ext_t match = {
         .ext = entry->ext,
         .accessors = entry->accessors,
         .accessor_count = entry->count,
     };
-    DYN_ARR_APPEND(map, pair);
+
+    DYN_ARR_APPEND(file_exts, match);
 }
 
-static const ext_pair *get_file_accessors(const scanner_t *scanner, const char *name) {
+static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
         return NULL;
     }
 
-    return ext_map_get(&scanner->scan_exts, dot + 1);
+    return get_file_ext(&scanner->scan_exts, dot + 1);
 }
 
 static void append_unique_envs(list_t *envs, env_match_t *env) {
@@ -72,19 +74,19 @@ static void append_unique_envs(list_t *envs, env_match_t *env) {
         }
     }
 
-    char *copy = strndup(env->key, env->key_len);
-    if (copy == NULL) {
+    char *unique_env_key = strndup(env->key, env->key_len);
+    if (unique_env_key == NULL) {
         log_error("[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
         abort();
     }
 
-    DYN_ARR_APPEND(envs, copy);
+    DYN_ARR_APPEND(envs, unique_env_key);
 }
 
 static result_t scan_file(scanner_t *scanner, const char *path, const char *name) {
     result_t result = {.ok = true, .errcode = 0};
-    const ext_pair *match = get_file_accessors(scanner, name);
-    if (match == NULL) {
+    const file_ext_t *file_ext_match = get_file_accessors(scanner, name);
+    if (file_ext_match == NULL) {
         return result;
     }
 
@@ -95,27 +97,27 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 
     ++scanner->files_scanned;
 
-    env_matches_t matches = {0};
-    scan_file_content(file.contents, file.len, match->accessors, match->accessor_count, &matches);
+    env_matches_t env_matches = {0};
+    scan_file_content(&file, file_ext_match, &env_matches);
 
-    if (scanner->dry_run && matches.count > 0) {
+    if (scanner->dry_run && env_matches.count > 0) {
         log_info("[INFO]");
-        log_f(" Scanned %s and found %zu key%s...\n", path, matches.count, TO_PLURAL(matches.count));
+        log_f(" Scanned %s and found %zu key%s...\n", path, env_matches.count, TO_PLURAL(env_matches.count));
 
-        for (size_t i = 0; i < matches.count; ++i) {
-            const env_match_t *m = &matches.items[i];
+        for (size_t i = 0; i < env_matches.count; ++i) {
+            const env_match_t *m = &env_matches.items[i];
             log_f("    \u2022 %.*s (%zu:%zu)\n", (int)m->key_len, m->key, m->line, m->byte);
         }
 
         log_f("\n");
     }
 
-    for (size_t i = 0; i < matches.count; ++i) {
+    for (size_t i = 0; i < env_matches.count; ++i) {
         ++scanner->references;
-        append_unique_envs(&scanner->envs, &matches.items[i]);
+        append_unique_envs(&scanner->envs, &env_matches.items[i]);
     }
 
-    free_env_matches(&matches);
+    free_env_matches(&env_matches);
     free(file.contents);
 
     return result;
@@ -274,7 +276,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
             return usage_error("Unsupported scan file extension '%s'", ext);
         }
 
-        ext_map_put(&scanner->scan_exts, entry);
+        file_ext_append(&scanner->scan_exts, entry);
     }
 
     result = walk_file_tree(scanner, ".");
