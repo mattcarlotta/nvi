@@ -66,7 +66,7 @@ static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char
     return get_file_ext(&scanner->scan_exts, dot + 1);
 }
 
-static void append_unique_envs(list_t *envs, env_match_t *env) {
+static void append_unique_envs(list_t *envs, env_key_match_t *env) {
     for (size_t i = 0; i < envs->count; ++i) {
         const char *stored = envs->items[i];
         if (strlen(stored) == env->key_len && strncmp(stored, env->key, env->key_len) == 0) {
@@ -97,27 +97,27 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 
     ++scanner->files_scanned;
 
-    env_matches_t env_matches = {0};
-    scan_file_content(&file, file_ext_match, &env_matches);
+    env_key_matches_t env_key_matches = {0};
+    scan_file_content(&file, file_ext_match, &env_key_matches);
 
-    if (scanner->dry_run && env_matches.count > 0) {
+    if (scanner->dry_run && env_key_matches.count > 0) {
         log_info("[INFO]");
-        log_f(" Scanned %s and found %zu key%s...\n", path, env_matches.count, TO_PLURAL(env_matches.count));
+        log_f(" Scanned %s and found %zu key%s...\n", path, env_key_matches.count, TO_PLURAL(env_key_matches.count));
 
-        for (size_t i = 0; i < env_matches.count; ++i) {
-            const env_match_t *m = &env_matches.items[i];
+        for (size_t i = 0; i < env_key_matches.count; ++i) {
+            const env_key_match_t *m = &env_key_matches.items[i];
             log_f("    \u2022 %.*s (%zu:%zu)\n", (int)m->key_len, m->key, m->line, m->byte);
         }
 
         log_f("\n");
     }
 
-    for (size_t i = 0; i < env_matches.count; ++i) {
+    for (size_t i = 0; i < env_key_matches.count; ++i) {
         ++scanner->references;
-        append_unique_envs(&scanner->envs, &env_matches.items[i]);
+        append_unique_envs(&scanner->envs, &env_key_matches.items[i]);
     }
 
-    free_env_matches(&env_matches);
+    free_env_key_matches(&env_key_matches);
     free(file.contents);
 
     return result;

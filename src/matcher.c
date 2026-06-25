@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static env_t extract_env_by_pattern(file_details_t *file, pattern_t kind, size_t start) {
+static env_key_t extract_env_by_pattern(file_details_t *file, pattern_t kind, size_t start) {
     switch (kind) {
         case ident: {
             size_t end = start;
@@ -18,10 +18,10 @@ static env_t extract_env_by_pattern(file_details_t *file, pattern_t kind, size_t
             }
 
             if (end == start) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
-            return (env_t){.key = file->contents + start, .key_len = end - start, .start = start, .end = end};
+            return (env_key_t){.key = file->contents + start, .key_len = end - start, .start = start, .end = end};
         }
         case quoted: {
             size_t cursor = start;
@@ -30,33 +30,33 @@ static env_t extract_env_by_pattern(file_details_t *file, pattern_t kind, size_t
             }
 
             if (cursor >= file->len) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
             char quote = file->contents[cursor];
             if (quote != DOUBLE_QUOTE && quote != SINGLE_QUOTE) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
             size_t key_start = cursor + 1;
             if (key_start >= file->len || !is_ident_start(file->contents[key_start])) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
             size_t key_end = index_of(file, key_start, quote);
             if (key_end == file->len || !is_same_line(file, key_start, key_end) || key_end == key_start) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
-            return (env_t){.key = file->contents + key_start,
-                           .key_len = key_end - key_start,
-                           .start = key_start,
-                           .end = key_end + 1};
+            return (env_key_t){.key = file->contents + key_start,
+                               .key_len = key_end - key_start,
+                               .start = key_start,
+                               .end = key_end + 1};
         }
         case braced: {
             size_t brace = index_of(file, start, CLOSE_BRACE);
             if (brace == file->len || !is_same_line(file, start, brace)) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
             size_t key_start = start;
@@ -71,26 +71,27 @@ static env_t extract_env_by_pattern(file_details_t *file, pattern_t kind, size_t
             }
 
             if (key_end <= key_start) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
-            return (env_t){.key = file->contents + key_start,
-                           .key_len = key_end - key_start,
-                           .start = key_start,
-                           .end = brace + 1};
+            return (env_key_t){.key = file->contents + key_start,
+                               .key_len = key_end - key_start,
+                               .start = key_start,
+                               .end = brace + 1};
         }
         case parened: {
             size_t paren = index_of(file, start, CLOSE_PAREN);
             if (paren == file->len || !is_same_line(file, start, paren) || paren == start) {
-                return (env_t){0};
+                return (env_key_t){0};
             }
 
-            return (env_t){.key = file->contents + start, .key_len = paren - start, .start = start, .end = paren + 1};
+            return (env_key_t){
+                .key = file->contents + start, .key_len = paren - start, .start = start, .end = paren + 1};
         }
     }
 }
 
-void scan_file_content(file_details_t *file, const file_ext_t *file_ext_match, env_matches_t *env_matches) {
+void scan_file_content(file_details_t *file, const file_ext_t *file_ext_match, env_key_matches_t *env_key_matches) {
     size_t i = 0;
     size_t line = 1;
     size_t line_start = 0;
@@ -119,14 +120,14 @@ void scan_file_content(file_details_t *file, const file_ext_t *file_ext_match, e
             }
         }
 
-        // no prefix match in file
+        // no env prefix match in file
         if (acc == NULL) {
             ++i;
             continue;
         }
 
         size_t prefix_len = strlen(acc->prefix);
-        env_t env = extract_env_by_pattern(file, acc->pattern, i + prefix_len);
+        env_key_t env = extract_env_by_pattern(file, acc->pattern, i + prefix_len);
 
         bool valid_key = is_valid_key(env.key, env.key_len);
         if (!valid_key) {
@@ -134,14 +135,14 @@ void scan_file_content(file_details_t *file, const file_ext_t *file_ext_match, e
             continue;
         }
 
-        env_match_t found_env_match = {
+        env_key_match_t found_env_key_match = {
             .key = env.key,
             .key_len = env.key_len,
             .line = line,
             .byte = env.start - line_start + 1,
         };
 
-        DYN_ARR_APPEND(env_matches, found_env_match);
+        DYN_ARR_APPEND(env_key_matches, found_env_key_match);
 
         i = env.end;
     }

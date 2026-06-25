@@ -48,7 +48,7 @@ static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
     size_t current_count = list->count;
 
     while (args->i + 1 < args->argc && args->argv[args->i + 1][0] != '-') {
-        ++(args->i);
+        ++args->i;
         DYN_ARR_APPEND(list, args->argv[args->i]);
     }
 

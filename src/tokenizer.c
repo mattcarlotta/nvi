@@ -333,7 +333,7 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
     if (args->dry_run && args->files.count == 0) {
         log_warning("[WARNING]");
         log_f(" The '--files' flag was not set during a dry-run, therefore no .env files will be tokenized. If "
-              "just testing '--scan' results, please omit the dry-run flag.\n\n");
+              "just testing '--scan' results, please omit the '--dry-run' flag.\n\n");
         goto done;
     }
 
