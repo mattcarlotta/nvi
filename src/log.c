@@ -69,12 +69,17 @@ void log_warning(const char *fmt, ...) {
     va_end(args);
 }
 
-void log_undefined(void) {
+void log_comment(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
     if (use_color) {
         fprintf(stderr, DARK_GRAY);
     }
-    fprintf(stderr, "(undefined)");
+    vfprintf(stderr, fmt, args);
     if (use_color) {
         fprintf(stderr, RESET);
     }
+
+    va_end(args);
 }

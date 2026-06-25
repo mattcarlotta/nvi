@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "parser.h"
 #include "result.h"
 #include "scanner.h"
 #include "tokenizer.h"
@@ -12,6 +13,7 @@ int main(int argc, char **argv) {
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
+    env_map_t env_map = {0};
 
     result = parse_args(argc, argv, &args);
     if (!result.ok) {
@@ -31,6 +33,16 @@ int main(int argc, char **argv) {
         goto done;
     }
 
+    if (args.files.count == 0 && args.dry_run) {
+        print_dry_run_message();
+        goto done;
+    }
+
+    result = run_parser(&args, &tokenizer.tokens, &env_map);
+    if (!result.ok) {
+        goto done;
+    }
+
     if (args.dry_run) {
         print_dry_run_message();
         goto done;
@@ -43,5 +55,6 @@ done:
     free_args(&args);
     free_scanner(&scanner);
     free_tokenizer(&tokenizer);
+    free_envs(&env_map);
     return result.errcode;
 }

@@ -63,7 +63,7 @@ static void print_items(const char *label, const list_t *list, const char *sep) 
     log_info("\n \u2022 %s: ", label);
 
     if (list->count == 0) {
-        log_undefined();
+        log_comment("(undefined)");
         return;
     }
 
@@ -80,8 +80,8 @@ static void print_flags(args_t *args) {
     log_f(" The following flags have been set...");
     print_items("command", (const list_t *)&args->command, " ");
     print_items("files", &args->files, ", ");
-    print_items("ignore ENVs", &args->ignored, ", ");
-    print_items("require ENVs", &args->required, ", ");
+    print_items("ignored ENVs", &args->ignored, ", ");
+    print_items("required ENVs", &args->required, ", ");
     print_items("scan extensions", &args->scan_exts, ", ");
     log_info("\n \u2022 format: ");
     log_f("%s\n\n", format_name(args->format));

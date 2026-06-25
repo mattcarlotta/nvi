@@ -14,6 +14,6 @@ void log_error(const char *fmt, ...);
 
 void log_warning(const char *fmt, ...);
 
-void log_undefined(void);
+void log_comment(const char *fmt, ...);
 
 #endif

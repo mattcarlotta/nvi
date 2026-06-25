@@ -51,7 +51,7 @@ static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *tok
 
     char *copy = strndup(src, value->count);
     if (copy == NULL) {
-        log_error("Unable to copy token value (not enough system memory?); aborting.");
+        log_error("[ERROR] Unable to copy token value (not enough system memory?); aborting.");
         abort();
     }
 
@@ -86,6 +86,24 @@ static void free_token(token_t *token) {
 static void print_error_header(tokenizer_t *tokenizer) {
     log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
               tokenizer->byte);
+}
+
+static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, byte_list_t *value) {
+    commit_token(LITERAL, tokenizer, token, value);
+    value->count = 0;
+
+    if (token->values.count == 0 || (token->values.count == 1 && token->values.items[0].value_len == 0)) {
+        print_error_header(tokenizer);
+        log_f("The '%s' key has an empty value assignment.\n", token->key);
+        log_f("   %s=\n", token->key);
+        log_f("   ");
+        fput_repeat(stderr, ' ', strlen(token->key) + 1);
+        log_f("^ (missing value)\n");
+        return (result_t){.ok = false, .errcode = 1};
+    }
+
+    append_token(tokenizer, token);
+    return (result_t){.ok = true, .errcode = 0};
 }
 
 static size_t print_token_line(const token_t *token) {
@@ -130,8 +148,10 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
 
             case LINE_DELIMITER:
                 if (token.key != NULL) {
-                    commit_token(LITERAL, tokenizer, &token, &value);
-                    append_token(tokenizer, &token);
+                    result = validate_and_append_token(tokenizer, &token, &value);
+                    if (!result.ok) {
+                        goto done;
+                    }
                 }
                 value.count = 0;
                 ++tokenizer->line;
@@ -304,11 +324,7 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
 
     // flush a pending token if the file doesn't end with a newline
     if (token.key != NULL) {
-        if (value.count > 0 || token.values.count == 0) {
-            commit_token(LITERAL, tokenizer, &token, &value);
-        }
-
-        append_token(tokenizer, &token);
+        result = validate_and_append_token(tokenizer, &token, &value);
     }
 
     if (tokenizer->tokens.count == 0) {
