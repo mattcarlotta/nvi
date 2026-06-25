@@ -8,8 +8,28 @@
 #include <stdio.h>
 #include <string.h>
 
-static env_key_t extract_env_by_pattern(file_details_t *file, pattern_t kind, size_t start) {
-    switch (kind) {
+static const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t *i) {
+    for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
+        const accessor_t *acc = &file_ext_match->accessors[a];
+        size_t prefix_len = strlen(acc->prefix);
+
+        if (*i + prefix_len > file->len || strncmp(file->contents + *i, acc->prefix, prefix_len) != 0) {
+            continue;
+        }
+
+        // reject mid-identifier matches
+        if (*i > 0 && is_ident_char(file->contents[*i - 1]) && is_ident_char(acc->prefix[0])) {
+            continue;
+        }
+
+        return acc;
+    }
+
+    return NULL;
+}
+
+static env_key_t extract_env_by_pattern(file_details_t *file, const pattern_t *kind, size_t start) {
+    switch (*kind) {
         case ident: {
             size_t end = start;
 
@@ -105,29 +125,14 @@ void scan_file_content(file_details_t *file, const file_ext_t *file_ext_match, e
             continue;
         }
 
-        // determine if file has any matching prefixes
-        const accessor_t *acc = NULL;
-        for (size_t a = 0; a < file_ext_match->accessor_count && acc == NULL; ++a) {
-            const accessor_t *acc_match = &file_ext_match->accessors[a];
-            size_t acc_prefix_len = strlen(acc_match->prefix);
-
-            if (i + acc_prefix_len <= file->len &&
-                strncmp(file->contents + i, acc_match->prefix, acc_prefix_len) == 0) {
-                // reject mid-identifier matches
-                if (!(i > 0 && is_ident_char(file->contents[i - 1]) && is_ident_char(acc_match->prefix[0]))) {
-                    acc = acc_match;
-                }
-            }
-        }
-
-        // no env prefix match in file
+        const accessor_t *acc = get_accessor(file, file_ext_match, &i);
         if (acc == NULL) {
             ++i;
             continue;
         }
 
         size_t prefix_len = strlen(acc->prefix);
-        env_key_t env = extract_env_by_pattern(file, acc->pattern, i + prefix_len);
+        env_key_t env = extract_env_by_pattern(file, &acc->pattern, i + prefix_len);
 
         bool valid_key = is_valid_key(env.key, env.key_len);
         if (!valid_key) {

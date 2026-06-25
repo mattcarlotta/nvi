@@ -199,16 +199,6 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     return result;
 }
 
-static bool is_ignored_key(const args_t *args, const char *key) {
-    for (size_t i = 0; i < args->ignored.count; ++i) {
-        if (strcmp(args->ignored.items[i], key) == 0) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 static void merge_required_envs(scanner_t *scanner, args_t *args) {
     if (scanner->envs.count == 0) {
         return;
@@ -216,17 +206,11 @@ static void merge_required_envs(scanner_t *scanner, args_t *args) {
 
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         const char *key = scanner->envs.items[i];
-        if (is_ignored_key(args, key)) {
+        if (list_contains(&args->ignored, key) || list_contains(&args->required, key)) {
             continue;
         }
 
-        char *new_key = strdup(key);
-        if (new_key == NULL) {
-            log_error("[ERROR] Failed to copy key '%s' (system out of memory?); aborting.\n", key);
-            abort();
-        }
-
-        DYN_ARR_APPEND(&args->required, new_key);
+        DYN_ARR_APPEND(&args->required, key);
     }
 
     if (scanner->dry_run) {
