@@ -31,6 +31,7 @@ typedef struct {
     command_t command;
 } args_t;
 
+void print_dry_run_message(void);
 result_t parse_args(args_t *args);
 void free_args(args_t *args);
 

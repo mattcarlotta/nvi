@@ -44,7 +44,7 @@ typedef struct {
 } tokenizer_t;
 
 result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer);
-result_t generate_tokens(tokenizer_t *tokenizer, file_details_t *file);
+result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *file);
 void free_tokenizer(tokenizer_t *tokenizer);
 
 #endif

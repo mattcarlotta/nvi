@@ -40,32 +40,32 @@ void log_bold_info(const char *fmt, ...) {
 }
 
 void log_error(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
     if (use_color) {
         fprintf(stderr, RED);
     }
-    fprintf(stderr, "[ERROR] ");
+    vfprintf(stderr, fmt, args);
     if (use_color) {
         fprintf(stderr, RESET);
     }
 
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 
 void log_warning(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
     if (use_color) {
         fprintf(stderr, YELLOW);
     }
-    fprintf(stderr, "[WARNING] ");
+    vfprintf(stderr, fmt, args);
     if (use_color) {
         fprintf(stderr, RESET);
     }
 
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 

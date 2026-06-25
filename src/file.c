@@ -12,7 +12,7 @@ file_details_t open_file(const char *path, bool dry_run) {
     file_details.path = path;
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
-        log_error("[ERROR] Cannot open '%s': %s\n", path, strerror(errno));
+        log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
         goto file_return;
     }
 

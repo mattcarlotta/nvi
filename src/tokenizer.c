@@ -129,45 +129,48 @@ static size_t print_token_line(const token_t *token) {
 
 static void print_tokens(tokenizer_t *tokenizer) {
     log_info("[INFO]");
-    log_f(" The following %zu token(s) have been generated...", tokenizer->tokens.count);
+    log_f(" The following %zu token(s) have been generated from .env files...\n", tokenizer->tokens.count);
 
     for (size_t ti = 0; ti < tokenizer->tokens.count; ++ti) {
         const token_t *token = &tokenizer->tokens.items[ti];
-        bool is_first_token = ti == 0;
-        bool is_last_token = ti == tokenizer->tokens.count - 1;
-        char *branch_sym = is_last_token ? TREE_END : TREE_BRANCH;
-        char *stem_sym = is_last_token ? "" : TREE_STEM;
 
-        log_f("\n  %s\u2500 token #%zu: \n", is_first_token ? TREE_BEGIN : branch_sym, ti + 1);
-        log_f("  %s   \u251C file: %s\n", stem_sym, token->file);
-        log_f("  %s   \u251C key: ", stem_sym);
+        log_info("\n[INFO]");
+        log_f(" Token #%zu\n", ti + 1);
+        log_f("    \u2022 file: %s\n", token->file);
+        log_f("    \u2022 key: ");
         log_bold_info("%s \n", token->key ? token->key : "(none)");
-        log_f("  %s   \u2514 value:", stem_sym, token->values.count);
+        log_f("    \u2022 value:", token->values.count);
 
         for (size_t vi = 0; vi < token->values.count; ++vi) {
             const value_token_t *v = &token->values.items[vi];
             bool is_last_value_token = vi == token->values.count - 1;
             char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
 
-            log_f("\n  %s     %s ", stem_sym, sub_stem_sym);
+            log_f("\n      %s\u2500 ", sub_stem_sym);
             log_info("%s value \u21A0 ", value_kind_name(v->kind));
             log_f("%.*s (%zu:%zu)", (int)v->value_len, v->value, v->line, v->byte);
         }
-        if (!is_last_token) {
-            log_f("\n  %s", stem_sym);
+
+        if (ti != tokenizer->tokens.count - 1) {
+            log_f("\n");
         }
     }
 
     log_f("\n\n");
 }
 
-result_t generate_tokens(tokenizer_t *tokenizer, file_details_t *file) {
+result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *file) {
     tokenizer->file_name = file->path;
     tokenizer->file = file->contents;
     tokenizer->file_len = file->len;
     tokenizer->i = 0;
     tokenizer->byte = 1;
     tokenizer->line = 1;
+
+    if (args->dry_run) {
+        log_info("[INFO]");
+        log_f(" Tokenizing %s...\n\n", file->path);
+    }
 
     token_t token = {.file = tokenizer->file_name};
     byte_list_t value = {0};
@@ -402,7 +405,7 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
             return result;
         }
 
-        result = generate_tokens(tokenizer, &file);
+        result = generate_tokens(args, tokenizer, &file);
         free(file.contents);
         tokenizer->file = NULL;
 

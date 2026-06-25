@@ -40,6 +40,11 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
+    if (args.dry_run) {
+        print_dry_run_message();
+        goto cleanup;
+    }
+
     goto cleanup;
 
 cleanup:

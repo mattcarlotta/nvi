@@ -27,6 +27,11 @@ static const flag_entry flags[] = {
     {.name = "-v", .value = VERSION},  {.name = "--version", .value = VERSION},   {.name = "version", .value = VERSION},
 };
 
+void print_dry_run_message(void) {
+    log_info("[INFO]");
+    log_f(" Exited early because dry-run was enabled\n\n");
+}
+
 static flag_t get_flag(const char *arg) {
     size_t n = sizeof(flags) / sizeof(flags[0]);
 
@@ -71,7 +76,7 @@ static void print_items(const char *label, const list_t *list, const char *sep) 
 }
 
 static void print_flags(args_t *args) {
-    log_info("[INFO]");
+    log_info("\n[INFO]");
     log_f(" The following flags have been set...");
     print_items("command", (const list_t *)&args->command, " ");
     print_items("files", &args->files, ", ");
@@ -91,8 +96,8 @@ result_t parse_args(args_t *args) {
         // end of options delimiter
         if (strcmp(args->argv[args->i], "--") == 0) {
             if (args->dry_run) {
-                log_warning("[WARNING]");
-                log_f(" Found a command with dry-run enabled; skipping.\n\n", stderr);
+                log_warning("\n[WARNING]");
+                log_f(" Found a command with dry-run enabled; skipping.\n", stderr);
                 break;
             }
             args->command.count = args->argc - (args->i + 1);
