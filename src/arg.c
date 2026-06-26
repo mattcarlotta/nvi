@@ -308,6 +308,10 @@ result_t parse_args(int argc, char **argv, args_t *args) {
         log_flags(args);
     }
 
+    if (args->scan_exts.count == 0 && args->files.count == 0) {
+        return usage_error("The '--files' or '--scan' flag requires at least one argument");
+    }
+
     return result;
 }
 

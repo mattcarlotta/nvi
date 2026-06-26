@@ -29,7 +29,9 @@ int main(int argc, char **argv) {
         }
 
         if (args.files.count == 0) {
-            log_dry_run_message();
+            if (args.dry_run) {
+                log_dry_run_message();
+            }
             goto done;
         }
     }
