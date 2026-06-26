@@ -102,11 +102,15 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 
     if (scanner->dry_run && env_key_matches.count > 0) {
         log_info("[INFO]");
-        log_f(" Scanned %s and found %zu key%s...\n", path, env_key_matches.count, TO_PLURAL(env_key_matches.count));
+        log_f(" Scanned ");
+        log_fi("%s", path);
+        log_f(" and found %zu key%s...\n", env_key_matches.count, TO_PLURAL(env_key_matches.count));
 
         for (size_t i = 0; i < env_key_matches.count; ++i) {
             const env_key_match_t *m = &env_key_matches.items[i];
-            log_f("    \u2022 %.*s (%zu:%zu)\n", (int)m->key_len, m->key, m->line, m->byte);
+            log_f("    \u2022 ");
+            log_bold_info("%.*s", (int)m->key_len, m->key);
+            log_comment(" [%zu:%zu]\n", m->line, m->byte);
         }
 
         log_f("\n");
@@ -215,14 +219,17 @@ static void merge_required_envs(scanner_t *scanner, args_t *args) {
 
     if (scanner->dry_run) {
         log_info("[INFO]");
-        log_f(" The following ENV keys are marked as required...\n");
+        log_f(" The following ENV keys are now required...\n");
 
         if (args->required.count > 0) {
             for (size_t i = 0; i < args->required.count; ++i) {
-                log_f("    \u2022 %s\n", args->required.items[i]);
+                log_f("    \u2022 ");
+                log_bold_info("%s", args->required.items[i]);
+                log_f("\n");
             }
         } else {
-            log_f("    \u2022 (none)\n");
+            log_f("    \u2022 ");
+            log_comment("(none)\n");
         }
 
         log_f("\n");
@@ -246,7 +253,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
                 log_f(" and");
             }
 
-            log_f(" *.%s", args->scan_exts.items[i]);
+            log_fi(" *.%s", args->scan_exts.items[i]);
         }
 
         log_f(" files...\n\n");
@@ -270,7 +277,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     if (scanner->dry_run) {
         log_info("[INFO]");
-        log_f(" Walked %zu director%s, checked %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
+        log_f(" Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
               scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
               TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references),
               scanner->envs.count, TO_PLURAL(scanner->envs.count));
@@ -283,9 +290,6 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
 void free_scanner(scanner_t *scanner) {
     free(scanner->scan_exts.items);
-    scanner->scan_exts.items = NULL;
-    scanner->scan_exts.count = 0;
-    scanner->scan_exts.capacity = 0;
 
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         free((void *)scanner->envs.items[i]);

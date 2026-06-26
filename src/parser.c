@@ -31,6 +31,11 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
 result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
     result_t result = {.ok = true, .errcode = 0};
 
+    if (args->dry_run) {
+        log_info("[INFO]");
+        log_f(" Attempting to parse %zu token%s...\n\n", tokens->count, TO_PLURAL(tokens->count));
+    }
+
     for (size_t ti = 0; ti < tokens->count; ++ti) {
         const token_t token = tokens->items[ti];
         const char *token_key = token.key;
@@ -72,9 +77,8 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
                 case COMMENTED: {
                     if (args->dry_run) {
                         log_info("[INFO]");
-                        log_f(" Parsed comment in token #%zu (skipping):\n    \u2022 ", ti + 1);
-                        log_comment("%s (%s:%zu:%zu)\n\n", value_token.value, token.file, value_token.line,
-                                    value_token.byte);
+                        log_f(" Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);
+                        log_comment("%s\n\n", value_token.value);
                     }
                     break;
                 }
@@ -98,6 +102,16 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
 
             env_t *existing = get_env_from_map(env_map, token_key);
             if (existing != NULL) {
+                if (args->dry_run) {
+                    log_info("[INFO]");
+                    log_f(" Token #%zu updated ", ti + 1);
+                    log_bold_info("%s", token_key);
+                    log_f(" key's value from ");
+                    log_info("%s", existing->value);
+                    log_f(" to ");
+                    log_info("%s", owned_value);
+                    log_f("...\n\n");
+                }
                 free(existing->value);
                 existing->value = owned_value;
             } else {
@@ -107,8 +121,10 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
 
             if (args->dry_run) {
                 log_info("[INFO]");
-                log_f(" Parsed ENV from token #%zu...\n    \u2022 ", ti + 1);
-                log_bold_info("%s=%s\n\n", token_key, owned_value);
+                log_f(" Successfully parsed Token #%zu...\n    \u2022 ", ti + 1);
+                log_bold_info("%s ", token_key);
+                log_info("\u219E %s", owned_value);
+                log_f("\n\n");
             }
         }
 
@@ -144,7 +160,8 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
               TO_PLURAL(env_map->count));
         for (size_t i = 0; i < env_map->count; ++i) {
             const env_t env = env_map->items[i];
-            log_f("    \u2022 %s=%s\n", env.key, env.value);
+            log_f("    \u2022 ");
+            log_bold_info("%s=%s\n", env.key, env.value);
         }
         log_f("\n");
     }

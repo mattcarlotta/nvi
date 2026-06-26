@@ -56,8 +56,8 @@ static inline const char *value_kind_name(value_kind_t kind) {
     return "unknown";
 }
 
-result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer);
-result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *file);
+result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer);
+result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_details_t *file);
 void free_tokenizer(tokenizer_t *tokenizer);
 
 #endif

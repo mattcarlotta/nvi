@@ -60,10 +60,11 @@ static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
 }
 
 static void print_items(const char *label, const list_t *list, const char *sep) {
-    log_info("\n \u2022 %s: ", label);
+    log_f("\n    \u2022");
+    log_info(" %s: ", label);
 
     if (list->count == 0) {
-        log_comment("(undefined)");
+        log_comment("(empty)");
         return;
     }
 
@@ -79,11 +80,15 @@ static void print_flags(args_t *args) {
     log_info("\n[INFO]");
     log_f(" The following flags have been set...");
     print_items("command", (const list_t *)&args->command, " ");
+    log_f("\n    \u2022");
+    log_info(" dry run: ");
+    log_f("on");
     print_items("files", &args->files, ", ");
     print_items("ignored ENVs", &args->ignored, ", ");
     print_items("required ENVs", &args->required, ", ");
     print_items("scan extensions", &args->scan_exts, ", ");
-    log_info("\n \u2022 format: ");
+    log_f("\n    \u2022");
+    log_info(" format: ");
     log_f("%s\n\n", format_name(args->format));
 }
 

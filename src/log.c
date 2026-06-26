@@ -9,6 +9,22 @@ void log_f(const char *fmt, ...) {
     va_end(args);
 }
 
+void log_fi(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    if (use_color) {
+        fprintf(stderr, LIGHT_MAGENTA);
+        fprintf(stderr, ITALIC);
+    }
+    vfprintf(stderr, fmt, args);
+    if (use_color) {
+        fprintf(stderr, RESET);
+    }
+
+    va_end(args);
+}
+
 void log_info(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);

@@ -122,7 +122,7 @@ static size_t print_token_line(const token_t *token) {
     return prefix_len;
 }
 
-result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *file) {
+result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_details_t *file) {
     tokenizer->file_name = file->path;
     tokenizer->file = file->contents;
     tokenizer->file_len = file->len;
@@ -132,7 +132,9 @@ result_t generate_tokens(args_t *args, tokenizer_t *tokenizer, file_details_t *f
 
     if (args->dry_run) {
         log_info("[INFO]");
-        log_f(" Tokenizing %s...\n\n", file->path);
+        log_f(" Tokenizing ", file->path);
+        log_fi("%s", file->path);
+        log_f(" file...\n\n", file->path);
     }
 
     token_t token = {.file = tokenizer->file_name};
@@ -343,7 +345,7 @@ done:
     return result;
 }
 
-result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
+result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
     result_t result = {.ok = true, .errcode = 0};
 
     if (args->dry_run && args->files.count == 0) {
@@ -351,6 +353,13 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
         log_f(" The '--files' flag was not set during a dry-run, therefore no .env files will be tokenized. If "
               "just testing '--scan' results, please omit the '--dry-run' flag.\n\n");
         goto done;
+    }
+
+    if (args->dry_run) {
+        log_info("[INFO]");
+        log_f(" Attempting to tokenize %zu ", args->files.count);
+        log_fi(".env");
+        log_f(" file%s... \n\n", TO_PLURAL(args->files.count));
     }
 
     for (size_t fi = 0; fi < args->files.count; ++fi) {
@@ -374,14 +383,19 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
 
     if (args->dry_run) {
         log_info("[INFO]");
-        log_f(" The following %zu token(s) have been generated from .env files...\n", tokenizer->tokens.count);
+        log_f(" The following %zu token%s were generated from the %zu ", tokenizer->tokens.count,
+              TO_PLURAL(tokenizer->tokens.count), args->files.count);
+        log_fi(".env");
+        log_f(" files...\n");
 
         for (size_t ti = 0; ti < tokenizer->tokens.count; ++ti) {
             const token_t *token = &tokenizer->tokens.items[ti];
 
             log_info("\n[INFO]");
             log_f(" Token #%zu\n", ti + 1);
-            log_f("    \u2022 file: %s\n", token->file);
+            log_f("    \u2022 file: ");
+            log_fi("%s", token->file);
+            log_f("\n");
             log_f("    \u2022 key: ");
             log_bold_info("%s \n", token->key ? token->key : "(none)");
             log_f("    \u2022 value%s:", TO_PLURAL(token->values.count));
@@ -393,7 +407,8 @@ result_t run_tokenizer(args_t *args, tokenizer_t *tokenizer) {
 
                 log_f("\n      %s\u2500 ", sub_stem_sym);
                 log_info("%s \u21A0 ", value_kind_name(v->kind));
-                log_f("%.*s (%zu:%zu)", (int)v->value_len, v->value, v->line, v->byte);
+                log_f("%.*s", (int)v->value_len, v->value);
+                log_comment(" [%zu:%zu]", v->line, v->byte);
             }
 
             if (ti != tokenizer->tokens.count - 1) {
@@ -415,5 +430,4 @@ void free_tokenizer(tokenizer_t *tokenizer) {
         free_token(&tokenizer->tokens.items[i]);
     }
     free(tokenizer->tokens.items);
-    tokenizer->tokens = (token_list_t){0};
 }
