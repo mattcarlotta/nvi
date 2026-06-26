@@ -4,12 +4,9 @@
 #include <stddef.h>
 
 enum {
-    CHAR_A = 'A',
-    CHAR_Z = 'Z',
-    CHAR_ZERO = '0',
-    CHAR_NINE = '9',
     NULL_CHAR = 0,
     LINE_DELIMITER = '\n',
+    COLON = ':',
     ASSIGN_OP = '=',
     HASH = '#',
     DASH = '-',

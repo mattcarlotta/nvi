@@ -274,3 +274,26 @@ const ext_entry *find_ext(const char *ext) {
     }
     return NULL;
 }
+
+const file_ext_t *get_file_ext(const file_ext_map_t *map, const char *ext) {
+    for (size_t i = 0; i < map->count; ++i) {
+        if (strcmp(map->items[i].ext, ext) == 0) {
+            return &map->items[i];
+        }
+    }
+    return NULL;
+}
+
+void file_ext_append(file_ext_map_t *map, const ext_entry *entry) {
+    if (get_file_ext(map, entry->ext) != NULL) {
+        return;
+    }
+
+    file_ext_t match = {
+        .ext = entry->ext,
+        .accessors = entry->accessors,
+        .accessor_count = entry->count,
+    };
+
+    DYN_ARR_APPEND(map, match);
+}

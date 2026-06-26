@@ -1,8 +1,8 @@
 #ifndef MATCHER_H
 #define MATCHER_H
+#include "accessors.h"
 #include "dynarr.h"
 #include "file.h"
-#include "scanner.h"
 
 typedef struct {
     const char *key;

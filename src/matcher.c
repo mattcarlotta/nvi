@@ -3,7 +3,6 @@
 #include "chars.h"
 #include "dynarr.h"
 #include "file.h"
-#include "scanner.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>

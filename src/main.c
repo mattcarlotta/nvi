@@ -27,15 +27,15 @@ int main(int argc, char **argv) {
         if (!result.ok) {
             goto done;
         }
+
+        if (args.files.count == 0) {
+            log_dry_run_message();
+            goto done;
+        }
     }
 
     result = run_tokenizer(&args, &tokenizer);
     if (!result.ok) {
-        goto done;
-    }
-
-    if (args.files.count == 0 && args.dry_run) {
-        log_dry_run_message();
         goto done;
     }
 

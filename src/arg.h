@@ -1,5 +1,6 @@
 #ifndef ARG_H
 #define ARG_H
+#include "accessors.h"
 #include "format.h"
 #include "list.h"
 #include "result.h"
@@ -27,7 +28,7 @@ typedef struct {
     list_t files;
     list_t required;
     list_t ignored;
-    list_t scan_exts;
+    file_ext_map_t scan_exts;
     command_t command;
 } args_t;
 

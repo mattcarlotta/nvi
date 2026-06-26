@@ -33,37 +33,13 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-static const file_ext_t *get_file_ext(const file_ext_map_t *file_exts, const char *file_ext) {
-    for (size_t i = 0; i < file_exts->count; ++i) {
-        if (strcmp(file_exts->items[i].ext, file_ext) == 0) {
-            return &file_exts->items[i];
-        }
-    }
-
-    return NULL;
-}
-
-static void file_ext_append(file_ext_map_t *file_exts, const ext_entry *entry) {
-    if (get_file_ext(file_exts, entry->ext) != NULL) {
-        return;
-    }
-
-    file_ext_t match = {
-        .ext = entry->ext,
-        .accessors = entry->accessors,
-        .accessor_count = entry->count,
-    };
-
-    DYN_ARR_APPEND(file_exts, match);
-}
-
 static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
         return NULL;
     }
 
-    return get_file_ext(&scanner->scan_exts, dot + 1);
+    return get_file_ext(scanner->scan_exts, dot + 1);
 }
 
 static void append_unique_envs(list_t *envs, env_key_match_t *env) {
@@ -241,6 +217,7 @@ static void merge_required_envs(scanner_t *scanner, args_t *args) {
 result_t run_scanner(args_t *args, scanner_t *scanner) {
     result_t result = {.ok = true, .code = 0};
     scanner->dry_run = args->dry_run || args->command.count == 0;
+    scanner->scan_exts = &args->scan_exts;
 
     if (scanner->dry_run) {
         log_info("[INFO]");
@@ -255,21 +232,10 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
                 log_f(" and");
             }
 
-            log_fi(" *.%s", args->scan_exts.items[i]);
+            log_fi(" *.%s", args->scan_exts.items[i].ext);
         }
 
         log_f(" files...\n\n");
-    }
-
-    for (size_t i = 0; i < args->scan_exts.count; ++i) {
-        const char *ext = args->scan_exts.items[i];
-        const ext_entry *entry = find_ext(ext);
-
-        if (entry == NULL) {
-            return usage_error("Unsupported scan file extension '%s'", ext);
-        }
-
-        file_ext_append(&scanner->scan_exts, entry);
     }
 
     result = walk_file_tree(scanner, ".");
@@ -291,8 +257,6 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 }
 
 void free_scanner(scanner_t *scanner) {
-    free(scanner->scan_exts.items);
-
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         free((void *)scanner->envs.items[i]);
     }

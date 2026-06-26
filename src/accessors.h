@@ -11,7 +11,9 @@
 //   - aliasing:        const e = process.env; e.FOO
 //   - dynamic keys:    const key = "DATABASE_URL"; process.env[key]        os.getenv(key)
 
+#include "dynarr.h"
 #include <stddef.h>
+
 typedef enum {
     ident,   // identifier follows the prefix:                   process.env.FOO
     quoted,  // first string literal ("..."/'...') follows:      getenv("FOO")
@@ -30,6 +32,22 @@ typedef struct {
     size_t count;
 } ext_entry;
 
+typedef struct {
+    const char *ext;
+    const accessor_t *accessors;
+    size_t accessor_count;
+} file_ext_t;
+
+typedef struct {
+    file_ext_t *items;
+    size_t count;
+    size_t capacity;
+} file_ext_map_t;
+
 const ext_entry *find_ext(const char *ext);
+const file_ext_t *get_file_ext(const file_ext_map_t *map, const char *ext);
+void file_ext_append(file_ext_map_t *map, const ext_entry *entry);
+
+static inline void free_file_ext_map(file_ext_map_t *map) { DYN_ARR_FREE(map); }
 
 #endif

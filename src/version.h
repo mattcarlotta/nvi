@@ -33,6 +33,6 @@
 #define NVI_OS "unknown"
 #endif
 
-#define NVI_TARGET NVI_ARCH "-" NVI_OS // e.g. "aarch64-macos"
+#define NVI_TARGET NVI_ARCH "-" NVI_OS
 
 #endif
