@@ -130,8 +130,10 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
 static result_t walk_file_tree(scanner_t *scanner, const char *path);
 
 static result_t handle_entry(scanner_t *scanner, const char *parent, const char *name) {
+    result_t result = {.ok = true};
+
     if (name[0] == '.' || is_blacklisted(name)) {
-        return (result_t){.ok = true};
+        return result;
     }
 
     char child[PATH_MAX];
@@ -153,7 +155,7 @@ static result_t handle_entry(scanner_t *scanner, const char *parent, const char 
         return scan_file(scanner, child, name);
     }
 
-    return (result_t){.ok = true};
+    return result;
 }
 
 static result_t walk_file_tree(scanner_t *scanner, const char *path) {

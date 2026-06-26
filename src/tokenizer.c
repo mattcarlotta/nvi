@@ -83,17 +83,13 @@ static void free_token(token_t *token) {
     token->values = (value_token_list_t){0};
 }
 
-static void log_error_header(tokenizer_t *tokenizer) {
-    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
-              tokenizer->byte);
-}
-
 static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, byte_list_t *value) {
     commit_token(LITERAL, tokenizer, token, value);
     value->count = 0;
 
     if (token->values.count == 0 || (token->values.count == 1 && token->values.items[0].value_len == 0)) {
-        log_error_header(tokenizer);
+        log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
+                  tokenizer->byte);
         log_f("The '%s' key has an empty value assignment.\n", token->key);
         log_f("   %s=\n", token->key);
         log_f("   ");
@@ -180,7 +176,8 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                 }
 
                 if (hi - lo == 0) {
-                    log_error_header(tokenizer);
+                    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
+                              tokenizer->line, tokenizer->byte);
                     log_f("A value assignment ('=') was found without a key name.\n");
 
                     size_t end = index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
@@ -246,7 +243,8 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                 scan_until(tokenizer, &value, STOP_BRACE_NL, STOP_BRACE_NL_LEN);
 
                 if (peek(tokenizer, 0) != CLOSE_BRACE) {
-                    log_error_header(tokenizer);
+                    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
+                              tokenizer->line, tokenizer->byte);
                     log_error("The %s key has an unterminated value interpolation.\n",
                               token.key ? token.key : "(none)");
                     size_t prefix_len = log_token_line(&token);
@@ -267,7 +265,8 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                 skip_byte(tokenizer, 1);
 
                 if (value.count == 0) {
-                    log_error_header(tokenizer);
+                    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
+                              tokenizer->line, tokenizer->byte);
                     log_error("The %s key has an undefined key interpolation.\n", token.key ? token.key : "(none)");
 
                     size_t prefix_len = log_token_line(&token);
