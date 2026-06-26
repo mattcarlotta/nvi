@@ -1,4 +1,5 @@
 #include "arg.h"
+#include "emitter.h"
 #include "parser.h"
 #include "result.h"
 #include "scanner.h"
@@ -47,6 +48,8 @@ int main(int argc, char **argv) {
         log_dry_run_message();
         goto done;
     }
+
+    result = run_emitter(&args, &env_map);
 
     goto done;
 
