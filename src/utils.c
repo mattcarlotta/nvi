@@ -16,15 +16,6 @@ static const char *blacklist[] = {
 
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
-size_t index_of_scalar(const char *s, size_t len, size_t pos, int ch) {
-    for (size_t k = pos; k < len; ++k) {
-        if ((unsigned char)s[k] == (unsigned char)ch) {
-            return k;
-        }
-    }
-    return len;
-}
-
 bool ends_with(const char *name, const char *suffix) {
     size_t nlen = strlen(name);
     size_t slen = strlen(suffix);
@@ -45,7 +36,16 @@ bool is_blacklisted(const char *name) {
     return false;
 }
 
-size_t index_of(file_details_t *file, size_t from, char ch) {
+size_t index_of_scalar(const char *s, size_t len, size_t pos, int ch) {
+    for (size_t k = pos; k < len; ++k) {
+        if ((unsigned char)s[k] == (unsigned char)ch) {
+            return k;
+        }
+    }
+    return len;
+}
+
+size_t index_of(const file_details_t *file, size_t from, char ch) {
     if (from >= file->len) {
         return file->len;
     }
@@ -55,9 +55,11 @@ size_t index_of(file_details_t *file, size_t from, char ch) {
     return p == NULL ? file->len : (size_t)(p - file->contents);
 }
 
-bool is_ident_start(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'; }
+bool is_same_line(const file_details_t *file, size_t from, size_t to) {
+    return index_of(file, from, LINE_DELIMITER >= to);
+}
 
-bool is_same_line(file_details_t *file, size_t from, size_t to) { return index_of(file, from, LINE_DELIMITER >= to); }
+bool is_ident_start(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'; }
 
 bool is_ident_char(char c) { return isalnum((unsigned char)c) || c == UNDERLINE; }
 

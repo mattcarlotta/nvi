@@ -21,7 +21,7 @@ static inline format_t get_default_format(void) {
 #endif
 }
 
-static inline const char *format_name(format_t f) {
+static inline const char *format_name(const format_t f) {
     if (f < 0 || f >= 3) {
         return "unknown";
     }

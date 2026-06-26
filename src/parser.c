@@ -28,7 +28,7 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
     return entry != NULL ? entry->value : NULL;
 }
 
-result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
+result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map) {
     result_t result = {.ok = true, .code = 0};
 
     if (args->dry_run) {
@@ -132,7 +132,7 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
     }
 
     if (env_map->count == 0) {
-        return operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n");
+        return operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
     }
 
     list_t missing_envs = {0};
@@ -141,17 +141,6 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
         if (get_env_from_map(env_map, required_key) == NULL) {
             DYN_ARR_APPEND(&missing_envs, required_key);
         }
-    }
-
-    if (missing_envs.count > 0) {
-        log_error("[ERROR] The following ENV keys were marked as required, but weren't set after parsing:");
-        for (size_t i = 0; i < missing_envs.count; ++i) {
-            log_error("\n   \u2022 %s", missing_envs.items[i]);
-        }
-        log_error("\n");
-        result.ok = false;
-        result.code = 1;
-        goto done;
     }
 
     if (args->dry_run) {
@@ -164,6 +153,18 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
             log_bold_info("%s=%s\n", env.key, env.value);
         }
         log_f("\n");
+        goto done;
+    }
+
+    if (args->command.count > 0 && missing_envs.count > 0) {
+        log_error("[ERROR] The following ENV keys were marked as required, but weren't set after parsing:");
+        for (size_t i = 0; i < missing_envs.count; ++i) {
+            log_error("\n   \u2022 %s", missing_envs.items[i]);
+        }
+        log_error("\n");
+        result.ok = false;
+        result.code = 1;
+        goto done;
     }
 
     goto done;

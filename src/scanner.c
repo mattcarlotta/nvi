@@ -42,7 +42,7 @@ static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char
     return get_file_ext(scanner->scan_exts, dot + 1);
 }
 
-static void append_unique_envs(list_t *envs, env_key_match_t *env) {
+static void append_unique_envs(list_t *envs, const env_key_match_t *env) {
     for (size_t i = 0; i < envs->count; ++i) {
         const char *stored = envs->items[i];
         if (strlen(stored) == env->key_len && strncmp(stored, env->key, env->key_len) == 0) {
@@ -59,14 +59,14 @@ static void append_unique_envs(list_t *envs, env_key_match_t *env) {
     DYN_ARR_APPEND(envs, unique_env_key);
 }
 
-static result_t scan_file(scanner_t *scanner, const char *path, const char *name) {
+static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
     result_t result = {.ok = true, .code = 0};
     const file_ext_t *file_ext_match = get_file_accessors(scanner, name);
     if (file_ext_match == NULL) {
         return result;
     }
 
-    file_details_t file = open_file(path, scanner->dry_run);
+    file_details_t file = open_file(path, args->dry_run);
     if (file.contents == NULL || file.len <= 0) {
         return result;
     }
@@ -76,7 +76,7 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
     env_key_matches_t env_key_matches = {0};
     scan_file_content(&file, file_ext_match, &env_key_matches);
 
-    if (scanner->dry_run && env_key_matches.count > 0) {
+    if (args->dry_run && env_key_matches.count > 0) {
         log_info("[INFO]");
         log_f(" Scanned ");
         log_fi("%s", path);
@@ -103,9 +103,9 @@ static result_t scan_file(scanner_t *scanner, const char *path, const char *name
     return result;
 }
 
-static result_t walk_file_tree(scanner_t *scanner, const char *path);
+static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path);
 
-static result_t handle_entry(scanner_t *scanner, const char *parent, const char *name) {
+static result_t handle_entry(const args_t *args, scanner_t *scanner, const char *parent, const char *name) {
     result_t result = {.ok = true};
 
     if (name[0] == '.' || is_blacklisted(name)) {
@@ -124,17 +124,17 @@ static result_t handle_entry(scanner_t *scanner, const char *parent, const char 
     }
 
     if (S_ISDIR(st.st_mode)) {
-        return walk_file_tree(scanner, child);
+        return walk_file_tree(args, scanner, child);
     }
 
     if (S_ISREG(st.st_mode)) {
-        return scan_file(scanner, child, name);
+        return scan_file(args, scanner, child, name);
     }
 
     return result;
 }
 
-static result_t walk_file_tree(scanner_t *scanner, const char *path) {
+static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path) {
     result_t result = {.ok = true};
 
 #ifdef _WIN32
@@ -153,7 +153,7 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     ++scanner->dirs_scanned;
 
     do {
-        result = handle_entry(scanner, path, fd.cFileName);
+        result = handle_entry(args, scanner, path, fd.cFileName);
         if (!result.ok) {
             break;
         }
@@ -169,7 +169,7 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        result = handle_entry(scanner, path, entry->d_name);
+        result = handle_entry(args, scanner, path, entry->d_name);
         if (!result.ok) {
             break;
         }
@@ -181,7 +181,7 @@ static result_t walk_file_tree(scanner_t *scanner, const char *path) {
     return result;
 }
 
-static void merge_required_envs(scanner_t *scanner, args_t *args) {
+static void merge_required_envs(args_t *args, const scanner_t *scanner) {
     if (scanner->envs.count == 0) {
         return;
     }
@@ -195,7 +195,7 @@ static void merge_required_envs(scanner_t *scanner, args_t *args) {
         DYN_ARR_APPEND(&args->required, key);
     }
 
-    if (scanner->dry_run) {
+    if (args->dry_run) {
         log_info("[INFO]");
         log_f(" The following ENV keys are now required...\n");
 
@@ -216,10 +216,9 @@ static void merge_required_envs(scanner_t *scanner, args_t *args) {
 
 result_t run_scanner(args_t *args, scanner_t *scanner) {
     result_t result = {.ok = true, .code = 0};
-    scanner->dry_run = args->dry_run || args->command.count == 0;
     scanner->scan_exts = &args->scan_exts;
 
-    if (scanner->dry_run) {
+    if (args->dry_run) {
         log_info("[INFO]");
         log_f(" Scanning for environment keys in");
 
@@ -238,12 +237,12 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
         log_f(" files...\n\n");
     }
 
-    result = walk_file_tree(scanner, ".");
+    result = walk_file_tree(args, scanner, ".");
     if (!result.ok) {
         return result;
     }
 
-    if (scanner->dry_run) {
+    if (args->dry_run) {
         log_info("[INFO]");
         log_f(" Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
               scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
@@ -251,7 +250,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
               scanner->envs.count, TO_PLURAL(scanner->envs.count));
     }
 
-    merge_required_envs(scanner, args);
+    merge_required_envs(args, scanner);
 
     return result;
 }

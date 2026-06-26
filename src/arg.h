@@ -15,14 +15,14 @@ typedef struct {
 } flag_entry;
 
 typedef struct {
-    char **items;
+    const char **items;
     size_t count;
 } command_t;
 
 typedef struct {
     int i;
     int argc;
-    char **argv;
+    const char **argv;
     bool dry_run;
     format_t format;
     list_t files;
@@ -33,7 +33,7 @@ typedef struct {
 } args_t;
 
 void log_dry_run_message(void);
-result_t parse_args(int arg, char **argv, args_t *args);
+result_t parse_args(int arg, const char **argv, args_t *args);
 void free_args(args_t *args);
 
 #endif

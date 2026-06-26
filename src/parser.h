@@ -17,7 +17,7 @@ typedef struct {
     size_t capacity;
 } env_map_t;
 
-result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map);
+result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map);
 void free_envs(env_map_t *env_map);
 
 #endif

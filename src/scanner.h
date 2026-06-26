@@ -9,7 +9,6 @@ typedef struct {
     size_t dirs_scanned;
     size_t files_scanned;
     size_t references;
-    bool dry_run;
     list_t envs;
     const file_ext_map_t *scan_exts;
 } scanner_t;

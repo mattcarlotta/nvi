@@ -7,7 +7,7 @@
 #include "tty.h"
 #include <stdio.h>
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
     tty_init();
 
     result_t result = {.ok = true, .code = 0};
@@ -27,13 +27,13 @@ int main(int argc, char **argv) {
         if (!result.ok) {
             goto done;
         }
+    }
 
-        if (args.files.count == 0) {
-            if (args.dry_run) {
-                log_dry_run_message();
-            }
-            goto done;
+    if (args.files.count == 0) {
+        if (args.dry_run) {
+            log_dry_run_message();
         }
+        goto done;
     }
 
     result = run_tokenizer(&args, &tokenizer);
@@ -46,8 +46,10 @@ int main(int argc, char **argv) {
         goto done;
     }
 
-    if (args.dry_run) {
-        log_dry_run_message();
+    if (args.command.count == 0) {
+        if (args.dry_run) {
+            log_dry_run_message();
+        }
         goto done;
     }
 
@@ -57,6 +59,7 @@ int main(int argc, char **argv) {
 
 done:
     fflush(stderr);
+    fflush(stdout);
     free_args(&args);
     free_scanner(&scanner);
     free_tokenizer(&tokenizer);

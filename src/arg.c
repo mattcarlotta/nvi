@@ -47,12 +47,13 @@ static inline flag_t get_flag(const char *arg) {
     return UNKNOWN;
 }
 
-static char *next_value(args_t *args) {
+/* CHANGED: Returns a const char* because args->argv elements are now const */
+static const char *next_value(args_t *args) {
     if (args->i + 1 >= args->argc) {
         return NULL;
     }
 
-    char *nxt = args->argv[args->i + 1];
+    const char *nxt = args->argv[args->i + 1];
     if (nxt[0] == DASH) {
         return NULL;
     }
@@ -62,7 +63,8 @@ static char *next_value(args_t *args) {
     return nxt;
 }
 
-static result_t require_value(args_t *args, const char *flag, char **out) {
+/* CHANGED: Accepts const char **out to receive the read-only command-line string */
+static result_t require_value(args_t *args, const char *flag, const char **out) {
     *out = next_value(args);
     if (*out == NULL) {
         return usage_error("The '%s' flag requires at least one argument", flag);
@@ -167,7 +169,7 @@ static inline result_t validate_file_name(const char *f) {
     return (result_t){.ok = true, .code = 0};
 }
 
-result_t parse_args(int argc, char **argv, args_t *args) {
+result_t parse_args(int argc, const char **argv, args_t *args) {
     // skip program name
     args->i = 1;
     args->argc = argc;
@@ -198,7 +200,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 break;
             }
             case FILES: {
-                char *param;
+                const char *param;
                 result = require_value(args, "files", &param);
                 if (!result.ok) {
                     return result;
@@ -217,7 +219,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 break;
             }
             case FORMAT: {
-                char *param;
+                const char *param;
                 result = require_value(args, "format", &param);
                 if (!result.ok) {
                     return result;
@@ -232,7 +234,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 break;
             }
             case IGNORED: {
-                char *param;
+                const char *param;
                 result = require_value(args, "ignored", &param);
                 if (!result.ok) {
                     return result;
@@ -246,7 +248,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 break;
             }
             case REQUIRED: {
-                char *param;
+                const char *param;
                 result = require_value(args, "required", &param);
                 if (!result.ok) {
                     return result;
@@ -260,7 +262,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 break;
             }
             case SCAN: {
-                char *param;
+                const char *param;
                 result = require_value(args, "scan", &param);
                 if (!result.ok) {
                     return result;
@@ -269,6 +271,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
                 while (param != NULL) {
                     const ext_entry *entry = find_ext(param);
                     if (entry == NULL) {
+
                         return usage_error("The file extension '%s' is not a supported scan extension", param);
                     }
 

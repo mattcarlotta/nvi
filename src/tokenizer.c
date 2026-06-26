@@ -118,7 +118,7 @@ static size_t log_token_line(const token_t *token) {
     return prefix_len;
 }
 
-result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_details_t *file) {
+result_t generate_tokens(const args_t *args, const file_details_t *file, tokenizer_t *tokenizer) {
     tokenizer->file_name = file->path;
     tokenizer->file = file->contents;
     tokenizer->file_len = file->len;
@@ -371,7 +371,7 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
             goto done;
         }
 
-        result = generate_tokens(args, tokenizer, &file);
+        result = generate_tokens(args, &file, tokenizer);
         free(file.contents);
         tokenizer->file = NULL;
 

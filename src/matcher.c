@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t *i) {
+static inline const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t *i) {
     for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
         const accessor_t *acc = &file_ext_match->accessors[a];
         size_t prefix_len = strlen(acc->prefix);
@@ -27,7 +27,7 @@ static const accessor_t *get_accessor(const file_details_t *file, const file_ext
     return NULL;
 }
 
-static env_key_t extract_env_by_pattern(file_details_t *file, const pattern_t *kind, size_t start) {
+static env_key_t extract_env_by_pattern(const file_details_t *file, const pattern_t *kind, size_t start) {
     switch (*kind) {
         case ident: {
             size_t end = start;
@@ -110,7 +110,8 @@ static env_key_t extract_env_by_pattern(file_details_t *file, const pattern_t *k
     }
 }
 
-void scan_file_content(file_details_t *file, const file_ext_t *file_ext_match, env_key_matches_t *env_key_matches) {
+void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_match,
+                       env_key_matches_t *env_key_matches) {
     size_t i = 0;
     size_t line = 1;
     size_t line_start = 0;
