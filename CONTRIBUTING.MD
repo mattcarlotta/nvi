@@ -4,7 +4,7 @@
 2. Install requirements
 3. Create your feature branch (`git checkout -b feat/my-new-feature`)
 4. Commit your changes (`git commit -am 'feat: Added some awesome new feature'`)
-5. Add tests and test your changes with `zig build test --summary all`
+5. Add tests and test your changes with `TBD`
 6. If all of the tests pass, open a [pull request](https://github.com/mattcarlotta/nvi/compare) pointing to the main branch
 7. Wait for approval
 
@@ -15,4 +15,4 @@ This project adheres to the [Conventional Commits](https://www.conventionalcommi
 
 ## Code Style
 
-This project uses [zls](https://zigtools.org/zls/install/) to maintain code style and best practices.
+This project uses [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) to maintain code style and best practices.

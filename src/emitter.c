@@ -33,6 +33,13 @@ result_t run_emitter(const args_t *args, const env_map_t *env_map) {
                 fputc('\0', stdout);
             }
 
+            if (args->command.count > 0) {
+                for (size_t i = 0; i < args->command.count; ++i) {
+                    fprintf(stdout, "%s", args->command.items[i]);
+                    fputc('\0', stdout);
+                }
+            }
+
             return result;
         }
         case FORMAT_POWERSHELL: {

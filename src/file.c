@@ -22,23 +22,21 @@ file_details_t open_file(const char *path, bool dry_run) {
 
     if (size <= 0) {
         if (dry_run) {
-            log_error("[ERROR] The file '%s' appears to be empty.\n", path);
+            log_warning("[WARNING] The file '%s' appears to be empty.\n\n", path);
         }
         goto done;
     }
 
     if ((size_t)size > MAX_FILE_SIZE) {
         if (dry_run) {
-            log_warning("[WARNING]");
-            log_f("The file '%s' exceeds %zu bytes, skipping.\n", path, MAX_FILE_SIZE);
+            log_warning("[WARNING] The file '%s' exceeds %zu bytes, skipping.\n\n", path, MAX_FILE_SIZE);
         }
-
         goto done;
     }
 
     file_details.contents = malloc(size + 1);
     if (file_details.contents == NULL) {
-        log_error("[ERROR] Failed to load file '%s' (file may be empty or not found); aborting.\n", path);
+        log_error("[ERROR] Failed to load file '%s' (file may be empty or not found); aborting.\n\n", path);
         fclose(file);
         abort();
     }

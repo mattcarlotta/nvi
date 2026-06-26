@@ -12,22 +12,26 @@
 
 static const char *git_commit(void) {
     const char *env = getenv("NVI_COMMIT");
-    if (env != NULL && env[0] != '\0')
+    if (env != NULL && env[0] != '\0') {
         return env;
+    }
 
     Nob_Cmd cmd = {0};
     nob_cmd_append(&cmd, "git", "rev-parse", "--short", "HEAD");
-    if (!nob_cmd_run(&cmd, .stdout_path = ".nvi_commit"))
+    if (!nob_cmd_run(&cmd, .stdout_path = ".nvi_commit")) {
         return "unknown";
+    }
 
     Nob_String_Builder sb = {0};
     bool read_ok = nob_read_entire_file(".nvi_commit", &sb);
     nob_delete_file(".nvi_commit");
-    if (!read_ok)
+    if (!read_ok) {
         return "unknown";
+    }
 
-    while (sb.count > 0 && (sb.items[sb.count - 1] == '\n' || sb.items[sb.count - 1] == '\r'))
+    while (sb.count > 0 && (sb.items[sb.count - 1] == '\n' || sb.items[sb.count - 1] == '\r')) {
         sb.count--;
+    }
     nob_sb_append_null(&sb);
 
     return sb.items;
@@ -49,18 +53,21 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
 
 static bool append_sources(Nob_Cmd *cmd) {
     Nob_File_Paths paths = {0};
-    if (!nob_read_entire_dir("src", &paths))
+    if (!nob_read_entire_dir("src", &paths)) {
         return false;
+    }
 
     for (size_t i = 0; i < paths.count; i++) {
         const char *name = paths.items[i];
 
-        if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+        if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
             continue;
+        }
 
         size_t len = strlen(name);
-        if (len < 2 || strcmp(name + len - 2, ".c") != 0)
+        if (len < 2 || strcmp(name + len - 2, ".c") != 0) {
             continue;
+        }
 
         nob_cmd_append(cmd, nob_temp_sprintf("src/%s", name));
     }
@@ -72,8 +79,9 @@ static bool append_sources(Nob_Cmd *cmd) {
 static bool delete_entry(Nob_Walk_Entry e) { return nob_delete_file(e.path); }
 
 static void remove_dir_recursively(const char *path) {
-    if (nob_get_file_type(path) != NOB_FILE_DIRECTORY)
+    if (nob_get_file_type(path) != NOB_FILE_DIRECTORY) {
         return;
+    }
     nob_walk_dir(path, delete_entry, .post_order = true);
 }
 
@@ -87,8 +95,9 @@ static bool build_dev(void) {
     nob_cmd_append(&cmd, "-g", "-O0", "-o", OUT_BIN);
 #endif
 
-    if (!append_sources(&cmd))
+    if (!append_sources(&cmd)) {
         return false;
+    }
 
     return nob_cmd_run(&cmd);
 }
@@ -107,18 +116,39 @@ static bool build_release(void) {
                    "-fdata-sections", "-Wl,--gc-sections", "-s", "-o", OUT_BIN);
 #endif
 
-    if (!append_sources(&cmd))
+    if (!append_sources(&cmd)) {
         return false;
+    }
 
-    if (!nob_cmd_run(&cmd))
+    if (!nob_cmd_run(&cmd)) {
         return false;
+    }
 
 #ifdef __APPLE__
     nob_cmd_append(&cmd, "strip", "-x", OUT_BIN);
-    if (!nob_cmd_run(&cmd))
+    if (!nob_cmd_run(&cmd)) {
         return false;
+    }
 #endif
 
+    return true;
+}
+
+static bool install_binary(void) {
+    const char *dir = getenv("DIR");
+    if (dir == NULL || dir[0] == '\0') {
+        nob_log(NOB_ERROR, "PREFIX is not set; run: DIR=/path/to/bin ./nob install");
+        return false;
+    }
+
+    const char *dest = nob_temp_sprintf("%s/%s", dir, OUT_BIN);
+
+    if (!nob_copy_file(OUT_BIN, dest)) {
+        nob_log(NOB_ERROR, "failed to copy %s -> %s (permission denied? try a writable PREFIX)", OUT_BIN, dest);
+        return false;
+    }
+
+    nob_log(NOB_INFO, "installed %s to %s", OUT_BIN, dest);
     return true;
 }
 
@@ -139,8 +169,9 @@ static bool timed(const char *label, const char *out, bool (*build)(void)) {
     nob_log(ok ? NOB_INFO : NOB_ERROR, "%s build %s in %.3f s", label, ok ? "succeeded" : "failed",
             (double)elapsed / NOB_NANOS_PER_SEC);
 
-    if (ok)
+    if (ok) {
         log_file_size(out);
+    }
     return ok;
 }
 
@@ -152,17 +183,27 @@ int main(int argc, char **argv) {
 
     const char *subcmd = argc > 0 ? nob_shift(argv, argc) : "dev";
 
-    if (strcmp(subcmd, "release") == 0) {
-        if (!timed("release", OUT_BIN, build_release))
+    if (strcmp(subcmd, "install") == 0) {
+        if (!timed("release", OUT_BIN, build_release)) {
             return 1;
+        }
+
+        if (!timed("install", OUT_BIN, install_binary)) {
+            return 1;
+        }
+    } else if (strcmp(subcmd, "release") == 0) {
+        if (!timed("release", OUT_BIN, build_release)) {
+            return 1;
+        }
     } else if (strcmp(subcmd, "clean") == 0) {
         nob_delete_file(OUT_BIN);
 #ifdef __APPLE__
         remove_dir_recursively(OUT_BIN ".dSYM");
 #endif
     } else {
-        if (!timed("dev", OUT_BIN, build_dev))
+        if (!timed("dev", OUT_BIN, build_dev)) {
             return 1;
+        }
     }
 
     return 0;

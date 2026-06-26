@@ -2,13 +2,13 @@
 
 A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
-- 0 dependencies and statically linked
-- language agnostic
-- parses one or more `.env` files
-- handles `${KEY}` interpolations
-- supports multiline values via `\` (backslash-newline) delimiter
-- can scan project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and mark them as required
-- can validate required keys are defined before command execution
+- Zero dependency
+- Language agnostic
+- Parses one or more `.env` files
+- Handles `${KEY}` interpolations
+- Supports multiline values via `\` (backslash-newline) delimiter
+- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and set them as required
+- Optionally validates required keys are defined before command execution
 
 ## Installation
 
@@ -35,59 +35,65 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 source <profile_url>
 ```
 
-## Build from source
+## Build and install from source
 
-Requires
-- [Zig](https://ziglang.org/download/) `0.16.0` or later
+### Requirements:
+
+Mac-OS and GNU Linux:
+- [Clang](https://clang.llvm.org/) `21.0.0` or later
+
+Windows:
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `21.0.0` or later
 
 Optional:
-- [GNU Make](https://www.gnu.org/software/make/#download) `3.81` or later (alternatively, you can build and install using `zig`)
-- [ZLS](https://zigtools.org/zls/install/)
+- [Clangd](https://clangd.llvm.org/) `21.0.0` or later (for LSP)
+- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `21.0.0`
 
+Building source code:
+- [nob](https://github.com/tsoding/nob.h)
 
+Clone project and build `nob`:
 ```sh
 cd ~/Downloads
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
-# build for production and install in a directory (should be recognized by the shell $PATH)
-make install DIR=<directory>
+clang -o nob nob.c
 ```
 
-Or create custom builds using make (`make release` and `make install` share the same flags: `DIR`, `MODE`, `TARGET`):
+### Build for debugging
+
+Run `nob` without arguments:
 ```sh
-# DIR=./zig-out/bin (default)
-# MODE=safe (default)
-# TARGET=native (default)
-make release
-
-# DIR: $HOME/.local/bin
-# MODE (compiler): fast, safe, small
-# TARGET (architecture): aarch64-macos, x86_64-macos, aarch64-linux-musl, x86_64-linux-musl, x86_64-windows
-make install DIR=$HOME/.local MODE=fast TARGET=aarch64-linux-gnu
+./nob
+```
+Then usage becomes:
+```
+./nvi [flags] -- <command>
 ```
 
-Or custom builds using zig:
+### Build for release
+
+Run `nob`:
 ```sh
-# debug build: ./zig-out/bin/nvi (default)
-zig build
-
-# build for release: ./zig-out/bin/nvi (default)
-# release: fast, safe, small
-zig build --release=small
-
-# build for release and install in a DIR (should be recognized by the shell $PATH)
-zig build --release=small --prefix <DIR>
-
-# build for different architectures
-zig build --release=small -Dtarget=aarch64-macos
-zig build --release=small -Dtarget=x86_64-macos
-zig build --release=small -Dtarget=x86_64-linux-musl
-zig build --release=small -Dtarget=aarch64-linux-musl
-zig build --release=small -Dtarget=x86_64-windows
+./nob release
+```
+Then usage becomes:
+```
+./nvi [flags] -- <command>
 ```
 
-The `-musl` Linux targets produce fully static binaries that run on any distribution.
+### Build and install release
+
+Run nob:
+```sh
+# install in a directory that is recognized by the shell $PATH
+DIR=<directory> ./nob install
+```
+Then usage becomes:
+```
+nvi [flags] -- <command>
+```
 
 > [!NOTE]
 > Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format flag with `--format nul` or compile for Linux.
@@ -102,17 +108,15 @@ which nvi
 nvi version
 # nvi <version> (<build_type>)
 # commit <commit>
-# zig <minimum_version>
+# clang <version>
 # <architecture>
-# run "nvi help" for more info
 ```
+
 If not found, then view [Installation](https://github.com/mattcarlotta/nvi-bin#installation) steps.
 
 ## Running
 
 ### Unix (Linux, macOS, WSL)
-
-For Windows (Non-WSL) users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
 
 `nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
 
@@ -124,37 +128,7 @@ For day-to-day use, you may want to add a function to your shell profile (eg. `~
 ```sh
 nvix() { nvi "$@" | xargs -0 -r env; }
 ```
-
-## Flags
-
-| Flag | Alias | Parameters | Description |
-| --- | --- | --- | --- |
-| `--dry-run` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. |
-| `--files` | `-f` | one or more paths | Required `.env` files to parse, in order. Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env`. |
-| `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
-| `--help` | `-h` | | Prints usage help and exits. |
-| `--ignored` | `-i` | one or more keys | Keys that `scan` should not add to the required ENV set (e.g. `NODE_ENV`, which is typically injected at runtime by tooling rather than defined in a `.env` file). Only meaningful together with `scan`. |
-| `--required` | `-r` | one or more keys | Keys that must exist with non-empty values after parsing. `nvi` exits with an error listing any that are missing. |
-| `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
-| `--version` | `-v` | | Prints versions and exits. |
-| `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required (except for standalone `scan`, `help`, and `version`). |
-
-Unrecognized flags (and their parameters) are warned about on stderr and ignored.
-
-## Commands
-
-| Command | Parameters | Description |
-| --- | --- | --- |
-| `scan` | one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
-| `help` | | Prints usage help. |
-| `version` | | Prints version. |
-
-> [!NOTE]
-> † Without a `--` command, scan reports what it finds and exits. With a `--` command, scan sets the found ENV keys to the required ENV set.
-
-Unrecognized commands are warned about on stderr and ignored.
-
-## PowerShell Usage
+### PowerShell
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
 PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
@@ -188,17 +162,24 @@ Notes for Windows users:
 - **WSL:** use the Linux binary and the Unix pipeline.
 - `cmd.exe` is not supported.
 
-### Choosing a format explicitly
+## Flags
 
-`--format` overrides the platform default in either direction:
+| Flag | Alias | Parameters | Description |
+| --- | --- | --- | --- |
+| `--dry-run` | `-d` | | Print parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
+| `--files` | `-f` | one or more paths | Parses `.env` in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env` extension. |
+| `--format` | `-F` | `nul` or `powershell` | Formats ENV for the downstream consumer. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
+| `--help` | `-h` | | Prints usage help to stdout and exits with 0. |
+| `--ignored` | `-i` | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
+| `--required` | `-r` | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an operational error if any are not defined. |
+| `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and sets the ENV required list.† |
+| `--version` | `-v` | | Prints version info and exits with 0. |
+| `--` | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
-```sh
-# preview PowerShell ENV format
-nvi --format powershell -- echo $?
+> [!NOTE]
+> † Without a `--` command, scan will only report what it finds and exits. With a `--` command, scan sets the found ENV keys to the required ENVs list.
 
-# preview Unix ENV format
-nvi --format nul -- echo $?
-```
+Unrecognized flags or arguments are usage errors.
 
 ## Usage examples
 
@@ -209,11 +190,11 @@ nvi --files .env .env.local -- npm start | <consumer>
 # require keys to be present
 nvi --files .env --required API_KEY DATABASE_URL -- cargo run | <consumer>
 
-# shows a dry run what was scanned, tokenized, and parsed (stderr only)
+# shows a dry run of what was scanned, tokenized, and parsed (prints to stderr)
 nvi --files .env --scan ts --dry-run
 
-# require every env key referenced in source files to be present
-nvi --files .env --scan mjs --ignored NODE_ENV  -- npm run dev | <consumer>
+# require every env key referenced in py source files to be present
+nvi --files .env --scan py -- python main.py  | <consumer>
 
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
 nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
@@ -222,11 +203,11 @@ NUL delimiting means values pass through byte-exact without quoting or escaping:
 
 ### Exit codes
 
-- `0` - Ok: Parsed/emitted ENVs successfully or prints information and exits (help, scan, version)
-- `1` - Operational failure: out of memory, file unreadable, parser error, required keys are undefined, or output write failure
-- `2` - Usage error: flags missing required params or a missing `--` command
+- `0` - Success: Emits ENVs or prints information and exits (help, scan, version)
+- `1` - Operational failures: out of memory, file unreadable, parser errors, or required keys are undefined
+- `2` - Usage errors: flags missing required params, invalid flags, or a missing `--` command
 
-The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
+The exit code of *your command* will be reported by the downstream consumer, not by `nvi`.
 
 ## Scanning for ENV keys
 
