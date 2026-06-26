@@ -96,7 +96,7 @@ nvi [flags] -- <command>
 ```
 
 > [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format flag with `--format nul` or compile for Linux.
+> Windows builds will default to the powershell format. Therefore, if not using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format flag with `--format nul`.
 
 ### Verify system installation
 
@@ -112,7 +112,7 @@ nvi version
 # <architecture>
 ```
 
-If not found, then view [Installation](https://github.com/mattcarlotta/nvi-bin#installation) steps.
+If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions about a missing shell `$PATH`.
 
 ## Running
 
@@ -166,20 +166,20 @@ Notes for Windows users:
 
 | Flag | Alias | Parameters | Description |
 | --- | --- | --- | --- |
-| `--dry-run` | `-d` | | Print parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
-| `--files` | `-f` | one or more paths | Parses `.env` in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env` extension. |
-| `--format` | `-F` | `nul` or `powershell` | Formats ENV for the downstream consumer. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
+| `--dry-run` | `-d` | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
+| `--files` | `-f` | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
+| `--format` | `-F` | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
 | `--help` | `-h` | | Prints usage help to stdout and exits with 0. |
 | `--ignored` | `-i` | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
-| `--required` | `-r` | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an operational error if any are not defined. |
-| `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and sets the ENV required list.† |
-| `--version` | `-v` | | Prints version info and exits with 0. |
+| `--required` | `-r` | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
+| `--scan` | `-s`| one or more file extensions | Recursively scans \*.`<ext>` files for environment-variable accessors and sets the ENV required list.† |
+| `--version` | `-v` | | Prints version info to stdout and exits with 0. |
 | `--` | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
-> [!NOTE]
-> † Without a `--` command, scan will only report what it finds and exits. With a `--` command, scan sets the found ENV keys to the required ENVs list.
-
 Unrecognized flags or arguments are usage errors.
+
+> [!NOTE]
+> † Without a `--` command, scan will only report what it finds and exit. With a `--` command, scan sets the found ENV keys to the required ENVs list.
 
 ## Usage examples
 
@@ -199,13 +199,13 @@ nvi --files .env --scan py -- python main.py  | <consumer>
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
 nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 ```
-NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
+Values are passed through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
 
 ### Exit codes
 
-- `0` - Success: Emits ENVs or prints information and exits (help, scan, version)
+- `0` - Success: emits ENVs for a downstream consumer or prints information and exits (help, scan, version)
 - `1` - Operational failures: out of memory, file unreadable, parser errors, or required keys are undefined
-- `2` - Usage errors: flags missing required params, invalid flags, or a missing `--` command
+- `2` - Usage errors: flags missing required params, invalid flags/params, or a missing `--` command
 
 The exit code of *your command* will be reported by the downstream consumer, not by `nvi`.
 
@@ -228,16 +228,16 @@ $env:DATABASE_URL                 # PowerShell
 $ENV{DATABASE_URL}                # Perl
 ```
 > [!IMPORTANT]
-> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
+> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPER_CASE_SNAKE_CASE.
 
 > [!CAUTION]
 > Dynamic keys (`const key = "DATABASE_URL"; process.env[key]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be found.
 
-### Supported file extensions:
-- C -> `c`
+### Supported file extensions (to the right of the language)
+- C -> `c`, `h`
 - Clojure -> `clj`, `cljs`, `cljc`
 - Crystal -> `cr`
-- C++ -> `cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`
+- C++ -> `cc`, `cpp`, `cxx`, `hh`, `hpp`, `hxx`
 - C# -> `cs`
 - D -> `d`
 - Dart -> `dart`
@@ -273,10 +273,10 @@ $ENV{DATABASE_URL}                # Perl
 - Visual Basic -> `vb`
 - Zig -> `zig`
 
-Scan Examples:
+#### Scan Usage Examples
 
 ```sh
-# reports every env accessor in .mjs and .ts files, then exits
+# reports matches ENVs in .mjs and .ts files, then exits
 nvi --scan mjs ts
 
 # collects scanned keys to be required and defined before 'npm run dev' command is emitted
@@ -288,13 +288,10 @@ nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
 
 Notes:
 
-- Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
-- Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L19-L42)). Symlinked directories are not followed.
-- When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
-
-> [!TIP]
-> When using `*.ext` globs, use quotes (`'*.ext'`) or just pass bare extensions; unquoted globs are expanded into filenames by your shell before `nvi` runs.
+- Extensions must be written as `ext` and not `.ext` or `*.ext`.
+- Extensions with no known accessor patterns are usage errors.
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
+- When a command is present, scanned keys that are not defined exit with code `1` (usage error), the same as `--required` failures.
 
 ## `.env` file syntax
 
@@ -317,17 +314,21 @@ BASE64_OK=abc==
 # a dollar sign without braces is a literal '$' (not an interpolated key)
 PRICE=$5.00
 
-# backslash-newline continues the value (interpolation keys still work)
+# a hash sign after a key is a literal '#' (not comment)
+CHANNEL=#why-is-this-bug-occuring
+
+# backslash-newline continues the value (interpolation keys still work on any line)
 SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
 oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\
 owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
-# no backslash with just a new-line/EOF indicates the end of a multiline value
+# when there's no backslash and just a new-line or EOF, then that indicates the end of a multiline value
 ```
-Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `--files`).
-Undefined interpolations and keys with empty values are skipped with a warning.
+> [!NOTE]
+> Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `.env` files specified by `--files`).
+> Undefined key interpolations or keys with empty values will exit with an error.
 
 ## Testing
 
@@ -345,9 +346,8 @@ make integration
 
 ## Security model
 
-`nvi` doesn't perform execution operations (like `exec`), no process spawning nor shell invocation. It reads the `.env` files you provide and writes them as bytes to stdout.
-Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
-For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
+`nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation. It will only parse the `.env` files you provide and writes ENVs to stdout.
+Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed. For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
 ### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)
