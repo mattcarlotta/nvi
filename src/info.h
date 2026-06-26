@@ -1,7 +1,7 @@
 #ifndef INFO_H
 #define INFO_H
 
-void print_help(void);
-void print_version(void);
+void log_help(void);
+void log_version(void);
 
 #endif

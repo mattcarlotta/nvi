@@ -83,7 +83,7 @@ static void free_token(token_t *token) {
     token->values = (value_token_list_t){0};
 }
 
-static void print_error_header(tokenizer_t *tokenizer) {
+static void log_error_header(tokenizer_t *tokenizer) {
     log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
               tokenizer->byte);
 }
@@ -93,20 +93,20 @@ static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token
     value->count = 0;
 
     if (token->values.count == 0 || (token->values.count == 1 && token->values.items[0].value_len == 0)) {
-        print_error_header(tokenizer);
+        log_error_header(tokenizer);
         log_f("The '%s' key has an empty value assignment.\n", token->key);
         log_f("   %s=\n", token->key);
         log_f("   ");
         fput_repeat(stderr, ' ', strlen(token->key) + 1);
         log_f("^ (missing value)\n");
-        return (result_t){.ok = false, .errcode = 1};
+        return (result_t){.ok = false, .code = 1};
     }
 
     append_token(tokenizer, token);
-    return (result_t){.ok = true, .errcode = 0};
+    return (result_t){.ok = true, .code = 0};
 }
 
-static size_t print_token_line(const token_t *token) {
+static size_t log_token_line(const token_t *token) {
     const char *key = token->key ? token->key : "(none)";
     log_f("   %s=", key);
 
@@ -139,7 +139,7 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
 
     token_t token = {.file = tokenizer->file_name};
     byte_list_t value = {0};
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
 
     int current;
     while ((current = peek(tokenizer, 0)) != -1) {
@@ -180,7 +180,7 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                 }
 
                 if (hi - lo == 0) {
-                    print_error_header(tokenizer);
+                    log_error_header(tokenizer);
                     log_f("A value assignment ('=') was found without a key name.\n");
 
                     size_t end = index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
@@ -195,14 +195,14 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                     log_f(" (missing key)\n");
 
                     result.ok = false;
-                    result.errcode = 1;
+                    result.code = 1;
                     goto done;
                 }
 
                 token.key = strndup(value.items + lo, hi - lo);
                 if (token.key == NULL) {
                     result.ok = false;
-                    result.errcode = 1;
+                    result.code = 1;
                     goto done;
                 }
                 value.count = 0;
@@ -246,10 +246,10 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                 scan_until(tokenizer, &value, STOP_BRACE_NL, STOP_BRACE_NL_LEN);
 
                 if (peek(tokenizer, 0) != CLOSE_BRACE) {
-                    print_error_header(tokenizer);
+                    log_error_header(tokenizer);
                     log_error("The %s key has an unterminated value interpolation.\n",
                               token.key ? token.key : "(none)");
-                    size_t prefix_len = print_token_line(&token);
+                    size_t prefix_len = log_token_line(&token);
                     log_f("${%.*s\n", (int)value.count, value.items);
 
                     log_f("   ");
@@ -259,7 +259,7 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                     log_f(" (missing a closing brace '}')\n");
 
                     result.ok = false;
-                    result.errcode = 1;
+                    result.code = 1;
                     goto done;
                 }
 
@@ -267,10 +267,10 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                 skip_byte(tokenizer, 1);
 
                 if (value.count == 0) {
-                    print_error_header(tokenizer);
+                    log_error_header(tokenizer);
                     log_error("The %s key has an undefined key interpolation.\n", token.key ? token.key : "(none)");
 
-                    size_t prefix_len = print_token_line(&token);
+                    size_t prefix_len = log_token_line(&token);
                     log_f("${}\n");
 
                     log_f("   ");
@@ -278,7 +278,7 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                     fputs("^~ (unresolvable interpolation key)\n", stderr);
 
                     result.ok = false;
-                    result.errcode = 1;
+                    result.code = 1;
                     goto done;
                 }
 
@@ -335,7 +335,7 @@ result_t generate_tokens(const args_t *args, tokenizer_t *tokenizer, file_detail
                   tokenizer->file_name);
 
         result.ok = false;
-        result.errcode = 1;
+        result.code = 1;
         goto done;
     }
 
@@ -346,7 +346,7 @@ done:
 }
 
 result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
 
     if (args->dry_run && args->files.count == 0) {
         log_warning("[WARNING]");
@@ -368,7 +368,7 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
         file_details_t file = open_file(path, args->dry_run);
         if (file.contents == NULL) {
             result.ok = false;
-            result.errcode = 1;
+            result.code = 1;
             goto done;
         }
 

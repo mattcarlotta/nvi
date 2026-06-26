@@ -22,7 +22,7 @@ static inline result_t operation_error(const char *fmt, ...) {
 
     va_end(args);
 
-    return (result_t){.ok = false, .errcode = 1};
+    return (result_t){.ok = false, .code = 1};
 }
 
 static inline result_t usage_error(const char *fmt, ...) {
@@ -41,7 +41,7 @@ static inline result_t usage_error(const char *fmt, ...) {
 
     va_end(args);
 
-    return (result_t){.ok = false, .errcode = 2};
+    return (result_t){.ok = false, .code = 2};
 }
 
 #endif

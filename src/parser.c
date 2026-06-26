@@ -29,7 +29,7 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
 }
 
 result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
 
     if (args->dry_run) {
         log_info("[INFO]");
@@ -150,7 +150,7 @@ result_t run_parser(args_t *args, token_list_t *tokens, env_map_t *env_map) {
         }
         log_error("\n");
         result.ok = false;
-        result.errcode = 1;
+        result.code = 1;
         goto done;
     }
 

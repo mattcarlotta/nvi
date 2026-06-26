@@ -4,7 +4,7 @@
 
 typedef struct {
     bool ok;
-    int errcode;
+    int code;
 } result_t;
 
 #endif

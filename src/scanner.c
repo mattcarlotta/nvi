@@ -84,7 +84,7 @@ static void append_unique_envs(list_t *envs, env_key_match_t *env) {
 }
 
 static result_t scan_file(scanner_t *scanner, const char *path, const char *name) {
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
     const file_ext_t *file_ext_match = get_file_accessors(scanner, name);
     if (file_ext_match == NULL) {
         return result;
@@ -237,7 +237,7 @@ static void merge_required_envs(scanner_t *scanner, args_t *args) {
 }
 
 result_t run_scanner(args_t *args, scanner_t *scanner) {
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
     scanner->dry_run = args->dry_run || args->command.count == 0;
 
     if (scanner->dry_run) {

@@ -9,7 +9,7 @@
 int main(int argc, char **argv) {
     tty_init();
 
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
     }
 
     if (args.files.count == 0 && args.dry_run) {
-        print_dry_run_message();
+        log_dry_run_message();
         goto done;
     }
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     }
 
     if (args.dry_run) {
-        print_dry_run_message();
+        log_dry_run_message();
         goto done;
     }
 
@@ -56,5 +56,5 @@ done:
     free_scanner(&scanner);
     free_tokenizer(&tokenizer);
     free_envs(&env_map);
-    return result.errcode;
+    return result.code;
 }

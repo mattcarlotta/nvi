@@ -27,7 +27,7 @@ static const flag_entry flags[] = {
     {.name = "-v", .value = VERSION},  {.name = "--version", .value = VERSION},   {.name = "version", .value = VERSION},
 };
 
-void print_dry_run_message(void) {
+void log_dry_run_message(void) {
     log_info("[INFO]");
     log_f(" Exited early because dry-run was enabled\n\n");
 }
@@ -56,10 +56,10 @@ static result_t set_flag_params(args_t *args, list_t *list, char *flag) {
         return usage_error("The '%s' flag requires at least one argument", flag);
     }
 
-    return (result_t){.ok = true, .errcode = 2};
+    return (result_t){.ok = true, .code = 2};
 }
 
-static void print_items(const char *label, const list_t *list, const char *sep) {
+static void log_items(const char *label, const list_t *list, const char *sep) {
     log_f("\n    \u2022");
     log_info(" %s: ", label);
 
@@ -76,17 +76,17 @@ static void print_items(const char *label, const list_t *list, const char *sep) 
     }
 }
 
-static void print_flags(args_t *args) {
+static void log_flags(args_t *args) {
     log_info("\n[INFO]");
     log_f(" The following flags have been set...");
-    print_items("command", (const list_t *)&args->command, " ");
+    log_items("command", (const list_t *)&args->command, " ");
     log_f("\n    \u2022");
     log_info(" dry run: ");
     log_f("on");
-    print_items("files", &args->files, ", ");
-    print_items("ignored ENVs", &args->ignored, ", ");
-    print_items("required ENVs", &args->required, ", ");
-    print_items("scan extensions", &args->scan_exts, ", ");
+    log_items("files", &args->files, ", ");
+    log_items("ignored ENVs", &args->ignored, ", ");
+    log_items("required ENVs", &args->required, ", ");
+    log_items("scan extensions", &args->scan_exts, ", ");
     log_f("\n    \u2022");
     log_info(" format: ");
     log_f("%s\n\n", format_name(args->format));
@@ -100,7 +100,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
     args->format = get_default_format();
     args->dry_run = false;
 
-    result_t result = {.ok = true, .errcode = 0};
+    result_t result = {.ok = true, .code = 0};
 
     while (args->i < args->argc) {
 
@@ -121,7 +121,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
             case FILES: {
                 result = set_flag_params(args, &args->files, "files");
                 if (!result.ok) {
-                    goto done;
+                    return result;
                 }
 
                 break;
@@ -148,7 +148,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
             case IGNORED: {
                 result = set_flag_params(args, &args->ignored, "ignored");
                 if (!result.ok) {
-                    goto done;
+                    return result;
                 }
 
                 break;
@@ -156,7 +156,7 @@ result_t parse_args(int argc, char **argv, args_t *args) {
             case REQUIRED: {
                 result = set_flag_params(args, &args->required, "required");
                 if (!result.ok) {
-                    goto done;
+                    return result;
                 }
 
                 break;
@@ -164,22 +164,22 @@ result_t parse_args(int argc, char **argv, args_t *args) {
             case SCAN: {
                 result = set_flag_params(args, &args->scan_exts, "scan");
                 if (!result.ok) {
-                    goto done;
+                    return result;
                 }
 
                 break;
             }
             case HELP: {
-                print_help();
+                log_help();
 
                 result.ok = false;
-                goto done;
+                return result;
             }
             case VERSION: {
-                print_version();
+                log_version();
 
                 result.ok = false;
-                goto done;
+                return result;
             }
             default: {
                 const char *token = args->argv[args->i];
@@ -196,12 +196,9 @@ result_t parse_args(int argc, char **argv, args_t *args) {
     }
 
     if (args->dry_run) {
-        print_flags(args);
+        log_flags(args);
     }
 
-    goto done;
-
-done:
     return result;
 }
 

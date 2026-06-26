@@ -2,7 +2,7 @@
 #include "version.h"
 #include <stdio.h>
 
-void print_help(void) {
+void log_help(void) {
     fputs(
         "Usage: nvi [flags] -- <command>\n"
         "       nvi scan [ext] [ext] ...etc (no <command>)\n"
@@ -68,7 +68,7 @@ void print_help(void) {
         stdout);
 }
 
-void print_version(void) {
+void log_version(void) {
     printf("nvi %s (%s)\n", NVI_VERSION, NVI_BUILD);
     printf("commit %s\n", NVI_COMMIT);
 #ifdef __clang__
