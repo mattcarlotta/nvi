@@ -39,6 +39,7 @@ void run_emitter(const args_t *args, const env_map_t *env_map) {
                 }
                 fprintf(stdout, "\n");
             }
+            break;
         }
         default: {
             for (size_t i = 0; i < env_map->count; ++i) {
@@ -52,6 +53,7 @@ void run_emitter(const args_t *args, const env_map_t *env_map) {
                     fputc('\0', stdout);
                 }
             }
+            break;
         }
     }
 }
