@@ -221,7 +221,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
 
                 const format_t format = get_format(param);
                 if (format == FORMAT_UNKNOWN) {
-                    return usage_error("Invalid format '%s' (expected: nul|powershell)", param);
+                    return usage_error("Invalid ENV format '%s' (expected: nul|powershell)", param);
                 }
 
                 args->format = format;

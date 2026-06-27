@@ -26,11 +26,11 @@ static inline const char *get_format_name(const format_t f) {
 }
 
 static inline format_t get_format(const char *arg) {
-    if (strcmp(arg, "powershell")) {
+    if (strcmp(arg, "powershell") == 0) {
         return FORMAT_POWERSHELL;
     }
 
-    if (strcmp(arg, "nul")) {
+    if (strcmp(arg, "nul") == 0) {
         return FORMAT_NULL;
     }
 

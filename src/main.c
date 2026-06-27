@@ -63,7 +63,7 @@ int main(int argc, const char **argv) {
     goto done;
 
 done:
-    if (args.dry_run) {
+    if (result.ok && args.dry_run) {
         log_time(start);
     }
     fflush(stderr);
