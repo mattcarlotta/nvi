@@ -24,7 +24,7 @@ void tty_init(void);
 #define DARK_GRAY "\x1b[90m"
 // #define BOLD_RED "\x1b[1;31m"
 #define BOLD_GREEN "\x1b[1;32m"
-#define BOLD_YELLOW "\x1b[1;33m"
+// #define BOLD_YELLOW "\x1b[1;33m"
 #define ITALIC "\x1b[3m"
 #define RESET "\x1b[0m"
 
