@@ -262,7 +262,7 @@ $ENV{DATABASE_URL}                # Perl
 - Perl -> `pl`, `pm`, `t`
 - PHP -> `php`
 - PowerShell -> `ps1`, `psm1`, `psd1`
-- Python -> `py`, `pyi`
+- Python -> `py`, `pyi`, `pyw`
 - R -> `r`
 - Ruby -> `gemspec`, `rb`, `rake`
 - Rust -> `rs`

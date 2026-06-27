@@ -56,7 +56,7 @@ size_t index_of(const file_details_t *file, size_t from, char ch) {
 }
 
 bool is_same_line(const file_details_t *file, size_t from, size_t to) {
-    return index_of(file, from, LINE_DELIMITER >= to);
+    return index_of(file, from, LINE_DELIMITER) >= to;
 }
 
 bool is_ident_start(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'; }
@@ -64,14 +64,12 @@ bool is_ident_start(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <=
 bool is_ident_char(char c) { return isalnum((unsigned char)c) || c == UNDERLINE; }
 
 bool is_valid_key(const char *key, size_t len) {
-    if (len == 0) {
+    if (len == 0 || !is_ident_start(key[0])) {
         return false;
     }
 
-    for (size_t i = 0; i < len; ++i) {
-        char c = key[i];
-
-        if (!is_ident_char(c)) {
+    for (size_t i = 1; i < len; ++i) {
+        if (!is_ident_char(key[i])) {
             return false;
         }
     }

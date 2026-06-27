@@ -7,6 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct {
+    char *items;
+    size_t count;
+    size_t capacity;
+} value_buf_t;
+
 env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
     for (size_t i = 0; i < env_map->count; ++i) {
         const char *key = env_map->items[i].key;
@@ -36,23 +42,14 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         log_f(" Attempting to parse %zu token%s...\n\n", tokens->count, TO_PLURAL(tokens->count));
     }
 
+    value_buf_t value = {0};
+
     for (size_t ti = 0; ti < tokens->count; ++ti) {
         const token_t token = tokens->items[ti];
         const char *token_key = token.key;
 
-        size_t value_len = 0;
-        for (size_t vl = 0; vl < token.values.count; ++vl) {
-            if (token.values.items[vl].kind != COMMENTED) {
-                value_len += strlen(token.values.items[vl].value);
-            }
-        }
+        value.count = 0;
 
-        char *value = malloc(value_len + 1);
-        if (value == NULL) {
-            return operation_error("Unable to allocate space for a value (maybe system out of memory?)");
-        }
-
-        size_t vi = 0;
         for (size_t vt = 0; vt < token.values.count; ++vt) {
             const value_token_t value_token = token.values.items[vt];
 
@@ -69,9 +66,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                         break;
                     }
 
-                    size_t len = strlen(env);
-                    memcpy(value + vi, env, len);
-                    vi += len;
+                    DYN_ARR_APPEND_MANY(&value, env, strlen(env));
                     break;
                 }
                 case COMMENTED: {
@@ -83,53 +78,56 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     break;
                 }
                 default: {
-                    size_t len = strlen(value_token.value);
-                    memcpy(value + vi, value_token.value, len);
-                    vi += len;
+                    DYN_ARR_APPEND_MANY(&value, value_token.value, value_token.value_len);
                     break;
                 }
             }
         }
 
-        if (token_key != NULL && value != NULL) {
-            value[vi] = '\0';
-
-            char *owned_value = strdup(value);
-            if (owned_value == NULL) {
-                free(value);
-                return operation_error("Unable to copy token key (not enough system memory?); aborting.\n");
-            }
-
-            env_t *existing = get_env_from_map(env_map, token_key);
-            if (existing != NULL) {
-                if (args->dry_run) {
-                    log_info("[INFO]");
-                    log_f(" Token #%zu updated ", ti + 1);
-                    log_bold_info("%s", token_key);
-                    log_f(" key's value from ");
-                    log_info("%s", existing->value);
-                    log_f(" to ");
-                    log_info("%s", owned_value);
-                    log_f("...\n\n");
-                }
-                free(existing->value);
-                existing->value = owned_value;
-            } else {
-                env_t new_env = {.key = token_key, .value = owned_value};
-                DYN_ARR_APPEND(env_map, new_env);
-            }
-
-            if (args->dry_run) {
-                log_info("[INFO]");
-                log_f(" Successfully parsed Token #%zu...\n    \u2022 ", ti + 1);
-                log_bold_info("%s ", token_key);
-                log_info("\u219E %s", owned_value);
-                log_f("\n\n");
-            }
+        if (token_key == NULL) {
+            continue;
         }
 
-        free(value);
+        char *owned_value = malloc(value.count + 1);
+        if (owned_value == NULL) {
+            free(value.items);
+            return operation_error("Unable to copy token value (not enough system memory?); aborting.\n");
+        }
+        if (value.count > 0) {
+            memcpy(owned_value, value.items, value.count);
+        }
+        owned_value[value.count] = '\0';
+
+        env_t *existing = get_env_from_map(env_map, token_key);
+        if (existing != NULL) {
+            if (args->dry_run) {
+                log_info("[INFO]");
+                log_f(" Token #%zu updated ", ti + 1);
+                log_bold_info("%s", token_key);
+                log_f(" key's value from ");
+                log_info("%s", existing->value);
+                log_f(" to ");
+                log_info("%s", owned_value);
+                log_f("...\n\n");
+            }
+            free(existing->value);
+            existing->value = owned_value;
+        } else {
+            env_t new_env = {.key = token_key, .value = owned_value};
+            DYN_ARR_APPEND(env_map, new_env);
+        }
+
+        if (args->dry_run) {
+            log_info("[INFO]");
+            log_f(" Successfully parsed Token #%zu...\n    \u2022 ", ti + 1);
+            log_bold_info("%s ", token_key);
+            log_info("\u219E %s", owned_value);
+            log_f("\n\n");
+        }
     }
+
+    free(value.items);
+    value.items = NULL;
 
     if (env_map->count == 0) {
         return operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
@@ -164,7 +162,6 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         log_error("\n");
         result.ok = false;
         result.code = 1;
-        goto done;
     }
 
     goto done;

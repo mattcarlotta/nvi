@@ -38,6 +38,7 @@ file_details_t open_file(const char *path, bool dry_run) {
     if (file_details.contents == NULL) {
         log_error("[ERROR] Failed to load file '%s' (file may be empty or not found); aborting.\n\n", path);
         fclose(file);
+        fflush(stderr);
         abort();
     }
 

@@ -1,14 +1,25 @@
 #include "arg.h"
 #include "emitter.h"
+#include "info.h"
 #include "parser.h"
 #include "result.h"
 #include "scanner.h"
+#include "timer.h"
 #include "tokenizer.h"
 #include "tty.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, const char **argv) {
     tty_init();
+
+    const double start = monotonic_seconds();
+
+    // this would set stderr to be fully buffered to prevent unnecessary line by line prints
+    // this may increase performance when dry-running a large code base, but the disadvantage
+    // is that partial prints flush to stderr and it feels choppy, disabling for now
+    // https://man7.org/linux/man-pages/man3/setvbuf.3p.html
+    // setvbuf(stderr, NULL, _IOFBF, 1 << 16);
 
     result_t result = {.ok = true, .code = 0};
     args_t args = {0};
@@ -30,9 +41,6 @@ int main(int argc, const char **argv) {
     }
 
     if (args.files.count == 0) {
-        if (args.dry_run) {
-            log_dry_run_message();
-        }
         goto done;
     }
 
@@ -47,9 +55,6 @@ int main(int argc, const char **argv) {
     }
 
     if (args.command.count == 0) {
-        if (args.dry_run) {
-            log_dry_run_message();
-        }
         goto done;
     }
 
@@ -58,6 +63,9 @@ int main(int argc, const char **argv) {
     goto done;
 
 done:
+    if (args.dry_run) {
+        log_time(start);
+    }
     fflush(stderr);
     fflush(stdout);
     free_args(&args);

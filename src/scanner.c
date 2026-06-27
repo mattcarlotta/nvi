@@ -24,6 +24,9 @@
 #include <dirent.h>
 #include <limits.h>
 #define PATH_SEP "/"
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 #endif
 
 #ifndef S_ISDIR
@@ -42,21 +45,20 @@ static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char
     return get_file_ext(scanner->scan_exts, dot + 1);
 }
 
-static void append_unique_envs(list_t *envs, const env_key_match_t *env) {
-    for (size_t i = 0; i < envs->count; ++i) {
-        const char *stored = envs->items[i];
-        if (strlen(stored) == env->key_len && strncmp(stored, env->key, env->key_len) == 0) {
-            return;
-        }
+static void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
+    if (set_contains(&scanner->seen, env->key, env->key_len)) {
+        return;
     }
 
     char *unique_env_key = strndup(env->key, env->key_len);
     if (unique_env_key == NULL) {
         log_error("[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
+        fflush(stderr);
         abort();
     }
 
-    DYN_ARR_APPEND(envs, unique_env_key);
+    DYN_ARR_APPEND(&scanner->envs, unique_env_key);
+    set_add(&scanner->seen, unique_env_key, env->key_len);
 }
 
 static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
@@ -67,7 +69,7 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
     }
 
     file_details_t file = open_file(path, args->dry_run);
-    if (file.contents == NULL || file.len <= 0) {
+    if (file.contents == NULL || file.len == 0) {
         return result;
     }
 
@@ -94,7 +96,7 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
 
     for (size_t i = 0; i < env_key_matches.count; ++i) {
         ++scanner->references;
-        append_unique_envs(&scanner->envs, &env_key_matches.items[i]);
+        append_unique_envs(scanner, &env_key_matches.items[i]);
     }
 
     free_env_key_matches(&env_key_matches);
@@ -115,12 +117,12 @@ static result_t handle_entry(const args_t *args, scanner_t *scanner, const char 
     char child[PATH_MAX];
     int n = snprintf(child, sizeof(child), "%s" PATH_SEP "%s", parent, name);
     if (n < 0 || (size_t)n >= sizeof(child)) {
-        return operation_error("path too long: '%s" PATH_SEP "%s'", parent, name);
+        return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
     struct stat st;
     if (stat(child, &st) != 0) {
-        return operation_error("cannot stat '%s'", child);
+        return operation_error("Unable to stat '%s'\n", child);
     }
 
     if (S_ISDIR(st.st_mode)) {
@@ -144,7 +146,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
         return operation_error("path too long: '%s'", path);
     }
 
-    WIN32_FIND_DYN_ARRTA fd;
+    WIN32_FIND_DATA fd;
     HANDLE h = FindFirstFile(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) {
         return operation_error("cannot open directory '%s'; aborting.", path);
@@ -186,14 +188,39 @@ static void merge_required_envs(args_t *args, const scanner_t *scanner) {
         return;
     }
 
+    // Seed a set with the keys already present (user-supplied required/ignored),
+    // then add each scanned key once. This keeps the merge O(scanned keys)
+    // instead of doing a linear scan of the growing required list per key.
+    set_t present = {0};
+
+    for (size_t i = 0; i < args->ignored.count; ++i) {
+        const char *key = args->ignored.items[i];
+        size_t len = strlen(key);
+        if (!set_contains(&present, key, len)) {
+            set_add(&present, (char *)key, len);
+        }
+    }
+
+    for (size_t i = 0; i < args->required.count; ++i) {
+        const char *key = args->required.items[i];
+        size_t len = strlen(key);
+        if (!set_contains(&present, key, len)) {
+            set_add(&present, (char *)key, len);
+        }
+    }
+
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         const char *key = scanner->envs.items[i];
-        if (list_contains(&args->ignored, key) || list_contains(&args->required, key)) {
+        size_t len = strlen(key);
+        if (set_contains(&present, key, len)) {
             continue;
         }
 
         DYN_ARR_APPEND(&args->required, key);
+        set_add(&present, (char *)key, len);
     }
+
+    set_free(&present);
 
     if (args->dry_run) {
         log_info("[INFO]");
@@ -260,5 +287,6 @@ void free_scanner(scanner_t *scanner) {
         free((void *)scanner->envs.items[i]);
     }
 
+    set_free(&scanner->seen);
     free_list(&scanner->envs);
 }

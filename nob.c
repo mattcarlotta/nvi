@@ -45,7 +45,7 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
     nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17");
 #elif defined(__APPLE__) || defined(__linux__)
     nob_cmd_append(cmd, "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic",
-                   "-std=c17");
+                   "-std=gnu17");
 #else
 #error "unsupported platform (expected Windows/MSVC, macOS, or Linux)"
 #endif

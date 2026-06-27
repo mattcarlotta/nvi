@@ -30,11 +30,6 @@ static const flag_entry flags[] = {
     {.name = "-v", .value = VERSION},  {.name = "--version", .value = VERSION},   {.name = "version", .value = VERSION},
 };
 
-void log_dry_run_message(void) {
-    log_info("[INFO]");
-    log_f(" Exited early because dry-run was enabled\n\n");
-}
-
 static inline flag_t get_flag(const char *arg) {
     size_t n = sizeof(flags) / sizeof(flags[0]);
 
@@ -47,7 +42,6 @@ static inline flag_t get_flag(const char *arg) {
     return UNKNOWN;
 }
 
-/* CHANGED: Returns a const char* because args->argv elements are now const */
 static const char *next_value(args_t *args) {
     if (args->i + 1 >= args->argc) {
         return NULL;
@@ -63,7 +57,6 @@ static const char *next_value(args_t *args) {
     return nxt;
 }
 
-/* CHANGED: Accepts const char **out to receive the read-only command-line string */
 static result_t require_value(args_t *args, const char *flag, const char **out) {
     *out = next_value(args);
     if (*out == NULL) {
@@ -126,7 +119,10 @@ static void log_flags(args_t *args) {
 static inline result_t validate_file_name(const char *f) {
     const char *last_slash = strrchr(f, '/');
     const char *last_backslash = strrchr(f, '\\');
-    const char *sep = last_slash > last_backslash ? last_slash : last_backslash;
+    const char *sep = last_slash;
+    if (last_backslash != NULL && (sep == NULL || last_backslash > sep)) {
+        sep = last_backslash;
+    }
     const char *base = sep ? sep + 1 : f;
 
     size_t base_len = strlen(base);
@@ -185,7 +181,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
         if (strcmp(args->argv[args->i], "--") == 0) {
             if (args->dry_run) {
                 log_warning("\n[WARNING]");
-                log_f(" Found a command with dry-run enabled; skipping.\n", stderr);
+                log_f(" Found a command with dry-run enabled; skipping.\n");
                 break;
             }
 

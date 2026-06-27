@@ -38,9 +38,7 @@ static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigne
         end++;
     }
 
-    for (size_t k = tokenizer->i; k < end; ++k) {
-        DYN_ARR_APPEND(value, tokenizer->file[k]);
-    }
+    DYN_ARR_APPEND_MANY(value, tokenizer->file + tokenizer->i, end - tokenizer->i);
 
     tokenizer->byte += end - tokenizer->i;
     tokenizer->i = end;
@@ -52,6 +50,7 @@ static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *tok
     char *copy = strndup(src, value->count);
     if (copy == NULL) {
         log_error("[ERROR] Unable to copy token value (not enough system memory?); aborting.");
+        fflush(stderr);
         abort();
     }
 
@@ -128,9 +127,9 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
 
     if (args->dry_run) {
         log_info("[INFO]");
-        log_f(" Tokenizing ", file->path);
+        log_f(" Tokenizing ");
         log_fi("%s", file->path);
-        log_f(" file...\n\n", file->path);
+        log_f(" file...\n\n");
     }
 
     token_t token = {.file = tokenizer->file_name};

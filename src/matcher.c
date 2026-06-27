@@ -107,6 +107,8 @@ static env_key_t extract_env_by_pattern(const file_details_t *file, const patter
             return (env_key_t){
                 .key = file->contents + start, .key_len = paren - start, .start = start, .end = paren + 1};
         }
+        default:
+            return (env_key_t){0};
     }
 }
 

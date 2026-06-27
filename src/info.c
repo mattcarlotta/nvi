@@ -1,4 +1,6 @@
 #include "info.h"
+#include "timer.h"
+#include "tty.h"
 #include "version.h"
 #include <stdio.h>
 
@@ -44,11 +46,11 @@ void log_help(void) {
           " \u2022 Nushell -> nu\n"
           " \u2022 Objective-C -> m, mm\n"
           " \u2022 OCaml -> ml, mli\n"
-          " \u2022 Pascal/Delphi -> ldpr, pas, pp\n"
+          " \u2022 Pascal/Delphi -> dpr, pas, pp\n"
           " \u2022 Perl -> pl, pm, t\n"
           " \u2022 PHP -> php\n"
           " \u2022 PowerShell -> ps1, psm1, psd1\n"
-          " \u2022 Python -> py, pyi\n"
+          " \u2022 Python -> py, pyi, pyw\n"
           " \u2022 R -> r\n"
           " \u2022 Ruby -> gemspec, rb, rake\n"
           " \u2022 Rust -> rs\n"
@@ -71,4 +73,25 @@ void log_version(void) {
     fprintf(stdout, "gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #endif
     fprintf(stdout, "%s\n", NVI_TARGET);
+}
+
+void log_time(double start) {
+    double elapsed_ms = (monotonic_seconds() - start) * 1000.0;
+    if (use_color) {
+        fprintf(stderr, CYAN);
+    }
+    fputs("[INFO]", stderr);
+    if (use_color) {
+        fprintf(stderr, RESET);
+    }
+
+    fputs(" Dry run completed in ", stderr);
+
+    if (elapsed_ms >= 1000.0) {
+        fprintf(stderr, "%.3fs", elapsed_ms / 1000.0);
+    } else {
+        fprintf(stderr, "%.1fms", elapsed_ms);
+    }
+
+    fputc('\n', stderr);
 }

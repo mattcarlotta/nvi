@@ -2,4 +2,4 @@
 
 int use_color;
 
-void tty_init(void) { use_color = isatty(STDOUT_FILENO); }
+void tty_init(void) { use_color = isatty(STDERR_FILENO); }

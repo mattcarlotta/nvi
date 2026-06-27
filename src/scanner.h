@@ -3,6 +3,7 @@
 #include "accessors.h"
 #include "arg.h"
 #include "list.h"
+#include "set.h"
 #include <stdbool.h>
 
 typedef struct {
@@ -10,6 +11,7 @@ typedef struct {
     size_t files_scanned;
     size_t references;
     list_t envs;
+    set_t seen;
     const file_ext_map_t *scan_exts;
 } scanner_t;
 
