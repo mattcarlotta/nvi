@@ -1,8 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 #include "dynarr.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 typedef struct {

@@ -1,9 +1,6 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <stdarg.h>
-#include <stdio.h>
-
 void log_f(const char *fmt, ...);
 
 void log_fi(const char *fmt, ...);
