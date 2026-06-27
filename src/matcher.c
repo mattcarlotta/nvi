@@ -7,17 +7,17 @@
 #include <stdio.h>
 #include <string.h>
 
-static inline const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t *i) {
+static inline const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t i) {
     for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
         const accessor_t *acc = &file_ext_match->accessors[a];
         size_t prefix_len = strlen(acc->prefix);
 
-        if (*i + prefix_len > file->len || strncmp(file->contents + *i, acc->prefix, prefix_len) != 0) {
+        if (i + prefix_len > file->len || strncmp(file->contents + i, acc->prefix, prefix_len) != 0) {
             continue;
         }
 
         // reject mid-identifier matches
-        if (*i > 0 && is_ident_char(file->contents[*i - 1]) && is_ident_char(acc->prefix[0])) {
+        if (i > 0 && is_ident_char(file->contents[i - 1]) && is_ident_char(acc->prefix[0])) {
             continue;
         }
 
@@ -27,11 +27,10 @@ static inline const accessor_t *get_accessor(const file_details_t *file, const f
     return NULL;
 }
 
-static env_key_t extract_env_by_pattern(const file_details_t *file, const pattern_t *kind, size_t start) {
-    switch (*kind) {
+static env_key_t extract_env_by_pattern(const file_details_t *file, pattern_t kind, size_t start) {
+    switch (kind) {
         case ident: {
             size_t end = start;
-
             while (end < file->len && is_ident_char(file->contents[end])) {
                 ++end;
             }
@@ -127,14 +126,14 @@ void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_ma
             continue;
         }
 
-        const accessor_t *acc = get_accessor(file, file_ext_match, &i);
+        const accessor_t *acc = get_accessor(file, file_ext_match, i);
         if (acc == NULL) {
             ++i;
             continue;
         }
 
         size_t prefix_len = strlen(acc->prefix);
-        env_key_t env = extract_env_by_pattern(file, &acc->pattern, i + prefix_len);
+        env_key_t env = extract_env_by_pattern(file, acc->pattern, i + prefix_len);
 
         bool valid_key = is_valid_key(env.key, env.key_len);
         if (!valid_key) {
