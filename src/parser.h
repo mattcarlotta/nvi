@@ -2,7 +2,6 @@
 #define PARSER_H
 #include "arg.h"
 #include "tokenizer.h"
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 

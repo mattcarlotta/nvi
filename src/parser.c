@@ -84,6 +84,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             }
         }
 
+        // skip storing comments
         if (token_key == NULL) {
             continue;
         }
@@ -93,6 +94,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             free(value.items);
             return operation_error("Unable to copy token value (not enough system memory?); aborting.\n");
         }
+
         if (value.count > 0) {
             memcpy(owned_value, value.items, value.count);
         }
