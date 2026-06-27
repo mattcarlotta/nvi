@@ -276,7 +276,7 @@ $ENV{DATABASE_URL}                # Perl
 #### Scan Usage Examples
 
 ```sh
-# reports matches ENVs in .mjs and .ts files, then exits
+# scans and reports matching ENVs in .mjs and .ts files, then exits
 nvi --scan mjs ts
 
 # collects scanned keys to be required and defined before 'npm run dev' command is emitted
@@ -346,7 +346,7 @@ make integration
 
 ## Security model
 
-`nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation. It will only parse the `.env` files you provide and writes ENVs to stdout.
+`nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation. It will only parse the `.env` files you provide and write ENVs to stdout.
 Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed. For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
