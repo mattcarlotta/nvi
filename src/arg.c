@@ -116,6 +116,12 @@ static void log_flags(args_t *args) {
     log_f("%s\n\n", get_format_name(args->format));
 }
 
+static void append_unique_param(list_t *list, const char *value) {
+    if (!list_contains(list, value)) {
+        DYN_ARR_APPEND(list, value);
+    }
+}
+
 static inline result_t validate_file_name(const char *f) {
     const char *last_slash = strrchr(f, '/');
     const char *last_backslash = strrchr(f, '\\');
@@ -206,7 +212,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                         return result;
                     }
 
-                    DYN_ARR_APPEND(&args->files, param);
+                    append_unique_param(&args->files, param);
                     param = next_value(args);
                 }
 
@@ -235,7 +241,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param != NULL) {
-                    DYN_ARR_APPEND(&args->ignored, param);
+                    append_unique_param(&args->ignored, param);
                     param = next_value(args);
                 }
 
@@ -249,7 +255,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param != NULL) {
-                    DYN_ARR_APPEND(&args->required, param);
+                    append_unique_param(&args->required, param);
                     param = next_value(args);
                 }
 

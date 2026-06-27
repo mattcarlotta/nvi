@@ -12,27 +12,29 @@
 #define SET_INIT_CAP 16
 
 typedef struct {
-    char *key;
+    const char *key;
     size_t len;
     uint64_t hash;
 } set_entry_t;
 
 typedef struct {
     set_entry_t *slots;
-    // total number of slots (always a power of two)
-    size_t capacity;
+    size_t capacity; // total number of slots (always a power of two)
     size_t count;
 } set_t;
+
+#define FNV_OFFSET 1469598103934665603ULL
+#define FNV_PRIME 1099511628211ULL
 
 // This is FNV-1a (Fowler-Noll-Vo), a non-cryptographic hash function.
 // The two magic constants are specified by the algorithm:
 // Magic Offset basis: 14695981039346656037 (decimal) -- this is the seed
 // Magic Prime: 1099511628211 -- chosen for good avalanche properties over 64-bit integers
 static inline uint64_t set_hash(const char *key, size_t len) {
-    uint64_t h = 1469598103934665603ULL;
+    uint64_t h = FNV_OFFSET;
     for (size_t i = 0; i < len; ++i) {
         h ^= (unsigned char)key[i];
-        h *= 1099511628211ULL;
+        h *= FNV_PRIME;
     }
     return h;
 }
@@ -111,7 +113,7 @@ static inline bool set_contains(const set_t *set, const char *key, size_t len) {
 
 // Adds a borrowed pointer. The caller must ensure the key is not already present
 // (e.g. via set_contains) and that it stays alive for the set's lifetime.
-static inline void set_add(set_t *set, char *key, size_t len) {
+static inline void set_add(set_t *set, const char *key, size_t len) {
     set_grow(set, 1);
 
     uint64_t hash = set_hash(key, len);
@@ -128,7 +130,7 @@ static inline void set_add(set_t *set, char *key, size_t len) {
     ++set->count;
 }
 
-static inline void set_free(set_t *set) {
+static inline void free_set(set_t *set) {
     free(set->slots);
     set->slots = NULL;
     set->capacity = 0;

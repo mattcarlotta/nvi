@@ -5,7 +5,6 @@
 #include "dynarr.h"
 #include "errors.h"
 #include "file.h"
-#include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
@@ -46,19 +45,18 @@ static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char
 }
 
 static void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
-    if (set_contains(&scanner->seen, env->key, env->key_len)) {
+    if (set_contains(&scanner->envs, env->key, env->key_len)) {
         return;
     }
 
-    char *unique_env_key = strndup(env->key, env->key_len);
-    if (unique_env_key == NULL) {
+    const char *new_key = strndup(env->key, env->key_len);
+    if (new_key == NULL) {
         log_error("[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
         fflush(stderr);
         abort();
     }
 
-    DYN_ARR_APPEND(&scanner->envs, unique_env_key);
-    set_add(&scanner->seen, unique_env_key, env->key_len);
+    set_add(&scanner->envs, new_key, env->key_len);
 }
 
 static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
@@ -194,7 +192,7 @@ static void merge_required_envs(args_t *args, const scanner_t *scanner) {
         const char *key = args->ignored.items[i];
         size_t len = strlen(key);
         if (!set_contains(&set, key, len)) {
-            set_add(&set, (char *)key, len);
+            set_add(&set, key, len);
         }
     }
 
@@ -202,22 +200,20 @@ static void merge_required_envs(args_t *args, const scanner_t *scanner) {
         const char *key = args->required.items[i];
         size_t len = strlen(key);
         if (!set_contains(&set, key, len)) {
-            set_add(&set, (char *)key, len);
+            set_add(&set, key, len);
         }
     }
 
-    for (size_t i = 0; i < scanner->envs.count; ++i) {
-        const char *key = scanner->envs.items[i];
-        size_t len = strlen(key);
-        if (set_contains(&set, key, len)) {
+    for (size_t i = 0; i < scanner->envs.capacity; ++i) {
+        const set_entry_t *entry = &scanner->envs.slots[i];
+        if (entry->key == NULL || set_contains(&set, entry->key, entry->len)) {
             continue;
         }
 
-        DYN_ARR_APPEND(&args->required, key);
-        set_add(&set, (char *)key, len);
+        DYN_ARR_APPEND(&args->required, entry->key);
     }
 
-    set_free(&set);
+    free_set(&set);
 
     if (args->dry_run) {
         log_info("[INFO]");
@@ -280,10 +276,8 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 }
 
 void free_scanner(scanner_t *scanner) {
-    for (size_t i = 0; i < scanner->envs.count; ++i) {
-        free((void *)scanner->envs.items[i]);
+    for (size_t i = 0; i < scanner->envs.capacity; ++i) {
+        free((void *)scanner->envs.slots[i].key);
     }
-
-    set_free(&scanner->seen);
-    free_list(&scanner->envs);
+    free_set(&scanner->envs);
 }
