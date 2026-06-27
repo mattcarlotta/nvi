@@ -30,7 +30,7 @@ static const char *git_commit(void) {
     }
 
     while (sb.count > 0 && (sb.items[sb.count - 1] == '\n' || sb.items[sb.count - 1] == '\r')) {
-        sb.count--;
+        --sb.count;
     }
     nob_sb_append_null(&sb);
 
