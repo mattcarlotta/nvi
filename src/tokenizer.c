@@ -35,7 +35,7 @@ static int peek(const tokenizer_t *tokenizer, size_t offset) {
 static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigned char *set, size_t set_len) {
     size_t end = tokenizer->i;
     while (end < tokenizer->file_len && memchr(set, (unsigned char)tokenizer->file[end], set_len) == NULL) {
-        end++;
+        ++end;
     }
 
     DYN_ARR_APPEND_MANY(value, tokenizer->file + tokenizer->i, end - tokenizer->i);
@@ -98,7 +98,8 @@ static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token
     }
 
     append_token(tokenizer, token);
-    return (result_t){.ok = true, .code = 0};
+
+    return (result_t){.ok = true};
 }
 
 static size_t log_token_line(const token_t *token) {
@@ -139,23 +140,24 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
     int current;
     while ((current = peek(tokenizer, 0)) != -1) {
         switch (current) {
-            case NULL_CHAR:
+            case NULL_CHAR: {
                 skip_byte(tokenizer, 1);
                 break;
-
-            case LINE_DELIMITER:
+            }
+            case LINE_DELIMITER: {
                 if (token.key != NULL) {
                     result = validate_and_append_token(tokenizer, &token, &value);
                     if (!result.ok) {
                         goto done;
                     }
                 }
+
                 value.count = 0;
                 ++tokenizer->line;
                 skip_byte(tokenizer, 1);
                 tokenizer->byte = 1;
                 break;
-
+            }
             case ASSIGN_OP: {
                 // '=' inside a value is literal
                 if (token.key != NULL) {
@@ -165,16 +167,16 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 }
 
                 // trim surrounding spaces/tabs off the pending key
-                size_t lo = 0;
-                size_t hi = value.count;
-                while (lo < hi && (value.items[lo] == SPACE || value.items[lo] == TAB)) {
-                    ++lo;
+                size_t start = 0;
+                size_t end = value.count;
+                while (start < end && (value.items[start] == SPACE || value.items[start] == TAB)) {
+                    ++start;
                 }
-                while (hi > lo && (value.items[hi - 1] == SPACE || value.items[hi - 1] == TAB)) {
-                    --hi;
+                while (end > start && (value.items[end - 1] == SPACE || value.items[end - 1] == TAB)) {
+                    --end;
                 }
 
-                if (hi - lo == 0) {
+                if (end - start == 0) {
                     log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
                               tokenizer->line, tokenizer->byte);
                     log_f("A value assignment ('=') was found without a key name.\n");
@@ -195,18 +197,18 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     goto done;
                 }
 
-                token.key = strndup(value.items + lo, hi - lo);
+                token.key = strndup(value.items + start, end - start);
                 if (token.key == NULL) {
                     result.ok = false;
                     result.code = 1;
                     goto done;
                 }
+
                 value.count = 0;
                 // skip '='
                 skip_byte(tokenizer, 1);
                 break;
             }
-
             case HASH:
                 // hash inside a literal
                 if (token.key != NULL) {
@@ -221,7 +223,6 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 append_token(tokenizer, &token);
                 value.count = 0;
                 break;
-
             case DOLLAR_SIGN: {
                 // dollar sign not followed by '{' is literal
                 if (peek(tokenizer, 1) != OPEN_BRACE) {
@@ -246,6 +247,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                               tokenizer->line, tokenizer->byte);
                     log_error("The %s key has an unterminated value interpolation.\n",
                               token.key ? token.key : "(none)");
+
                     size_t prefix_len = log_token_line(&token);
                     log_f("${%.*s\n", (int)value.count, value.items);
 
@@ -289,10 +291,10 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     skip_byte(tokenizer, 1);
                     tokenizer->byte = 1;
                 }
+
                 value.count = 0;
                 break;
             }
-
             case BACK_SLASH: {
                 int n = peek(tokenizer, 1);
                 if (n != -1 && n != LINE_DELIMITER) {
@@ -301,7 +303,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     continue;
                 }
 
-                // line continuation: commit the current segment and keep tokenizing
+                // a line continuation: commit the current segment and keep tokenizing
                 // the same token, so '$', '#', and '=' on continuation lines are
                 // handled normally by the main loop
                 if (value.count != 0) {
@@ -315,7 +317,6 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 tokenizer->byte = 1;
                 break;
             }
-
             default:
                 scan_until(tokenizer, &value, LITERAL_STOPS, LITERAL_STOPS_LEN);
                 break;
@@ -404,7 +405,7 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
                 char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
 
                 log_f("\n      %s\u2500 ", sub_stem_sym);
-                log_info("%s \u21A0 ", value_kind_name(v->kind));
+                log_info("%s \u21A0 ", get_value_kind_name(v->kind));
                 log_f("%.*s", (int)v->value_len, v->value);
                 log_comment(" [%zu:%zu]", v->line, v->byte);
             }

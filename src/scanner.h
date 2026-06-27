@@ -4,7 +4,6 @@
 #include "arg.h"
 #include "list.h"
 #include "set.h"
-#include <stdbool.h>
 
 typedef struct {
     size_t dirs_scanned;

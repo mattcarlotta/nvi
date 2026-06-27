@@ -188,39 +188,36 @@ static void merge_required_envs(args_t *args, const scanner_t *scanner) {
         return;
     }
 
-    // Seed a set with the keys already present (user-supplied required/ignored),
-    // then add each scanned key once. This keeps the merge O(scanned keys)
-    // instead of doing a linear scan of the growing required list per key.
-    set_t present = {0};
+    set_t set = {0};
 
     for (size_t i = 0; i < args->ignored.count; ++i) {
         const char *key = args->ignored.items[i];
         size_t len = strlen(key);
-        if (!set_contains(&present, key, len)) {
-            set_add(&present, (char *)key, len);
+        if (!set_contains(&set, key, len)) {
+            set_add(&set, (char *)key, len);
         }
     }
 
     for (size_t i = 0; i < args->required.count; ++i) {
         const char *key = args->required.items[i];
         size_t len = strlen(key);
-        if (!set_contains(&present, key, len)) {
-            set_add(&present, (char *)key, len);
+        if (!set_contains(&set, key, len)) {
+            set_add(&set, (char *)key, len);
         }
     }
 
     for (size_t i = 0; i < scanner->envs.count; ++i) {
         const char *key = scanner->envs.items[i];
         size_t len = strlen(key);
-        if (set_contains(&present, key, len)) {
+        if (set_contains(&set, key, len)) {
             continue;
         }
 
         DYN_ARR_APPEND(&args->required, key);
-        set_add(&present, (char *)key, len);
+        set_add(&set, (char *)key, len);
     }
 
-    set_free(&present);
+    set_free(&set);
 
     if (args->dry_run) {
         log_info("[INFO]");

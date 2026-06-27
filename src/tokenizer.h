@@ -43,7 +43,7 @@ typedef struct {
     token_list_t tokens;
 } tokenizer_t;
 
-static inline const char *value_kind_name(value_kind_t kind) {
+static inline const char *get_value_kind_name(value_kind_t kind) {
     switch (kind) {
         case LITERAL:
             return "literal value";
