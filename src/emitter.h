@@ -3,8 +3,7 @@
 
 #include "arg.h"
 #include "parser.h"
-#include "result.h"
 
-result_t run_emitter(const args_t *args, const env_map_t *env_map);
+void run_emitter(const args_t *args, const env_map_t *env_map);
 
 #endif

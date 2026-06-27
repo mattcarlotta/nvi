@@ -2,16 +2,7 @@
 #define FORMAT_H
 #include <string.h>
 
-typedef enum { FORMAT_NULL, FORMAT_POWERSHELL, FORMAT_UNKNOWN } format_t;
-
-typedef struct {
-    const char *name;
-    format_t value;
-} formats_t;
-
-static const formats_t formats[] = {{.name = "nul", .value = FORMAT_NULL},
-                                    {.name = "powershell", .value = FORMAT_POWERSHELL},
-                                    {.name = "unknown format", .value = FORMAT_UNKNOWN}};
+typedef enum { FORMAT_POWERSHELL, FORMAT_NULL, FORMAT_UNKNOWN } format_t;
 
 static inline format_t get_default_format(void) {
 #ifdef _WIN32
@@ -21,21 +12,26 @@ static inline format_t get_default_format(void) {
 #endif
 }
 
-static inline const char *format_name(const format_t f) {
-    if (f < 0 || f >= 3) {
-        return "unknown";
+static inline const char *get_format_name(const format_t f) {
+    switch (f) {
+        case FORMAT_POWERSHELL: {
+            return "powershell";
+        }
+        case FORMAT_NULL: {
+            return "nul";
+        }
+        default:
+            return "unknown";
     }
-
-    return formats[f].name;
 }
 
 static inline format_t get_format(const char *arg) {
-    size_t n = sizeof(formats) / sizeof(formats[0]);
+    if (strcmp(arg, "powershell")) {
+        return FORMAT_POWERSHELL;
+    }
 
-    for (size_t i = 0; i < n; ++i) {
-        if (strcmp(arg, formats[i].name) == 0) {
-            return formats[i].value;
-        }
+    if (strcmp(arg, "nul")) {
+        return FORMAT_NULL;
     }
 
     return FORMAT_UNKNOWN;

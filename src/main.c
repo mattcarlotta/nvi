@@ -58,7 +58,7 @@ int main(int argc, const char **argv) {
         goto done;
     }
 
-    result = run_emitter(&args, &env_map);
+    run_emitter(&args, &env_map);
 
     goto done;
 

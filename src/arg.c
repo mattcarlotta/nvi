@@ -47,23 +47,23 @@ static const char *next_value(args_t *args) {
         return NULL;
     }
 
-    const char *nxt = args->argv[args->i + 1];
-    if (nxt[0] == DASH) {
+    const char *next_value = args->argv[args->i + 1];
+    if (next_value[0] == DASH) {
         return NULL;
     }
 
     ++args->i;
 
-    return nxt;
+    return next_value;
 }
 
-static result_t require_value(args_t *args, const char *flag, const char **out) {
-    *out = next_value(args);
-    if (*out == NULL) {
-        return usage_error("The '%s' flag requires at least one argument", flag);
+static void require_value(args_t *args, const char *flag, const char **param) {
+    *param = next_value(args);
+    if (*param == NULL) {
+        log_error("The '%s' flag requires at least one argument", flag);
+        fflush(stderr);
+        abort();
     }
-
-    return (result_t){.ok = true};
 }
 
 static void log_items(const char *label, const list_t *list, const char *sep) {
@@ -113,7 +113,7 @@ static void log_flags(args_t *args) {
     log_ext_items("scan extensions", &args->scan_exts, ", ");
     log_f("\n    \u2022");
     log_info(" format: ");
-    log_f("%s\n\n", format_name(args->format));
+    log_f("%s\n\n", get_format_name(args->format));
 }
 
 static inline result_t validate_file_name(const char *f) {
@@ -123,8 +123,8 @@ static inline result_t validate_file_name(const char *f) {
     if (last_backslash != NULL && (sep == NULL || last_backslash > sep)) {
         sep = last_backslash;
     }
-    const char *base = sep ? sep + 1 : f;
 
+    const char *base = sep ? sep + 1 : f;
     size_t base_len = strlen(base);
     if (!((strcmp(base, ".env") == 0) || (strncmp(base, ".env.", 5) == 0) ||
           (base_len >= 4 && strcmp(base + base_len - 4, ".env") == 0))) {
@@ -137,7 +137,6 @@ static inline result_t validate_file_name(const char *f) {
 
     const char *p = f;
     while (*p) {
-        size_t component_len;
         const char *next_slash = strchr(p, '/');
         const char *next_backslash = strchr(p, '\\');
 
@@ -150,15 +149,14 @@ static inline result_t validate_file_name(const char *f) {
             next_sep = next_slash < next_backslash ? next_slash : next_backslash;
         }
 
-        component_len = next_sep ? (size_t)(next_sep - p) : strlen(p);
-
+        size_t component_len = next_sep ? (size_t)(next_sep - p) : strlen(p);
         if (component_len == 2 && strncmp(p, "..", 2) == 0) {
             return operation_error("The files flag param '%s' may not escape the current directory\n", f);
         }
 
         p += component_len;
         if (*p == FORWARD_SLASH || *p == BACK_SLASH) {
-            p++;
+            ++p;
         }
     }
 
@@ -197,10 +195,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case FILES: {
                 const char *param;
-                result = require_value(args, "files", &param);
-                if (!result.ok) {
-                    return result;
-                }
+                require_value(args, "files", &param);
 
                 while (param != NULL) {
                     result = validate_file_name(param);
@@ -216,10 +211,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case FORMAT: {
                 const char *param;
-                result = require_value(args, "format", &param);
-                if (!result.ok) {
-                    return result;
-                }
+                require_value(args, "format", &param);
 
                 const format_t format = get_format(param);
                 if (format == FORMAT_UNKNOWN) {
@@ -231,10 +223,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case IGNORED: {
                 const char *param;
-                result = require_value(args, "ignored", &param);
-                if (!result.ok) {
-                    return result;
-                }
+                require_value(args, "ignored", &param);
 
                 while (param != NULL) {
                     DYN_ARR_APPEND(&args->ignored, param);
@@ -245,10 +234,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case REQUIRED: {
                 const char *param;
-                result = require_value(args, "required", &param);
-                if (!result.ok) {
-                    return result;
-                }
+                require_value(args, "required", &param);
 
                 while (param != NULL) {
                     DYN_ARR_APPEND(&args->required, param);
@@ -259,10 +245,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case SCAN: {
                 const char *param;
-                result = require_value(args, "scan", &param);
-                if (!result.ok) {
-                    return result;
-                }
+                require_value(args, "scan", &param);
 
                 while (param != NULL) {
                     const ext_entry *entry = find_ext(param);
