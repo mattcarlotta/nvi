@@ -47,23 +47,23 @@ static const char *next_value(args_t *args) {
         return NULL;
     }
 
-    const char *next_value = args->argv[args->i + 1];
-    if (next_value[0] == DASH) {
+    const char *nxt = args->argv[args->i + 1];
+    if (nxt[0] == DASH) {
         return NULL;
     }
 
     ++args->i;
 
-    return next_value;
+    return nxt;
 }
 
-static void require_value(args_t *args, const char *flag, const char **param) {
+static result_t require_value(args_t *args, const char *flag, const char **param) {
     *param = next_value(args);
     if (*param == NULL) {
-        log_error("The '%s' flag requires at least one argument", flag);
-        fflush(stderr);
-        abort();
+        return usage_error("The '%s' flag requires at least one argument", flag);
     }
+
+    return (result_t){.ok = true};
 }
 
 static void log_items(const char *label, const list_t *list, const char *sep) {
@@ -195,7 +195,10 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case FILES: {
                 const char *param;
-                require_value(args, "files", &param);
+                result = require_value(args, "files", &param);
+                if (!result.ok) {
+                    return result;
+                }
 
                 while (param != NULL) {
                     result = validate_file_name(param);
@@ -211,7 +214,10 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case FORMAT: {
                 const char *param;
-                require_value(args, "format", &param);
+                result = require_value(args, "format", &param);
+                if (!result.ok) {
+                    return result;
+                }
 
                 const format_t format = get_format(param);
                 if (format == FORMAT_UNKNOWN) {
@@ -223,7 +229,10 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case IGNORED: {
                 const char *param;
-                require_value(args, "ignored", &param);
+                result = require_value(args, "ignored", &param);
+                if (!result.ok) {
+                    return result;
+                }
 
                 while (param != NULL) {
                     DYN_ARR_APPEND(&args->ignored, param);
@@ -234,7 +243,10 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case REQUIRED: {
                 const char *param;
-                require_value(args, "required", &param);
+                result = require_value(args, "required", &param);
+                if (!result.ok) {
+                    return result;
+                }
 
                 while (param != NULL) {
                     DYN_ARR_APPEND(&args->required, param);
@@ -245,7 +257,10 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             }
             case SCAN: {
                 const char *param;
-                require_value(args, "scan", &param);
+                result = require_value(args, "scan", &param);
+                if (!result.ok) {
+                    return result;
+                }
 
                 while (param != NULL) {
                     const ext_entry *entry = find_ext(param);
