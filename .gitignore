@@ -4,6 +4,7 @@ zig-out/
 build/
 build-*/
 docgen-tmp/
+compile_commands.json
 
 # Compiled objects and intermediates
 *.o

@@ -6,8 +6,10 @@
 
 #ifdef _WIN32
 #define OUT_BIN OUT ".exe"
+#define BIN_EXT ".exe"
 #else
 #define OUT_BIN OUT
+#define BIN_EXT ""
 #endif
 
 static const char *git_commit(void) {
@@ -51,7 +53,10 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
 #endif
 }
 
-static bool append_sources(Nob_Cmd *cmd) {
+// Appends every src/*.c to the command. When `except` is non-NULL, the file
+// with that base name (e.g. "main.c") is skipped, which lets the test build
+// link the library code without colliding with the binary's own main().
+static bool append_sources_except(Nob_Cmd *cmd, const char *except) {
     Nob_File_Paths paths = {0};
     if (!nob_read_entire_dir("src", &paths)) {
         return false;
@@ -69,12 +74,18 @@ static bool append_sources(Nob_Cmd *cmd) {
             continue;
         }
 
+        if (except != NULL && strcmp(name, except) == 0) {
+            continue;
+        }
+
         nob_cmd_append(cmd, nob_temp_sprintf("src/%s", name));
     }
 
     nob_da_free(paths);
     return true;
 }
+
+static bool append_sources(Nob_Cmd *cmd) { return append_sources_except(cmd, NULL); }
 
 static bool delete_entry(Nob_Walk_Entry e) { return nob_delete_file(e.path); }
 
@@ -132,6 +143,83 @@ static bool build_release(void) {
 #endif
 
     return true;
+}
+
+// Builds a single Unity test executable: the test source + the vendored Unity
+// runtime + every src/*.c except main.c. The compiler and base flags come from
+// add_common_flags() so the platform handling matches the dev/release builds.
+static bool build_one_test(const char *test_src, const char *out_path) {
+    Nob_Cmd cmd = {0};
+    add_common_flags(&cmd, "test");
+
+#if defined(_WIN32) && defined(_MSC_VER)
+    nob_cmd_append(&cmd, "/Isrc/tests/unity", "/Zi", "/Od", nob_temp_sprintf("/Fe:%s", out_path));
+#else
+    nob_cmd_append(&cmd, "-Itests/unity", "-g", "-O0");
+#if defined(__APPLE__) || defined(__linux__)
+    // Sanitize unit tests on the dev platforms; MSVC is left unsanitized.
+    nob_cmd_append(&cmd, "-fsanitize=address,undefined", "-fno-omit-frame-pointer");
+#endif
+    nob_cmd_append(&cmd, "-o", out_path);
+#endif
+
+    nob_cmd_append(&cmd, test_src, "tests/unity/unity.c");
+
+    if (!append_sources_except(&cmd, "main.c")) {
+        return false;
+    }
+
+    return nob_cmd_run(&cmd);
+}
+
+// Discovers tests/test_*.c, builds each into build/tests/, runs them, and
+// aggregates the result. Each suite returns its failure count as an exit code,
+// so a nonzero exit (caught by nob_cmd_run) marks the suite as failed.
+static bool run_tests(void) {
+    if (!nob_mkdir_if_not_exists("build") || !nob_mkdir_if_not_exists("build/tests")) {
+        return false;
+    }
+
+    Nob_File_Paths paths = {0};
+    if (!nob_read_entire_dir("tests", &paths)) {
+        return false;
+    }
+
+    size_t total = 0;
+    size_t passed = 0;
+
+    for (size_t i = 0; i < paths.count; ++i) {
+        const char *name = paths.items[i];
+        size_t len = strlen(name);
+
+        if (strncmp(name, "test_", 5) != 0 || len < 3 || strcmp(name + len - 2, ".c") != 0) {
+            continue;
+        }
+
+        const char *stem = nob_temp_sprintf("%.*s", (int)(len - 2), name);
+        const char *src = nob_temp_sprintf("tests/%s", name);
+        const char *out = nob_temp_sprintf("build/tests/%s" BIN_EXT, stem);
+
+        ++total;
+
+        if (!build_one_test(src, out)) {
+            nob_log(NOB_ERROR, "failed to build %s", stem);
+            continue;
+        }
+
+        Nob_Cmd run = {0};
+        nob_cmd_append(&run, out);
+        if (nob_cmd_run(&run)) {
+            ++passed;
+        } else {
+            nob_log(NOB_ERROR, "%s reported failures", stem);
+        }
+    }
+
+    nob_da_free(paths);
+
+    nob_log(passed == total ? NOB_INFO : NOB_ERROR, "test suites: %zu/%zu passed", passed, total);
+    return passed == total;
 }
 
 static bool install_binary(void) {
@@ -195,8 +283,14 @@ int main(int argc, char **argv) {
         if (!timed("release", OUT_BIN, build_release)) {
             return 1;
         }
+    } else if (strcmp(subcmd, "test") == 0) {
+        if (!run_tests()) {
+            return 1;
+        }
     } else if (strcmp(subcmd, "clean") == 0) {
         nob_delete_file(OUT_BIN);
+        remove_dir_recursively("build/tests");
+        remove_dir_recursively("build");
 #ifdef __APPLE__
         remove_dir_recursively(OUT_BIN ".dSYM");
 #endif
