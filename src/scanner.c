@@ -181,7 +181,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     return result;
 }
 
-static void merge_required_envs(args_t *args, const scanner_t *scanner) {
+void merge_required_envs(args_t *args, const scanner_t *scanner) {
     if (scanner->envs.count == 0) {
         return;
     }

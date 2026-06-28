@@ -12,3 +12,9 @@ If:
   PathMatch: src/.*\.c
 CompileFlags:
   Add: [-Wall, -Wextra, -Wpedantic, -Werror]
+
+---
+If:
+  PathMatch: nob\.c
+Diagnostics:
+  Suppress: [c23-extensions, variadic-macro-arguments-omitted]
