@@ -35,13 +35,13 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-static const file_ext_t *get_file_accessors(const scanner_t *scanner, const char *name) {
+static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
         return NULL;
     }
 
-    return get_file_ext(scanner->scan_exts, dot + 1);
+    return get_file_ext(map, dot + 1);
 }
 
 static void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
@@ -61,7 +61,7 @@ static void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
 
 static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
     result_t result = {.ok = true, .code = 0};
-    const file_ext_t *file_ext_match = get_file_accessors(scanner, name);
+    const file_ext_t *file_ext_match = get_file_accessors(&args->scan_exts, name);
     if (file_ext_match == NULL) {
         return result;
     }

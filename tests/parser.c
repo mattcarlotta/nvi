@@ -1,5 +1,6 @@
-#include "arg.h"
 #include "parser.h"
+#include "arg.h"
+#include "capture.h"
 #include "tokenizer.h"
 #include "unity.h"
 #include <stdlib.h>
@@ -17,6 +18,25 @@ static void set_env(const char *k, const char *v) { setenv(k, v, 1); }
 static void clear_env(const char *k) { unsetenv(k); }
 #endif
 
+typedef struct {
+    const args_t *args;
+    token_list_t *tl;
+    env_map_t *envs;
+    result_t result;
+} parser_ctx_t;
+
+static void call_parser(void *ctx) {
+    parser_ctx_t *c = ctx;
+    c->result = run_parser(c->args, c->tl, c->envs);
+}
+
+static result_t parser_silent(const args_t *args, token_list_t *tl, env_map_t *envs) {
+    parser_ctx_t ctx = {.args = args, .tl = tl, .envs = envs};
+    char sink[1];
+    capture_fd(stderr, sink, sizeof(sink), call_parser, &ctx);
+    return ctx.result;
+}
+
 static const char *lookup(const env_map_t *m, const char *key) {
     for (size_t i = 0; i < m->count; ++i) {
         if (strcmp(m->items[i].key, key) == 0) {
@@ -26,7 +46,6 @@ static const char *lookup(const env_map_t *m, const char *key) {
     return NULL;
 }
 
-// Convenience: build a one-value token.
 static token_t make_token(const char *key, value_kind_t kind, const char *value, value_token_t *slot) {
     *slot = (value_token_t){.value = (char *)value, .value_len = strlen(value), .kind = kind, .line = 1, .byte = 1};
     token_t tok = {.key = (char *)key, .file = "testp.env"};
@@ -35,8 +54,6 @@ static token_t make_token(const char *key, value_kind_t kind, const char *value,
     tok.values.capacity = 1;
     return tok;
 }
-
-// --- happy paths ---
 
 static void test_sets_normalized_key_value(void) {
     value_token_t v;
@@ -89,7 +106,6 @@ static void test_resolves_interpolation_from_environment(void) {
 }
 
 static void test_resolves_interpolation_from_previous_env(void) {
-    // namespaced so getenv() (checked first) does not shadow the map
     clear_env("NVI_TEST_FOO");
 
     value_token_t vfoo, vbaz;
@@ -121,19 +137,17 @@ static void test_required_env_present_passes(void) {
     args.command.count = 1;
 
     env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("ok", lookup(&envs, "REQUIRED"));
     free_envs(&envs);
 }
 
-// --- error paths ---
-
 static void test_errors_when_nothing_parses(void) {
     token_list_t tl = {0};
     args_t args = {0};
     env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_FALSE(r.ok);
     free_envs(&envs);
 }
@@ -152,7 +166,7 @@ static void test_errors_when_required_env_missing(void) {
     args.command.count = 1;
 
     env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_FALSE(r.ok);
     free_envs(&envs);
 }

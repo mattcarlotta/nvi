@@ -1,13 +1,12 @@
+#include "matcher.h"
 #include "accessors.h"
 #include "file.h"
-#include "matcher.h"
 #include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-// Build a file_ext_t from the real accessor table for an extension.
 static file_ext_t ext_for(const char *ext) {
     const ext_entry *e = find_ext(ext);
     TEST_ASSERT_NOT_NULL(e);
@@ -15,7 +14,6 @@ static file_ext_t ext_for(const char *ext) {
     return fe;
 }
 
-// Build a borrowed file_details_t over a literal (matcher never mutates it).
 static file_details_t file_over(const char *src) {
     file_details_t f = {.contents = (char *)src, .path = "test", .len = strlen(src)};
     return f;
@@ -25,8 +23,6 @@ static void expect_key(const env_key_match_t *m, const char *want) {
     TEST_ASSERT_EQUAL_size_t(strlen(want), m->key_len);
     TEST_ASSERT_EQUAL_STRING_LEN(want, m->key, m->key_len);
 }
-
-// --- ident pattern with location (process.env.API_KEY at byte 23) ---
 
 static void test_ident_key_with_location(void) {
     file_ext_t fe = ext_for("ts");
@@ -43,8 +39,6 @@ static void test_ident_key_with_location(void) {
     free_env_key_matches(&matches);
 }
 
-// --- bracket-quoted pattern with location (byte points at the key, 24) ---
-
 static void test_bracket_quoted_key_with_location(void) {
     file_ext_t fe = ext_for("ts");
     file_details_t f = file_over("const k = process.env[\"API_KEY\"];\n");
@@ -59,8 +53,6 @@ static void test_bracket_quoted_key_with_location(void) {
 
     free_env_key_matches(&matches);
 }
-
-// --- line/byte tracking across multiple quoted keys (python) ---
 
 static void test_tracks_lines_across_quoted_keys(void) {
     file_ext_t fe = ext_for("py");
@@ -80,8 +72,6 @@ static void test_tracks_lines_across_quoted_keys(void) {
     free_env_key_matches(&matches);
 }
 
-// --- dynamic (non-literal) keys are skipped ---
-
 static void test_skips_dynamic_keys(void) {
     file_ext_t fe = ext_for("py");
     file_details_t f = file_over("os.getenv(name) os.getenv(\"REAL\")\n");
@@ -94,8 +84,6 @@ static void test_skips_dynamic_keys(void) {
 
     free_env_key_matches(&matches);
 }
-
-// --- prefixes that begin mid-identifier are skipped ---
 
 static void test_skips_mid_identifier_prefix(void) {
     file_ext_t fe = ext_for("ts");
@@ -110,8 +98,6 @@ static void test_skips_mid_identifier_prefix(void) {
     free_env_key_matches(&matches);
 }
 
-// --- braced pattern strips optional surrounding quotes (perl) ---
-
 static void test_braced_strips_optional_quotes(void) {
     file_ext_t fe = ext_for("pl");
     file_details_t f = file_over("$ENV{FOO} $ENV{'BAR'}\n");
@@ -125,8 +111,6 @@ static void test_braced_strips_optional_quotes(void) {
 
     free_env_key_matches(&matches);
 }
-
-// --- a few language tables (from accessors_test.zig) ---
 
 static void test_python_getenv_and_environ_forms(void) {
     file_ext_t fe = ext_for("py");

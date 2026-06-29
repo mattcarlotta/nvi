@@ -5,8 +5,6 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-// --- find_ext: known and unknown extensions ---
-
 static void test_find_ext_known(void) {
     const ext_entry *ts = find_ext("ts");
     TEST_ASSERT_NOT_NULL(ts);
@@ -19,9 +17,6 @@ static void test_find_ext_unknown_is_null(void) {
     TEST_ASSERT_NULL(find_ext(""));
     TEST_ASSERT_NULL(find_ext("txt"));
 }
-
-// --- shared tables: several extensions resolve to the same accessor array ---
-// Mirrors the "shared tables behave identically" cases in accessors_test.zig.
 
 static void test_js_family_shares_one_table(void) {
     const ext_entry *js = find_ext("js");
@@ -54,10 +49,10 @@ static void test_file_ext_map_round_trip(void) {
     TEST_ASSERT_NOT_NULL(ts);
     file_ext_append(&map, ts);
 
-    const file_ext_t *got = get_file_ext(&map, "ts");
-    TEST_ASSERT_NOT_NULL(got);
-    TEST_ASSERT_EQUAL_STRING("ts", got->ext);
-    TEST_ASSERT_EQUAL_PTR(ts->accessors, got->accessors);
+    const file_ext_t *file_ext = get_file_ext(&map, "ts");
+    TEST_ASSERT_NOT_NULL(file_ext);
+    TEST_ASSERT_EQUAL_STRING("ts", file_ext->ext);
+    TEST_ASSERT_EQUAL_PTR(ts->accessors, file_ext->accessors);
 
     TEST_ASSERT_NULL(get_file_ext(&map, "py"));
 

@@ -1,14 +1,13 @@
-#include "arg.h"
-#include "file.h"
 #include "tokenizer.h"
+#include "arg.h"
+#include "capture.h"
+#include "file.h"
 #include "unity.h"
 #include <string.h>
 
 void setUp(void) {}
 void tearDown(void) {}
 
-// Run the tokenizer over an in-memory file. The caller owns `out` and must
-// free it with free_tokenizer().
 static result_t tokenize(const char *src, tokenizer_t *out) {
     args_t args = {0};
     file_details_t file = {.contents = (char *)src, .path = "test.env", .len = strlen(src)};
@@ -20,7 +19,23 @@ static const value_token_t *val(const tokenizer_t *t, size_t tok, size_t v) {
     return &t->tokens.items[tok].values.items[v];
 }
 
-// --- happy paths ---
+typedef struct {
+    const char *src;
+    tokenizer_t *out;
+    result_t result;
+} tokenize_ctx_t;
+
+static void call_tokenize(void *ctx) {
+    tokenize_ctx_t *c = ctx;
+    c->result = tokenize(c->src, c->out);
+}
+
+static result_t tokenize_capture_fd(const char *src, tokenizer_t *out) {
+    tokenize_ctx_t ctx = {.src = src, .out = out};
+    char sink[1];
+    capture_fd(stderr, sink, sizeof(sink), call_tokenize, &ctx);
+    return ctx.result;
+}
 
 static void test_simple_key_value(void) {
     tokenizer_t t;
@@ -124,42 +139,42 @@ static void test_parses_interpolated_value(void) {
 
 static void test_errors_on_unterminated_interpolation(void) {
     tokenizer_t t;
-    result_t r = tokenize("KEY=${OTHER\n", &t);
+    result_t r = tokenize_capture_fd("KEY=${OTHER\n", &t);
     TEST_ASSERT_FALSE(r.ok);
     free_tokenizer(&t);
 }
 
 static void test_errors_on_unterminated_interpolation_eof(void) {
     tokenizer_t t;
-    result_t r = tokenize("KEY=${OTHER", &t);
+    result_t r = tokenize_capture_fd("KEY=${OTHER", &t);
     TEST_ASSERT_FALSE(r.ok);
     free_tokenizer(&t);
 }
 
 static void test_errors_when_no_tokens_generated(void) {
     tokenizer_t t;
-    result_t r = tokenize("novalue\n", &t);
+    result_t r = tokenize_capture_fd("novalue\n", &t);
     TEST_ASSERT_FALSE(r.ok);
     free_tokenizer(&t);
 }
 
 static void test_errors_on_empty_key(void) {
     tokenizer_t t;
-    result_t r = tokenize("=abc123\n", &t);
+    result_t r = tokenize_capture_fd("=abc123\n", &t);
     TEST_ASSERT_FALSE(r.ok);
     free_tokenizer(&t);
 }
 
 static void test_errors_on_whitespace_only_key(void) {
     tokenizer_t t;
-    result_t r = tokenize("   =value\n", &t);
+    result_t r = tokenize_capture_fd("   =value\n", &t);
     TEST_ASSERT_FALSE(r.ok);
     free_tokenizer(&t);
 }
 
 static void test_errors_on_empty_interpolation_key(void) {
     tokenizer_t t;
-    result_t r = tokenize("KEY=abc${}123\n", &t);
+    result_t r = tokenize_capture_fd("KEY=abc${}123\n", &t);
     TEST_ASSERT_FALSE(r.ok);
     free_tokenizer(&t);
 }

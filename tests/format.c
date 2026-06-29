@@ -4,11 +4,6 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-// Mirrors the parsing half of formatter_test.zig. The actual pair rendering
-// ($env:K = '...', K=value) now lives in the emitter, which writes straight to
-// stdout, so that behavior is covered by the integration (golden) tests rather
-// than here.
-
 static void test_get_format_known_values(void) {
     TEST_ASSERT_EQUAL_INT(FORMAT_POWERSHELL, get_format("powershell"));
     TEST_ASSERT_EQUAL_INT(FORMAT_NULL, get_format("nul"));
