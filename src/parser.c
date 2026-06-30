@@ -24,7 +24,7 @@ env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
     return NULL;
 }
 
-static const char *resolve_env(env_map_t *env_map, const char *key) {
+static inline const char *resolve_env(env_map_t *env_map, const char *key) {
     const char *val = getenv(key);
     if (val != NULL) {
         return val;

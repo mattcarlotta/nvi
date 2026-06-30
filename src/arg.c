@@ -271,7 +271,6 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 while (param != NULL) {
                     const ext_entry *entry = find_ext(param);
                     if (entry == NULL) {
-
                         return usage_error("The file extension '%s' is not a supported scan extension", param);
                     }
 

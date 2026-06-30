@@ -5,9 +5,11 @@
 #include "dynarr.h"
 #include "errors.h"
 #include "file.h"
+#include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
+#include "set.h"
 #include "utils.h"
 #include <errno.h>
 #include <stdio.h>
@@ -35,7 +37,7 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
+static inline const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
         return NULL;
@@ -44,7 +46,7 @@ static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const cha
     return get_file_ext(map, dot + 1);
 }
 
-static void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
+static inline void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
     if (set_contains(&scanner->envs, env->key, env->key_len)) {
         return;
     }
@@ -181,6 +183,16 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     return result;
 }
 
+static void add_unique_env_keys_to_set(set_t *set, const list_t *list) {
+    for (size_t i = 0; i < list->count; ++i) {
+        const char *key = list->items[i];
+        size_t len = strlen(key);
+        if (!set_contains(set, key, len)) {
+            set_add(set, key, len);
+        }
+    }
+}
+
 void merge_required_envs(args_t *args, const scanner_t *scanner) {
     if (scanner->envs.count == 0) {
         return;
@@ -188,21 +200,8 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
 
     set_t set = {0};
 
-    for (size_t i = 0; i < args->ignored.count; ++i) {
-        const char *key = args->ignored.items[i];
-        size_t len = strlen(key);
-        if (!set_contains(&set, key, len)) {
-            set_add(&set, key, len);
-        }
-    }
-
-    for (size_t i = 0; i < args->required.count; ++i) {
-        const char *key = args->required.items[i];
-        size_t len = strlen(key);
-        if (!set_contains(&set, key, len)) {
-            set_add(&set, key, len);
-        }
-    }
+    add_unique_env_keys_to_set(&set, &args->ignored);
+    add_unique_env_keys_to_set(&set, &args->required);
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
         const set_entry_t *entry = &scanner->envs.slots[i];
