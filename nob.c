@@ -12,10 +12,6 @@
 #define BIN_EXT ""
 #endif
 
-// Resolves the short commit hash once and caches it. Cached because both the
-// dev/release/test builds and `generate` reach for it, and `generate` composes
-// one command per target; without the cache that would re-run git on every
-// target. The returned string lives for the lifetime of the process.
 static const char *git_commit(void) {
     static const char *cached = NULL;
     if (cached != NULL) {
@@ -66,9 +62,6 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
 #endif
 }
 
-// Composes the dev/debug command up to (but not including) the source files:
-// compiler, common flags, debug/output flags. Shared by build_dev() and
-// generate so the two can never disagree on flags.
 static void compose_dev_cmd(Nob_Cmd *cmd) {
     add_common_flags(cmd, "debug");
 
@@ -79,8 +72,6 @@ static void compose_dev_cmd(Nob_Cmd *cmd) {
 #endif
 }
 
-// Composes the test command up to (but not including) the source files, for a
-// given output path. Shared by build_one_test() and generate.
 static void compose_test_cmd(Nob_Cmd *cmd, const char *out_path) {
     add_common_flags(cmd, "test");
 
@@ -96,10 +87,6 @@ static void compose_test_cmd(Nob_Cmd *cmd, const char *out_path) {
 #endif
 }
 
-// Collects every src/*.c into `out` as "src/<name>" paths. When `except` is
-// non-NULL the file with that base name (e.g. "main.c") is skipped, which lets
-// the test build link the library code without colliding with the binary's own
-// main(). Caller owns `out` (nob_da_free).
 static bool collect_sources_except(const char *except, Nob_File_Paths *out) {
     Nob_File_Paths paths = {0};
     if (!nob_read_entire_dir("src", &paths)) {
@@ -129,8 +116,6 @@ static bool collect_sources_except(const char *except, Nob_File_Paths *out) {
     return true;
 }
 
-// Appends every src/*.c to the command (see collect_sources_except for the
-// `except` semantics).
 static bool append_sources_except(Nob_Cmd *cmd, const char *except) {
     Nob_File_Paths srcs = {0};
     if (!collect_sources_except(except, &srcs)) {
@@ -147,8 +132,6 @@ static bool append_sources_except(Nob_Cmd *cmd, const char *except) {
 
 static bool append_sources(Nob_Cmd *cmd) { return append_sources_except(cmd, NULL); }
 
-// Collects tests/test_*.c base names (e.g. "test_matcher.c") into `out`.
-// Caller owns `out` (nob_da_free).
 static bool collect_test_names(Nob_File_Paths *out) {
     Nob_File_Paths paths = {0};
     if (!nob_read_entire_dir("tests", &paths)) {
@@ -226,9 +209,6 @@ static bool build_release(void) {
     return true;
 }
 
-// Builds a single Unity test executable: the test source + the vendored Unity
-// runtime + every src/*.c except main.c. Flags come from compose_test_cmd() so
-// the platform handling matches the dev/release builds.
 static bool build_one_test(const char *test_src, const char *out_path) {
     Nob_Cmd cmd = {0};
     compose_test_cmd(&cmd, out_path);
@@ -242,9 +222,6 @@ static bool build_one_test(const char *test_src, const char *out_path) {
     return nob_cmd_run(&cmd);
 }
 
-// Discovers tests/test_*.c, builds each into build/tests/, runs them, and
-// aggregates the result. Each suite returns its failure count as an exit code,
-// so a nonzero exit (caught by nob_cmd_run) marks the suite as failed.
 static bool run_tests(void) {
     if (!nob_mkdir_if_not_exists("build") || !nob_mkdir_if_not_exists("build/tests")) {
         return false;
@@ -288,16 +265,8 @@ static bool run_tests(void) {
     return passed == total;
 }
 
-// ---------------------------------------------------------------------------
-// compile_commands.json generation
-// ---------------------------------------------------------------------------
-
 static int cmp_cstr(const void *a, const void *b) { return strcmp(*(const char *const *)a, *(const char *const *)b); }
 
-// Appends `s` to the builder as a JSON string literal, escaping the characters
-// JSON requires. The escaping is what lets -DNVI_COMMIT="abc123" (whose quotes
-// are real argv characters, since nob uses execvp, not a shell) round-trip into
-// the file as "-DNVI_COMMIT=\"abc123\"".
 static void json_str(Nob_String_Builder *sb, const char *s) {
     nob_da_append(sb, '"');
     for (const char *p = s; *p; ++p) {
@@ -335,9 +304,6 @@ static void json_str(Nob_String_Builder *sb, const char *s) {
     nob_da_append(sb, '"');
 }
 
-// Emits one compile_commands.json object: the shared `prefix` argv (compiler,
-// flags, -o output) followed by the single source `src`. One entry per file is
-// what clangd expects and mirrors how bear normalizes a multi-file compile.
 static void emit_entry(Nob_String_Builder *json, bool *first, const char *dir, const Nob_Cmd *prefix,
                        const char *output, const char *src) {
     if (!*first) {
@@ -365,11 +331,6 @@ static void emit_entry(Nob_String_Builder *json, bool *first, const char *dir, c
     nob_sb_append_cstr(json, "]\n  }");
 }
 
-// Writes compile_commands.json by walking the same build topology run_tests and
-// build_dev use: the dev binary over every src/*.c, and one test binary per
-// tests/test_*.c over its source + unity.c + every src/*.c except main.c. Flag
-// prefixes come from compose_dev_cmd/compose_test_cmd, so there is nothing
-// hardcoded and nothing to keep in sync by hand.
 static bool cmd_generate(void) {
     const char *dir = nob_get_current_dir_temp();
 
@@ -378,7 +339,6 @@ static bool cmd_generate(void) {
     bool first = true;
     size_t count = 0;
 
-    // dev/debug binary: every src/*.c (including main.c)
     {
         Nob_Cmd prefix = {0};
         compose_dev_cmd(&prefix);
@@ -400,7 +360,6 @@ static bool cmd_generate(void) {
         nob_cmd_free(prefix);
     }
 
-    // library sources shared by every test binary (src/*.c except main.c)
     Nob_File_Paths lib = {0};
     if (!collect_sources_except("main.c", &lib)) {
         nob_sb_free(json);
@@ -452,33 +411,6 @@ static bool cmd_generate(void) {
     return ok;
 }
 
-static bool install_binary(void) {
-    const char *dir = getenv("DIR");
-    if (dir == NULL || dir[0] == '\0') {
-        nob_log(NOB_ERROR, "PREFIX is not set; run: DIR=/path/to/bin ./nob install");
-        return false;
-    }
-
-    const char *dest = nob_temp_sprintf("%s/%s", dir, OUT_BIN);
-
-    if (!nob_copy_file(OUT_BIN, dest)) {
-        nob_log(NOB_ERROR, "failed to copy %s -> %s (permission denied? try a writable PREFIX)", OUT_BIN, dest);
-        return false;
-    }
-
-    nob_log(NOB_INFO, "installed %s to %s", OUT_BIN, dest);
-    return true;
-}
-
-static void log_file_size(const char *path) {
-    struct stat st;
-    if (stat(path, &st) != 0) {
-        nob_log(NOB_WARNING, "could not stat %s for size", path);
-        return;
-    }
-    nob_log(NOB_INFO, "%s is %.1f KB (%lld bytes)", path, (double)st.st_size / 1024.0, (long long)st.st_size);
-}
-
 static bool timed(const char *label, const char *out, bool (*build)(void)) {
     uint64_t start = nob_nanos_since_unspecified_epoch();
     bool ok = build();
@@ -488,8 +420,14 @@ static bool timed(const char *label, const char *out, bool (*build)(void)) {
             (double)elapsed / NOB_NANOS_PER_SEC);
 
     if (ok) {
-        log_file_size(out);
+        struct stat st;
+        if (stat(out, &st) != 0) {
+            nob_log(NOB_WARNING, "could not stat %s for size", out);
+            return false;
+        }
+        nob_log(NOB_INFO, "%s is %.1f KB (%lld bytes)", out, (double)st.st_size / 1024.0, (long long)st.st_size);
     }
+
     return ok;
 }
 
@@ -502,13 +440,25 @@ int main(int argc, char **argv) {
     const char *subcmd = argc > 0 ? nob_shift(argv, argc) : "dev";
 
     if (strcmp(subcmd, "install") == 0) {
+        const char *dir = argc > 0 ? nob_shift(argv, argc) : NULL;
+        if (dir == NULL || dir[0] == '\0') {
+            nob_log(NOB_ERROR, "installation directory was not set; run: ./nob install <path>");
+            return 1;
+        }
+
         if (!timed("release", OUT_BIN, build_release)) {
             return 1;
         }
 
-        if (!timed("install", OUT_BIN, install_binary)) {
+        const char *dest = nob_temp_sprintf("%s/%s", dir, OUT_BIN);
+
+        if (!nob_copy_file(OUT_BIN, dest)) {
+            nob_log(NOB_ERROR, "failed to copy %s -> %s (permission denied? try a directory owned by you)", OUT_BIN,
+                    dest);
             return 1;
         }
+
+        nob_log(NOB_INFO, "installed %s to %s", OUT_BIN, dest);
     } else if (strcmp(subcmd, "release") == 0) {
         if (!timed("release", OUT_BIN, build_release)) {
             return 1;

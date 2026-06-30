@@ -19,7 +19,7 @@ Then place the binary in one of the directories (owned by `$USER`, not by `root`
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
 
-Optionally, create a self-owned local bin directory:
+Optionally, create a local bin directory owned by `$USER`:
 ```sh
 mkdir -p $HOME/.local/bin
 ```
@@ -52,6 +52,7 @@ Optional:
 Building source code:
 - [nob](https://github.com/tsoding/nob.h)
 
+
 Clone project and build `nob`:
 ```sh
 cd ~/Downloads
@@ -61,38 +62,21 @@ git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 clang -o nob nob.c
 ```
 
-### Build for debugging
-
-Run `nob` without arguments:
+Build for debugging:
 ```sh
 ./nob
 ```
-Then usage becomes:
-```
-./nvi [flags] -- <command>
-```
 
-### Build for release
-
-Run `nob`:
+Build for release:
 ```sh
 ./nob release
 ```
-Then usage becomes:
-```
-./nvi [flags] -- <command>
-```
 
-### Build and install release
-
-Run nob:
+Build and install the release binary in a shell directory path:
 ```sh
 # install in a directory that is recognized by the shell $PATH
-DIR=<directory> ./nob install
-```
-Then usage becomes:
-```
-nvi [flags] -- <command>
+# for example: ./nob install $HOME/.local/bin
+./nob install <directory>
 ```
 
 > [!NOTE]
@@ -103,7 +87,7 @@ nvi [flags] -- <command>
 Run:
 ```sh
 which nvi
-# ~/.local/bin/nvi
+# <directory>
 
 nvi version
 # nvi <version> (<build_type>)
