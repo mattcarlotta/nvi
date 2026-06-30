@@ -174,8 +174,8 @@ nvi --files .env .env.local -- npm start | <consumer>
 # require keys to be present
 nvi --files .env --required API_KEY DATABASE_URL -- cargo run | <consumer>
 
-# shows a dry run of what was scanned, tokenized, and parsed (prints to stderr)
-nvi --files .env --scan ts --dry-run
+# saves a dry run log of what was scanned, tokenized, and parsed
+nvi --files .env --scan ts --dry-run >2 nvi.log; less nvi.log
 
 # require every env key referenced in py source files to be present
 nvi --files .env --scan py -- python main.py  | <consumer>
