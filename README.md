@@ -2,12 +2,12 @@
 
 A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
-- Zero dependency
+- 0 dependencies
 - Language agnostic
 - Parses one or more `.env` files
 - Handles `${KEY}` interpolations
 - Supports multiline values via `\` (backslash-newline) delimiter
-- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and set them as required
+- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and sets them as required
 - Optionally validates required keys are defined before command execution
 
 ## Installation
