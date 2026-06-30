@@ -4,7 +4,7 @@
 2. Install requirements
 3. Create your feature branch (`git checkout -b feat/my-new-feature`)
 4. Commit your changes (`git commit -am 'feat: Added some awesome new feature'`)
-5. Add tests and test your changes with `TBD`
+5. Add tests within `tests` and then ensure tests pass via `./nob test`
 6. If all of the tests pass, open a [pull request](https://github.com/mattcarlotta/nvi/compare) pointing to the main branch
 7. Wait for approval
 

@@ -514,6 +514,10 @@ int main(int argc, char **argv) {
             return 1;
         }
     } else if (strcmp(subcmd, "test") == 0) {
+        if (!cmd_generate()) {
+            return 1;
+        }
+
         if (!run_tests()) {
             return 1;
         }

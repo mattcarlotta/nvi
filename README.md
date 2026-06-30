@@ -218,7 +218,7 @@ For example, every line below is recognized and yields the key `DATABASE_URL`:
 ```
 process.env.DATABASE_URL          # JavaScript / TypeScript
 process.env["DATABASE_URL"]
-import.meta.env.DATABASE_URL      # Vite
+import.meta.env.DATABASE_URL
 os.getenv("DATABASE_URL")         # Python
 os.Getenv("DATABASE_URL")         # Go
 env::var("DATABASE_URL")          # Rust
@@ -277,7 +277,7 @@ $ENV{DATABASE_URL}                # Perl
 
 ```sh
 # scans and reports matching ENVs in .mjs and .ts files, then exits
-nvi --scan mjs ts
+nvi --scan mjs ts --dry-run
 
 # collects scanned keys to be required and defined before 'npm run dev' command is emitted
 nvi --scan mjs --files .env -- npm run dev | xargs -0 -r env
@@ -332,16 +332,15 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 
 ## Testing
 
-To run tests, use the following `make` or `zig build` commands:
+This project uses [Unity](https://github.com/ThrowTheSwitch/Unity) in combination with [nob.h](https://github.com/tsoding/nob.h)
+
+To run tests, use the following commands:
 ```sh
-make test
-# zig build test --summary all
+# if you haven't already, compile nob
+clang -o nob nob.c
 
-make unit
-# zig build unit --summary all
-
-make integration
-# zig build integration --summary all
+# generates a compile-commands.json for clang, builds tests and runs test suites
+./nob test
 ```
 
 ## Security model
