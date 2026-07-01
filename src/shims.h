@@ -1,5 +1,5 @@
-#ifndef COMPAT_H
-#define COMPAT_H
+#ifndef SHIMS_H
+#define SHIMS_H
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -14,6 +14,7 @@ static inline const char *nvi_strerror(int errnum) {
     strerror_s(buf, sizeof(buf), errnum);
     return buf;
 }
+#define strerror nvi_strerror
 
 static char *strndup(const char *s, size_t n) {
     size_t len = strnlen(s, n);

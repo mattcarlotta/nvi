@@ -15,6 +15,10 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#ifdef _MSC_VER
+#include "shims.h"
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #define PATH_SEP "\\"

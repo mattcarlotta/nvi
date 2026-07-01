@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#include "shims.h"
+#endif
+
 typedef struct {
     char *items;
     size_t count;
