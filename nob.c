@@ -184,11 +184,20 @@ static bool build_release(void) {
 #if defined(_WIN32) && defined(_MSC_VER)
     nob_cmd_append(&cmd, "/O1", "/GL", "/Fe:" OUT_BIN);
 #elif defined(__APPLE__)
-    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables", "-Wl,-dead_strip",
-                   "-Wl,-x", "-o", OUT_BIN);
+    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables", "-Wl,-no_uuid",
+                   "-Wl,-dead_strip_dylibs", "-Wl,-dead_strip", "-Wl,-x", "-o", OUT_BIN);
 #elif defined(__linux__)
-    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables", "-ffunction-sections",
-                   "-fdata-sections", "-Wl,--gc-sections", "-s", "-o", OUT_BIN);
+    const char *mps = getenv("NVI_MAX_PAGE_SIZE");
+    // Page sizing breakdown:
+    // 0x1000 = 4096 = 4KB
+    // 0x4000 = 16384 = 16KB
+    // 0x10000 = 65536 = 64KB (default)
+    if (mps == NULL || mps[0] == '\0') {
+        mps = "0x10000";
+    }
+    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-ident", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
+                   "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,-z,noseparate-code",
+                   "-Wl,--build-id=none", nob_temp_sprintf("-Wl,-z,max-page-size=%s", mps), "-s", "-o", OUT_BIN);
 #endif
 
     if (!append_sources(&cmd)) {
@@ -200,7 +209,7 @@ static bool build_release(void) {
     }
 
 #ifdef __APPLE__
-    nob_cmd_append(&cmd, "strip", "-x", OUT_BIN);
+    nob_cmd_append(&cmd, "strip", "-rSTx", OUT_BIN);
     if (!nob_cmd_run(&cmd)) {
         return false;
     }
