@@ -4,7 +4,7 @@
 
 #define OUT "nvi"
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 #define OUT_BIN OUT ".exe"
 #define BIN_EXT ".exe"
 #else
@@ -441,7 +441,7 @@ static bool timed(const char *label, const char *out, bool (*build)(void)) {
 }
 
 int main(int argc, char **argv) {
-#ifndef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
     NOB_GO_REBUILD_URSELF(argc, argv);
 #endif
 

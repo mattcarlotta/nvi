@@ -1,8 +1,7 @@
-// test_capture.h
 #ifndef TEST_CAPTURE_H
 #define TEST_CAPTURE_H
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 #include <io.h>
 #define DUP _dup
 #define DUP2 _dup2

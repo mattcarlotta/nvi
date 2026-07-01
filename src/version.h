@@ -27,7 +27,7 @@
 #define NVI_OS "macos"
 #elif defined(__linux__)
 #define NVI_OS "linux"
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(_MSC_VER)
 #define NVI_OS "windows"
 #else
 #define NVI_OS "unknown"

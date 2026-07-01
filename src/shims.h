@@ -1,7 +1,7 @@
 #ifndef SHIMS_H
 #define SHIMS_H
 
-#ifdef _MSC_VER
+#if defined(_WIN32) && defined(_MSC_VER)
 #include <io.h>
 #include <stdlib.h>
 #include <string.h>

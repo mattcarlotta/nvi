@@ -5,7 +5,7 @@
 // (not the system clock) so it is unaffected by NTP steps or clock changes
 // during the run.
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 #include <windows.h>
 
 static inline double monotonic_seconds(void) {

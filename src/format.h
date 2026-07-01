@@ -5,7 +5,7 @@
 typedef enum { FORMAT_POWERSHELL, FORMAT_NULL, FORMAT_UNKNOWN } format_t;
 
 static inline format_t get_default_format(void) {
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
     return FORMAT_POWERSHELL;
 #else
     return FORMAT_NULL;

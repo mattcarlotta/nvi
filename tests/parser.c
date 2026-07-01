@@ -10,7 +10,7 @@ void setUp(void) {}
 void tearDown(void) {}
 
 // Cross-platform environment mutation for the interpolation-from-env case.
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 static void set_env(const char *k, const char *v) { _putenv_s(k, v); }
 static void clear_env(const char *k) { _putenv_s(k, ""); }
 #else

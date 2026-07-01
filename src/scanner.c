@@ -15,11 +15,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#ifdef _MSC_VER
+#if defined(_WIN32) && defined(_MSC_VER)
 #include "shims.h"
-#endif
-
-#ifdef _WIN32
 #include <windows.h>
 #define PATH_SEP "\\"
 #ifndef PATH_MAX
@@ -143,7 +140,7 @@ static result_t handle_entry(const args_t *args, scanner_t *scanner, const char 
 static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path) {
     result_t result = {.ok = true};
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
     char pattern[PATH_MAX];
     int n = snprintf(pattern, sizeof(pattern), "%s" PATH_SEP "*", path);
     if (n < 0 || (size_t)n >= sizeof(pattern)) {

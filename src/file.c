@@ -8,7 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef _MSC_VER
+#if defined(_WIN32) && defined(_MSC_VER)
 #include "shims.h"
 #endif
 
