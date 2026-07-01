@@ -184,7 +184,7 @@ static bool build_release(void) {
 #if defined(_WIN32) && defined(_MSC_VER)
     nob_cmd_append(&cmd, "/O1", "/GL", "/Fe:" OUT_BIN);
 #elif defined(__APPLE__)
-    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables", "-Wl,-no_uuid",
+    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
                    "-Wl,-dead_strip_dylibs", "-Wl,-dead_strip", "-Wl,-x", "-o", OUT_BIN);
 #elif defined(__linux__)
     const char *mps = getenv("NVI_MAX_PAGE_SIZE");
