@@ -69,8 +69,6 @@ void log_version(void) {
     fprintf(stdout, "commit %s\n", NVI_COMMIT);
 #ifdef __clang__
     fprintf(stdout, "clang %d.%d.%d\n", __clang_major__, __clang_minor__, __clang_patchlevel__);
-#elif defined(__GNUC__)
-    fprintf(stdout, "gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #endif
     fprintf(stdout, "%s\n", NVI_TARGET);
 }

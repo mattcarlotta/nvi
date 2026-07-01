@@ -181,9 +181,10 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                               tokenizer->line, tokenizer->byte);
                     log_f("A value assignment ('=') was found without a key name.\n");
 
-                    size_t end = index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
+                    size_t line_end =
+                        index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
                     const char *rest = tokenizer->file + tokenizer->i;
-                    size_t rest_len = end - tokenizer->i;
+                    size_t rest_len = line_end - tokenizer->i;
 
                     log_f("   %.*s\n", (int)rest_len, rest);
                     fputs("   ^", stderr);

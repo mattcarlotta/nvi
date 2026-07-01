@@ -53,7 +53,7 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
     const char *build_def = nob_temp_sprintf("-DNVI_BUILD=\"%s\"", build_label);
 
 #if defined(_WIN32) && defined(_MSC_VER)
-    nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17");
+    nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17", "/utf-8");
 #elif defined(__APPLE__) || defined(__linux__)
     nob_cmd_append(cmd, "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic",
                    "-std=gnu17");
@@ -441,7 +441,9 @@ static bool timed(const char *label, const char *out, bool (*build)(void)) {
 }
 
 int main(int argc, char **argv) {
+#ifndef _WIN32
     NOB_GO_REBUILD_URSELF(argc, argv);
+#endif
 
     // drop program name
     nob_shift(argv, argc);

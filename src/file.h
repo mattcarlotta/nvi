@@ -1,5 +1,6 @@
 #ifndef FILE_H
 #define FILE_H
+
 #include <stdbool.h>
 #include <stddef.h>
 

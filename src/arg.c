@@ -10,7 +10,6 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 static const flag_entry flags[] = {
     {.name = "-f", .value = FILES},    {.name = "--files", .value = FILES},

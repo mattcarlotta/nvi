@@ -1,4 +1,5 @@
 #include "file.h"
+
 #include "log.h"
 #include <errno.h>
 #include <stdbool.h>
@@ -6,6 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#ifdef _MSC_VER
+#include "shims.h"
+#endif
 
 file_details_t open_file(const char *path, bool dry_run) {
     file_details_t file_details = {0};

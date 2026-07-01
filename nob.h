@@ -158,14 +158,10 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
-#define _WINUSER_
-#define _WINGDI_
-#define _IMM_
-#define _WINCON_
 #include <direct.h>
 #include <io.h>
-#include <shellapi.h>
 #include <windows.h>
+#include <shellapi.h>
 #else
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -1052,15 +1048,17 @@ NOBDEF void nob__go_rebuild_urself(int argc, char **argv, const char *source_pat
     va_start(args, source_path);
     for (;;) {
         const char *path = va_arg(args, const char *);
-        if (path == NULL)
+        if (path == NULL) {
             break;
+        }
         nob_da_append(&source_paths, path);
     }
     va_end(args);
 
     int rebuild_is_needed = nob_needs_rebuild(binary_path, source_paths.items, source_paths.count);
-    if (rebuild_is_needed < 0)
-        exit(1);              // error
+    if (rebuild_is_needed < 0) {
+        exit(1); // error
+    }
     if (!rebuild_is_needed) { // no rebuild is needed
         NOB_FREE(source_paths.items);
         return;
@@ -1070,8 +1068,9 @@ NOBDEF void nob__go_rebuild_urself(int argc, char **argv, const char *source_pat
 
     const char *old_binary_path = nob_temp_sprintf("%s.old", binary_path);
 
-    if (!nob_rename(binary_path, old_binary_path))
+    if (!nob_rename(binary_path, old_binary_path)) {
         exit(1);
+    }
     nob_cmd_append(&cmd, NOB_REBUILD_URSELF(binary_path, source_path));
     Nob_Cmd_Opt opt = {0};
     if (!nob_cmd_run_opt(&cmd, opt)) {
@@ -1087,8 +1086,9 @@ NOBDEF void nob__go_rebuild_urself(int argc, char **argv, const char *source_pat
 
     nob_cmd_append(&cmd, binary_path);
     nob_da_append_many(&cmd, argv, argc);
-    if (!nob_cmd_run_opt(&cmd, opt))
+    if (!nob_cmd_run_opt(&cmd, opt)) {
         exit(1);
+    }
     exit(0);
 }
 
@@ -1156,8 +1156,9 @@ NOBDEF bool nob_copy_file(const char *src_path, const char *dst_path) {
 
     for (;;) {
         ssize_t n = read(src_fd, buf, buf_size);
-        if (n == 0)
+        if (n == 0) {
             break;
+        }
         if (n < 0) {
             nob_log(NOB_ERROR, "Could not read from file %s: %s", src_path, strerror(errno));
             nob_return_defer(false);
@@ -1185,10 +1186,12 @@ defer:
 NOBDEF void nob_cmd_render(Nob_Cmd cmd, Nob_String_Builder *render) {
     for (size_t i = 0; i < cmd.count; ++i) {
         const char *arg = cmd.items[i];
-        if (arg == NULL)
+        if (arg == NULL) {
             break;
-        if (i > 0)
+        }
+        if (i > 0) {
             nob_sb_append_cstr(render, " ");
+        }
         if (!strchr(arg, ' ')) {
             nob_sb_append_cstr(render, arg);
         } else {
@@ -1204,11 +1207,13 @@ NOBDEF void nob_cmd_render(Nob_Cmd cmd, Nob_String_Builder *render) {
 static void nob__win32_cmd_quote(Nob_Cmd cmd, Nob_String_Builder *quoted) {
     for (size_t i = 0; i < cmd.count; ++i) {
         const char *arg = cmd.items[i];
-        if (arg == NULL)
+        if (arg == NULL) {
             break;
+        }
         size_t len = strlen(arg);
-        if (i > 0)
+        if (i > 0) {
             nob_da_append(quoted, ' ');
+        }
         if (len != 0 && NULL == strpbrk(arg, " \t\n\v\"")) {
             // no need to quote
             nob_da_append_many(quoted, arg, len);
@@ -1269,8 +1274,9 @@ NOBDEF bool nob_cmd_run_opt(Nob_Cmd *cmd, Nob_Cmd_Opt opt) {
         while (opt.async->count >= max_procs) {
             for (size_t i = 0; i < opt.async->count; ++i) {
                 int ret = nob__proc_wait_async(opt.async->items[i], 1);
-                if (ret < 0)
+                if (ret < 0) {
                     nob_return_defer(false);
+                }
                 if (ret) {
                     nob_da_remove_unordered(opt.async, i);
                     break;
@@ -1281,42 +1287,51 @@ NOBDEF bool nob_cmd_run_opt(Nob_Cmd *cmd, Nob_Cmd_Opt opt) {
 
     if (opt.stdin_path) {
         fdin = nob_fd_open_for_read(opt.stdin_path);
-        if (fdin == NOB_INVALID_FD)
+        if (fdin == NOB_INVALID_FD) {
             nob_return_defer(false);
+        }
         opt_fdin = &fdin;
     }
     if (opt.stdout_path) {
         fdout = nob_fd_open_for_write(opt.stdout_path);
-        if (fdout == NOB_INVALID_FD)
+        if (fdout == NOB_INVALID_FD) {
             nob_return_defer(false);
+        }
         opt_fdout = &fdout;
     }
     if (opt.stderr_path) {
         fderr = nob_fd_open_for_write(opt.stderr_path);
-        if (fderr == NOB_INVALID_FD)
+        if (fderr == NOB_INVALID_FD) {
             nob_return_defer(false);
+        }
         opt_fderr = &fderr;
     }
     proc = nob__cmd_start_process(*cmd, opt_fdin, opt_fdout, opt_fderr);
 
     if (opt.async) {
-        if (proc == NOB_INVALID_PROC)
+        if (proc == NOB_INVALID_PROC) {
             nob_return_defer(false);
+        }
         nob_da_append(opt.async, proc);
     } else {
-        if (!nob_proc_wait(proc))
+        if (!nob_proc_wait(proc)) {
             nob_return_defer(false);
+        }
     }
 
 defer:
-    if (opt_fdin)
+    if (opt_fdin) {
         nob_fd_close(*opt_fdin);
-    if (opt_fdout)
+    }
+    if (opt_fdout) {
         nob_fd_close(*opt_fdout);
-    if (opt_fderr)
+    }
+    if (opt_fderr) {
         nob_fd_close(*opt_fderr);
-    if (!opt.dont_reset)
+    }
+    if (!opt.dont_reset) {
         cmd->count = 0;
+    }
     return result;
 }
 
@@ -1326,8 +1341,9 @@ NOBDEF bool nob_chain_begin_opt(Nob_Chain *chain, Nob_Chain_Begin_Opt opt) {
     chain->fdin = NOB_INVALID_FD;
     if (opt.stdin_path) {
         chain->fdin = nob_fd_open_for_read(opt.stdin_path);
-        if (chain->fdin == NOB_INVALID_FD)
+        if (chain->fdin == NOB_INVALID_FD) {
             return false;
+        }
     }
     return true;
 }
@@ -1348,8 +1364,9 @@ NOBDEF bool nob_chain_cmd_opt(Nob_Chain *chain, Nob_Cmd *cmd, Nob_Chain_Cmd_Opt 
             nob_fa_append(&fds, chain->fdin);
             pfdin = &chain->fdin;
         }
-        if (!nob_pipe_create(&pp))
+        if (!nob_pipe_create(&pp)) {
             nob_return_defer(false);
+        }
         nob_fa_append(&fds, pp.write);
         Nob_Fd *pfdout = &pp.write;
         Nob_Fd *pfderr = chain->err2out ? pfdout : NULL;
@@ -1370,8 +1387,9 @@ defer:
     for (size_t i = 0; i < fds.count; ++i) {
         nob_fd_close(fds.items[i]);
     }
-    if (!opt.dont_reset)
+    if (!opt.dont_reset) {
         cmd->count = 0;
+    }
     return result;
 }
 
@@ -1404,8 +1422,9 @@ NOBDEF bool nob_chain_end_opt(Nob_Chain *chain, Nob_Chain_End_Opt opt) {
             while (opt.async->count >= max_procs) {
                 for (size_t i = 0; i < opt.async->count; ++i) {
                     int ret = nob__proc_wait_async(opt.async->items[i], 1);
-                    if (ret < 0)
+                    if (ret < 0) {
                         nob_return_defer(false);
+                    }
                     if (ret) {
                         nob_da_remove_unordered(opt.async, i);
                         break;
@@ -1417,20 +1436,23 @@ NOBDEF bool nob_chain_end_opt(Nob_Chain *chain, Nob_Chain_End_Opt opt) {
         Nob_Fd fdout = nob__fd_stdout();
         if (opt.stdout_path) {
             fdout = nob_fd_open_for_write(opt.stdout_path);
-            if (fdout == NOB_INVALID_FD)
+            if (fdout == NOB_INVALID_FD) {
                 nob_return_defer(false);
+            }
             nob_fa_append(&fds, fdout);
         }
 
         Nob_Fd fderr = 0;
         Nob_Fd *pfderr = NULL;
-        if (chain->err2out)
+        if (chain->err2out) {
             pfderr = &fdout;
+        }
         if (opt.stderr_path) {
             if (pfderr == NULL) {
                 fderr = nob_fd_open_for_write(opt.stderr_path);
-                if (fderr == NOB_INVALID_FD)
+                if (fderr == NOB_INVALID_FD) {
                     nob_return_defer(false);
+                }
                 nob_fa_append(&fds, fderr);
                 pfderr = &fderr;
             } else {
@@ -1438,8 +1460,9 @@ NOBDEF bool nob_chain_end_opt(Nob_Chain *chain, Nob_Chain_End_Opt opt) {
                 // All the stderr will go to stdout.
                 // So the stderr file is going to be empty.
                 NOB_ASSERT(chain->err2out);
-                if (!nob_write_entire_file(opt.stderr_path, NULL, 0))
+                if (!nob_write_entire_file(opt.stderr_path, NULL, 0)) {
                     nob_return_defer(false);
+                }
             }
         }
 
@@ -1447,12 +1470,14 @@ NOBDEF bool nob_chain_end_opt(Nob_Chain *chain, Nob_Chain_End_Opt opt) {
         chain->cmd.count = 0;
 
         if (opt.async) {
-            if (proc == NOB_INVALID_PROC)
+            if (proc == NOB_INVALID_PROC) {
                 nob_return_defer(false);
+            }
             nob_da_append(opt.async, proc);
         } else {
-            if (!nob_proc_wait(proc))
+            if (!nob_proc_wait(proc)) {
                 nob_return_defer(false);
+            }
         }
     }
 
@@ -1717,8 +1742,9 @@ NOBDEF bool nob_procs_flush(Nob_Procs *procs) {
 NOBDEF bool nob_procs_wait_and_reset(Nob_Procs *procs) { return nob_procs_flush(procs); }
 
 NOBDEF bool nob_proc_wait(Nob_Proc proc) {
-    if (proc == NOB_INVALID_PROC)
+    if (proc == NOB_INVALID_PROC) {
         return false;
+    }
 
 #ifdef _WIN32
     DWORD result = WaitForSingleObject(proc,    // HANDLE hHandle,
@@ -1773,8 +1799,9 @@ NOBDEF bool nob_proc_wait(Nob_Proc proc) {
 }
 
 static int nob__proc_wait_async(Nob_Proc proc, int ms) {
-    if (proc == NOB_INVALID_PROC)
+    if (proc == NOB_INVALID_PROC) {
         return false;
+    }
 
 #ifdef _WIN32
     DWORD result = WaitForSingleObject(proc, // HANDLE hHandle,
@@ -1847,8 +1874,9 @@ NOBDEF bool nob_procs_append_with_flush(Nob_Procs *procs, Nob_Proc proc, size_t 
     nob_da_append(procs, proc);
 
     if (procs->count >= max_procs_count) {
-        if (!nob_procs_flush(procs))
+        if (!nob_procs_flush(procs)) {
             return false;
+        }
     }
 
     return true;
@@ -1895,23 +1923,24 @@ NOBDEF void nob_set_log_handler(Nob_Log_Handler *handler) { nob__log_handler = h
 NOBDEF Nob_Log_Handler *nob_get_log_handler(void) { return nob__log_handler; }
 
 NOBDEF void nob_default_log_handler(Nob_Log_Level level, const char *fmt, va_list args) {
-    if (level < nob_minimal_log_level)
+    if (level < nob_minimal_log_level) {
         return;
+    }
 
     switch (level) {
-    case NOB_INFO:
-        fprintf(stderr, "[INFO] ");
-        break;
-    case NOB_WARNING:
-        fprintf(stderr, "[WARNING] ");
-        break;
-    case NOB_ERROR:
-        fprintf(stderr, "[ERROR] ");
-        break;
-    case NOB_NO_LOGS:
-        return;
-    default:
-        NOB_UNREACHABLE("Nob_Log_Level");
+        case NOB_INFO:
+            fprintf(stderr, "[INFO] ");
+            break;
+        case NOB_WARNING:
+            fprintf(stderr, "[WARNING] ");
+            break;
+        case NOB_ERROR:
+            fprintf(stderr, "[ERROR] ");
+            break;
+        case NOB_NO_LOGS:
+            return;
+        default:
+            NOB_UNREACHABLE("Nob_Log_Level");
     }
 
     vfprintf(stderr, fmt, args);
@@ -1926,19 +1955,19 @@ NOBDEF void nob_null_log_handler(Nob_Log_Level level, const char *fmt, va_list a
 
 NOBDEF void nob_cancer_log_handler(Nob_Log_Level level, const char *fmt, va_list args) {
     switch (level) {
-    case NOB_INFO:
-        fprintf(stderr, "ℹ️ \x1b[36m[INFO]\x1b[0m ");
-        break;
-    case NOB_WARNING:
-        fprintf(stderr, "⚠️ \x1b[33m[WARNING]\x1b[0m ");
-        break;
-    case NOB_ERROR:
-        fprintf(stderr, "🚨 \x1b[31m[ERROR]\x1b[0m ");
-        break;
-    case NOB_NO_LOGS:
-        return;
-    default:
-        NOB_UNREACHABLE("Nob_Log_Level");
+        case NOB_INFO:
+            fprintf(stderr, "ℹ️ \x1b[36m[INFO]\x1b[0m ");
+            break;
+        case NOB_WARNING:
+            fprintf(stderr, "⚠️ \x1b[33m[WARNING]\x1b[0m ");
+            break;
+        case NOB_ERROR:
+            fprintf(stderr, "🚨 \x1b[31m[ERROR]\x1b[0m ");
+            break;
+        case NOB_NO_LOGS:
+            return;
+        default:
+            NOB_UNREACHABLE("Nob_Log_Level");
     }
 
     vfprintf(stderr, fmt, args);
@@ -1985,8 +2014,9 @@ NOBDEF bool nob_dir_entry_next(Nob_Dir_Entry *dir) {
     }
 
     if (!FindNextFile(dir->nob__private.win32_hFind, &dir->nob__private.win32_data)) {
-        if (GetLastError() == ERROR_NO_MORE_FILES)
+        if (GetLastError() == ERROR_NO_MORE_FILES) {
             return false;
+        }
         nob_log(NOB_ERROR, "Could not read next directory entry: %s", nob_win32_error_message(GetLastError()));
         dir->error = true;
         return false;
@@ -1996,8 +2026,9 @@ NOBDEF bool nob_dir_entry_next(Nob_Dir_Entry *dir) {
     errno = 0;
     dir->nob__private.posix_ent = readdir(dir->nob__private.posix_dir);
     if (dir->nob__private.posix_ent == NULL) {
-        if (errno == 0)
+        if (errno == 0) {
             return false;
+        }
         nob_log(NOB_ERROR, "Could not read next directory entry: %s", strerror(errno));
         dir->error = true;
         return false;
@@ -2011,8 +2042,9 @@ NOBDEF void nob_dir_entry_close(Nob_Dir_Entry dir) {
 #ifdef _WIN32
     FindClose(dir.nob__private.win32_hFind);
 #else
-    if (dir.nob__private.posix_dir)
+    if (dir.nob__private.posix_dir) {
         closedir(dir.nob__private.posix_dir);
+    }
 #endif
 }
 
@@ -2029,8 +2061,9 @@ bool nob__walk_dir_opt_impl(Nob_String_Builder *file_path, Nob_Walk_Func func, s
     Nob_Walk_Action action = NOB_WALK_CONT;
 
     Nob_File_Type file_type = nob_get_file_type(file_path->items);
-    if (file_type < 0)
+    if (file_type < 0) {
         nob_return_defer(false);
+    }
 
     // Pre-order walking
     if (!opt.post_order) {
@@ -2040,36 +2073,41 @@ bool nob__walk_dir_opt_impl(Nob_String_Builder *file_path, Nob_Walk_Func func, s
                 .level = level,
                 .data = opt.data,
                 .action = &action,
-            }))
+            })) {
             nob_return_defer(false);
+        }
         switch (action) {
-        case NOB_WALK_CONT:
-            break;
-        case NOB_WALK_STOP:
-            *stop = true; // fallthrough
-        case NOB_WALK_SKIP:
-            nob_return_defer(true);
-        default:
-            NOB_UNREACHABLE("Nob_Walk_Action");
+            case NOB_WALK_CONT:
+                break;
+            case NOB_WALK_STOP:
+                *stop = true; // fallthrough
+            case NOB_WALK_SKIP:
+                nob_return_defer(true);
+            default:
+                NOB_UNREACHABLE("Nob_Walk_Action");
         }
     }
 
     if (file_type == NOB_FILE_DIRECTORY) {
-        if (!nob_dir_entry_open(file_path->items, &dir))
+        if (!nob_dir_entry_open(file_path->items, &dir)) {
             nob_return_defer(false);
+        }
         for (;;) {
             // Next entry
             if (!nob_dir_entry_next(&dir)) {
-                if (!dir.error)
+                if (!dir.error) {
                     break;
+                }
                 nob_return_defer(false);
             }
 
             // Ignore . and ..
-            if (strcmp(dir.name, ".") == 0)
+            if (strcmp(dir.name, ".") == 0) {
                 continue;
-            if (strcmp(dir.name, "..") == 0)
+            }
+            if (strcmp(dir.name, "..") == 0) {
                 continue;
+            }
 
             // Prepare the new file_path
             file_path->count = saved_file_path_count - 1;
@@ -2081,10 +2119,12 @@ bool nob__walk_dir_opt_impl(Nob_String_Builder *file_path, Nob_Walk_Func func, s
             nob_sb_append_null(file_path);
 
             // Recurse
-            if (!nob__walk_dir_opt_impl(file_path, func, level + 1, stop, opt))
+            if (!nob__walk_dir_opt_impl(file_path, func, level + 1, stop, opt)) {
                 nob_return_defer(false);
-            if (*stop)
+            }
+            if (*stop) {
                 nob_return_defer(true);
+            }
         }
         file_path->count = saved_file_path_count;
         nob_da_last(file_path) = '\0';
@@ -2098,17 +2138,18 @@ bool nob__walk_dir_opt_impl(Nob_String_Builder *file_path, Nob_Walk_Func func, s
                 .level = level,
                 .data = opt.data,
                 .action = &action,
-            }))
+            })) {
             nob_return_defer(false);
+        }
         switch (action) {
-        case NOB_WALK_CONT:
-            break;
-        case NOB_WALK_STOP:
-            *stop = true; // fallthrough
-        case NOB_WALK_SKIP:
-            nob_return_defer(true);
-        default:
-            NOB_UNREACHABLE("Nob_Walk_Action");
+            case NOB_WALK_CONT:
+                break;
+            case NOB_WALK_STOP:
+                *stop = true; // fallthrough
+            case NOB_WALK_SKIP:
+                nob_return_defer(true);
+            default:
+                NOB_UNREACHABLE("Nob_Walk_Action");
         }
     }
 
@@ -2140,12 +2181,15 @@ NOBDEF bool nob_read_entire_dir(const char *parent, Nob_File_Paths *children) {
     }
     bool result = true;
     Nob_Dir_Entry dir = {0};
-    if (!nob_dir_entry_open(parent, &dir))
+    if (!nob_dir_entry_open(parent, &dir)) {
         nob_return_defer(false);
-    while (nob_dir_entry_next(&dir))
+    }
+    while (nob_dir_entry_next(&dir)) {
         nob_da_append(children, nob_temp_strdup(dir.name));
-    if (dir.error)
+    }
+    if (dir.error) {
         nob_return_defer(false);
+    }
 defer:
     nob_dir_entry_close(dir);
     return result;
@@ -2179,8 +2223,9 @@ NOBDEF bool nob_write_entire_file(const char *path, const void *data, size_t siz
     }
 
 defer:
-    if (f)
+    if (f) {
         fclose(f);
+    }
     return result;
 }
 
@@ -2192,8 +2237,9 @@ NOBDEF Nob_File_Type nob_get_file_type(const char *path) {
         return (Nob_File_Type)-1;
     }
 
-    if (attr & FILE_ATTRIBUTE_DIRECTORY)
+    if (attr & FILE_ATTRIBUTE_DIRECTORY) {
         return NOB_FILE_DIRECTORY;
+    }
     // TODO: detect symlinks on Windows (whatever that means on Windows anyway)
     return NOB_FILE_REGULAR;
 #else  // _WIN32
@@ -2203,12 +2249,15 @@ NOBDEF Nob_File_Type nob_get_file_type(const char *path) {
         return (Nob_File_Type)(-1);
     }
 
-    if (S_ISREG(statbuf.st_mode))
+    if (S_ISREG(statbuf.st_mode)) {
         return NOB_FILE_REGULAR;
-    if (S_ISDIR(statbuf.st_mode))
+    }
+    if (S_ISDIR(statbuf.st_mode)) {
         return NOB_FILE_DIRECTORY;
-    if (S_ISLNK(statbuf.st_mode))
+    }
+    if (S_ISLNK(statbuf.st_mode)) {
         return NOB_FILE_SYMLINK;
+    }
     return NOB_FILE_OTHER;
 #endif // _WIN32
 }
@@ -2220,22 +2269,22 @@ NOBDEF bool nob_delete_file(const char *path) {
 #ifdef _WIN32
     Nob_File_Type type = nob_get_file_type(path);
     switch (type) {
-    case NOB_FILE_DIRECTORY:
-        if (!RemoveDirectoryA(path)) {
-            nob_log(NOB_ERROR, "Could not delete directory %s: %s", path, nob_win32_error_message(GetLastError()));
-            return false;
-        }
-        break;
-    case NOB_FILE_REGULAR:
-    case NOB_FILE_SYMLINK:
-    case NOB_FILE_OTHER:
-        if (!DeleteFileA(path)) {
-            nob_log(NOB_ERROR, "Could not delete file %s: %s", path, nob_win32_error_message(GetLastError()));
-            return false;
-        }
-        break;
-    default:
-        NOB_UNREACHABLE("Nob_File_Type");
+        case NOB_FILE_DIRECTORY:
+            if (!RemoveDirectoryA(path)) {
+                nob_log(NOB_ERROR, "Could not delete directory %s: %s", path, nob_win32_error_message(GetLastError()));
+                return false;
+            }
+            break;
+        case NOB_FILE_REGULAR:
+        case NOB_FILE_SYMLINK:
+        case NOB_FILE_OTHER:
+            if (!DeleteFileA(path)) {
+                nob_log(NOB_ERROR, "Could not delete file %s: %s", path, nob_win32_error_message(GetLastError()));
+                return false;
+            }
+            break;
+        default:
+            NOB_UNREACHABLE("Nob_File_Type");
     }
     return true;
 #else
@@ -2255,57 +2304,62 @@ NOBDEF bool nob_copy_directory_recursively(const char *src_path, const char *dst
     size_t temp_checkpoint = nob_temp_save();
 
     Nob_File_Type type = nob_get_file_type(src_path);
-    if (type < 0)
+    if (type < 0) {
         return false;
+    }
 
     switch (type) {
-    case NOB_FILE_DIRECTORY: {
-        if (!nob_mkdir_if_not_exists(dst_path))
-            nob_return_defer(false);
-        if (!nob_read_entire_dir(src_path, &children))
-            nob_return_defer(false);
-
-        for (size_t i = 0; i < children.count; ++i) {
-            if (strcmp(children.items[i], ".") == 0)
-                continue;
-            if (strcmp(children.items[i], "..") == 0)
-                continue;
-
-            src_sb.count = 0;
-            nob_sb_append_cstr(&src_sb, src_path);
-            nob_sb_append_cstr(&src_sb, "/");
-            nob_sb_append_cstr(&src_sb, children.items[i]);
-            nob_sb_append_null(&src_sb);
-
-            dst_sb.count = 0;
-            nob_sb_append_cstr(&dst_sb, dst_path);
-            nob_sb_append_cstr(&dst_sb, "/");
-            nob_sb_append_cstr(&dst_sb, children.items[i]);
-            nob_sb_append_null(&dst_sb);
-
-            if (!nob_copy_directory_recursively(src_sb.items, dst_sb.items)) {
+        case NOB_FILE_DIRECTORY: {
+            if (!nob_mkdir_if_not_exists(dst_path)) {
                 nob_return_defer(false);
             }
-        }
-    } break;
+            if (!nob_read_entire_dir(src_path, &children)) {
+                nob_return_defer(false);
+            }
 
-    case NOB_FILE_REGULAR: {
-        if (!nob_copy_file(src_path, dst_path)) {
+            for (size_t i = 0; i < children.count; ++i) {
+                if (strcmp(children.items[i], ".") == 0) {
+                    continue;
+                }
+                if (strcmp(children.items[i], "..") == 0) {
+                    continue;
+                }
+
+                src_sb.count = 0;
+                nob_sb_append_cstr(&src_sb, src_path);
+                nob_sb_append_cstr(&src_sb, "/");
+                nob_sb_append_cstr(&src_sb, children.items[i]);
+                nob_sb_append_null(&src_sb);
+
+                dst_sb.count = 0;
+                nob_sb_append_cstr(&dst_sb, dst_path);
+                nob_sb_append_cstr(&dst_sb, "/");
+                nob_sb_append_cstr(&dst_sb, children.items[i]);
+                nob_sb_append_null(&dst_sb);
+
+                if (!nob_copy_directory_recursively(src_sb.items, dst_sb.items)) {
+                    nob_return_defer(false);
+                }
+            }
+        } break;
+
+        case NOB_FILE_REGULAR: {
+            if (!nob_copy_file(src_path, dst_path)) {
+                nob_return_defer(false);
+            }
+        } break;
+
+        case NOB_FILE_SYMLINK: {
+            nob_log(NOB_WARNING, "TODO: Copying symlinks is not supported yet");
+        } break;
+
+        case NOB_FILE_OTHER: {
+            nob_log(NOB_ERROR, "Unsupported type of file %s", src_path);
             nob_return_defer(false);
-        }
-    } break;
+        } break;
 
-    case NOB_FILE_SYMLINK: {
-        nob_log(NOB_WARNING, "TODO: Copying symlinks is not supported yet");
-    } break;
-
-    case NOB_FILE_OTHER: {
-        nob_log(NOB_ERROR, "Unsupported type of file %s", src_path);
-        nob_return_defer(false);
-    } break;
-
-    default:
-        NOB_UNREACHABLE("nob_copy_directory_recursively");
+        default:
+            NOB_UNREACHABLE("nob_copy_directory_recursively");
     }
 
 defer:
@@ -2336,8 +2390,9 @@ NOBDEF char *nob_temp_strndup(const char *s, size_t n) {
 NOBDEF void *nob_temp_alloc(size_t requested_size) {
     size_t word_size = sizeof(uintptr_t);
     size_t size = (requested_size + word_size - 1) / word_size * word_size;
-    if (nob_temp_size + size > NOB_TEMP_CAPACITY)
+    if (nob_temp_size + size > NOB_TEMP_CAPACITY) {
         return NULL;
+    }
     void *result = &nob_temp[nob_temp_size];
     nob_temp_size += size;
     return result;
@@ -2384,8 +2439,9 @@ NOBDEF int nob_needs_rebuild(const char *output_path, const char **input_paths, 
         CreateFile(output_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
     if (output_path_fd == INVALID_HANDLE_VALUE) {
         // NOTE: if output does not exist it 100% must be rebuilt
-        if (GetLastError() == ERROR_FILE_NOT_FOUND)
+        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             return 1;
+        }
         nob_log(NOB_ERROR, "Could not open file %s: %s", output_path, nob_win32_error_message(GetLastError()));
         return -1;
     }
@@ -2415,8 +2471,9 @@ NOBDEF int nob_needs_rebuild(const char *output_path, const char **input_paths, 
         }
 
         // NOTE: if even a single input_path is fresher than output_path that's 100% rebuild
-        if (CompareFileTime(&input_path_time, &output_path_time) == 1)
+        if (CompareFileTime(&input_path_time, &output_path_time) == 1) {
             return 1;
+        }
     }
 
     return 0;
@@ -2425,8 +2482,9 @@ NOBDEF int nob_needs_rebuild(const char *output_path, const char **input_paths, 
 
     if (stat(output_path, &statbuf) < 0) {
         // NOTE: if output does not exist it 100% must be rebuilt
-        if (errno == ENOENT)
+        if (errno == ENOENT) {
             return 1;
+        }
         nob_log(NOB_ERROR, "could not stat %s: %s", output_path, strerror(errno));
         return -1;
     }
@@ -2441,8 +2499,9 @@ NOBDEF int nob_needs_rebuild(const char *output_path, const char **input_paths, 
         }
         time_t input_path_time = statbuf.st_mtime;
         // NOTE: if even a single input_path is fresher than output_path that's 100% rebuild
-        if (input_path_time > output_path_time)
+        if (input_path_time > output_path_time) {
             return 1;
+        }
     }
 
     return 0;
@@ -2490,19 +2549,23 @@ NOBDEF bool nob_read_entire_file(const char *path, Nob_String_Builder *sb) {
     FILE *f = fopen(path, "rb");
     size_t new_count = 0;
     long long m = 0;
-    if (f == NULL)
+    if (f == NULL) {
         nob_return_defer(false);
-    if (fseek(f, 0, SEEK_END) < 0)
+    }
+    if (fseek(f, 0, SEEK_END) < 0) {
         nob_return_defer(false);
+    }
 #ifndef _WIN32
     m = ftell(f);
 #else
     m = _telli64(_fileno(f));
 #endif
-    if (m < 0)
+    if (m < 0) {
         nob_return_defer(false);
-    if (fseek(f, 0, SEEK_SET) < 0)
+    }
+    if (fseek(f, 0, SEEK_SET) < 0) {
         nob_return_defer(false);
+    }
 
     new_count = sb->count + m;
     if (new_count > sb->capacity) {
@@ -2519,10 +2582,12 @@ NOBDEF bool nob_read_entire_file(const char *path, Nob_String_Builder *sb) {
     sb->count = new_count;
 
 defer:
-    if (!result)
+    if (!result) {
         nob_log(NOB_ERROR, "Could not read file %s: %s", path, strerror(errno));
-    if (f)
+    }
+    if (f) {
         fclose(f);
+    }
     return result;
 }
 
@@ -2550,8 +2615,9 @@ NOBDEF int nob_sb_appendf(Nob_String_Builder *sb, const char *fmt, ...) {
 
 NOBDEF void nob_sb_pad_align(Nob_String_Builder *sb, size_t size) {
     size_t rem = sb->count % size;
-    if (rem == 0)
+    if (rem == 0) {
         return;
+    }
     for (size_t i = 0; i < size - rem; ++i) {
         nob_da_append(sb, 0);
     }
@@ -2751,22 +2817,30 @@ NOBDEF char *nob_temp_dir_name(const char *path) {
     // Stolen from the musl's implementation of dirname.
     // We are implementing our own one because libc vendors cannot agree on whether dirname(3)
     // modifies the path or not.
-    if (!path || !*path)
+    if (!path || !*path) {
         return nob_temp_strdup(".");
+    }
     size_t i = strlen(path) - 1;
-    for (; path[i] == '/'; i--)
-        if (!i)
+    for (; path[i] == '/'; i--) {
+        if (!i) {
             return nob_temp_strdup("/");
-    for (; path[i] != '/'; i--)
-        if (!i)
+        }
+    }
+    for (; path[i] != '/'; i--) {
+        if (!i) {
             return nob_temp_strdup(".");
-    for (; path[i] == '/'; i--)
-        if (!i)
+        }
+    }
+    for (; path[i] == '/'; i--) {
+        if (!i) {
             return nob_temp_strdup("/");
+        }
+    }
     return nob_temp_strndup(path, i + 1);
 #else
-    if (!path)
+    if (!path) {
         path = ""; // Treating NULL as empty.
+    }
     char *drive = (char *)nob_temp_alloc(_MAX_DRIVE);
     char *dir = (char *)nob_temp_alloc(_MAX_DIR);
     // https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2010/8e46eyt7(v=vs.100)
@@ -2781,18 +2855,21 @@ NOBDEF char *nob_temp_file_name(const char *path) {
     // Stolen from the musl's implementation of dirname.
     // We are implementing our own one because libc vendors cannot agree on whether basename(3)
     // modifies the path or not.
-    if (!path || !*path)
+    if (!path || !*path) {
         return nob_temp_strdup(".");
+    }
     char *s = nob_temp_strdup(path);
     size_t i = strlen(s) - 1;
-    for (; i && s[i] == '/'; i--)
+    for (; i && s[i] == '/'; i--) {
         s[i] = 0;
+    }
     for (; i && s[i - 1] != '/'; i--)
         ;
     return s + i;
 #else
-    if (!path)
+    if (!path) {
         path = ""; // Treating NULL as empty.
+    }
     char *fname = (char *)nob_temp_alloc(_MAX_FNAME);
     char *ext = (char *)nob_temp_alloc(_MAX_EXT);
     // https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2010/8e46eyt7(v=vs.100)
@@ -2806,8 +2883,9 @@ NOBDEF char *nob_temp_file_ext(const char *path) {
 #ifndef _WIN32
     return strrchr(nob_temp_file_name(path), '.');
 #else
-    if (!path)
+    if (!path) {
         path = ""; // Treating NULL as empty.
+    }
     char *ext = (char *)nob_temp_alloc(_MAX_EXT);
     // https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2010/8e46eyt7(v=vs.100)
     errno_t ret = _splitpath_s(path, NULL, 0, NULL, 0, NULL, 0, ext, _MAX_EXT);
@@ -2820,8 +2898,9 @@ NOBDEF char *nob_temp_running_executable_path(void) {
 #if defined(__linux__)
     char buf[4096];
     int length = readlink("/proc/self/exe", buf, NOB_ARRAY_LEN(buf));
-    if (length < 0)
+    if (length < 0) {
         return nob_temp_strdup("");
+    }
     return nob_temp_strndup(buf, length);
 #elif defined(_WIN32)
     char buf[MAX_PATH];
@@ -2830,23 +2909,27 @@ NOBDEF char *nob_temp_running_executable_path(void) {
 #elif defined(__APPLE__)
     char buf[4096];
     uint32_t size = NOB_ARRAY_LEN(buf);
-    if (_NSGetExecutablePath(buf, &size) != 0)
+    if (_NSGetExecutablePath(buf, &size) != 0) {
         return nob_temp_strdup("");
+    }
     int length = strlen(buf);
     return nob_temp_strndup(buf, length);
 #elif defined(__FreeBSD__)
     char buf[4096];
     int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
     size_t length = sizeof(buf);
-    if (sysctl(mib, 4, buf, &length, NULL, 0) < 0)
+    if (sysctl(mib, 4, buf, &length, NULL, 0) < 0) {
         return nob_temp_strdup("");
+    }
     return nob_temp_strndup(buf, length);
 #elif defined(__HAIKU__)
     int cookie = 0;
     image_info info;
-    while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK)
-        if (info.type == B_APP_IMAGE)
+    while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
+        if (info.type == B_APP_IMAGE) {
             break;
+        }
+    }
     return nob_temp_strndup(info.name, strlen(info.name));
 #else
     fprintf(stderr, "%s:%d: TODO: nob_temp_running_executable_path is not implemented for this platform\n", __FILE__,
