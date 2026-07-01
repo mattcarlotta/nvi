@@ -1,4 +1,4 @@
-# nvi
+# nvi (en-vee)
 
 A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
@@ -12,7 +12,7 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 
 ## Installation
 
-Download a precompiled binary from [Releases](https://github.com/mattcarlotta/nvi-bin/releases/)
+Download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
 Then place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
 ```sh
@@ -72,6 +72,12 @@ Build for release:
 ./nob release
 ```
 
+> [!NOTE]
+> A Linux OS virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). As a result, the compiled binary size will shrink/grow to account for this page
+> sizing. The default page sizing for nvi is 64KB (to maintain backward compatibility), which may pad more virtual memory than necessary. To check your OS page sizing,
+> run `getconf PAGESIZE`. If your page sizing is smaller than 64KB, then you can override the default page sizing by setting the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
+> `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
+
 Build and install the release binary in a shell directory path:
 ```sh
 # install in a directory that is recognized by the shell $PATH
@@ -96,11 +102,11 @@ nvi version
 # <architecture>
 ```
 
-If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions about a missing shell `$PATH`.
+If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions for checking shell `$PATH`s.
 
 ## Running
 
-### Unix (Linux, macOS, WSL)
+### POSIX (Linux, macOS, WSL)
 
 `nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
 
@@ -142,8 +148,8 @@ Notes for Windows users:
 
 - **Persistence:** `$env:` assignments apply to the invoking PowerShell session, so the variables remain set after the command exits. For an isolated, throwaway environment, run the pipeline inside `pwsh -Command "..."`.
 - **Encoding:** PowerShell decodes nvi's output using the console encoding. PowerShell 7+ defaults to UTF-8; on Windows PowerShell 5.1, set `[Console]::OutputEncoding` to UTF-8 if your values contain non-ASCII characters.
-- **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the Unix pipeline directly with `--format nul`.
-- **WSL:** use the Linux binary and the Unix pipeline.
+- **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the POSIX pipeline directly with `--format nul`.
+- **WSL:** use the Linux binary and the POSIX pipeline.
 - `cmd.exe` is not supported.
 
 ## Flags
@@ -152,7 +158,7 @@ Notes for Windows users:
 | --- | --- | --- | --- |
 | `--dry-run` | `-d` | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
 | `--files` | `-f` | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
-| `--format` | `-F` | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
+| `--format` | `-F` | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on POSIX and `powershell` on Windows (chosen at compile time per target). |
 | `--help` | `-h` | | Prints usage help to stdout and exits with 0. |
 | `--ignored` | `-i` | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
 | `--required` | `-r` | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
@@ -163,7 +169,7 @@ Notes for Windows users:
 Unrecognized flags or arguments are usage errors.
 
 > [!NOTE]
-> † Without a `--` command, scan will only report what it finds and exit. With a `--` command, scan sets the found ENV keys to the required ENVs list.
+> † Without a `--` command, scan will only report what it finds and exit (must include *--dry-run*). With a `--` command, scan sets the found ENV keys to the required ENVs list.
 
 ## Usage examples
 
