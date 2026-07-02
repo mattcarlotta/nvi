@@ -12,9 +12,10 @@ nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, sca
 
 ## Installation
 
-Download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
+For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-For Windows (PowerShell) users, skip to the [building and installing](https://github.com/mattcarlotta/nvi-bin/blob/main/README.md#building-and-installing) for Windows subsection.
+For Windows (PowerShell) users, you'll want to add the binary to a directory then add that directory to the PowerShell `PATH`. For more information, take a look at the
+[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) Windows subsection on how to add a directory to your `PATH`.
 
 Then place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
 ```sh
@@ -44,7 +45,7 @@ Optional requirements:
 - [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `21.0.0`
 
 Building source code:
-- [nob](https://github.com/tsoding/nob.h)
+- [nob.h](https://github.com/tsoding/nob.h)
 
 ### POSIX (Linux, macOS, WSL)
 
@@ -145,8 +146,15 @@ Optionally download it:
 Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi-bin/archive/refs/heads/main.zip" -OutFile "nvi-bin.zip"
 ```
 Then extract it:
-```
+```powershell
 Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
+```
+Then setup git tracking (the commit will be used within the output for `nvi version`; otherwise it'll report the commit as "unknown"):
+```powershell
+git init
+git remote add origin https://github.com/mattcarlotta/nvi-bin.git
+git fetch origin
+git reset origin
 ```
 
 8. Change directory to `nvi-bin`
@@ -414,13 +422,26 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 
 This project uses [Unity](https://github.com/ThrowTheSwitch/Unity) in combination with [nob.h](https://github.com/tsoding/nob.h)
 
-To run tests, use the following commands:
-```sh
-# if you haven't already, compile nob
-clang -o nob nob.c
+### POSIX
 
-# generates a compile-commands.json for clang, builds tests and runs test suites
+Build nob (if you haven't already, compile nob):
+```sh
+clang -o nob nob.c
+```
+Run tests (generates a compile-commands.json for clang, builds tests and runs test suites):
+```sh
 ./nob test
+```
+
+### Windows (PowerShell)
+
+Build nob (if you haven't already, compile nob):
+```sh
+cl nob nob.c
+```
+Run tests (generates a compile-commands.json for clang, builds tests and runs test suites):
+```sh
+./nob.exe test
 ```
 
 ## Security model
