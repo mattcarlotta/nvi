@@ -12,7 +12,9 @@ nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, sca
 
 ## Installation
 
-For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/). The `linux-x86_64-musl` archive is a fully static build that runs on distros with a glibc older than the one on the build runners.
+For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source).
+
+Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
 For the PowerShell (Windows) build, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
 [building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) subsection for Windows on how to add a directory to your PowerShell `Path`.
@@ -279,12 +281,15 @@ Notes for Windows users:
 | `--version` | `-v` | | Prints version info to stdout and exits with 0. |
 | `--` | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
-Unrecognized flags or arguments are usage errors.
-
-Diagnostics written to stderr are colorized only when stderr is a TTY; setting a non-empty [`NO_COLOR`](https://no-color.org/) env disables color regardless.
-
 > [!NOTE]
 > † Without a `--` command, scan will only report what it finds and exit (must include *--dry-run*). With a `--` command, scan sets the found ENV keys to the required ENVs list.
+
+Unrecognized flags or arguments are usage errors.
+
+Diagnostics written to stderr are colorized only when stderr is a TTY; setting a non-empty `NO_COLOR` env disables color regardless:
+```sh
+NO_COLOR=true nvi [flags]
+```
 
 ## Usage examples
 
@@ -335,10 +340,22 @@ $ENV{DATABASE_URL}                # Perl
 > An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPER_CASE_SNAKE_CASE.
 
 > [!CAUTION]
-> Dynamic keys: `const key = "DATABASE_URL"; process.env[key]`
-> Destructured variables: `const { DATABASE_URL } = process.env`
-> And aliased accessors: `const e = process.env; e.DATABASE_URL`
-> will NOT be detected by the scanner
+> The following will not be detected by the scanner...
+
+- Dynamic keys:
+```js
+const key = "DATABASE_URL";
+process.env[key];
+```
+- Destructured variables:
+```js
+const { DATABASE_URL } = process.env;
+```
+- Aliased accessors:
+```js
+const e = process.env;
+e.DATABASE_URL;
+```
 
 ### Supported file extensions (to the right of the language)
 - C -> `c`, `h`
@@ -397,8 +414,8 @@ Notes:
 
 - Extensions must be written as `ext` and not `.ext` or `*.ext`.
 - Extensions with no known accessor patterns are usage errors.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
-- When a command is present, scanned keys that are not defined exit with code `1` (usage error), the same as `--required` failures.
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored.
+- Symlinked directories are not followed.
 
 ## `.env` file syntax
 
@@ -431,7 +448,7 @@ GREETING="hello world"
 # single quotes are fully literal: no ${KEY} interpolation and no '\' continuation
 RAW='${NOT_INTERPOLATED} costs $5'
 
-# an explicitly quoted empty value is allowed (a bare KEY= is still an error)
+# an explicitly quoted empty value is allowed (a bare 'KEY=' without a value is still an error)
 EMPTY_OK=""
 
 # a shell-style export prefix is stripped, so source-able files parse the same
@@ -449,6 +466,7 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
 # when there's no backslash and just a new-line or EOF, then that indicates the end of a multiline value
 ```
+
 > [!NOTE]
 > Keys must match `[A-Za-z_][A-Za-z0-9_]*`; anything else is a tokenizer error.
 > Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `.env` files specified by `--files`).
@@ -484,23 +502,23 @@ Run all test suites:
 ### PowerShell
 
 Build nob (if you haven't already):
-```sh
+```powershell
 cl nob nob.c
 ```
 
 Run all unit tests:
-```sh
+```powershell
 ./nob.exe unit
 ```
 
 Run all integration tests:
-```sh
+```powershell
 ./nob.exe integration
 
 ```
 
 Run all test suites:
-```sh
+```powershell
 ./nob.exe test
 ```
 
