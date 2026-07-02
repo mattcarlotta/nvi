@@ -126,9 +126,9 @@ winget install LLVM.LLVM --source winget
 
 4. Close and reopen PowerShell
 
-5. Launch a developer shell
+5. Launch a developer shell (without the `-Arch` and `HostArch` flags, the VS Dev Shell environment will default to 32bit)
 ```powershell
-& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1"
+& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
 ```
 
 6. Change directory to `Documents`
