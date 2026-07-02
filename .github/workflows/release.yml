@@ -10,6 +10,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
+        # TODO: Use ubuntu-latest if GA supports an aliased latest arm version
         os: [ubuntu-24.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
