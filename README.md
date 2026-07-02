@@ -3,31 +3,31 @@
 nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
 - 0 dependencies
-- Language agnostic
+- Language and framework agnostic
 - Parses one or more `.env` files
 - Handles `${KEY}` interpolations
 - Supports multiline values via `\` (backslash-newline) delimiter
-- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and sets them as required
-- Optionally validates required keys are defined before command execution
+- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions-to-the-right-of-the-language) and sets them as required
+- Optionally validates required keys to be defined before command execution
 
 ## Installation
 
 For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-For Windows (PowerShell) users, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
-[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) Windows subsection on how to add a directory to your `Path`.
+For the PowerShell (Windows) build, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
+[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) subsection for Windows on how to add a directory to your PowerShell `Path`.
 
-For POSIX, place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
+For POSIX (Unix or Unix-like) builds, place the binary in one of the directories (owned by `$USER` and not by `root`) located in your shell `$PATH`:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
 
-Optionally, create a local bin directory owned by `$USER`:
+If none fit, then create a local bin directory owned by `$USER`:
 ```sh
 mkdir -p $HOME/.local/bin
 ```
 
-Then edit and update your shell  profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
+Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
 ```sh
 typeset -U path # optionally remove duplicate directories in $PATH
 path+=("$HOME/.local/bin")
@@ -77,7 +77,7 @@ Build for release:
 > run `getconf PAGESIZE`. If your page sizing is smaller than 64KB, then you can override the default page sizing by setting the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
 > `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
 
-Build and install the release binary in a shell directory path:
+Build and install a release binary in a shell directory path:
 ```sh
 # install in a directory that is recognized by the shell $PATH
 # for example: ./nob install $HOME/.local/bin
@@ -99,7 +99,7 @@ nvi version
 If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions for checking shell `$PATH`s.
 
 
-### Windows (PowerShell)
+### PowerShell (Windows)
 
 Requirements:
 - [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
@@ -112,7 +112,7 @@ winget install Microsoft.VisualStudio.2022.BuildTools --source winget
 ```
 
 > [!NOTE]
-> It should open a GUI installer, where you can select the "Desktop development with C++" workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
+> It should open a GUI installer, where you need to select and install the `Desktop development with C++` workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
 
 2. Install LLVM/Clang:
 ```powershell
@@ -132,7 +132,7 @@ winget install LLVM.LLVM --source winget
 ```
 
 > [!IMPORTANT]
-> Without the `-Arch` and `HostArch` flags, the VS Dev Shell environment will default to 32bit!
+> Without the `-Arch` and `HostArch` flags, the VS Dev Shell environment may default to 32bit!
 
 6. Change directory to `Documents`:
 ```powershell
@@ -170,17 +170,17 @@ cl nob nob.c
 ```
 #### Building and installing
 
-Debugging:
+Build for debugging:
 ```powershell
 ./nob.exe
 ```
 
-Release:
+Build for release:
 ```powershell
 ./nob.exe release
 ```
 
-Build and install (change `C:\tools\bin` to whatever directory you'd like):
+Build and install a release binary (change `C:\tools\bin` to whatever directory you'd like):
 ```powershell
 mkdir C:\tools\bin -Force
 
@@ -205,7 +205,8 @@ Get-Command nvi
 
 ### POSIX (Linux, macOS, WSL)
 
-`nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
+The POSIX build defaults to `--format nul`, emitting NUL-delimited ENVs: each `KEY=value` pair, then each command token.
+Then `xargs -0` splits the ENVs and hands them off to `env`, which sets the variables and runs the command.
 
 ```sh
 nvi [flags|command] -- [command] | xargs -0 env
@@ -220,10 +221,10 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 source <profile_url>
 ```
 
-### Windows (PowerShell)
+### PowerShell (Windows)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
-PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
+PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string, and `Invoke-Expression` executes it.
 
 ```powershell
 nvi [flags|command] -- [command] | Out-String | Invoke-Expression
@@ -324,7 +325,6 @@ os.Getenv("DATABASE_URL")         # Go
 env::var("DATABASE_URL")          # Rust
 ENV["DATABASE_URL"]               # Ruby
 System.getenv("DATABASE_URL")     # Java / Kotlin
-$env:DATABASE_URL                 # PowerShell
 $ENV{DATABASE_URL}                # Perl
 ```
 > [!IMPORTANT]
@@ -436,7 +436,7 @@ This project uses [Unity](https://github.com/ThrowTheSwitch/Unity) in combinatio
 
 ### POSIX
 
-Build nob (if you haven't already, compile nob):
+Build nob (if you haven't already):
 ```sh
 clang -o nob nob.c
 ```
@@ -445,9 +445,9 @@ Run tests (generates a compile-commands.json for clang, builds tests and runs te
 ./nob test
 ```
 
-### Windows (PowerShell)
+### PowerShell
 
-Build nob (if you haven't already, compile nob):
+Build nob (if you haven't already):
 ```sh
 cl nob nob.c
 ```
