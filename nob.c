@@ -12,6 +12,17 @@
 #define BIN_EXT ""
 #endif
 
+// Linux-only escape hatch: NVI_LIBC=musl builds a fully static, portable
+// binary with musl-gcc (apt install musl-tools) instead of clang+glibc.
+static bool use_musl(void) {
+#if defined(__linux__)
+    const char *v = getenv("NVI_LIBC");
+    return v != NULL && strcmp(v, "musl") == 0;
+#else
+    return false;
+#endif
+}
+
 static const char *git_commit(void) {
     static const char *cached = NULL;
     if (cached != NULL) {
@@ -55,8 +66,8 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
 #if defined(_WIN32) && defined(_MSC_VER)
     nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17", "/utf-8");
 #elif defined(__APPLE__) || defined(__linux__)
-    nob_cmd_append(cmd, "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic",
-                   "-std=gnu17");
+    nob_cmd_append(cmd, use_musl() ? "musl-gcc" : "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall",
+                   "-Wextra", "-Wpedantic", "-std=gnu17");
 #else
 #error "unsupported platform (expected Windows/MSVC, macOS, or Linux)"
 #endif
@@ -80,8 +91,11 @@ static void compose_test_cmd(Nob_Cmd *cmd, const char *out_path) {
 #else
     nob_cmd_append(cmd, "-Itests/unity", "-g", "-O0");
 #if defined(__APPLE__) || defined(__linux__)
-    // Sanitize unit tests on the dev platforms; MSVC is left unsanitized.
-    nob_cmd_append(cmd, "-fsanitize=address,undefined", "-fno-omit-frame-pointer");
+    // Sanitize unit tests on the dev platforms; MSVC is left unsanitized and
+    // musl builds skip sanitizers (ASan targets glibc).
+    if (!use_musl()) {
+        nob_cmd_append(cmd, "-fsanitize=address,undefined", "-fno-omit-frame-pointer");
+    }
 #endif
     nob_cmd_append(cmd, "-o", out_path);
 #endif
@@ -182,27 +196,44 @@ static bool build_release(void) {
     add_common_flags(&cmd, "release");
 
 #if defined(_WIN32) && defined(_MSC_VER)
-    nob_cmd_append(&cmd, "/O1", "/GL", "/Fe:" OUT_BIN);
+    nob_cmd_append(&cmd, "/O1", "/GL", "/Gy", "/Gw", "/Fe:" OUT_BIN);
 #elif defined(__APPLE__)
     nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
                    "-Wl,-dead_strip_dylibs", "-Wl,-dead_strip", "-Wl,-x", "-o", OUT_BIN);
 #elif defined(__linux__)
-    const char *mps = getenv("NVI_MAX_PAGE_SIZE");
-    // Page sizing breakdown:
-    // 0x1000 = 4096 = 4KB
-    // 0x4000 = 16384 = 16KB
-    // 0x10000 = 65536 = 64KB (default)
-    if (mps == NULL || mps[0] == '\0') {
-        mps = "0x10000";
+    if (use_musl()) {
+        // fully static musl build; gcc has no -flto parity with the clang+lld
+        // pipeline here, so keep the plain verified size flags
+        nob_cmd_append(&cmd, "-Oz", "-fno-ident", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
+                       "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-s", "-static", "-o", OUT_BIN);
+    } else {
+        const char *mps = getenv("NVI_MAX_PAGE_SIZE");
+        // Page sizing breakdown:
+        // 0x1000 = 4096 = 4KB
+        // 0x4000 = 16384 = 16KB
+        // 0x10000 = 65536 = 64KB (default)
+        if (mps == NULL || mps[0] == '\0') {
+            mps = "0x10000";
+        }
+        // lld lays out the (few) segments far more compactly than BFD ld under
+        // these flags and enables identical-code folding; requires the lld
+        // package alongside clang
+        nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-ident", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
+                       "-ffunction-sections", "-fdata-sections", "-fuse-ld=lld", "-Wl,--icf=all", "-Wl,--gc-sections",
+                       "-Wl,-z,noseparate-code", "-Wl,--build-id=none",
+                       nob_temp_sprintf("-Wl,-z,max-page-size=%s", mps), "-s", "-o", OUT_BIN);
     }
-    nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-ident", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
-                   "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wl,-z,noseparate-code",
-                   "-Wl,--build-id=none", nob_temp_sprintf("-Wl,-z,max-page-size=%s", mps), "-s", "-o", OUT_BIN);
 #endif
 
     if (!append_sources(&cmd)) {
         return false;
     }
+
+#if defined(_WIN32) && defined(_MSC_VER)
+    // everything after /link goes to the linker: be explicit about LTCG and
+    // fold/strip unreferenced COMDATs produced by /Gy and /Gw
+    nob_cmd_append(&cmd, "/link", "/LTCG", "/OPT:REF", "/OPT:ICF");
+#endif
 
     if (!nob_cmd_run(&cmd)) {
         return false;
@@ -315,7 +346,7 @@ static bool run_integration(void) {
         return false;
     }
 
-    nob_log(NOB_INFO, "integration tests passed");
+    nob_log(NOB_INFO, "ALl integration tests passed");
     return true;
 }
 

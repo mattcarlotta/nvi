@@ -13,6 +13,7 @@
 #include "utils.h"
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 #if defined(_WIN32) && defined(_MSC_VER)
@@ -116,36 +117,38 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
 
 static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path);
 
-static result_t handle_entry(const args_t *args, scanner_t *scanner, const char *parent, const char *name) {
+// 'file' is a caller-owned scratch buffer of at least PATH_MAX bytes; keeping
+// it on the heap (one allocation per directory level) keeps recursion frames
+// small so deep trees can't blow the stack
+static result_t handle_entry(const args_t *args, scanner_t *scanner, const char *parent, const char *name, char *file) {
     result_t result = {.ok = true};
 
     if (name[0] == '.' || is_blacklisted(name)) {
         return result;
     }
 
-    char child[PATH_MAX];
-    int n = snprintf(child, sizeof(child), "%s" PATH_SEP "%s", parent, name);
-    if (n < 0 || (size_t)n >= sizeof(child)) {
+    int n = snprintf(file, PATH_MAX, "%s" PATH_SEP "%s", parent, name);
+    if (n < 0 || (size_t)n >= PATH_MAX) {
         return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
     struct stat st;
 #if defined(_WIN32) && defined(_MSC_VER)
-    if (stat(child, &st) != 0) {
-        return operation_error("Unable to stat '%s'\n", child);
+    if (stat(file, &st) != 0) {
+        return operation_error("Unable to stat '%s'\n", file);
     }
 #else
-    if (lstat(child, &st) != 0) {
-        return operation_error("Unable to stat '%s'\n", child);
+    if (lstat(file, &st) != 0) {
+        return operation_error("Unable to stat '%s'\n", file);
     }
 #endif
 
     if (S_ISDIR(st.st_mode)) {
-        return walk_file_tree(args, scanner, child);
+        return walk_file_tree(args, scanner, file);
     }
 
     if (S_ISREG(st.st_mode)) {
-        return scan_file(args, scanner, child, name);
+        return scan_file(args, scanner, file, name);
     }
 
     return result;
@@ -154,16 +157,25 @@ static result_t handle_entry(const args_t *args, scanner_t *scanner, const char 
 static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path) {
     result_t result = {.ok = true};
 
+    char *file = malloc(PATH_MAX);
+    if (file == NULL) {
+        fprintf(stderr, "[ERROR] Failed to allocate a path buffer (system out of memory?); aborting.\n");
+        fflush(stderr);
+        abort();
+    }
+
 #if defined(_WIN32) && defined(_MSC_VER)
-    char pattern[PATH_MAX];
-    int n = snprintf(pattern, sizeof(pattern), "%s" PATH_SEP "*", path);
-    if (n < 0 || (size_t)n >= sizeof(pattern)) {
+    // build the search pattern in the scratch buffer, then reuse it for fileren
+    int n = snprintf(file, PATH_MAX, "%s" PATH_SEP "*", path);
+    if (n < 0 || (size_t)n >= PATH_MAX) {
+        free(file);
         return operation_error("path too long: '%s'", path);
     }
 
     WIN32_FIND_DATA fd;
-    HANDLE h = FindFirstFile(pattern, &fd);
+    HANDLE h = FindFirstFile(file, &fd);
     if (h == INVALID_HANDLE_VALUE) {
+        free(file);
         return operation_error("cannot open directory '%s'; aborting.", path);
     }
 
@@ -174,7 +186,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
             continue;
         }
 
-        result = handle_entry(args, scanner, path, fd.cFileName);
+        result = handle_entry(args, scanner, path, fd.cFileName, file);
         if (!result.ok) {
             break;
         }
@@ -183,6 +195,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
 #else
     DIR *dir = opendir(path);
     if (dir == NULL) {
+        free(file);
         return operation_error("cannot open directory '%s'; aborting.", path);
     }
 
@@ -190,7 +203,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        result = handle_entry(args, scanner, path, entry->d_name);
+        result = handle_entry(args, scanner, path, entry->d_name, file);
         if (!result.ok) {
             break;
         }
@@ -199,13 +212,14 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     closedir(dir);
 #endif
 
+    free(file);
     return result;
 }
 
-static void add_unique_env_keys(hashmap_t *seen, const list_t *list) {
+static void add_unique_env_keys(hashmap_t *env_map, const list_t *list) {
     for (size_t i = 0; i < list->count; ++i) {
         const char *key = list->items[i];
-        hashmap_put(seen, key, strlen(key), 0); // insert-or-update dedupes
+        hashmap_put(env_map, key, strlen(key), 0); // insert-or-update dedupes
     }
 }
 
@@ -214,21 +228,21 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
         return;
     }
 
-    hashmap_t seen = {0};
+    hashmap_t env_map = {0};
 
-    add_unique_env_keys(&seen, &args->ignored);
-    add_unique_env_keys(&seen, &args->required);
+    add_unique_env_keys(&env_map, &args->ignored);
+    add_unique_env_keys(&env_map, &args->required);
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
         const hashmap_entry_t *entry = &scanner->envs.slots[i];
-        if (entry->key == NULL || hashmap_contains(&seen, entry->key, entry->len)) {
+        if (entry->key == NULL || hashmap_contains(&env_map, entry->key, entry->len)) {
             continue;
         }
 
         DYN_ARR_APPEND(&args->required, entry->key);
     }
 
-    free_hashmap(&seen);
+    free_hashmap(&env_map);
 
     if (args->dry_run) {
         log_info("[INFO]");

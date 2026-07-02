@@ -10,9 +10,8 @@
 static inline const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t i) {
     for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
         const accessor_t *acc = &file_ext_match->accessors[a];
-        size_t prefix_len = strlen(acc->prefix);
 
-        if (i + prefix_len > file->len || strncmp(file->contents + i, acc->prefix, prefix_len) != 0) {
+        if (i + acc->prefix_len > file->len || memcmp(file->contents + i, acc->prefix, acc->prefix_len) != 0) {
             continue;
         }
 
@@ -132,12 +131,11 @@ void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_ma
             continue;
         }
 
-        size_t prefix_len = strlen(acc->prefix);
-        env_key_t env = extract_env_by_pattern(file, acc->pattern, i + prefix_len);
+        env_key_t env = extract_env_by_pattern(file, acc->pattern, i + acc->prefix_len);
 
         bool valid_key = is_valid_key(env.key, env.key_len);
         if (!valid_key) {
-            i += prefix_len;
+            i += acc->prefix_len;
             continue;
         }
 

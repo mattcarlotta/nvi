@@ -9,7 +9,6 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-// Cross-platform environment mutation for the interpolation-from-env case.
 #if defined(_WIN32) && defined(_MSC_VER)
 static void set_env(const char *k, const char *v) { _putenv_s(k, v); }
 static void clear_env(const char *k) { _putenv_s(k, ""); }
@@ -169,8 +168,6 @@ static void test_duplicate_key_updates_in_place(void) {
     free_envs(&envs);
 }
 
-// Forces the index map through several growths and the backing array through
-// several reallocs, then verifies O(1) lookups still resolve to live entries.
 static void test_index_survives_growth(void) {
     enum { N = 100 };
     static char keys[N][16];
@@ -219,6 +216,102 @@ static void test_errors_when_required_env_missing(void) {
     free_envs(&envs);
 }
 
+static void test_fallback_used_when_unset(void) {
+    clear_env("NVI_TEST_FB_UNSET");
+    value_token_t v;
+    token_t toks[] = {make_token("KEY", INTERPOLATED, "NVI_TEST_FB_UNSET:-fell back", &v)};
+    token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
+
+    args_t args = {0};
+    env_map_t envs = {0};
+    result_t r = run_parser(&args, &tl, &envs);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_STRING("fell back", lookup(&envs, "KEY"));
+    free_envs(&envs);
+}
+
+static void test_fallback_used_when_map_value_empty(void) {
+    value_token_t v1;
+    value_token_t v2;
+    token_t toks[] = {
+        make_token("EMPTYSRC", LITERAL, "", &v1),
+        make_token("KEY", INTERPOLATED, "EMPTYSRC:-fb", &v2),
+    };
+    token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
+
+    args_t args = {0};
+    env_map_t envs = {0};
+    result_t r = run_parser(&args, &tl, &envs);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_STRING("fb", lookup(&envs, "KEY"));
+    free_envs(&envs);
+}
+
+static void test_value_wins_over_fallback(void) {
+    set_env("NVI_TEST_FB_SET", "real");
+    value_token_t v;
+    token_t toks[] = {make_token("KEY", INTERPOLATED, "NVI_TEST_FB_SET:-fb", &v)};
+    token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
+
+    args_t args = {0};
+    env_map_t envs = {0};
+    result_t r = run_parser(&args, &tl, &envs);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_STRING("real", lookup(&envs, "KEY"));
+    clear_env("NVI_TEST_FB_SET");
+    free_envs(&envs);
+}
+
+static void test_defined_empty_without_fallback_resolves_empty(void) {
+    value_token_t v1;
+    value_token_t v2;
+    token_t toks[] = {
+        make_token("EMPTYSRC", LITERAL, "", &v1),
+        make_token("KEY", INTERPOLATED, "EMPTYSRC", &v2),
+    };
+    token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
+
+    args_t args = {0};
+    env_map_t envs = {0};
+    result_t r = run_parser(&args, &tl, &envs);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_STRING("", lookup(&envs, "KEY"));
+    free_envs(&envs);
+}
+
+static void test_errors_on_undefined_interpolation(void) {
+    clear_env("NVI_TEST_UNDEF");
+    value_token_t v;
+    token_t toks[] = {make_token("KEY", INTERPOLATED, "NVI_TEST_UNDEF", &v)};
+    token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
+
+    args_t args = {0};
+    env_map_t envs = {0};
+    result_t r = parser_silent(&args, &tl, &envs);
+    TEST_ASSERT_FALSE(r.ok);
+    TEST_ASSERT_EQUAL_INT(1, r.code);
+    free_envs(&envs);
+}
+
+static void test_errors_when_required_env_is_empty(void) {
+    value_token_t v;
+    token_t toks[] = {make_token("KEY", LITERAL, "", &v)};
+    token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
+
+    args_t args = {0};
+    const char *req[] = {"KEY"};
+    args.required.items = (const char **)req;
+    args.required.count = 1;
+    const char *cmd[] = {"echo"};
+    args.command.items = cmd;
+    args.command.count = 1;
+
+    env_map_t envs = {0};
+    result_t r = parser_silent(&args, &tl, &envs);
+    TEST_ASSERT_FALSE(r.ok);
+    free_envs(&envs);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_sets_normalized_key_value);
@@ -230,5 +323,11 @@ int main(void) {
     RUN_TEST(test_duplicate_key_updates_in_place);
     RUN_TEST(test_index_survives_growth);
     RUN_TEST(test_errors_when_required_env_missing);
+    RUN_TEST(test_fallback_used_when_unset);
+    RUN_TEST(test_fallback_used_when_map_value_empty);
+    RUN_TEST(test_value_wins_over_fallback);
+    RUN_TEST(test_defined_empty_without_fallback_resolves_empty);
+    RUN_TEST(test_errors_on_undefined_interpolation);
+    RUN_TEST(test_errors_when_required_env_is_empty);
     return UNITY_END();
 }

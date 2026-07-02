@@ -140,6 +140,14 @@ static void setup_inputs(void) {
     write_file(IT_DIR "/empty_key.env", EXPECT("=ABC\n"));
     write_file(IT_DIR "/required.env", EXPECT("API_KEY=abc\n"));
 
+    write_file(IT_DIR "/quoted.env", EXPECT("DQ=\"hello world\"\nSQ='keep ${LIT}'\nEMPTYQ=\"\"\n"));
+    write_file(IT_DIR "/export.env", EXPECT("export EXPORTED=value\n"));
+    write_file(IT_DIR "/fallback.env", EXPECT("FB=${NVI_IT_NOT_SET:-fell back}\n"));
+    write_file(IT_DIR "/undef.env", EXPECT("U=${NVI_IT_DEFINITELY_NOT_SET}\n"));
+    write_file(IT_DIR "/badkey.env", EXPECT("MY KEY=1\n"));
+    write_file(IT_DIR "/req_empty.env", EXPECT("EMPTYV=${NVI_IT_UNSET_EMPTY:-}\n"));
+    make_dir(IT_DIR "/dir.env");
+
     write_file(IT_DIR "/scanroot/it.env", EXPECT("IT_SCAN_KEY=1\n"));
     write_file(IT_DIR "/scanroot/partial.env", EXPECT("UNRELATED=1\n"));
     write_file(IT_DIR "/scanroot/src.ts", EXPECT("const k = process.env.IT_SCAN_KEY;\n"));
@@ -177,6 +185,15 @@ int main(void) {
           "--files build/it/literals.env -F nul -- x", 0, EXPECT("PRICE=$5.00\0CHANNEL=#general\0BASE64=abc==\0x\0"),
           NULL);
 
+    check("surrounding quotes are stripped and single quotes block interpolation", NVI_BIN,
+          "--files build/it/quoted.env -F nul -- x", 0, EXPECT("DQ=hello world\0SQ=keep ${LIT}\0EMPTYQ=\0x\0"), NULL);
+
+    check("a shell-style export prefix is stripped from keys", NVI_BIN, "--files build/it/export.env -F nul -- x", 0,
+          EXPECT("EXPORTED=value\0x\0"), NULL);
+
+    check("an unset interpolation falls back to its ':-' default", NVI_BIN, "--files build/it/fallback.env -F nul -- x",
+          0, EXPECT("FB=fell back\0x\0"), NULL);
+
     set_env("NVI_IT_FROM_SHELL", "fromshell");
     check("interpolation resolves from the process environment", NVI_BIN,
           "--files build/it/shell_interp.env -F nul -- x", 0, EXPECT("X=fromshell\0x\0"), NULL);
@@ -194,6 +211,18 @@ int main(void) {
 
     check("an assignment without a key is a tokenizer error", NVI_BIN, "--files build/it/empty_key.env -- x", 1,
           NO_STDOUT, "without a key name");
+
+    check("an undefined interpolation without a fallback is a loud error", NVI_BIN, "--files build/it/undef.env -- x",
+          1, NO_STDOUT, "not defined");
+
+    check("an invalid key name is a tokenizer error", NVI_BIN, "--files build/it/badkey.env -- x", 1, NO_STDOUT,
+          "not a valid ENV name");
+
+    check("a required key that resolves empty is a loud error", NVI_BIN,
+          "--files build/it/req_empty.env --required EMPTYV -- x", 1, NO_STDOUT, "EMPTYV");
+
+    check("a directory masquerading as an env file is a loud error", NVI_BIN, "--files build/it/dir.env -- x", 1,
+          NO_STDOUT, "not a regular file");
 
     check("a missing required key is a loud error", NVI_BIN,
           "--files build/it/required.env --required DATABASE_URL -- x", 1, NO_STDOUT, "DATABASE_URL");
@@ -247,6 +276,6 @@ int main(void) {
         return 1;
     }
 
-    printf("\nintegration: %zu/%zu passed\n", total - failed, total);
+    printf("\n%zu/%zu passed\n", total - failed, total);
     return failed == 0 ? 0 : 1;
 }

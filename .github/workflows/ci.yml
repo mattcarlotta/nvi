@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # TODO: Use ubuntu-latest if GA supports an aliased latest arm version
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install lld
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lld
+
+      - name: Build nob (POSIX)
+        if: runner.os != 'Windows'
+        run: clang -o nob nob.c
+
+      - name: Build nob (Windows)
+        if: runner.os == 'Windows'
+        run: cl nob nob.c
+
+      - name: Run tests (POSIX)
+        if: runner.os != 'Windows'
+        run: ./nob test
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: .\nob.exe test
+
+      - name: Release build (POSIX)
+        if: runner.os != 'Windows'
+        run: ./nob release
+
+      - name: Release build (Windows)
+        if: runner.os == 'Windows'
+        run: .\nob.exe release

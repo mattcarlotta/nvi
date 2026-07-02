@@ -50,14 +50,17 @@ static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigne
 }
 
 static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *token, const byte_list_t *value) {
-    const char *src = value->count ? value->items : "";
-
-    char *copy = strndup(src, value->count);
+    char *copy = malloc(value->count + 1);
     if (copy == NULL) {
         log_error("[ERROR] Unable to copy token value (not enough system memory?); aborting.");
         fflush(stderr);
         abort();
     }
+
+    if (value->count > 0) {
+        memcpy(copy, value->items, value->count);
+    }
+    copy[value->count] = '\0';
 
     value_token_t vt = {
         .value = copy,
@@ -87,11 +90,13 @@ static void free_token(token_t *token) {
     token->values = (value_token_list_t){0};
 }
 
-static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, byte_list_t *value) {
+static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, byte_list_t *value,
+                                          bool allow_empty) {
     commit_token(LITERAL, tokenizer, token, value);
     value->count = 0;
 
-    if (token->values.count == 0 || (token->values.count == 1 && token->values.items[0].value_len == 0)) {
+    if (!allow_empty &&
+        (token->values.count == 0 || (token->values.count == 1 && token->values.items[0].value_len == 0))) {
         log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
                   tokenizer->byte);
         log_f("The '%s' key has an empty value assignment.\n", token->key);
@@ -148,6 +153,13 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
     byte_list_t value = {0};
     result_t result = {.ok = true, .code = 0};
 
+    // 'quote' holds the active quote character (0 when unquoted) and only opens
+    // when a quote immediately follows '='. 'quote_seen' persists until the
+    // token is committed so an explicitly quoted empty value ("" or '') passes
+    // the empty-value check.
+    char quote = 0;
+    bool quote_seen = false;
+
     int current;
     while ((current = peek(tokenizer, 0)) != -1) {
         switch (current) {
@@ -167,13 +179,33 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 break;
             }
             case LINE_DELIMITER: {
+                if (quote != 0) {
+                    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
+                              tokenizer->line, tokenizer->byte);
+                    log_error("The %s key has an unterminated quoted value.\n", token.key ? token.key : "(none)");
+
+                    size_t prefix_len = log_token_line(&token);
+                    log_f("%c%.*s\n", quote, (int)value.count, value.items);
+
+                    log_f("   ");
+                    fput_repeat(stderr, ' ', prefix_len);
+                    fputc('^', stderr);
+                    fput_repeat(stderr, '~', value.count);
+                    log_f(" (missing a closing quote %c)\n", quote);
+
+                    result.ok = false;
+                    result.code = 1;
+                    goto done;
+                }
+
                 if (token.key != NULL) {
-                    result = validate_and_append_token(tokenizer, &token, &value);
+                    result = validate_and_append_token(tokenizer, &token, &value, quote_seen);
                     if (!result.ok) {
                         goto done;
                     }
                 }
 
+                quote_seen = false;
                 value.count = 0;
                 ++tokenizer->line;
                 skip_byte(tokenizer, 1);
@@ -198,6 +230,17 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     --end;
                 }
 
+                // strip an optional shell-style "export " prefix so files meant
+                // for `source` parse the same way (the trailing check keeps a
+                // literal key named "export" intact)
+                if (end - start > 7 && memcmp(value.items + start, "export", 6) == 0 &&
+                    (value.items[start + 6] == SPACE || value.items[start + 6] == TAB)) {
+                    start += 7;
+                    while (start < end && (value.items[start] == SPACE || value.items[start] == TAB)) {
+                        ++start;
+                    }
+                }
+
                 if (end - start == 0) {
                     log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
                               tokenizer->line, tokenizer->byte);
@@ -220,6 +263,22 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     goto done;
                 }
 
+                if (!is_valid_key(value.items + start, end - start)) {
+                    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
+                              tokenizer->line, tokenizer->byte);
+                    log_f("The key '%.*s' is not a valid ENV name.\n", (int)(end - start), value.items + start);
+                    log_f("   %.*s=\n", (int)(end - start), value.items + start);
+                    log_f("   ^");
+                    if (end - start > 1) {
+                        fput_repeat(stderr, '~', end - start - 1);
+                    }
+                    log_f(" (keys must match [A-Za-z_][A-Za-z0-9_]*)\n");
+
+                    result.ok = false;
+                    result.code = 1;
+                    goto done;
+                }
+
                 token.key = strndup(value.items + start, end - start);
                 if (token.key == NULL) {
                     result.ok = false;
@@ -230,6 +289,17 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 value.count = 0;
                 // skip '='
                 skip_byte(tokenizer, 1);
+
+                // a quote directly after '=' opens a quoted value; the quote
+                // characters themselves are not part of the value
+                {
+                    int q = peek(tokenizer, 0);
+                    if (q == DOUBLE_QUOTE || q == SINGLE_QUOTE) {
+                        quote = (char)q;
+                        quote_seen = true;
+                        skip_byte(tokenizer, 1);
+                    }
+                }
                 break;
             }
             case HASH:
@@ -247,6 +317,13 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 value.count = 0;
                 break;
             case DOLLAR_SIGN: {
+                // inside single quotes '$' is always literal (no interpolation)
+                if (quote == SINGLE_QUOTE) {
+                    DYN_ARR_APPEND(&value, (char)current);
+                    skip_byte(tokenizer, 1);
+                    continue;
+                }
+
                 // dollar sign not followed by '{' is literal
                 if (peek(tokenizer, 1) != OPEN_BRACE) {
                     DYN_ARR_APPEND(&value, (char)current);
@@ -307,23 +384,33 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
 
                 commit_token(INTERPOLATED, tokenizer, &token, &value);
 
-                // fold a trailing '\r\n'
-                if (peek(tokenizer, 0) == CARRIAGE_RETURN && peek(tokenizer, 1) == LINE_DELIMITER) {
-                    skip_byte(tokenizer, 1);
-                }
+                if (quote == 0) {
+                    // fold a trailing '\r\n'
+                    if (peek(tokenizer, 0) == CARRIAGE_RETURN && peek(tokenizer, 1) == LINE_DELIMITER) {
+                        skip_byte(tokenizer, 1);
+                    }
 
-                if (peek(tokenizer, 0) == LINE_DELIMITER) {
-                    append_token(tokenizer, &token);
-                    ++tokenizer->line;
-                    // skip '\n'
-                    skip_byte(tokenizer, 1);
-                    tokenizer->byte = 1;
+                    if (peek(tokenizer, 0) == LINE_DELIMITER) {
+                        append_token(tokenizer, &token);
+                        quote_seen = false;
+                        ++tokenizer->line;
+                        // skip '\n'
+                        skip_byte(tokenizer, 1);
+                        tokenizer->byte = 1;
+                    }
                 }
 
                 value.count = 0;
                 break;
             }
             case BACK_SLASH: {
+                // inside single quotes '\' is always literal (no continuation)
+                if (quote == SINGLE_QUOTE) {
+                    DYN_ARR_APPEND(&value, (char)current);
+                    skip_byte(tokenizer, 1);
+                    continue;
+                }
+
                 int n = peek(tokenizer, 1);
                 bool crlf = n == CARRIAGE_RETURN && peek(tokenizer, 2) == LINE_DELIMITER;
                 if (n != -1 && n != LINE_DELIMITER && !crlf) {
@@ -346,15 +433,89 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 tokenizer->byte = 1;
                 break;
             }
-            default:
-                scan_until(tokenizer, &value, LITERAL_STOPS, LITERAL_STOPS_LEN);
+            case DOUBLE_QUOTE:
+            case SINGLE_QUOTE: {
+                if (quote == 0 || current != quote) {
+                    // a quote that didn't open the value is a literal byte
+                    DYN_ARR_APPEND(&value, (char)current);
+                    skip_byte(tokenizer, 1);
+                    continue;
+                }
+
+                // closing quote: consume it, tolerate trailing spaces/tabs,
+                // then require end-of-line or end-of-file
+                skip_byte(tokenizer, 1);
+                quote = 0;
+
+                while (peek(tokenizer, 0) == SPACE || peek(tokenizer, 0) == TAB) {
+                    skip_byte(tokenizer, 1);
+                }
+
+                int next_char = peek(tokenizer, 0);
+                bool trailing_crlf = next_char == CARRIAGE_RETURN && peek(tokenizer, 1) == LINE_DELIMITER;
+                if (next_char != -1 && next_char != LINE_DELIMITER && !trailing_crlf) {
+                    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
+                              tokenizer->line, tokenizer->byte);
+                    log_error("The %s key has unexpected characters after a closing quote.\n",
+                              token.key ? token.key : "(none)");
+
+                    size_t line_end =
+                        index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
+                    size_t rest_len = line_end - tokenizer->i;
+                    log_f("   %.*s\n", (int)rest_len, tokenizer->file + tokenizer->i);
+                    log_f("   ^");
+                    if (rest_len > 1) {
+                        fput_repeat(stderr, '~', rest_len - 1);
+                    }
+                    log_f(" (only whitespace may follow a closing quote)\n");
+
+                    result.ok = false;
+                    result.code = 1;
+                    goto done;
+                }
                 break;
+            }
+            default: {
+                const unsigned char *char_stops = LITERAL_STOPS;
+                size_t char_stops_len = LITERAL_STOPS_LEN;
+
+                if (quote == DOUBLE_QUOTE) {
+                    char_stops = DQ_STOPS;
+                    char_stops_len = DQ_STOPS_LEN;
+                } else if (quote == SINGLE_QUOTE) {
+                    char_stops = SQ_STOPS;
+                    char_stops_len = SQ_STOPS_LEN;
+                }
+
+                scan_until(tokenizer, &value, char_stops, char_stops_len);
+                break;
+            }
         }
+    }
+
+    // a quote may still be open at end-of-file
+    if (quote != 0) {
+        log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
+                  tokenizer->byte);
+        log_error("The %s key has an unterminated quoted value.\n", token.key ? token.key : "(none)");
+
+        size_t prefix_len = log_token_line(&token);
+        log_f("%c%.*s\n", quote, (int)value.count, value.items);
+
+        log_f("   ");
+        fput_repeat(stderr, ' ', prefix_len);
+        fputc('^', stderr);
+        fput_repeat(stderr, '~', value.count);
+        log_f(" (missing a closing quote %c)\n", quote);
+
+        result.ok = false;
+        result.code = 1;
+        goto done;
     }
 
     // flush a pending token if the file doesn't end with a newline
     if (token.key != NULL) {
-        result = validate_and_append_token(tokenizer, &token, &value);
+        result = validate_and_append_token(tokenizer, &token, &value, quote_seen);
     }
 
     if (tokenizer->tokens.count == tokens_before) {
@@ -453,8 +614,6 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
 
         log_f("\n\n");
     }
-
-    goto done;
 
 done:
     return result;

@@ -2,183 +2,213 @@
 #include "macros.h"
 #include <string.h>
 
-#define ENTRY(ext, arr) {(ext), (arr), ARR_LEN(arr)}
+#define ENTRY(ext, arr)                                                                                                \
+    { (ext), (arr), ARR_LEN(arr) }
 
 static const accessor_t javascript[] = {
-    {.prefix = "process.env.", .pattern = ident},     {.prefix = "process.env[", .pattern = quoted},
-    {.prefix = "import.meta.env.", .pattern = ident}, {.prefix = "import.meta.env[", .pattern = quoted},
-    {.prefix = "Deno.env.get(", .pattern = quoted},   {.prefix = "Bun.env.", .pattern = ident},
-    {.prefix = "Bun.env[", .pattern = quoted},
+    {.prefix = "process.env.", .prefix_len = sizeof("process.env.") - 1, .pattern = ident},
+    {.prefix = "process.env[", .prefix_len = sizeof("process.env[") - 1, .pattern = quoted},
+    {.prefix = "import.meta.env.", .prefix_len = sizeof("import.meta.env.") - 1, .pattern = ident},
+    {.prefix = "import.meta.env[", .prefix_len = sizeof("import.meta.env[") - 1, .pattern = quoted},
+    {.prefix = "Deno.env.get(", .prefix_len = sizeof("Deno.env.get(") - 1, .pattern = quoted},
+    {.prefix = "Bun.env.", .prefix_len = sizeof("Bun.env.") - 1, .pattern = ident},
+    {.prefix = "Bun.env[", .prefix_len = sizeof("Bun.env[") - 1, .pattern = quoted},
 };
 
 static const accessor_t python[] = {
-    {.prefix = "os.getenv(", .pattern = quoted},      {.prefix = "os.environ[", .pattern = quoted},
-    {.prefix = "os.environ.get(", .pattern = quoted}, {.prefix = "os.environ.setdefault(", .pattern = quoted},
-    {.prefix = "getenv(", .pattern = quoted},         {.prefix = "environ[", .pattern = quoted},
-    {.prefix = "environ.get(", .pattern = quoted},
+    {.prefix = "os.getenv(", .prefix_len = sizeof("os.getenv(") - 1, .pattern = quoted},
+    {.prefix = "os.environ[", .prefix_len = sizeof("os.environ[") - 1, .pattern = quoted},
+    {.prefix = "os.environ.get(", .prefix_len = sizeof("os.environ.get(") - 1, .pattern = quoted},
+    {.prefix = "os.environ.setdefault(", .prefix_len = sizeof("os.environ.setdefault(") - 1, .pattern = quoted},
+    {.prefix = "getenv(", .prefix_len = sizeof("getenv(") - 1, .pattern = quoted},
+    {.prefix = "environ[", .prefix_len = sizeof("environ[") - 1, .pattern = quoted},
+    {.prefix = "environ.get(", .prefix_len = sizeof("environ.get(") - 1, .pattern = quoted},
 };
 
 static const accessor_t go[] = {
-    {.prefix = "os.Getenv(", .pattern = quoted},
-    {.prefix = "os.LookupEnv(", .pattern = quoted},
+    {.prefix = "os.Getenv(", .prefix_len = sizeof("os.Getenv(") - 1, .pattern = quoted},
+    {.prefix = "os.LookupEnv(", .prefix_len = sizeof("os.LookupEnv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t rust[] = {
-    {.prefix = "std::env::var(", .pattern = quoted}, {.prefix = "std::env::var_os(", .pattern = quoted},
-    {.prefix = "env::var(", .pattern = quoted},      {.prefix = "env::var_os(", .pattern = quoted},
-    {.prefix = "env!(", .pattern = quoted},          {.prefix = "option_env!(", .pattern = quoted},
+    {.prefix = "std::env::var(", .prefix_len = sizeof("std::env::var(") - 1, .pattern = quoted},
+    {.prefix = "std::env::var_os(", .prefix_len = sizeof("std::env::var_os(") - 1, .pattern = quoted},
+    {.prefix = "env::var(", .prefix_len = sizeof("env::var(") - 1, .pattern = quoted},
+    {.prefix = "env::var_os(", .prefix_len = sizeof("env::var_os(") - 1, .pattern = quoted},
+    {.prefix = "env!(", .prefix_len = sizeof("env!(") - 1, .pattern = quoted},
+    {.prefix = "option_env!(", .prefix_len = sizeof("option_env!(") - 1, .pattern = quoted},
 };
 
 static const accessor_t ruby[] = {
-    {.prefix = "ENV[", .pattern = quoted},
-    {.prefix = "ENV.fetch(", .pattern = quoted},
+    {.prefix = "ENV[", .prefix_len = sizeof("ENV[") - 1, .pattern = quoted},
+    {.prefix = "ENV.fetch(", .prefix_len = sizeof("ENV.fetch(") - 1, .pattern = quoted},
 };
 
 static const accessor_t zig[] = {
-    {.prefix = "std.posix.getenv(", .pattern = quoted},
-    {.prefix = "posix.getenv(", .pattern = quoted},
-    {.prefix = "std.process.getEnvVarOwned(", .pattern = quoted},
-    {.prefix = "std.process.hasEnvVar(", .pattern = quoted},
-    {.prefix = "std.process.hasEnvVarConstant(", .pattern = quoted},
-    {.prefix = "std.process.parseEnvVarInt(", .pattern = quoted},
+    {.prefix = "std.posix.getenv(", .prefix_len = sizeof("std.posix.getenv(") - 1, .pattern = quoted},
+    {.prefix = "posix.getenv(", .prefix_len = sizeof("posix.getenv(") - 1, .pattern = quoted},
+    {.prefix = "std.process.getEnvVarOwned(",
+     .prefix_len = sizeof("std.process.getEnvVarOwned(") - 1,
+     .pattern = quoted},
+    {.prefix = "std.process.hasEnvVar(", .prefix_len = sizeof("std.process.hasEnvVar(") - 1, .pattern = quoted},
+    {.prefix = "std.process.hasEnvVarConstant(",
+     .prefix_len = sizeof("std.process.hasEnvVarConstant(") - 1,
+     .pattern = quoted},
+    {.prefix = "std.process.parseEnvVarInt(",
+     .prefix_len = sizeof("std.process.parseEnvVarInt(") - 1,
+     .pattern = quoted},
 };
 
 static const accessor_t java[] = {
-    {.prefix = "System.getenv(", .pattern = quoted},
+    {.prefix = "System.getenv(", .prefix_len = sizeof("System.getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t scala[] = {
-    {.prefix = "sys.env(", .pattern = quoted},
-    {.prefix = "sys.env.get(", .pattern = quoted},
-    {.prefix = "System.getenv(", .pattern = quoted},
+    {.prefix = "sys.env(", .prefix_len = sizeof("sys.env(") - 1, .pattern = quoted},
+    {.prefix = "sys.env.get(", .prefix_len = sizeof("sys.env.get(") - 1, .pattern = quoted},
+    {.prefix = "System.getenv(", .prefix_len = sizeof("System.getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t clojure[] = {
-    {.prefix = "System/getenv ", .pattern = quoted},
-    {.prefix = "(getenv ", .pattern = quoted},
+    {.prefix = "System/getenv ", .prefix_len = sizeof("System/getenv ") - 1, .pattern = quoted},
+    {.prefix = "(getenv ", .prefix_len = sizeof("(getenv ") - 1, .pattern = quoted},
 };
 
 static const accessor_t c[] = {
-    {.prefix = "getenv(", .pattern = quoted},
-    {.prefix = "secure_getenv(", .pattern = quoted},
+    {.prefix = "getenv(", .prefix_len = sizeof("getenv(") - 1, .pattern = quoted},
+    {.prefix = "secure_getenv(", .prefix_len = sizeof("secure_getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t cpp[] = {
-    {.prefix = "std::getenv(", .pattern = quoted},
-    {.prefix = "getenv(", .pattern = quoted},
-    {.prefix = "secure_getenv(", .pattern = quoted},
+    {.prefix = "std::getenv(", .prefix_len = sizeof("std::getenv(") - 1, .pattern = quoted},
+    {.prefix = "getenv(", .prefix_len = sizeof("getenv(") - 1, .pattern = quoted},
+    {.prefix = "secure_getenv(", .prefix_len = sizeof("secure_getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t dotnet[] = {
-    {.prefix = "Environment.GetEnvironmentVariable(", .pattern = quoted},
-    {.prefix = "System.Environment.GetEnvironmentVariable(", .pattern = quoted},
+    {.prefix = "Environment.GetEnvironmentVariable(",
+     .prefix_len = sizeof("Environment.GetEnvironmentVariable(") - 1,
+     .pattern = quoted},
+    {.prefix = "System.Environment.GetEnvironmentVariable(",
+     .prefix_len = sizeof("System.Environment.GetEnvironmentVariable(") - 1,
+     .pattern = quoted},
 };
 
 static const accessor_t visualbasic[] = {
-    {.prefix = "Environment.GetEnvironmentVariable(", .pattern = quoted},
-    {.prefix = "Environ(", .pattern = quoted},
+    {.prefix = "Environment.GetEnvironmentVariable(",
+     .prefix_len = sizeof("Environment.GetEnvironmentVariable(") - 1,
+     .pattern = quoted},
+    {.prefix = "Environ(", .prefix_len = sizeof("Environ(") - 1, .pattern = quoted},
 };
 
 static const accessor_t php[] = {
-    {.prefix = "getenv(", .pattern = quoted},
-    {.prefix = "$_ENV[", .pattern = quoted},
-    {.prefix = "$_SERVER[", .pattern = quoted},
+    {.prefix = "getenv(", .prefix_len = sizeof("getenv(") - 1, .pattern = quoted},
+    {.prefix = "$_ENV[", .prefix_len = sizeof("$_ENV[") - 1, .pattern = quoted},
+    {.prefix = "$_SERVER[", .prefix_len = sizeof("$_SERVER[") - 1, .pattern = quoted},
 };
 
 static const accessor_t perl[] = {
-    {.prefix = "$ENV{", .pattern = braced},
+    {.prefix = "$ENV{", .prefix_len = sizeof("$ENV{") - 1, .pattern = braced},
 };
 
 static const accessor_t powershell[] = {
-    {.prefix = "$env:", .pattern = ident},
-    {.prefix = "[Environment]::GetEnvironmentVariable(", .pattern = quoted},
-    {.prefix = "[System.Environment]::GetEnvironmentVariable(", .pattern = quoted},
+    {.prefix = "$env:", .prefix_len = sizeof("$env:") - 1, .pattern = ident},
+    {.prefix = "[Environment]::GetEnvironmentVariable(",
+     .prefix_len = sizeof("[Environment]::GetEnvironmentVariable(") - 1,
+     .pattern = quoted},
+    {.prefix = "[System.Environment]::GetEnvironmentVariable(",
+     .prefix_len = sizeof("[System.Environment]::GetEnvironmentVariable(") - 1,
+     .pattern = quoted},
 };
 
 static const accessor_t swift[] = {
-    {.prefix = "ProcessInfo.processInfo.environment[", .pattern = quoted},
-    {.prefix = "getenv(", .pattern = quoted},
+    {.prefix = "ProcessInfo.processInfo.environment[",
+     .prefix_len = sizeof("ProcessInfo.processInfo.environment[") - 1,
+     .pattern = quoted},
+    {.prefix = "getenv(", .prefix_len = sizeof("getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t objc[] = {
-    {.prefix = "getenv(", .pattern = quoted},
-    {.prefix = "environment] objectForKey:@", .pattern = quoted},
+    {.prefix = "getenv(", .prefix_len = sizeof("getenv(") - 1, .pattern = quoted},
+    {.prefix = "environment] objectForKey:@",
+     .prefix_len = sizeof("environment] objectForKey:@") - 1,
+     .pattern = quoted},
 };
 
 static const accessor_t dart[] = {
-    {.prefix = "Platform.environment[", .pattern = quoted},
+    {.prefix = "Platform.environment[", .prefix_len = sizeof("Platform.environment[") - 1, .pattern = quoted},
 };
 
 static const accessor_t elixir[] = {
-    {.prefix = "System.get_env(", .pattern = quoted},
-    {.prefix = "System.fetch_env!(", .pattern = quoted},
-    {.prefix = "System.fetch_env(", .pattern = quoted},
+    {.prefix = "System.get_env(", .prefix_len = sizeof("System.get_env(") - 1, .pattern = quoted},
+    {.prefix = "System.fetch_env!(", .prefix_len = sizeof("System.fetch_env!(") - 1, .pattern = quoted},
+    {.prefix = "System.fetch_env(", .prefix_len = sizeof("System.fetch_env(") - 1, .pattern = quoted},
 };
 
 static const accessor_t erlang[] = {
-    {.prefix = "os:getenv(", .pattern = quoted},
+    {.prefix = "os:getenv(", .prefix_len = sizeof("os:getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t haskell[] = {
-    {.prefix = "getEnv ", .pattern = quoted},
-    {.prefix = "lookupEnv ", .pattern = quoted},
+    {.prefix = "getEnv ", .prefix_len = sizeof("getEnv ") - 1, .pattern = quoted},
+    {.prefix = "lookupEnv ", .prefix_len = sizeof("lookupEnv ") - 1, .pattern = quoted},
 };
 
 static const accessor_t ocaml[] = {
-    {.prefix = "Sys.getenv ", .pattern = quoted},
-    {.prefix = "Sys.getenv_opt ", .pattern = quoted},
-    {.prefix = "Unix.getenv ", .pattern = quoted},
+    {.prefix = "Sys.getenv ", .prefix_len = sizeof("Sys.getenv ") - 1, .pattern = quoted},
+    {.prefix = "Sys.getenv_opt ", .prefix_len = sizeof("Sys.getenv_opt ") - 1, .pattern = quoted},
+    {.prefix = "Unix.getenv ", .prefix_len = sizeof("Unix.getenv ") - 1, .pattern = quoted},
 };
 
 static const accessor_t lua[] = {
-    {.prefix = "os.getenv(", .pattern = quoted},
+    {.prefix = "os.getenv(", .prefix_len = sizeof("os.getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t r[] = {
-    {.prefix = "Sys.getenv(", .pattern = quoted},
+    {.prefix = "Sys.getenv(", .prefix_len = sizeof("Sys.getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t julia[] = {
-    {.prefix = "ENV[", .pattern = quoted},
-    {.prefix = "get(ENV, ", .pattern = quoted},
+    {.prefix = "ENV[", .prefix_len = sizeof("ENV[") - 1, .pattern = quoted},
+    {.prefix = "get(ENV, ", .prefix_len = sizeof("get(ENV, ") - 1, .pattern = quoted},
 };
 
 static const accessor_t crystal[] = {
-    {.prefix = "ENV[", .pattern = quoted},
-    {.prefix = "ENV.fetch(", .pattern = quoted},
+    {.prefix = "ENV[", .prefix_len = sizeof("ENV[") - 1, .pattern = quoted},
+    {.prefix = "ENV.fetch(", .prefix_len = sizeof("ENV.fetch(") - 1, .pattern = quoted},
 };
 
 static const accessor_t nim[] = {
-    {.prefix = "getEnv(", .pattern = quoted},
-    {.prefix = "existsEnv(", .pattern = quoted},
+    {.prefix = "getEnv(", .prefix_len = sizeof("getEnv(") - 1, .pattern = quoted},
+    {.prefix = "existsEnv(", .prefix_len = sizeof("existsEnv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t dlang[] = {
-    {.prefix = "environment[", .pattern = quoted},
-    {.prefix = "environment.get(", .pattern = quoted},
+    {.prefix = "environment[", .prefix_len = sizeof("environment[") - 1, .pattern = quoted},
+    {.prefix = "environment.get(", .prefix_len = sizeof("environment.get(") - 1, .pattern = quoted},
     // NOTE: `"FOO" in environment` puts the key BEFORE the prefix; a forward
     // prefix matcher cannot catch it. Accept the miss or special-case it.
 };
 
 static const accessor_t vlang[] = {
-    {.prefix = "os.getenv(", .pattern = quoted},
+    {.prefix = "os.getenv(", .prefix_len = sizeof("os.getenv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t fortran[] = {
-    {.prefix = "get_environment_variable(", .pattern = quoted},
+    {.prefix = "get_environment_variable(", .prefix_len = sizeof("get_environment_variable(") - 1, .pattern = quoted},
 };
 
 static const accessor_t pascal[] = {
-    {.prefix = "GetEnvironmentVariable(", .pattern = quoted},
-    {.prefix = "GetEnv(", .pattern = quoted},
+    {.prefix = "GetEnvironmentVariable(", .prefix_len = sizeof("GetEnvironmentVariable(") - 1, .pattern = quoted},
+    {.prefix = "GetEnv(", .prefix_len = sizeof("GetEnv(") - 1, .pattern = quoted},
 };
 
 static const accessor_t tcl[] = {
-    {.prefix = "$env(", .pattern = parened},
+    {.prefix = "$env(", .prefix_len = sizeof("$env(") - 1, .pattern = parened},
 };
 
 static const accessor_t nushell[] = {
-    {.prefix = "$env.", .pattern = ident},
+    {.prefix = "$env.", .prefix_len = sizeof("$env.") - 1, .pattern = ident},
 };
 
 // const shell = [_]Accessor{

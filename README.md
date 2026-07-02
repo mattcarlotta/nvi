@@ -12,25 +12,25 @@ nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, sca
 
 ## Installation
 
-For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
+For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/). The `linux-x86_64-musl` archive is a fully static build that runs on distros with a glibc older than the one on the build runners.
 
 For the PowerShell (Windows) build, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
 [building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) subsection for Windows on how to add a directory to your PowerShell `Path`.
 
-For POSIX (Unix or Unix-like) builds, place the binary in one of the directories (owned by `$USER` and not by `root`) located in your shell `$PATH`:
+For POSIX (Unix or Unix-like) builds, place the binary in one of the directories owned by `$USER` (not by `root`) located in your shell `$PATH`:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
 
-If none fit, then create a local bin directory owned by `$USER`:
+If there aren't any `$USER` own bin directories, then create a local bin directory:
 ```sh
 mkdir -p $HOME/.local/bin
 ```
 
 Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
 ```sh
-typeset -U path # optionally remove duplicate directories in $PATH
-path+=("$HOME/.local/bin")
+typeset -U PATH # optionally remove duplicate directories in $PATH
+PATH+=("$HOME/.local/bin")
 ```
 
 Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
@@ -51,6 +51,7 @@ Building source code:
 
 Requirements:
 - [Clang](https://clang.llvm.org/) `17.0.0` or later
+- [LLD](https://lld.llvm.org/) on Linux (release builds link with `-fuse-ld=lld`; usually packaged as `lld`)
 
 Clone repo and build `nob`:
 ```sh
@@ -72,10 +73,11 @@ Build for release:
 ```
 
 > [!NOTE]
-> A Linux OS's virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). As a result, the compiled binary size will shrink/grow to account for this page
-> sizing. The default page sizing for nvi is 64KB (to maintain backward compatibility), which may pad more virtual memory than necessary. To check your OS page sizing,
-> run `getconf PAGESIZE`. If your page sizing is smaller than 64KB, then you can override the default page sizing by setting the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
+> A Linux OS's virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). The default page sizing for nvi is 64KB (to maintain compatibility with 16KB/64KB-page kernels).
+> Release builds link with lld, where this setting no longer measurably changes the on-disk binary size, but the override remains available via the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
 > `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
+>
+> To build a fully static, portable Linux binary with musl instead of clang+glibc, install `musl-tools` and run `NVI_LIBC=musl ./nob <release|install>`.
 
 Build and install a release binary in a shell directory path:
 ```sh
@@ -279,6 +281,8 @@ Notes for Windows users:
 
 Unrecognized flags or arguments are usage errors.
 
+Diagnostics written to stderr are colorized only when stderr is a TTY; setting a non-empty [`NO_COLOR`](https://no-color.org/) env disables color regardless.
+
 > [!NOTE]
 > † Without a `--` command, scan will only report what it finds and exit (must include *--dry-run*). With a `--` command, scan sets the found ENV keys to the required ENVs list.
 
@@ -300,7 +304,7 @@ nvi --files .env --scan py -- python main.py  | <consumer>
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
 nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 ```
-Values are passed through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
+Values are passed through byte-exact without quoting or escaping: spaces, inner quotes, `$`, and even embedded newlines (multiline values) survive intact.
 
 ### Exit codes
 
@@ -331,7 +335,10 @@ $ENV{DATABASE_URL}                # Perl
 > An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPER_CASE_SNAKE_CASE.
 
 > [!CAUTION]
-> Dynamic keys (`const key = "DATABASE_URL"; process.env[key]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be found.
+> Dynamic keys: `const key = "DATABASE_URL"; process.env[key]`
+> Destructured variables: `const { DATABASE_URL } = process.env`
+> And aliased accessors: `const e = process.env; e.DATABASE_URL`
+> will NOT be detected by the scanner
 
 ### Supported file extensions (to the right of the language)
 - C -> `c`, `h`
@@ -417,6 +424,22 @@ PRICE=$5.00
 # a hash sign after a key is a literal '#' (not comment)
 CHANNEL=#why-is-this-bug-occuring
 
+# a quote directly after '=' wraps the value; the surrounding quotes are
+# stripped and inner whitespace is preserved
+GREETING="hello world"
+
+# single quotes are fully literal: no ${KEY} interpolation and no '\' continuation
+RAW='${NOT_INTERPOLATED} costs $5'
+
+# an explicitly quoted empty value is allowed (a bare KEY= is still an error)
+EMPTY_OK=""
+
+# a shell-style export prefix is stripped, so source-able files parse the same
+export EXPORTED=value
+
+# ${KEY:-default} substitutes the default when KEY is unset or empty
+RETRIES=${MAX_RETRIES:-3}
+
 # backslash-newline continues the value (interpolation keys still work on any line)
 SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
@@ -427,8 +450,9 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 # when there's no backslash and just a new-line or EOF, then that indicates the end of a multiline value
 ```
 > [!NOTE]
+> Keys must match `[A-Za-z_][A-Za-z0-9_]*`; anything else is a tokenizer error.
 > Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `.env` files specified by `--files`).
-> Undefined key interpolations or keys with empty values will exit with an error.
+> An undefined key interpolation without a `:-` fallback, a bare `KEY=` with no value, and a `--required` key that is undefined or empty after parsing all exit with an error.
 
 ## Testing
 
@@ -440,7 +464,19 @@ Build nob (if you haven't already):
 ```sh
 clang -o nob nob.c
 ```
-Run tests (generates a compile-commands.json for clang, builds tests and runs test suites):
+
+Run all unit tests:
+```sh
+./nob unit
+```
+
+Run all integration tests:
+```sh
+./nob integration
+
+```
+
+Run all test suites:
 ```sh
 ./nob test
 ```
@@ -451,15 +487,29 @@ Build nob (if you haven't already):
 ```sh
 cl nob nob.c
 ```
-Run tests (generates a compile-commands.json for clang, builds tests and runs test suites):
+
+Run all unit tests:
+```sh
+./nob.exe unit
+```
+
+Run all integration tests:
+```sh
+./nob.exe integration
+
+```
+
+Run all test suites:
 ```sh
 ./nob.exe test
 ```
 
 ## Security model
 
-`nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation. It will only parse the `.env` files you provide and write ENVs to stdout.
-Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed. For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
+- `nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation.
+- It will only parse the `.env` files you provide and write ENVs to stdout.
+- Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
+- For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
 ### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)

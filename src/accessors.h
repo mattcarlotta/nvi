@@ -23,6 +23,7 @@ typedef enum {
 
 typedef struct {
     const char *prefix;
+    size_t prefix_len;
     pattern_t pattern;
 } accessor_t;
 

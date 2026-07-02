@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_WIN32) && defined(_MSC_VER)
+#include "shims.h"
+#endif
+
 typedef struct {
     char *items;
     size_t count;
@@ -41,42 +45,75 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
     }
 
     value_buf_t value = {0};
+    list_t missing_envs = {0};
 
     for (size_t ti = 0; ti < tokens->count; ++ti) {
-        const token_t token = tokens->items[ti];
-        const char *token_key = token.key;
+        const token_t *token = &tokens->items[ti];
+        const char *token_key = token->key;
 
         value.count = 0;
 
-        for (size_t vt = 0; vt < token.values.count; ++vt) {
-            const value_token_t value_token = token.values.items[vt];
+        for (size_t vt = 0; vt < token->values.count; ++vt) {
+            const value_token_t *value_token = &token->values.items[vt];
 
-            switch (value_token.kind) {
+            switch (value_token->kind) {
                 case INTERPOLATED: {
-                    const char *interpolated_key = value_token.value;
-                    const char *env = resolve_env(env_map, interpolated_key);
+                    const char *raw_value = value_token->value;
+                    size_t raw_value_len = value_token->value_len;
 
-                    if (env == NULL) {
-                        log_warning(
-                            "[WARNING] The '%s' key contains an interpolated key variable %s (%s:%zu:%zu) that is "
-                            "not defined; skipping.\n",
-                            token_key, interpolated_key, token.file, value_token.line, value_token.byte);
-                        break;
+                    // POSIX-style ${KEY:-default}: substitute the default when KEY is unset or empty
+                    size_t key_len = raw_value_len;
+                    const char *fallback = NULL;
+                    size_t fallback_len = 0;
+                    for (size_t k = 0; k + 1 < raw_value_len; ++k) {
+                        if (raw_value[k] == ':' && raw_value[k + 1] == '-') {
+                            key_len = k;
+                            fallback = raw_value + k + 2;
+                            fallback_len = raw_value_len - k - 2;
+                            break;
+                        }
                     }
 
-                    DYN_ARR_APPEND_MANY(&value, env, strlen(env));
+                    // only copy when a fallback separator shortened the key portion
+                    const char *fallback_value = raw_value;
+                    char *default_value = NULL;
+                    if (key_len != raw_value_len) {
+                        default_value = strndup(raw_value, key_len);
+                        if (default_value == NULL) {
+                            result = operation_error(
+                                "Unable to copy an interpolation key (not enough system memory?); aborting.\n");
+                            goto done;
+                        }
+                        fallback_value = default_value;
+                    }
+
+                    const char *env = resolve_env(env_map, fallback_value);
+                    free(default_value);
+
+                    if (env != NULL && env[0] != '\0') {
+                        DYN_ARR_APPEND_MANY(&value, env, strlen(env));
+                    } else if (fallback != NULL) {
+                        DYN_ARR_APPEND_MANY(&value, fallback, fallback_len);
+                    } else if (env == NULL) {
+                        result = operation_error(
+                            "The '%s' key contains an interpolated key variable %.*s (%s:%zu:%zu) that is not "
+                            "defined.\n",
+                            token_key ? token_key : "(none)", (int)key_len, raw_value, token->file, value_token->line,
+                            value_token->byte);
+                        goto done;
+                    }
                     break;
                 }
                 case COMMENTED: {
                     if (args->dry_run) {
                         log_info("[INFO]");
                         log_f(" Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);
-                        log_comment("%s\n\n", value_token.value);
+                        log_comment("%s\n\n", value_token->value);
                     }
                     break;
                 }
                 default: {
-                    DYN_ARR_APPEND_MANY(&value, value_token.value, value_token.value_len);
+                    DYN_ARR_APPEND_MANY(&value, value_token->value, value_token->value_len);
                     break;
                 }
             }
@@ -87,16 +124,16 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             continue;
         }
 
-        char *owned_value = malloc(value.count + 1);
-        if (owned_value == NULL) {
-            free(value.items);
-            return operation_error("Unable to copy token value (not enough system memory?); aborting.\n");
+        char *env_value = malloc(value.count + 1);
+        if (env_value == NULL) {
+            result = operation_error("Unable to copy token value (not enough system memory?); aborting.\n");
+            goto done;
         }
 
         if (value.count > 0) {
-            memcpy(owned_value, value.items, value.count);
+            memcpy(env_value, value.items, value.count);
         }
-        owned_value[value.count] = '\0';
+        env_value[value.count] = '\0';
 
         env_t *existing = get_env_from_map(env_map, token_key);
         if (existing != NULL) {
@@ -107,13 +144,13 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                 log_f(" key's value from ");
                 log_info("%s", existing->value);
                 log_f(" to ");
-                log_info("%s", owned_value);
+                log_info("%s", env_value);
                 log_f("...\n\n");
             }
             free(existing->value);
-            existing->value = owned_value;
+            existing->value = env_value;
         } else {
-            env_t new_env = {.key = token_key, .value = owned_value};
+            env_t new_env = {.key = token_key, .value = env_value};
             DYN_ARR_APPEND(env_map, new_env);
             hashmap_put(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
         }
@@ -122,22 +159,20 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             log_info("[INFO]");
             log_f(" Successfully parsed Token #%zu...\n    \u2022 ", ti + 1);
             log_bold_info("%s ", token_key);
-            log_info("\u219E %s", owned_value);
+            log_info("\u219E %s", env_value);
             log_f("\n\n");
         }
     }
 
-    free(value.items);
-    value.items = NULL;
-
     if (env_map->count == 0) {
-        return operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
+        result = operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
+        goto done;
     }
 
-    list_t missing_envs = {0};
     for (size_t i = 0; i < args->required.count; ++i) {
         const char *required_key = args->required.items[i];
-        if (get_env_from_map(env_map, required_key) == NULL) {
+        const env_t *entry = get_env_from_map(env_map, required_key);
+        if (entry == NULL || entry->value[0] == '\0') {
             DYN_ARR_APPEND(&missing_envs, required_key);
         }
     }
@@ -156,7 +191,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
     }
 
     if (args->command.count > 0 && missing_envs.count > 0) {
-        log_error("[ERROR] The following ENV keys were marked as required, but weren't set after parsing:");
+        log_error("[ERROR] The following ENV keys were marked as required, but are undefined or empty after parsing:");
         for (size_t i = 0; i < missing_envs.count; ++i) {
             log_error("\n   \u2022 %s", missing_envs.items[i]);
         }
@@ -165,9 +200,8 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         result.code = 1;
     }
 
-    goto done;
-
 done:
+    free(value.items);
     free_list(&missing_envs);
     return result;
 }

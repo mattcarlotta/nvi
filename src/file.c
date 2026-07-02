@@ -12,12 +12,24 @@
 #include "shims.h"
 #endif
 
+#ifndef S_ISREG
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
 file_details_t open_file(const char *path) {
     file_details_t file_details = {0};
     file_details.path = path;
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
         log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
+        goto done;
+    }
+
+    // fopen happily opens directories on some platforms (and ftell then
+    // reports a garbage size), so gate on a regular file up front
+    struct stat st;
+    if (stat(path, &st) == 0 && !S_ISREG(st.st_mode)) {
+        log_error("[ERROR] Cannot read '%s': not a regular file\n", path);
         goto done;
     }
 

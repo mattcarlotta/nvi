@@ -58,8 +58,6 @@ int main(int argc, const char **argv) {
 
     run_emitter(&args, &env_map);
 
-    goto done;
-
 done:
     if (result.ok && args.dry_run) {
         log_time(start);

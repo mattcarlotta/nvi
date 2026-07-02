@@ -1,7 +1,7 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define NVI_VERSION "0.0.12"
+#define NVI_VERSION "0.0.13"
 
 #ifndef NVI_BUILD
 #define NVI_BUILD "debug"

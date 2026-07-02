@@ -1,5 +1,6 @@
 #include "shims.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <fcntl.h>
@@ -18,5 +19,8 @@ void tty_init(void) {
     // it only carries human-readable diagnostics.
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
-    use_color = isatty(STDERR_FILENO);
+    // https://no-color.org/ : when NO_COLOR is present and not an empty
+    // string (regardless of its value), do not add ANSI color
+    const char *no_color = getenv("NO_COLOR");
+    use_color = isatty(STDERR_FILENO) && (no_color == NULL || no_color[0] == '\0');
 }
