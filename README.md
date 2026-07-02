@@ -162,19 +162,19 @@ cl nob nob.c
 
 Debugging:
 ```powershell
-.\nob.exe
+./nob.exe
 ```
 
 Release:
 ```powershell
-.\nob.exe release
+./nob.exe release
 ```
 
 Build and install (change `C:\tools\bin` to whatever directory you'd like):
 ```powershell
 mkdir C:\tools\bin -Force
 
-.\nob.exe install C:\tools\bin
+./nob.exe install C:\tools\bin
 
 ```
 
