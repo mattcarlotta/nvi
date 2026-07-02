@@ -7,20 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(_WIN32) && defined(_MSC_VER)
-#include <io.h>
-#define DUP _dup
-#define DUP2 _dup2
-#define FILENO _fileno
-#define CLOSE _close
-#else
-#include <unistd.h>
-#define DUP dup
-#define DUP2 dup2
-#define FILENO fileno
-#define CLOSE close
-#endif
-
 void setUp(void) {}
 void tearDown(void) {}
 
