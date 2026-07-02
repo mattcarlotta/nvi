@@ -6,6 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+// The parser is strictly responsible for converting tokenized values from .env files
+// into KV pairs within a single env hash map.
+//
+// Supported token types:
+// commented -> intentionally skipped by the parser
+// literal -> a literal value (combines multi-line values as well)
+// interpolated -> extracting a value from a process ENV or ENV key from a previous .env file
+
 typedef struct {
     const char *key;
     char *value;

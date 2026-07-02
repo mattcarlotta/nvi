@@ -4,6 +4,11 @@
 #include "arg.h"
 #include "hashmap.h"
 
+// The scanner is strictly responsible for recursively walking through the CWD for files
+// containing ENV keys and marking them as required. The goal for scanner is to
+// allow an engineer to jump into the codebase knowing that ENVs are at least defined
+// before a command is ran.
+
 typedef struct {
     size_t dirs_scanned;
     size_t files_scanned;

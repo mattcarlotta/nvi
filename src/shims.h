@@ -1,6 +1,8 @@
 #ifndef SHIMS_H
 #define SHIMS_H
 
+// Windows (MSC) compiler requires shimming "strerror" and "strndup" or else it'll fail to compile.
+
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <io.h>
 #include <stdlib.h>

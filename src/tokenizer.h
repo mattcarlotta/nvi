@@ -5,6 +5,11 @@
 #include "result.h"
 #include <stddef.h>
 
+// The tokenizer is responsible for converting .env files into value tokens the parser can
+// understand. It also does a little bit of syntax checking to ensure ENV keys aren't missing
+// values and ENV values don't have invalid key interpolations. For something as simple as an
+// .env file, an AST really isn't needed.
+
 typedef enum { LITERAL, COMMENTED, INTERPOLATED } value_kind_t;
 
 typedef struct {

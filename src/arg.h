@@ -7,7 +7,20 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef enum { FILES, DRY_RUN, FORMAT, IGNORED, REQUIRED, SCAN, HELP, VERSION, UNKNOWN } flag_t;
+// Rolling a custom argv parser to support short (-), long (--) and command style flags
+//
+// Supported flags:
+// command -> a command to emit with ENVs to stdout
+// dry-run -> displays info to stderr
+// files -> a list of .env files to tokenize and parse
+// format -> type of format (nul delimited or powershell env delimited) to emit ENVs
+// help -> displays help info to stdout
+// ignored -> a list of ENV keys that will be ignored (mostly useful for scans)
+// required -> a list of ENV keys to mark as required and defined before a command is emitted
+// scan -> a list of file extensions to scan for in the CWD
+// version -> displays current binary info
+
+typedef enum { DRY_RUN, FILES, FORMAT, HELP, IGNORED, REQUIRED, SCAN, UNKNOWN, VERSION } flag_t;
 
 typedef struct {
     const char *name;

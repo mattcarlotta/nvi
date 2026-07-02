@@ -1,10 +1,3 @@
-// Integration tests: spawn the built `nvi` binary and assert on exit codes,
-// exact stdout bytes, and stderr substrings.
-//
-// All inputs are generated under build/it/ in binary mode rather than checked
-// in as fixtures, because several cases depend on exact bytes (CRLF, BOM, NUL
-// delimiters) that git line-ending normalization could silently rewrite.
-//
 // Run via `./nob integration` (or as part of `./nob test`), which builds the
 // binary first and executes this runner from the repository root.
 
@@ -61,8 +54,6 @@ static size_t read_file(const char *path, char *out, size_t cap) {
     return n;
 }
 
-// Runs `<bin> <args>` with stdout/stderr redirected to scratch files and
-// returns the process exit code.
 static int run_nvi(const char *bin, const char *args) {
     char cmd[2048];
     snprintf(cmd, sizeof(cmd), "%s %s >%s 2>%s", bin, args, out_path, err_path);
@@ -90,9 +81,6 @@ static void print_bytes(const char *label, const char *s, size_t len) {
     fputc('\n', stderr);
 }
 
-// A single case: run `<bin> <args>`, expect `exit_code`; if expected_stdout is
-// non-NULL, stdout must match it byte for byte; if stderr_contains is
-// non-NULL, stderr must contain it as a substring.
 static void check(const char *name, const char *bin, const char *args, int exit_code, const char *expected_stdout,
                   size_t expected_stdout_len, const char *stderr_contains) {
     ++total;
@@ -165,12 +153,12 @@ int main(void) {
     check("emits nul pairs then the command", NVI_BIN, "--files build/it/a.env -F nul -- echo hi", 0,
           EXPECT("MESSAGE=hello\0GREETING=hello world\0echo\0hi\0"), NULL);
 
-    check("later files override earlier ones in place", NVI_BIN, "--files build/it/a.env build/it/b.env -F nul -- x",
-          0, EXPECT("MESSAGE=goodbye\0GREETING=hello world\0x\0"), NULL);
+    check("later files override earlier ones in place", NVI_BIN, "--files build/it/a.env build/it/b.env -F nul -- x", 0,
+          EXPECT("MESSAGE=goodbye\0GREETING=hello world\0x\0"), NULL);
 
     check("powershell format escapes quotes and prefixes the call operator", NVI_BIN,
-          "--files build/it/quote.env -F powershell -- echo hi", 0,
-          EXPECT("$env:MSG = 'it''s'\n& 'echo' 'hi'\n"), NULL);
+          "--files build/it/quote.env -F powershell -- echo hi", 0, EXPECT("$env:MSG = 'it''s'\n& 'echo' 'hi'\n"),
+          NULL);
 
     check("emits nothing to stdout without a command", NVI_BIN, "--files build/it/a.env -F nul", 0, EXPECT(""), NULL);
 
@@ -186,8 +174,8 @@ int main(void) {
           EXPECT("MULTI=line1line2\0x\0"), NULL);
 
     check("bare '$', '#' after a key, and '=' in values are literal", NVI_BIN,
-          "--files build/it/literals.env -F nul -- x", 0,
-          EXPECT("PRICE=$5.00\0CHANNEL=#general\0BASE64=abc==\0x\0"), NULL);
+          "--files build/it/literals.env -F nul -- x", 0, EXPECT("PRICE=$5.00\0CHANNEL=#general\0BASE64=abc==\0x\0"),
+          NULL);
 
     set_env("NVI_IT_FROM_SHELL", "fromshell");
     check("interpolation resolves from the process environment", NVI_BIN,
@@ -240,8 +228,8 @@ int main(void) {
     check("scan-required key satisfied by the .env passes", NVI_FROM_SCANROOT, "--scan ts --files it.env -F nul -- x",
           0, EXPECT("IT_SCAN_KEY=1\0x\0"), NULL);
 
-    check("scan-required key missing from the .env fails", NVI_FROM_SCANROOT,
-          "--scan ts --files partial.env -- x", 1, NO_STDOUT, "IT_SCAN_KEY");
+    check("scan-required key missing from the .env fails", NVI_FROM_SCANROOT, "--scan ts --files partial.env -- x", 1,
+          NO_STDOUT, "IT_SCAN_KEY");
 
     check("scan-required key rescued by --ignored passes", NVI_FROM_SCANROOT,
           "--scan ts --ignored IT_SCAN_KEY --files partial.env -F nul -- x", 0, EXPECT("UNRELATED=1\0x\0"), NULL);

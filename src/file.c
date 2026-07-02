@@ -35,9 +35,6 @@ file_details_t open_file(const char *path) {
         goto done;
     }
 
-    // an empty file returns a valid zero-length buffer (contents != NULL,
-    // len == 0); callers decide whether empty is a warning (scanner) or an
-    // error (--files)
     file_details.contents = malloc(size + 1);
     if (file_details.contents == NULL) {
         log_error("[ERROR] Failed to allocate %ld bytes for file '%s' (system out of memory?); aborting.\n", size + 1,
