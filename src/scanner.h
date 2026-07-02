@@ -2,13 +2,13 @@
 #define SCANNER_H
 #include "accessors.h"
 #include "arg.h"
-#include "set.h"
+#include "hashmap.h"
 
 typedef struct {
     size_t dirs_scanned;
     size_t files_scanned;
     size_t references;
-    set_t envs;
+    hashmap_t envs;
     const file_ext_map_t *scan_exts;
 } scanner_t;
 

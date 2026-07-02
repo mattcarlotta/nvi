@@ -14,8 +14,8 @@ typedef struct {
 } value_buf_t;
 
 env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
-    size_t i = map_get(&env_map->index, entry, strlen(entry));
-    if (i == MAP_NOT_FOUND) {
+    size_t i = hashmap_get(&env_map->index, entry, strlen(entry));
+    if (i == HASHMAP_NOT_FOUND) {
         return NULL;
     }
 
@@ -115,7 +115,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         } else {
             env_t new_env = {.key = token_key, .value = owned_value};
             DYN_ARR_APPEND(env_map, new_env);
-            map_put(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
+            hashmap_put(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
         }
 
         if (args->dry_run) {
@@ -177,5 +177,5 @@ void free_envs(env_map_t *env_map) {
         free(env_map->items[i].value);
     }
     free(env_map->items);
-    free_map(&env_map->index);
+    free_hashmap(&env_map->index);
 }

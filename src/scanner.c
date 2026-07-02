@@ -9,7 +9,7 @@
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
-#include "set.h"
+#include "hashmap.h"
 #include "utils.h"
 #include <errno.h>
 #include <stdio.h>
@@ -48,7 +48,7 @@ static inline const file_ext_t *get_file_accessors(const file_ext_map_t *map, co
 }
 
 static inline void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
-    if (set_contains(&scanner->envs, env->key, env->key_len)) {
+    if (hashmap_contains(&scanner->envs, env->key, env->key_len)) {
         return;
     }
 
@@ -59,7 +59,7 @@ static inline void append_unique_envs(scanner_t *scanner, const env_key_match_t 
         abort();
     }
 
-    set_add(&scanner->envs, new_key, env->key_len);
+    hashmap_put(&scanner->envs, new_key, env->key_len, 0);
 }
 
 static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
@@ -202,13 +202,10 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     return result;
 }
 
-static void add_unique_env_keys_to_set(set_t *set, const list_t *list) {
+static void add_unique_env_keys(hashmap_t *seen, const list_t *list) {
     for (size_t i = 0; i < list->count; ++i) {
         const char *key = list->items[i];
-        size_t len = strlen(key);
-        if (!set_contains(set, key, len)) {
-            set_add(set, key, len);
-        }
+        hashmap_put(seen, key, strlen(key), 0); // insert-or-update dedupes
     }
 }
 
@@ -217,21 +214,21 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
         return;
     }
 
-    set_t set = {0};
+    hashmap_t seen = {0};
 
-    add_unique_env_keys_to_set(&set, &args->ignored);
-    add_unique_env_keys_to_set(&set, &args->required);
+    add_unique_env_keys(&seen, &args->ignored);
+    add_unique_env_keys(&seen, &args->required);
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        const set_entry_t *entry = &scanner->envs.slots[i];
-        if (entry->key == NULL || set_contains(&set, entry->key, entry->len)) {
+        const hashmap_entry_t *entry = &scanner->envs.slots[i];
+        if (entry->key == NULL || hashmap_contains(&seen, entry->key, entry->len)) {
             continue;
         }
 
         DYN_ARR_APPEND(&args->required, entry->key);
     }
 
-    free_set(&set);
+    free_hashmap(&seen);
 
     if (args->dry_run) {
         log_info("[INFO]");
@@ -297,5 +294,5 @@ void free_scanner(scanner_t *scanner) {
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
         free((void *)scanner->envs.slots[i].key);
     }
-    free_set(&scanner->envs);
+    free_hashmap(&scanner->envs);
 }

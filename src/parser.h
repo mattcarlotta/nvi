@@ -1,7 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "arg.h"
-#include "map.h"
+#include "hashmap.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -12,10 +12,10 @@ typedef struct {
 } env_t;
 
 typedef struct {
-    env_t *items; // insertion-ordered, preserved for deterministic emission
+    env_t *items;
     size_t count;
     size_t capacity;
-    map_t index; // key -> position in items, for O(1) lookups
+    hashmap_t index;
 } env_map_t;
 
 env_t *get_env_from_map(env_map_t *env_map, const char *entry);
