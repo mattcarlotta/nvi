@@ -1,0 +1,20 @@
+CompileFlags:
+  Add: [-std=c17, -I, src, "-Wno-unused-function"]
+
+---
+If:
+  PathMatch: .*\.h
+CompileFlags:
+  Add: [-xc]
+
+---
+If:
+  PathMatch: src/.*\.c
+CompileFlags:
+  Add: [-Wall, -Wextra, -Wpedantic, -Werror]
+
+---
+If:
+  PathMatch: nob\.c
+Diagnostics:
+  Suppress: [c23-extensions, variadic-macro-arguments-omitted]

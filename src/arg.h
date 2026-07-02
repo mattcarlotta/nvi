@@ -1,0 +1,51 @@
+#ifndef ARG_H
+#define ARG_H
+#include "accessors.h"
+#include "format.h"
+#include "list.h"
+#include "result.h"
+#include <stdbool.h>
+#include <stddef.h>
+
+// Rolling a custom argv parser to support short (-), long (--) and command style flags
+//
+// Supported flags:
+// command -> a command to emit with ENVs to stdout
+// dry-run -> displays info to stderr
+// files -> a list of .env files to tokenize and parse
+// format -> type of format (nul delimited or powershell env delimited) to emit ENVs
+// help -> displays help info to stdout
+// ignored -> a list of ENV keys that will be ignored (mostly useful for scans)
+// required -> a list of ENV keys to mark as required and defined before a command is emitted
+// scan -> a list of file extensions to scan for in the CWD
+// version -> displays current binary info
+
+typedef enum { DRY_RUN, FILES, FORMAT, HELP, IGNORED, REQUIRED, SCAN, UNKNOWN, VERSION } flag_t;
+
+typedef struct {
+    const char *name;
+    flag_t value;
+} flag_entry;
+
+typedef struct {
+    const char **items;
+    size_t count;
+} command_t;
+
+typedef struct {
+    int i;
+    int argc;
+    const char **argv;
+    bool dry_run;
+    format_t format;
+    list_t files;
+    list_t required;
+    list_t ignored;
+    file_ext_map_t scan_exts;
+    command_t command;
+} args_t;
+
+result_t parse_args(int arg, const char **argv, args_t *args);
+void free_args(args_t *args);
+
+#endif

@@ -1,25 +1,28 @@
 # nvi
 
-A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
+nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
-- 0 dependencies and statically linked
-- language agnostic
-- parses one or more `.env` files
-- handles `${KEY}` interpolations
-- supports multiline values via `\` (backslash-newline) delimiter
-- can scan project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and mark them as required
-- can validate required keys are defined before command execution
+- 0 dependencies
+- Language agnostic
+- Parses one or more `.env` files
+- Handles `${KEY}` interpolations
+- Supports multiline values via `\` (backslash-newline) delimiter
+- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions) and sets them as required
+- Optionally validates required keys are defined before command execution
 
 ## Installation
 
-Download a precompiled binary from [Releases](https://github.com/mattcarlotta/nvi-bin/releases/)
+For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-Then place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
+For Windows (PowerShell) users, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
+[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) Windows subsection on how to add a directory to your `Path`.
+
+For POSIX, place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
 
-Optionally, create a self-owned local bin directory:
+Optionally, create a local bin directory owned by `$USER`:
 ```sh
 mkdir -p $HOME/.local/bin
 ```
@@ -35,84 +38,172 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 source <profile_url>
 ```
 
-## Build from source
+## Build and install from source
 
-Requires
-- [Zig](https://ziglang.org/download/) `0.16.0` or later
+Optional requirements:
+- [Clangd](https://clangd.llvm.org/) `21.0.0` or later (for LSP)
+- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `21.0.0`
 
-Optional:
-- [GNU Make](https://www.gnu.org/software/make/#download) `3.81` or later (alternatively, you can build and install using `zig`)
-- [ZLS](https://zigtools.org/zls/install/)
+Building source code:
+- [nob.h](https://github.com/tsoding/nob.h)
 
+### POSIX (Linux, macOS, WSL)
 
+Requirements:
+- [Clang](https://clang.llvm.org/) `21.0.0` or later
+
+Clone repo and build `nob`:
 ```sh
 cd ~/Downloads
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
-# build for production and install in a directory (should be recognized by the shell $PATH)
-make install DIR=<directory>
+clang -o nob nob.c
 ```
 
-Or create custom builds using make (`make release` and `make install` share the same flags: `DIR`, `MODE`, `TARGET`):
+Build for debugging:
 ```sh
-# DIR=./zig-out/bin (default)
-# MODE=safe (default)
-# TARGET=native (default)
-make release
-
-# DIR: $HOME/.local/bin
-# MODE (compiler): fast, safe, small
-# TARGET (architecture): aarch64-macos, x86_64-macos, aarch64-linux-musl, x86_64-linux-musl, x86_64-windows
-make install DIR=$HOME/.local MODE=fast TARGET=aarch64-linux-gnu
+./nob
 ```
 
-Or custom builds using zig:
+Build for release:
 ```sh
-# debug build: ./zig-out/bin/nvi (default)
-zig build
-
-# build for release: ./zig-out/bin/nvi (default)
-# release: fast, safe, small
-zig build --release=small
-
-# build for release and install in a DIR (should be recognized by the shell $PATH)
-zig build --release=small --prefix <DIR>
-
-# build for different architectures
-zig build --release=small -Dtarget=aarch64-macos
-zig build --release=small -Dtarget=x86_64-macos
-zig build --release=small -Dtarget=x86_64-linux-musl
-zig build --release=small -Dtarget=aarch64-linux-musl
-zig build --release=small -Dtarget=x86_64-windows
+./nob release
 ```
-
-The `-musl` Linux targets produce fully static binaries that run on any distribution.
 
 > [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format flag with `--format nul` or compile for Linux.
+> A Linux OS's virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). As a result, the compiled binary size will shrink/grow to account for this page
+> sizing. The default page sizing for nvi is 64KB (to maintain backward compatibility), which may pad more virtual memory than necessary. To check your OS page sizing,
+> run `getconf PAGESIZE`. If your page sizing is smaller than 64KB, then you can override the default page sizing by setting the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
+> `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
 
-### Verify system installation
+Build and install the release binary in a shell directory path:
+```sh
+# install in a directory that is recognized by the shell $PATH
+# for example: ./nob install $HOME/.local/bin
+./nob install <directory>
+```
 
-Run:
+To verify system installation, run:
 ```sh
 which nvi
-# ~/.local/bin/nvi
+# <directory>
 
 nvi version
 # nvi <version> (<build_type>)
 # commit <commit>
-# zig <minimum_version>
+# clang <version>
 # <architecture>
-# run "nvi help" for more info
 ```
-If not found, then view [Installation](https://github.com/mattcarlotta/nvi-bin#installation) steps.
+
+If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions for checking shell `$PATH`s.
+
+
+### Windows (PowerShell)
+
+Requirements:
+- [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `21.0.0` or later
+
+Follow these steps:
+1. Install MSVC Build Tools:
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools --source winget
+```
+
+> [!NOTE]
+> It should open a GUI installer, where you can select the "Desktop development with C++" workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
+
+2. Install LLVM/Clang:
+```powershell
+winget install LLVM.LLVM --source winget
+```
+
+3. Add clang to `Path`:
+```powershell
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\LLVM\bin", "User")
+```
+
+4. Close and reopen PowerShell
+
+5. Launch a developer shell:
+```powershell
+& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
+```
+
+> [!IMPORTANT]
+> Without the `-Arch` and `HostArch` flags, the VS Dev Shell environment will default to 32bit!
+
+6. Change directory to `Documents`:
+```powershell
+cd Documents
+```
+
+7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account):
+```powershell
+git clone git@github.com:mattcarlotta/nvi-bin.git
+```
+Optionally download it:
+```powershell
+Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi-bin/archive/refs/heads/main.zip" -OutFile "nvi-bin.zip"
+```
+Then extract it:
+```powershell
+Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
+```
+Then set up git tracking (the commit will be used within the output for `nvi version`; otherwise it'll report the commit as "unknown"):
+```powershell
+git init
+git remote add origin https://github.com/mattcarlotta/nvi-bin.git
+git fetch origin
+git reset origin
+```
+
+8. Change directory to `nvi-bin`:
+```powershell
+cd nvi-bin
+```
+
+9. Build `nob.c`:
+```powershell
+cl nob nob.c
+```
+#### Building and installing
+
+Debugging:
+```powershell
+./nob.exe
+```
+
+Release:
+```powershell
+./nob.exe release
+```
+
+Build and install (change `C:\tools\bin` to whatever directory you'd like):
+```powershell
+mkdir C:\tools\bin -Force
+
+./nob.exe install C:\tools\bin
+
+```
+
+Then add `C:\tools\bin` to your PowerShell `Path`:
+```powershell
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools\bin", "User")
+```
+
+Close and reopen PowerShell, then run:
+```powershell
+Get-Command nvi
+```
+
+> [!NOTE]
+> Windows builds, by default, will emit ENVs in the PowerShell format.
 
 ## Running
 
-### Unix (Linux, macOS, WSL)
-
-For Windows (Non-WSL) users, view the [PowerShell Usage](https://github.com/mattcarlotta/nvi-bin#powershell-usage)
+### POSIX (Linux, macOS, WSL)
 
 `nvi` emits NUL-delimited ENVs: each `KEY=value` pair, then each command token. `xargs -0` splits the ENVs and hands them to `env`, which sets the variables and runs the command.
 
@@ -124,37 +215,12 @@ For day-to-day use, you may want to add a function to your shell profile (eg. `~
 ```sh
 nvix() { nvi "$@" | xargs -0 -r env; }
 ```
+Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
+```sh
+source <profile_url>
+```
 
-## Flags
-
-| Flag | Alias | Parameters | Description |
-| --- | --- | --- | --- |
-| `--files` | `-f` | one or more paths | `.env` files to parse, in order. Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain `.env`. Defaults to `.env`. |
-| `--ignored` | `-i` | one or more keys | Keys that `scan` should not add to the required ENV set (e.g. `NODE_ENV`, which is typically injected at runtime by tooling rather than defined in a `.env` file). Only meaningful together with `scan`. |
-| `--required` | `-r` | one or more keys | Keys that must exist with non-empty values after parsing. `nvi` exits with an error listing any that are missing. |
-| `--format` | `-F` | `nul` or `powershell` | Output format. Defaults to `nul` on Unix and `powershell` on Windows (chosen at compile time per target). |
-| `--dry-run` | `-d` | | Print parsed flags, tokens, scan results, and the resolved env listing to stderr. |
-| `--help` | `-h` | | Prints usage help and exits. |
-| `--scan` | `-s`| one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
-| `--version` | `-v` | | Prints versions and exits. |
-| `--` | | command tokens | End-of-options delimiter. Everything after it is passed through to stdout untouched, as the command for the downstream consumer to run. Required (except for standalone `scan`, `help`, and `version`). |
-
-Unrecognized flags (and their parameters) are warned about on stderr and ignored.
-
-## Commands
-
-| Command | Parameters | Description |
-| --- | --- | --- |
-| `scan` | one or more file extensions | Recursively scans `*.<ext>` files for environment-variable accessors (e.g. `process.env.KEY`, `os.getenv("KEY")`) and marks the referenced keys as required.† |
-| `help` | | Prints usage help. |
-| `version` | | Prints version. |
-
-> [!NOTE]
-> † Without a `--` command, scan reports what it finds and exits. With a `--` command, scan sets the found ENV keys to the required ENV set.
-
-Unrecognized commands are warned about on stderr and ignored.
-
-## PowerShell Usage
+### Windows (PowerShell)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
 PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
@@ -166,7 +232,15 @@ nvi [flags|command] -- [command] | Out-String | Invoke-Expression
 For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`:
 
 ```powershell
+notepad $PROFILE
+```
+Then add this function and save:
+```powershell
 function nvix { nvi @args | Out-String | Invoke-Expression }
+```
+Close and reopen PowerShell, then run:
+```powershell
+Get-Command nvix
 ```
 
 Example of what the emitted structure looks like:
@@ -184,21 +258,28 @@ Notes for Windows users:
 
 - **Persistence:** `$env:` assignments apply to the invoking PowerShell session, so the variables remain set after the command exits. For an isolated, throwaway environment, run the pipeline inside `pwsh -Command "..."`.
 - **Encoding:** PowerShell decodes nvi's output using the console encoding. PowerShell 7+ defaults to UTF-8; on Windows PowerShell 5.1, set `[Console]::OutputEncoding` to UTF-8 if your values contain non-ASCII characters.
-- **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the Unix pipeline directly with `--format nul`.
-- **WSL:** use the Linux binary and the Unix pipeline.
+- **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the POSIX pipeline directly with `--format nul`.
+- **WSL:** use the Linux binary and the POSIX pipeline.
 - `cmd.exe` is not supported.
 
-### Choosing a format explicitly
+## Flags
 
-`--format` overrides the platform default in either direction:
+| Flag | Alias | Parameters | Description |
+| --- | --- | --- | --- |
+| `--dry-run` | `-d` | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
+| `--files` | `-f` | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
+| `--format` | `-F` | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on POSIX and `powershell` on Windows (chosen at compile time per target). |
+| `--help` | `-h` | | Prints usage help to stdout and exits with 0. |
+| `--ignored` | `-i` | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
+| `--required` | `-r` | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
+| `--scan` | `-s`| one or more file extensions | Recursively scans \*.`<ext>` files for environment-variable accessors and sets the ENV required list.† |
+| `--version` | `-v` | | Prints version info to stdout and exits with 0. |
+| `--` | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
-```sh
-# preview PowerShell ENV format
-nvi --format powershell -- echo $?
+Unrecognized flags or arguments are usage errors.
 
-# preview Unix ENV format
-nvi --format nul -- echo $?
-```
+> [!NOTE]
+> † Without a `--` command, scan will only report what it finds and exit (must include *--dry-run*). With a `--` command, scan sets the found ENV keys to the required ENVs list.
 
 ## Usage examples
 
@@ -207,32 +288,26 @@ nvi --format nul -- echo $?
 nvi --files .env .env.local -- npm start | <consumer>
 
 # require keys to be present
-nvi --required API_KEY DATABASE_URL -- cargo run | <consumer>
+nvi --files .env --required API_KEY DATABASE_URL -- cargo run | <consumer>
 
-# require every env key referenced in source files to be present
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
+# saves a dry run log of what was scanned, tokenized, and parsed
+nvi --files .env --scan ts --dry-run >2 nvi.log; less nvi.log
 
-# print a single resolved variable
-nvi -- printenv MESSAGE | <consumer>
-
-# inspect the full child environment
-nvi -- env | <consumer>
+# require every env key referenced in py source files to be present
+nvi --files .env --scan py -- python main.py  | <consumer>
 
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
-nvi -- sh -c 'echo "$MESSAGE"' | <consumer>
-
-# dry run what was parsed (stderr only)
-nvi --dry-run
+nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 ```
-NUL delimiting means values pass through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
+Values are passed through byte-exact without quoting or escaping: spaces, quotes, `$`, and even embedded newlines (multiline values) survive intact.
 
 ### Exit codes
 
-- `0` - Ok: Parsed/emitted ENVs successfully or prints information and exits (help, scan, version)
-- `1` - Operational failure: out of memory, file unreadable, parser error, required keys are undefined, or output write failure
-- `2` - Usage error: flags missing required params or a missing `--` command
+- `0` - Success: emits ENVs for a downstream consumer or prints information and exits (help, scan, version)
+- `1` - Operational failures: out of memory, file unreadable, parser errors, or required keys are undefined
+- `2` - Usage errors: flags missing required params, invalid flags/params, or a missing `--` command
 
-The exit code of *your command* is reported by the downstream consumer (`xargs`), not by `nvi`.
+The exit code of *your command* will be reported by the downstream consumer, not by `nvi`.
 
 ## Scanning for ENV keys
 
@@ -243,7 +318,7 @@ For example, every line below is recognized and yields the key `DATABASE_URL`:
 ```
 process.env.DATABASE_URL          # JavaScript / TypeScript
 process.env["DATABASE_URL"]
-import.meta.env.DATABASE_URL      # Vite
+import.meta.env.DATABASE_URL
 os.getenv("DATABASE_URL")         # Python
 os.Getenv("DATABASE_URL")         # Go
 env::var("DATABASE_URL")          # Rust
@@ -253,16 +328,16 @@ $env:DATABASE_URL                 # PowerShell
 $ENV{DATABASE_URL}                # Perl
 ```
 > [!IMPORTANT]
-> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPERCASE_SNAKE_CASE.
+> An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPER_CASE_SNAKE_CASE.
 
 > [!CAUTION]
 > Dynamic keys (`const key = "DATABASE_URL"; process.env[key]`), destructured variables (`const { DATABASE_URL } = process.env`), and aliased accessors (`const e = process.env; e.DATABASE_URL`) cannot be detected by the scanner without a per-language AST (which this tool avoids) and therefore won't be found.
 
-### Supported file extensions:
-- C -> `c`
+### Supported file extensions (to the right of the language)
+- C -> `c`, `h`
 - Clojure -> `clj`, `cljs`, `cljc`
 - Crystal -> `cr`
-- C++ -> `cc`, `cpp`, `cxx`, `h`, `hh`, `hpp`, `hxx`
+- C++ -> `cc`, `cpp`, `cxx`, `hh`, `hpp`, `hxx`
 - C# -> `cs`
 - D -> `d`
 - Dart -> `dart`
@@ -271,9 +346,10 @@ $ENV{DATABASE_URL}                # Perl
 - Fortran -> `f`, `f90`, `f95`, `f03`, `f08`, `for`
 - F# -> `fs`, `fsi`, `fsx`
 - Go -> `go`
+- Gradle -> `gradle`
 - Groovy -> `groovy`
 - Haskell -> `hs`, `lhs`
-- Java -> `java`, `gradle`
+- Java -> `java`
 - JavaScript/TypeScript -> `cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`
 - Julia -> `jl`
 - Kotlin -> `kt`, `kts`
@@ -286,7 +362,7 @@ $ENV{DATABASE_URL}                # Perl
 - Perl -> `pl`, `pm`, `t`
 - PHP -> `php`
 - PowerShell -> `ps1`, `psm1`, `psd1`
-- Python -> `py`, `pyi`
+- Python -> `py`, `pyi`, `pyw`
 - R -> `r`
 - Ruby -> `gemspec`, `rb`, `rake`
 - Rust -> `rs`
@@ -297,11 +373,11 @@ $ENV{DATABASE_URL}                # Perl
 - Visual Basic -> `vb`
 - Zig -> `zig`
 
-Scan Examples:
+#### Scan Usage Examples
 
 ```sh
-# reports every env accessor in .mjs and .ts files, then exits
-nvi --scan mjs ts
+# scans and reports matching ENVs in .mjs and .ts files, then exits
+nvi --scan mjs ts --dry-run
 
 # collects scanned keys to be required and defined before 'npm run dev' command is emitted
 nvi --scan mjs --files .env -- npm run dev | xargs -0 -r env
@@ -312,13 +388,10 @@ nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
 
 Notes:
 
-- Extensions may be written as `ext`, `.ext`, or `'*.ext'` (see tip below).
-- Extensions with no known accessor patterns are skipped. Shell scripts are intentionally not scanned, because `$VAR` is indistinguishable from any non-environment shell variable.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored (see [blacklist](https://github.com/mattcarlotta/nvi-bin/blob/main/src/scanner.zig#L19-L42)). Symlinked directories are not followed.
-- When a command is present, missing scanned keys exit with code `1`, the same as `--required` failures, and the command is never emitted.
-
-> [!TIP]
-> When using `*.ext` globs, use quotes (`'*.ext'`) or just pass bare extensions; unquoted globs are expanded into filenames by your shell before `nvi` runs.
+- Extensions must be written as `ext` and not `.ext` or `*.ext`.
+- Extensions with no known accessor patterns are usage errors.
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored. Symlinked directories are not followed.
+- When a command is present, scanned keys that are not defined exit with code `1` (usage error), the same as `--required` failures.
 
 ## `.env` file syntax
 
@@ -341,37 +414,52 @@ BASE64_OK=abc==
 # a dollar sign without braces is a literal '$' (not an interpolated key)
 PRICE=$5.00
 
-# backslash-newline continues the value (interpolation keys still work)
+# a hash sign after a key is a literal '#' (not comment)
+CHANNEL=#why-is-this-bug-occuring
+
+# backslash-newline continues the value (interpolation keys still work on any line)
 SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
 oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\
 owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
-# no backslash with just a new-line/EOF indicates the end of a multiline value
+# when there's no backslash and just a new-line or EOF, then that indicates the end of a multiline value
 ```
-Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `--files`).
-Undefined interpolations and keys with empty values are skipped with a warning.
+> [!NOTE]
+> Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `.env` files specified by `--files`).
+> Undefined key interpolations or keys with empty values will exit with an error.
 
 ## Testing
 
-To run tests, use the following `make` or `zig build` commands:
+This project uses [Unity](https://github.com/ThrowTheSwitch/Unity) in combination with [nob.h](https://github.com/tsoding/nob.h)
+
+### POSIX
+
+Build nob (if you haven't already, compile nob):
 ```sh
-make test
-# zig build test --summary all
+clang -o nob nob.c
+```
+Run tests (generates a compile-commands.json for clang, builds tests and runs test suites):
+```sh
+./nob test
+```
 
-make unit
-# zig build unit --summary all
+### Windows (PowerShell)
 
-make integration
-# zig build integration --summary all
+Build nob (if you haven't already, compile nob):
+```sh
+cl nob nob.c
+```
+Run tests (generates a compile-commands.json for clang, builds tests and runs test suites):
+```sh
+./nob.exe test
 ```
 
 ## Security model
 
-`nvi` doesn't perform execution operations (like `exec`), no process spawning nor shell invocation. It reads the `.env` files you provide and writes them as bytes to stdout.
-Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
-For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
+`nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation. It will only parse the `.env` files you provide and write ENVs to stdout.
+Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed. For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
 ### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)

@@ -4,3 +4,39 @@ zig-out/
 build/
 build-*/
 docgen-tmp/
+compile_commands.json
+
+# Compiled objects and intermediates
+*.o
+*.obj
+*.lo
+*.slo
+*.ko
+
+# Libraries
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug info
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Build output / dependency files
+*.d
+
+/nvi
+.nvi_commit
+
+/nob
+nob.old

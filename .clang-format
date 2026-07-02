@@ -1,0 +1,8 @@
+---
+Language: C
+BasedOnStyle: LLVM
+ColumnLimit: 120
+IndentWidth: 4
+TabWidth: 4
+IndentCaseLabels: true
+InsertBraces: true
