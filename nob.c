@@ -422,8 +422,7 @@ static bool cmd_generate(void) {
         nob_cmd_append(&prefix, "clang", "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g",
                        "-O0");
 #endif
-        emit_entry(&json, &first, dir, &prefix, "build/tests/integration-runner" BIN_EXT,
-                   "tests/integration/main.c");
+        emit_entry(&json, &first, dir, &prefix, "build/tests/integration-runner" BIN_EXT, "tests/integration/main.c");
         ++count;
         nob_cmd_free(prefix);
     }
@@ -500,7 +499,7 @@ static bool timed(const char *label, const char *out, bool (*build)(void)) {
 }
 
 int main(int argc, char **argv) {
-#if defined(_WIN32) && defined(_MSC_VER)
+#if !defined(_WIN32) || !defined(_MSC_VER)
     NOB_GO_REBUILD_URSELF(argc, argv);
 #endif
 

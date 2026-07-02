@@ -1,4 +1,5 @@
 #include "shims.h"
+#include <stdio.h>
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <fcntl.h>
