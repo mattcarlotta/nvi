@@ -19,17 +19,21 @@
 file_details_t open_file(const char *path) {
     file_details_t file_details = {0};
     file_details.path = path;
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) {
-        log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
-        goto done;
-    }
+    FILE *file = NULL;
 
-    // fopen happily opens directories on some platforms (and ftell then
-    // reports a garbage size), so gate on a regular file up front
+    // Gate on a regular file up front. On some platforms fopen happily opens
+    // directories (and ftell then reports a garbage size); on Windows fopen
+    // fails outright on a directory, which would otherwise surface as a
+    // generic "Cannot open" instead of this specific error.
     struct stat st;
     if (stat(path, &st) == 0 && !S_ISREG(st.st_mode)) {
         log_error("[ERROR] Cannot read '%s': not a regular file\n", path);
+        goto done;
+    }
+
+    file = fopen(path, "rb");
+    if (file == NULL) {
+        log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
         goto done;
     }
 
