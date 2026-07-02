@@ -14,10 +14,10 @@ nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, sca
 
 For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source). Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-For Windows (PowerShell) users, you'll want to add the binary to a directory then add that directory to the PowerShell `PATH`. For more information, take a look at the
-[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) Windows subsection on how to add a directory to your `PATH`.
+For Windows (PowerShell) users, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
+[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) Windows subsection on how to add a directory to your `Path`.
 
-Then place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
+For POSIX, place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
@@ -72,7 +72,7 @@ Build for release:
 ```
 
 > [!NOTE]
-> A Linux OS virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). As a result, the compiled binary size will shrink/grow to account for this page
+> A Linux OS's virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). As a result, the compiled binary size will shrink/grow to account for this page
 > sizing. The default page sizing for nvi is 64KB (to maintain backward compatibility), which may pad more virtual memory than necessary. To check your OS page sizing,
 > run `getconf PAGESIZE`. If your page sizing is smaller than 64KB, then you can override the default page sizing by setting the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
 > `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
@@ -83,9 +83,8 @@ Build and install the release binary in a shell directory path:
 # for example: ./nob install $HOME/.local/bin
 ./nob install <directory>
 ```
-### Verify system installation
 
-Run:
+To verify system installation, run:
 ```sh
 which nvi
 # <directory>
@@ -107,7 +106,7 @@ Requirements:
 - [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `21.0.0` or later
 
 Follow these steps:
-1. Install MSVC Build Tools
+1. Install MSVC Build Tools:
 ```powershell
 winget install Microsoft.VisualStudio.2022.BuildTools --source winget
 ```
@@ -115,29 +114,32 @@ winget install Microsoft.VisualStudio.2022.BuildTools --source winget
 > [!NOTE]
 > It should open a GUI installer, where you can select the "Desktop development with C++" workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
 
-2. Install LLVM/Clang
+2. Install LLVM/Clang:
 ```powershell
 winget install LLVM.LLVM --source winget
 ```
 
-3. Add clang to `PATH`
+3. Add clang to `Path`:
 ```powershell
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\LLVM\bin", "User")
 ```
 
 4. Close and reopen PowerShell
 
-5. Launch a developer shell (without the `-Arch` and `HostArch` flags, the VS Dev Shell environment will default to 32bit)
+5. Launch a developer shell:
 ```powershell
 & "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
 ```
 
-6. Change directory to `Documents`
+> [!IMPORTANT]
+> Without the `-Arch` and `HostArch` flags, the VS Dev Shell environment will default to 32bit!
+
+6. Change directory to `Documents`:
 ```powershell
 cd Documents
 ```
 
-7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account)
+7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account):
 ```powershell
 git clone git@github.com:mattcarlotta/nvi-bin.git
 ```
@@ -149,7 +151,7 @@ Then extract it:
 ```powershell
 Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
 ```
-Then setup git tracking (the commit will be used within the output for `nvi version`; otherwise it'll report the commit as "unknown"):
+Then set up git tracking (the commit will be used within the output for `nvi version`; otherwise it'll report the commit as "unknown"):
 ```powershell
 git init
 git remote add origin https://github.com/mattcarlotta/nvi-bin.git
@@ -157,12 +159,12 @@ git fetch origin
 git reset origin
 ```
 
-8. Change directory to `nvi-bin`
+8. Change directory to `nvi-bin`:
 ```powershell
 cd nvi-bin
 ```
 
-9. Build `nob.c`
+9. Build `nob.c`:
 ```powershell
 cl nob nob.c
 ```
@@ -191,6 +193,11 @@ Then add `C:\tools\bin` to your PowerShell `Path`:
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools\bin", "User")
 ```
 
+Close and reopen PowerShell, then run:
+```powershell
+Get-Command nvi
+```
+
 > [!NOTE]
 > Windows builds, by default, will emit ENVs in the PowerShell format.
 
@@ -208,6 +215,11 @@ For day-to-day use, you may want to add a function to your shell profile (eg. `~
 ```sh
 nvix() { nvi "$@" | xargs -0 -r env; }
 ```
+Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
+```sh
+source <profile_url>
+```
+
 ### Windows (PowerShell)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
@@ -226,9 +238,9 @@ Then add this function and save:
 ```powershell
 function nvix { nvi @args | Out-String | Invoke-Expression }
 ```
-Lastly, reload your `$PROFILE`:
+Close and reopen PowerShell, then run:
 ```powershell
-. $PROFILE
+Get-Command nvix
 ```
 
 Example of what the emitted structure looks like:
