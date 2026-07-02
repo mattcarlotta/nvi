@@ -1,6 +1,6 @@
-# nvi (en-vee)
+# nvi
 
-A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
+nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
 
 - 0 dependencies
 - Language agnostic
@@ -13,6 +13,8 @@ A fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter
 ## Installation
 
 Download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
+
+For Windows (PowerShell) users, skip to the [building and installing](https://github.com/mattcarlotta/nvi-bin/blob/main/README.md#building-and-installing) for Windows subsection.
 
 Then place the binary in one of the directories (owned by `$USER`, not by `root`) located in your shell `$PATH`:
 ```sh
@@ -37,23 +39,19 @@ source <profile_url>
 
 ## Build and install from source
 
-### Requirements:
-
-Mac-OS and GNU Linux:
-- [Clang](https://clang.llvm.org/) `21.0.0` or later
-
-Windows:
-- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `21.0.0` or later
-
-Optional:
+Optional requirements:
 - [Clangd](https://clangd.llvm.org/) `21.0.0` or later (for LSP)
 - [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `21.0.0`
 
 Building source code:
 - [nob](https://github.com/tsoding/nob.h)
 
+### POSIX (Linux, macOS, WSL)
 
-Clone project and build `nob`:
+Requirements:
+- [Clang](https://clang.llvm.org/) `21.0.0` or later
+
+Clone repo and build `nob`:
 ```sh
 cd ~/Downloads
 
@@ -84,10 +82,6 @@ Build and install the release binary in a shell directory path:
 # for example: ./nob install $HOME/.local/bin
 ./nob install <directory>
 ```
-
-> [!NOTE]
-> Windows builds will default to the powershell format. Therefore, if not using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install), you'll need to override the format flag with `--format nul`.
-
 ### Verify system installation
 
 Run:
@@ -104,6 +98,94 @@ nvi version
 
 If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions for checking shell `$PATH`s.
 
+
+### Windows (PowerShell)
+
+Requirements:
+- [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `21.0.0` or later
+
+Follow these steps:
+1. Install MSVC Build Tools
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools --source winget
+```
+
+> [!NOTE]
+> It should open a GUI installer, where you can select the "Desktop development with C++" workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
+
+2. Install LLVM/Clang
+```powershell
+winget install LLVM.LLVM --source winget
+```
+
+3. Add clang to `PATH`
+```powershell
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\LLVM\bin", "User")
+```
+
+4. Close and reopen PowerShell
+
+5. Launch a developer shell
+```powershell
+& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1"
+```
+
+6. Change directory to `Documents`
+```powershell
+cd Documents
+```
+
+7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account)
+```powershell
+git clone git@github.com:mattcarlotta/nvi-bin.git
+```
+Optionally download it:
+```powershell
+Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi-bin/archive/refs/heads/main.zip" -OutFile "nvi-bin.zip"
+```
+Then extract it:
+```
+Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
+```
+
+8. Change directory to `nvi-bin`
+```powershell
+cd nvi-bin
+```
+
+9. Build `nob.c`
+```powershell
+cl nob nob.c
+```
+#### Building and installing
+
+Debugging:
+```powershell
+.\nob.exe
+```
+
+Release:
+```powershell
+.\nob.exe release
+```
+
+Build and install (change `C:\tools\bin` to whatever directory you'd like):
+```powershell
+mkdir C:\tools\bin -Force
+
+.\nob.exe install C:\tools\bin
+
+```
+
+Then add `C:\tools\bin` to your PowerShell `Path`:
+```powershell
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools\bin", "User")
+```
+
+> [!NOTE]
+> Windows builds, by default, will emit ENVs in the PowerShell format.
+
 ## Running
 
 ### POSIX (Linux, macOS, WSL)
@@ -118,7 +200,7 @@ For day-to-day use, you may want to add a function to your shell profile (eg. `~
 ```sh
 nvix() { nvi "$@" | xargs -0 -r env; }
 ```
-### PowerShell
+### Windows (PowerShell)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
 PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string (PowerShell splits native stdout into lines, which would break multiline values), and `Invoke-Expression` executes it.
@@ -130,7 +212,15 @@ nvi [flags|command] -- [command] | Out-String | Invoke-Expression
 For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`:
 
 ```powershell
+notepad $PROFILE
+```
+Then add this function and save:
+```powershell
 function nvix { nvi @args | Out-String | Invoke-Expression }
+```
+Lastly, reload your `$PROFILE`:
+```powershell
+. $PROFILE
 ```
 
 Example of what the emitted structure looks like:
