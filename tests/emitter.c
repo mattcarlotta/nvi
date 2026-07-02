@@ -106,7 +106,7 @@ static void test_powershell_assignments_then_call(void) {
     size_t n = capture_emit(&a, &m, buf, sizeof(buf));
     buf[n < sizeof(buf) ? n : sizeof(buf) - 1] = '\0';
 
-    TEST_ASSERT_EQUAL_STRING("$env:A = '1'\n$env:B = 'two words'\n 'echo' 'hi'\n", buf);
+    TEST_ASSERT_EQUAL_STRING("$env:A = '1'\n$env:B = 'two words'\n& 'echo' 'hi'\n", buf);
 }
 
 static void test_powershell_escapes_single_quotes(void) {
@@ -119,7 +119,7 @@ static void test_powershell_escapes_single_quotes(void) {
     size_t n = capture_emit(&a, &m, buf, sizeof(buf));
     buf[n < sizeof(buf) ? n : sizeof(buf) - 1] = '\0';
 
-    TEST_ASSERT_EQUAL_STRING("$env:MSG = 'it''s o''clock'\n 'env'\n", buf);
+    TEST_ASSERT_EQUAL_STRING("$env:MSG = 'it''s o''clock'\n& 'env'\n", buf);
 }
 
 int main(void) {

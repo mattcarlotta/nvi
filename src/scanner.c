@@ -122,9 +122,15 @@ static result_t handle_entry(const args_t *args, scanner_t *scanner, const char 
     }
 
     struct stat st;
+#if defined(_WIN32) && defined(_MSC_VER)
     if (stat(child, &st) != 0) {
         return operation_error("Unable to stat '%s'\n", child);
     }
+#else
+    if (lstat(child, &st) != 0) {
+        return operation_error("Unable to stat '%s'\n", child);
+    }
+#endif
 
     if (S_ISDIR(st.st_mode)) {
         return walk_file_tree(args, scanner, child);
@@ -156,6 +162,10 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     ++scanner->dirs_scanned;
 
     do {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+            continue;
+        }
+
         result = handle_entry(args, scanner, path, fd.cFileName);
         if (!result.ok) {
             break;

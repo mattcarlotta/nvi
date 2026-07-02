@@ -130,6 +130,11 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
     tokenizer->byte = 1;
     tokenizer->line = 1;
 
+    // skip a UTF-8 BOM so it doesn't become part of the first key
+    if (tokenizer->file_len >= 3 && memcmp(tokenizer->file, "\xEF\xBB\xBF", 3) == 0) {
+        tokenizer->i = 3;
+    }
+
     if (args->dry_run) {
         log_info("[INFO]");
         log_f(" Tokenizing ");
@@ -146,6 +151,17 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
         switch (current) {
             case NULL_CHAR: {
                 skip_byte(tokenizer, 1);
+                break;
+            }
+            case CARRIAGE_RETURN: {
+                // '\r\n' (Windows line ending): drop the '\r' and let the next
+                // iteration handle '\n'; a lone '\r' remains a literal byte
+                if (peek(tokenizer, 1) == LINE_DELIMITER) {
+                    skip_byte(tokenizer, 1);
+                } else {
+                    DYN_ARR_APPEND(&value, (char)current);
+                    skip_byte(tokenizer, 1);
+                }
                 break;
             }
             case LINE_DELIMITER: {
@@ -289,6 +305,11 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
 
                 commit_token(INTERPOLATED, tokenizer, &token, &value);
 
+                // fold a trailing '\r\n'
+                if (peek(tokenizer, 0) == CARRIAGE_RETURN && peek(tokenizer, 1) == LINE_DELIMITER) {
+                    skip_byte(tokenizer, 1);
+                }
+
                 if (peek(tokenizer, 0) == LINE_DELIMITER) {
                     append_token(tokenizer, &token);
                     ++tokenizer->line;
@@ -302,7 +323,8 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
             }
             case BACK_SLASH: {
                 int n = peek(tokenizer, 1);
-                if (n != -1 && n != LINE_DELIMITER) {
+                bool crlf = n == CARRIAGE_RETURN && peek(tokenizer, 2) == LINE_DELIMITER;
+                if (n != -1 && n != LINE_DELIMITER && !crlf) {
                     DYN_ARR_APPEND(&value, (char)current);
                     skip_byte(tokenizer, 1);
                     continue;
@@ -316,8 +338,8 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 }
 
                 value.count = 0;
-                // skip "\\\n"
-                skip_byte(tokenizer, 2);
+                // skip "\\\n" (or "\\\r\n")
+                skip_byte(tokenizer, crlf ? 3 : 2);
                 ++tokenizer->line;
                 tokenizer->byte = 1;
                 break;

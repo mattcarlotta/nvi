@@ -179,6 +179,75 @@ static void test_errors_on_empty_interpolation_key(void) {
     free_tokenizer(&t);
 }
 
+// --- Windows-style input (CRLF, BOM) ---
+
+static void test_crlf_line_endings(void) {
+    tokenizer_t t;
+    result_t r = tokenize("A=1\r\nB=2\r\n", &t);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
+    TEST_ASSERT_EQUAL_STRING("1", val(&t, 0, 0)->value);
+    TEST_ASSERT_EQUAL_STRING("2", val(&t, 1, 0)->value);
+    TEST_ASSERT_EQUAL_size_t(2, val(&t, 1, 0)->line);
+    free_tokenizer(&t);
+}
+
+static void test_lone_carriage_return_is_literal(void) {
+    tokenizer_t t;
+    result_t r = tokenize("KEY=a\rb\n", &t);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_STRING("a\rb", val(&t, 0, 0)->value);
+    free_tokenizer(&t);
+}
+
+static void test_crlf_multiline_continuation(void) {
+    tokenizer_t t;
+    result_t r = tokenize("A=123\\\r\n456\r\n", &t);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(1, t.tokens.count);
+    TEST_ASSERT_EQUAL_size_t(2, t.tokens.items[0].values.count);
+    TEST_ASSERT_EQUAL_STRING("123", val(&t, 0, 0)->value);
+    TEST_ASSERT_EQUAL_STRING("456", val(&t, 0, 1)->value);
+    free_tokenizer(&t);
+}
+
+static void test_crlf_after_interpolation(void) {
+    tokenizer_t t;
+    result_t r = tokenize("KEY=${OTHER}\r\nB=2\r\n", &t);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
+    TEST_ASSERT_EQUAL_INT(INTERPOLATED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 0)->value);
+    TEST_ASSERT_EQUAL_STRING("2", val(&t, 1, 0)->value);
+    free_tokenizer(&t);
+}
+
+static void test_crlf_comment(void) {
+    tokenizer_t t;
+    result_t r = tokenize("# a comment\r\nA=1\r\n", &t);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
+    TEST_ASSERT_EQUAL_INT(COMMENTED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_STRING("# a comment", val(&t, 0, 0)->value);
+    free_tokenizer(&t);
+}
+
+static void test_errors_on_unterminated_interpolation_crlf(void) {
+    tokenizer_t t;
+    result_t r = tokenize_capture_fd("KEY=${OTHER\r\n", &t);
+    TEST_ASSERT_FALSE(r.ok);
+    free_tokenizer(&t);
+}
+
+static void test_utf8_bom_is_stripped(void) {
+    tokenizer_t t;
+    result_t r = tokenize("\xEF\xBB\xBFKEY=value\n", &t);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
+    TEST_ASSERT_EQUAL_STRING("value", val(&t, 0, 0)->value);
+    free_tokenizer(&t);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_simple_key_value);
@@ -195,5 +264,12 @@ int main(void) {
     RUN_TEST(test_errors_on_empty_key);
     RUN_TEST(test_errors_on_whitespace_only_key);
     RUN_TEST(test_errors_on_empty_interpolation_key);
+    RUN_TEST(test_crlf_line_endings);
+    RUN_TEST(test_lone_carriage_return_is_literal);
+    RUN_TEST(test_crlf_multiline_continuation);
+    RUN_TEST(test_crlf_after_interpolation);
+    RUN_TEST(test_crlf_comment);
+    RUN_TEST(test_errors_on_unterminated_interpolation_crlf);
+    RUN_TEST(test_utf8_bom_is_stripped);
     return UNITY_END();
 }

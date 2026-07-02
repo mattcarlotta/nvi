@@ -32,6 +32,7 @@ void run_emitter(const args_t *args, const env_map_t *env_map) {
             }
 
             if (args->command.count > 0) {
+                fputc('&', stdout);
                 for (size_t i = 0; i < args->command.count; ++i) {
                     fputs(" '", stdout);
                     write_to_ps_format(args->command.items[i]);

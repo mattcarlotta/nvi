@@ -6,6 +6,7 @@
 enum {
     NULL_CHAR = 0,
     LINE_DELIMITER = '\n',
+    CARRIAGE_RETURN = '\r',
     COLON = ':',
     ASSIGN_OP = '=',
     HASH = '#',
