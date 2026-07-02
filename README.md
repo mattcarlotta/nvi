@@ -41,8 +41,8 @@ source <profile_url>
 ## Build and install from source
 
 Optional requirements:
-- [Clangd](https://clangd.llvm.org/) `21.0.0` or later (for LSP)
-- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `21.0.0`
+- [Clangd](https://clangd.llvm.org/) `17.0.0` or later (for LSP)
+- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `17.0.0`
 
 Building source code:
 - [nob.h](https://github.com/tsoding/nob.h)
@@ -50,7 +50,7 @@ Building source code:
 ### POSIX (Linux, macOS, WSL)
 
 Requirements:
-- [Clang](https://clang.llvm.org/) `21.0.0` or later
+- [Clang](https://clang.llvm.org/) `17.0.0` or later
 
 Clone repo and build `nob`:
 ```sh
@@ -103,7 +103,7 @@ If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#in
 
 Requirements:
 - [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
-- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `21.0.0` or later
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `17.0.0` or later
 
 Follow these steps:
 1. Install MSVC Build Tools:
