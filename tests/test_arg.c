@@ -1,7 +1,7 @@
 #include "arg.h"
-#include "capture.h"
 #include "format.h"
 #include "macros.h"
+#include "test_capture.h"
 #include "unity.h"
 #include <string.h>
 

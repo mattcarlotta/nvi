@@ -1,8 +1,8 @@
-#include "emitter.h"
 #include "arg.h"
-#include "capture.h"
+#include "emitter.h"
 #include "format.h"
 #include "parser.h"
+#include "test_capture.h"
 #include "unity.h"
 #include <stdio.h>
 #include <string.h>

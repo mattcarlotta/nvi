@@ -1,6 +1,6 @@
-#include "parser.h"
 #include "arg.h"
-#include "capture.h"
+#include "parser.h"
+#include "test_capture.h"
 #include "tokenizer.h"
 #include "unity.h"
 #include <stdlib.h>
