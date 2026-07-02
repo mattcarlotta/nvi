@@ -1,5 +1,6 @@
 #ifndef STRSET_H
 #define STRSET_H
+#include "hash.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,22 +23,6 @@ typedef struct {
     size_t capacity; // total number of slots (always a power of two)
     size_t count;
 } set_t;
-
-#define FNV_OFFSET 1469598103934665603ULL
-#define FNV_PRIME 1099511628211ULL
-
-// This is FNV-1a (Fowler-Noll-Vo), a non-cryptographic hash function.
-// The two magic constants are specified by the algorithm:
-// Magic Offset basis: 14695981039346656037 (decimal) -- this is the seed
-// Magic Prime: 1099511628211 -- chosen for good avalanche properties over 64-bit integers
-static inline uint64_t set_hash(const char *key, size_t len) {
-    uint64_t h = FNV_OFFSET;
-    for (size_t i = 0; i < len; ++i) {
-        h ^= (unsigned char)key[i];
-        h *= FNV_PRIME;
-    }
-    return h;
-}
 
 static inline void set_grow(set_t *set, size_t need) {
     size_t new_cap = set->capacity == 0 ? SET_INIT_CAP : set->capacity;
@@ -97,7 +82,7 @@ static inline bool set_contains(const set_t *set, const char *key, size_t len) {
         return false;
     }
 
-    uint64_t hash = set_hash(key, len);
+    uint64_t hash = fnv1a(key, len);
     size_t mask = set->capacity - 1;
     size_t i = hash & mask;
 
@@ -116,7 +101,7 @@ static inline bool set_contains(const set_t *set, const char *key, size_t len) {
 static inline void set_add(set_t *set, const char *key, size_t len) {
     set_grow(set, 1);
 
-    uint64_t hash = set_hash(key, len);
+    uint64_t hash = fnv1a(key, len);
     size_t mask = set->capacity - 1;
     size_t i = hash & mask;
 

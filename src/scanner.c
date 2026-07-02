@@ -69,8 +69,16 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
         return result;
     }
 
-    file_details_t file = open_file(path, args->dry_run);
-    if (file.contents == NULL || file.len == 0) {
+    file_details_t file = open_file(path);
+    if (file.contents == NULL) {
+        return result;
+    }
+
+    if (file.len == 0) {
+        if (args->dry_run) {
+            log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n", path);
+        }
+        free(file.contents);
         return result;
     }
 

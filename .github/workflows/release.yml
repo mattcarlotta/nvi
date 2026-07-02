@@ -3,99 +3,87 @@ name: release
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
-    # branches: ["main"]
-
-env:
-  ZIG_VERSION: "0.16.0"
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Zig
-        run: |
-          arch=x86_64-linux
-          if [[ "$ZIG_VERSION" == *dev* ]]; then
-            url="https://ziglang.org/builds/zig-${arch}-${ZIG_VERSION}.tar.xz"
-          else
-            url="https://ziglang.org/download/${ZIG_VERSION}/zig-${arch}-${ZIG_VERSION}.tar.xz"
-          fi
-          echo "Downloading $url"
-          curl -fsSL "$url" -o zig.tar.xz
-          tar -xf zig.tar.xz
-          echo "$PWD/zig-${arch}-${ZIG_VERSION}" >> "$GITHUB_PATH"
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Verify Zig
-        run: zig version
+      - name: Build nob (POSIX)
+        if: runner.os != 'Windows'
+        run: clang -o nob nob.c
 
-      - name: Check formatting
-        run: zig fmt --check .
+      - name: Build nob (Windows)
+        if: runner.os == 'Windows'
+        run: cl nob.c
 
-      - name: Run tests
-        run: zig build test --summary all
+      - name: Run tests (POSIX)
+        if: runner.os != 'Windows'
+        run: ./nob test
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: .\nob.exe test
 
   build:
     name: Build ${{ matrix.target.archive }}
     needs: test
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
         target:
-          - { archive: "linux-x86_64",   zig: "x86_64-linux-musl",  ext: "",     format: "tar.gz" }
-          - { archive: "linux-aarch64",  zig: "aarch64-linux-musl", ext: "",     format: "tar.gz" }
-          # - { archive: "macos-x86_64",   zig: "x86_64-macos",       ext: "",     format: "tar.gz" }
-          - { archive: "macos-aarch64",  zig: "aarch64-macos",      ext: "",     format: "tar.gz" }
-          - { archive: "windows-x86_64", zig: "x86_64-windows",     ext: ".exe", format: "zip" }
-          # - { archive: "windows-aarch64", zig: "aarch64-windows",  ext: ".exe", format: "zip" }
-
+          # native builds: the Linux binaries link against the runner's glibc,
+          # so the oldest supported runner image sets the compatibility floor
+          - { archive: "linux-x86_64",   os: ubuntu-24.04,     ext: "",     format: "tar.gz" }
+          - { archive: "linux-aarch64",  os: ubuntu-24.04-arm, ext: "",     format: "tar.gz" }
+          - { archive: "macos-aarch64",  os: macos-latest,     ext: "",     format: "tar.gz" }
+          - { archive: "windows-x86_64", os: windows-latest,   ext: ".exe", format: "zip" }
+    runs-on: ${{ matrix.target.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Zig
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build (POSIX)
+        if: runner.os != 'Windows'
         run: |
-          arch=x86_64-linux
-          if [[ "$ZIG_VERSION" == *dev* ]]; then
-            url="https://ziglang.org/builds/zig-${arch}-${ZIG_VERSION}.tar.xz"
-          else
-            url="https://ziglang.org/download/${ZIG_VERSION}/zig-${arch}-${ZIG_VERSION}.tar.xz"
-          fi
-          echo "Downloading $url"
-          curl -fsSL "$url" -o zig.tar.xz
-          tar -xf zig.tar.xz
-          echo "$PWD/zig-${arch}-${ZIG_VERSION}" >> "$GITHUB_PATH"
+          clang -o nob nob.c
+          ./nob release
 
-      - name: Build
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
         run: |
-          zig build \
-            -Dtarget=${{ matrix.target.zig }} \
-            -Doptimize=ReleaseSmall \
-            --prefix zig-out/${{ matrix.target.archive }}
+          cl nob.c
+          .\nob.exe release
 
-      # - name: Build man page
-      #   if: matrix.target.format != 'zip'
-      #   run: |
-      #     sudo apt-get -y update
-      #     sudo apt-get -y install pandoc
-      #     pandoc --standalone --to man docs/nvi.1.md -o docs/nvi.1
-
-      - name: Package
+      - name: Package (POSIX)
+        if: runner.os != 'Windows'
         run: |
           bin="nvi${{ matrix.target.ext }}"
-          mkdir -p nvi/bin
-          cp "zig-out/${{ matrix.target.archive }}/bin/${bin}" "nvi/bin/${bin}"
-          if [ "${{ matrix.target.format }}" = "zip" ]; then
-            zip -r "nvi-${{ matrix.target.archive }}.zip" nvi
-          else
-            # mkdir -p nvi/man
-            # cp docs/nvi.1 nvi/man/
-            tar -czvf "nvi-${{ matrix.target.archive }}.tar.gz" nvi
-          fi
+          mkdir -p dist/nvi/bin
+          cp "$bin" "dist/nvi/bin/$bin"
+          tar -czvf "nvi-${{ matrix.target.archive }}.tar.gz" -C dist nvi
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/nvi/bin | Out-Null
+          Copy-Item nvi.exe dist/nvi/bin/nvi.exe
+          Compress-Archive -Path dist/nvi -DestinationPath "nvi-${{ matrix.target.archive }}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -109,7 +97,7 @@ jobs:
     name: Publish
     if: github.event_name != 'pull_request'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:

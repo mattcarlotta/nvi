@@ -1,7 +1,9 @@
 #include "tokenizer.h"
 #include "arg.h"
 #include "capture.h"
+#include "dynarr.h"
 #include "file.h"
+#include "list.h"
 #include "unity.h"
 #include <string.h>
 
@@ -248,6 +250,41 @@ static void test_utf8_bom_is_stripped(void) {
     free_tokenizer(&t);
 }
 
+typedef struct {
+    const args_t *args;
+    tokenizer_t *t;
+    result_t result;
+} run_ctx_t;
+
+static void call_run_tokenizer(void *ctx) {
+    run_ctx_t *c = ctx;
+    c->result = run_tokenizer(c->args, c->t);
+}
+
+// An empty file passed via --files is an operational error (unlike the
+// scanner, which warns and skips; see scan_file).
+static void test_run_tokenizer_errors_on_empty_file(void) {
+    const char *path = "tokenizer_test_empty.env";
+    FILE *f = fopen(path, "wb");
+    TEST_ASSERT_NOT_NULL(f);
+    fclose(f);
+
+    args_t args = {0};
+    DYN_ARR_APPEND(&args.files, path);
+
+    tokenizer_t t = {0};
+    run_ctx_t ctx = {.args = &args, .t = &t};
+    char sink[1];
+    capture_fd(stderr, sink, sizeof(sink), call_run_tokenizer, &ctx);
+
+    TEST_ASSERT_FALSE(ctx.result.ok);
+    TEST_ASSERT_EQUAL_INT(1, ctx.result.code);
+
+    remove(path);
+    free_tokenizer(&t);
+    free_list(&args.files);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_simple_key_value);
@@ -271,5 +308,6 @@ int main(void) {
     RUN_TEST(test_crlf_comment);
     RUN_TEST(test_errors_on_unterminated_interpolation_crlf);
     RUN_TEST(test_utf8_bom_is_stripped);
+    RUN_TEST(test_run_tokenizer_errors_on_empty_file);
     return UNITY_END();
 }

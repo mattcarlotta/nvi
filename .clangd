@@ -1,5 +1,5 @@
 CompileFlags:
-  Add: [-std=c17, -I, src]
+  Add: [-std=c17, -I, src, "-Wno-unused-function"]
 
 ---
 If:

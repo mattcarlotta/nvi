@@ -2,6 +2,7 @@
 #include "arg.h"
 #include "chars.h"
 #include "dynarr.h"
+#include "errors.h"
 #include "file.h"
 #include "log.h"
 #include "macros.h"
@@ -142,6 +143,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
         log_f(" file...\n\n");
     }
 
+    size_t tokens_before = tokenizer->tokens.count;
     token_t token = {.file = tokenizer->file_name};
     byte_list_t value = {0};
     result_t result = {.ok = true, .code = 0};
@@ -355,7 +357,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
         result = validate_and_append_token(tokenizer, &token, &value);
     }
 
-    if (tokenizer->tokens.count == 0) {
+    if (tokenizer->tokens.count == tokens_before) {
         log_error("[ERROR] Unable to generate tokens for %s. Ensure the .env file is valid by following the KEY=VALUE "
                   "spec; aborting.",
                   tokenizer->file_name);
@@ -391,10 +393,17 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
     for (size_t fi = 0; fi < args->files.count; ++fi) {
         const char *path = args->files.items[fi];
 
-        file_details_t file = open_file(path, args->dry_run);
+        file_details_t file = open_file(path);
         if (file.contents == NULL) {
+            // open_file already logged the cause (unopenable, unreadable, or oversized)
             result.ok = false;
             result.code = 1;
+            goto done;
+        }
+
+        if (file.len == 0) {
+            free(file.contents);
+            result = operation_error("The '%s' file is empty; expected at least one KEY=VALUE assignment.\n", path);
             goto done;
         }
 
