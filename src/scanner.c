@@ -5,11 +5,11 @@
 #include "dynarr.h"
 #include "errors.h"
 #include "file.h"
+#include "hashmap.h"
 #include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
-#include "hashmap.h"
 #include "utils.h"
 #include <errno.h>
 #include <stdio.h>
@@ -76,7 +76,7 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
 
     if (file.len == 0) {
         if (args->dry_run) {
-            log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n", path);
+            log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
         }
         free(file.contents);
         return result;
