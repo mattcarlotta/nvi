@@ -15,10 +15,10 @@
 #include <stddef.h>
 
 typedef enum {
-    ident,   // identifier follows the prefix:                   process.env.FOO
-    quoted,  // first string literal ("..."/'...') follows:      getenv("FOO")
-    braced,  // interpolated identifier within '{' up to '}':               $ENV{FOO}  ${FOO}
-    parened, // indentifier within '(' up to ')':                $env(FOO)
+    ident,   // identifier follows the prefix:                  process.env.FOO
+    quoted,  // first string literal ("..."/'...') follows:     getenv("FOO")
+    braced,  // interpolated identifier within '{' up to '}':   $ENV{FOO}  ${FOO}
+    parened, // indentifier within '(' up to ')':               $env(FOO)
 } pattern_t;
 
 typedef struct {
