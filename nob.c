@@ -274,6 +274,51 @@ static bool run_tests(void) {
     return passed == total;
 }
 
+static bool build_integration_runner(const char *out_path) {
+    Nob_Cmd cmd = {0};
+
+#if defined(_WIN32) && defined(_MSC_VER)
+    nob_cmd_append(&cmd, "cl", "/nologo", "/W4", "/std:c17", "/utf-8", "/Zi", "/Od",
+                   nob_temp_sprintf("/Fe:%s", out_path));
+#else
+    nob_cmd_append(&cmd, "clang", "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g", "-O0",
+                   "-o", out_path);
+#endif
+
+    nob_cmd_append(&cmd, "tests/integration/main.c");
+
+    return nob_cmd_run(&cmd);
+}
+
+// Builds the dev binary and a standalone runner (tests/integration/main.c)
+// that spawns it against generated inputs under build/it/.
+static bool run_integration(void) {
+    if (!nob_mkdir_if_not_exists("build") || !nob_mkdir_if_not_exists("build/tests")) {
+        return false;
+    }
+
+    if (!build_dev()) {
+        nob_log(NOB_ERROR, "failed to build " OUT_BIN " for integration tests");
+        return false;
+    }
+
+    const char *runner = "build/tests/integration-runner" BIN_EXT;
+    if (!build_integration_runner(runner)) {
+        nob_log(NOB_ERROR, "failed to build the integration runner");
+        return false;
+    }
+
+    Nob_Cmd run = {0};
+    nob_cmd_append(&run, runner);
+    if (!nob_cmd_run(&run)) {
+        nob_log(NOB_ERROR, "integration tests reported failures");
+        return false;
+    }
+
+    nob_log(NOB_INFO, "integration tests passed");
+    return true;
+}
+
 static int cmp_cstr(const void *a, const void *b) { return strcmp(*(const char *const *)a, *(const char *const *)b); }
 
 static void json_str(Nob_String_Builder *sb, const char *s) {
@@ -366,6 +411,20 @@ static bool cmd_generate(void) {
         }
 
         nob_da_free(srcs);
+        nob_cmd_free(prefix);
+    }
+
+    {
+        Nob_Cmd prefix = {0};
+#if defined(_WIN32) && defined(_MSC_VER)
+        nob_cmd_append(&prefix, "cl", "/nologo", "/W4", "/std:c17", "/utf-8", "/Zi", "/Od");
+#else
+        nob_cmd_append(&prefix, "clang", "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g",
+                       "-O0");
+#endif
+        emit_entry(&json, &first, dir, &prefix, "build/tests/integration-runner" BIN_EXT,
+                   "tests/integration/main.c");
+        ++count;
         nob_cmd_free(prefix);
     }
 
@@ -480,6 +539,22 @@ int main(int argc, char **argv) {
         }
 
         if (!run_tests()) {
+            return 1;
+        }
+
+        if (!run_integration()) {
+            return 1;
+        }
+    } else if (strcmp(subcmd, "unit") == 0) {
+        if (!cmd_generate()) {
+            return 1;
+        }
+
+        if (!run_tests()) {
+            return 1;
+        }
+    } else if (strcmp(subcmd, "integration") == 0) {
+        if (!run_integration()) {
             return 1;
         }
     } else if (strcmp(subcmd, "generate") == 0) {
