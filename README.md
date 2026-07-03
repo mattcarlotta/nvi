@@ -18,7 +18,7 @@ Otherwise, download a precompiled binary from [releases](https://github.com/matt
 
 Extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `PATH` (PowerShell).
 
-If you're not sure if the directory is recognized, use the corresponding links below and skip to the instructions about `PATH` regonition:
+If you're not sure if the directory is recognized, use the corresponding links below and skip to the instructions about `PATH` recognition:
 - [POSIX](https://github.com/mattcarlotta/nvi-bin#posix-linux-macos-wsl)
 - [PowerShell](https://github.com/mattcarlotta/nvi-bin#powershell-windows)
 
