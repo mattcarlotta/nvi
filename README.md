@@ -441,23 +441,25 @@ PRICE=$5.00
 # a hash sign after a key is a literal '#' (not comment)
 CHANNEL=#why-is-this-bug-occuring
 
-# a quote directly after '=' wraps the value; the surrounding quotes are
-# stripped and inner whitespace is preserved
-GREETING="hello world"
+# single or double quotes directly after a key assignment wrapping the entire value,
+# are stripped and inner whitespace and characters are preserved as is
+GREETING="hello     world"
+GREETING='${NOT_AN_INTERPOLATED_KEY} hello     world'
 
-# single quotes are fully literal: no ${KEY} interpolation and no '\' continuation
-RAW='${NOT_INTERPOLATED} costs $5'
+# single or double qoutes within a key are treated as literal characters
+MESSAGE=she said "hello world" in death
+RESPONSE=then he said 'goodbye my love' in life
 
-# an explicitly quoted empty value is allowed (a bare 'KEY=' without a value is still an error)
+# an explicitly empty quoted value is allowed, but a bare 'KEY=' without a value is an error
 EMPTY_OK=""
 
-# a shell-style export prefix is stripped, so source-able files parse the same
+# a shell-style export prefix is stripped
 export EXPORTED=value
 
 # ${KEY:-default} substitutes the default when KEY is unset or empty
 RETRIES=${MAX_RETRIES:-3}
 
-# backslash-newline continues the value (interpolation keys still work on any line)
+# backslash-newline continues a multiline value (interpolation keys will still work on any line)
 SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
 oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\

@@ -244,7 +244,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 if (end - start == 0) {
                     log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
                               tokenizer->line, tokenizer->byte);
-                    log_f("A value assignment ('=') was found without a key name.\n");
+                    log_error("A value assignment ('=') was found without a key name.\n");
 
                     size_t line_end =
                         index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
@@ -266,7 +266,8 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 if (!is_valid_key(value.items + start, end - start)) {
                     log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name,
                               tokenizer->line, tokenizer->byte);
-                    log_f("The key '%.*s' is not a valid ENV name.\n", (int)(end - start), value.items + start);
+                    log_error("The key '%.*s' is not a valid ENV name.\n", (int)(end - start), value.items + start);
+
                     log_f("   %.*s=\n", (int)(end - start), value.items + start);
                     log_f("   ^");
                     if (end - start > 1) {
@@ -459,11 +460,24 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     log_error("The %s key has unexpected characters after a closing quote.\n",
                               token.key ? token.key : "(none)");
 
+                    size_t line_start = tokenizer->i;
+                    while (line_start > 0 && tokenizer->file[line_start - 1] != LINE_DELIMITER) {
+                        --line_start;
+                    }
+
                     size_t line_end =
                         index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
+                    if (line_end > line_start && tokenizer->file[line_end - 1] == CARRIAGE_RETURN) {
+                        --line_end;
+                    }
+
+                    size_t caret_col = tokenizer->i - line_start;
                     size_t rest_len = line_end - tokenizer->i;
-                    log_f("   %.*s\n", (int)rest_len, tokenizer->file + tokenizer->i);
-                    log_f("   ^");
+
+                    log_f("   ");
+                    log_f("%.*s\n", (int)(line_end - line_start), tokenizer->file + line_start);
+                    fput_repeat(stderr, ' ', caret_col + 3);
+                    fputc('^', stderr);
                     if (rest_len > 1) {
                         fput_repeat(stderr, '~', rest_len - 1);
                     }
