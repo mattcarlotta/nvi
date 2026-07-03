@@ -441,8 +441,7 @@ PRICE=$5.00
 # a hash sign after a key is a literal '#' (not comment)
 CHANNEL=#why-is-this-bug-occuring
 
-# single or double quotes directly after a key assignment wrapping the entire value,
-# are stripped and inner whitespace and characters are preserved as is
+# single or double quoted values are stripped and inner whitespace and characters are preserved as is
 GREETING="hello     world"
 GREETING='${NOT_AN_INTERPOLATED_KEY} hello     world'
 
