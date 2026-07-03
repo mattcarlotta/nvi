@@ -16,9 +16,9 @@ For the best compatibility [build and install from source](https://github.com/ma
 
 Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-Extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `PATH` (PowerShell).
+Extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell).
 
-If you're not sure if the directory is recognized, use the corresponding links below and skip to the instructions about `PATH` recognition:
+If you're not sure if the directory is recognized, use the corresponding links below and skip to the instructions about path recognition:
 - [POSIX](https://github.com/mattcarlotta/nvi-bin#posix-linux-macos-wsl)
 - [PowerShell](https://github.com/mattcarlotta/nvi-bin#powershell-windows)
 
@@ -179,12 +179,12 @@ Build for release:
 ./nob.exe release
 ```
 
-Before placing or installing a release binary, ensure the destination directory is recognized as a PowerShell `PATH`:
+Before placing or installing a release binary, ensure the destination directory is recognized as a PowerShell `Path`:
 ```powershell
 $env:Path -split ';'
 ```
 
-If not, then add the destination directory `<DIR>` to the PowerShell `PATH` (swap `<DIR>` below for the destination; eg, `C:\tools\bin`):
+If not, then add the destination directory `<DIR>` to the PowerShell `Path` (swap `<DIR>` below for the destination; eg, `C:\tools\bin`):
 ```powershell
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";<DIR>", "User")
 ```
