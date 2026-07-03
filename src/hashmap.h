@@ -116,7 +116,7 @@ static inline bool hashmap_contains(const hashmap_t *map, const char *key, size_
     return hashmap_get(map, key, len) != HASHMAP_NOT_FOUND;
 }
 
-static inline void hashmap_put(hashmap_t *map, const char *key, size_t len, size_t value) {
+static inline void hashmap_append(hashmap_t *map, const char *key, size_t len, size_t value) {
     hashmap_grow(map, 1);
 
     uint64_t hash = fnv1a(key, len);

@@ -3,6 +3,7 @@
 #include "errors.h"
 #include "log.h"
 #include "macros.h"
+#include "result.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +38,7 @@ static inline const char *resolve_env(env_map_t *env_map, const char *key) {
 }
 
 result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map) {
-    result_t result = {.ok = true, .code = 0};
+    result_t result = RESULT_OK;
 
     if (args->dry_run) {
         log_info("[INFO]");
@@ -152,7 +153,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         } else {
             env_t new_env = {.key = token_key, .value = env_value};
             DYN_ARR_APPEND(env_map, new_env);
-            hashmap_put(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
+            hashmap_append(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
         }
 
         if (args->dry_run) {
@@ -196,8 +197,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             log_error("\n   \u2022 %s", missing_envs.items[i]);
         }
         log_error("\n");
-        result.ok = false;
-        result.code = 1;
+        result = OPERATION_FAILURE;
     }
 
 done:

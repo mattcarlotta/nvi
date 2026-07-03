@@ -13,8 +13,8 @@ static void test_merge_skips_ignored_keys(void) {
     DYN_ARR_APPEND(&args.ignored, "NODE_ENV");
 
     scanner_t scanner = {0};
-    hashmap_put(&scanner.envs, "NODE_ENV", strlen("NODE_ENV"), 0);
-    hashmap_put(&scanner.envs, "API_KEY", strlen("API_KEY"), 0);
+    hashmap_append(&scanner.envs, "NODE_ENV", strlen("NODE_ENV"), 0);
+    hashmap_append(&scanner.envs, "API_KEY", strlen("API_KEY"), 0);
 
     merge_required_envs(&args, &scanner);
 
@@ -32,8 +32,8 @@ static void test_merge_dedups_already_required(void) {
     DYN_ARR_APPEND(&args.required, "API_KEY");
 
     scanner_t scanner = {0};
-    hashmap_put(&scanner.envs, "API_KEY", strlen("API_KEY"), 0);
-    hashmap_put(&scanner.envs, "DB_URL", strlen("DB_URL"), 0);
+    hashmap_append(&scanner.envs, "API_KEY", strlen("API_KEY"), 0);
+    hashmap_append(&scanner.envs, "DB_URL", strlen("DB_URL"), 0);
 
     merge_required_envs(&args, &scanner);
 

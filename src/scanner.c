@@ -60,19 +60,18 @@ static inline void append_unique_envs(scanner_t *scanner, const env_key_match_t 
         abort();
     }
 
-    hashmap_put(&scanner->envs, new_key, env->key_len, 0);
+    hashmap_append(&scanner->envs, new_key, env->key_len, 0);
 }
 
 static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
-    result_t result = {.ok = true, .code = 0};
     const file_ext_t *file_ext_match = get_file_accessors(&args->scan_exts, name);
     if (file_ext_match == NULL) {
-        return result;
+        return RESULT_OK;
     }
 
     file_details_t file = open_file(path);
     if (file.contents == NULL) {
-        return result;
+        return RESULT_OK;
     }
 
     if (file.len == 0) {
@@ -80,7 +79,7 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
             log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
         }
         free(file.contents);
-        return result;
+        return RESULT_OK;
     }
 
     ++scanner->files_scanned;
@@ -112,7 +111,7 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
     free_env_key_matches(&env_key_matches);
     free(file.contents);
 
-    return result;
+    return RESULT_OK;
 }
 
 static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path);
@@ -121,10 +120,8 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
 // it on the heap (one allocation per directory level) keeps recursion frames
 // small so deep trees can't blow the stack
 static result_t handle_entry(const args_t *args, scanner_t *scanner, const char *parent, const char *name, char *file) {
-    result_t result = {.ok = true};
-
     if (name[0] == '.' || is_blacklisted(name)) {
-        return result;
+        return RESULT_OK;
     }
 
     int n = snprintf(file, PATH_MAX, "%s" PATH_SEP "%s", parent, name);
@@ -151,11 +148,11 @@ static result_t handle_entry(const args_t *args, scanner_t *scanner, const char 
         return scan_file(args, scanner, file, name);
     }
 
-    return result;
+    return RESULT_OK;
 }
 
 static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path) {
-    result_t result = {.ok = true};
+    result_t result = RESULT_OK;
 
     char *file = malloc(PATH_MAX);
     if (file == NULL) {
@@ -219,7 +216,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
 static void add_unique_env_keys(hashmap_t *env_map, const list_t *list) {
     for (size_t i = 0; i < list->count; ++i) {
         const char *key = list->items[i];
-        hashmap_put(env_map, key, strlen(key), 0); // insert-or-update dedupes
+        hashmap_append(env_map, key, strlen(key), 0);
     }
 }
 
@@ -264,7 +261,7 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
 }
 
 result_t run_scanner(args_t *args, scanner_t *scanner) {
-    result_t result = {.ok = true, .code = 0};
+    result_t result = RESULT_OK;
     scanner->scan_exts = &args->scan_exts;
 
     if (args->dry_run) {

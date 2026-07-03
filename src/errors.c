@@ -19,7 +19,7 @@ result_t operation_error(const char *fmt, ...) {
 
     va_end(args);
 
-    return (result_t){.ok = false, .code = 1};
+    return OPERATION_FAILURE;
 }
 
 result_t usage_error(const char *fmt, ...) {
@@ -38,5 +38,5 @@ result_t usage_error(const char *fmt, ...) {
 
     va_end(args);
 
-    return (result_t){.ok = false, .code = 2};
+    return USAGE_FAILURE;
 }

@@ -1,10 +1,11 @@
 #include "info.h"
+#include "result.h"
 #include "timer.h"
 #include "tty.h"
 #include "version.h"
 #include <stdio.h>
 
-void log_help(void) {
+result_t log_help(void) {
     fputs("Usage: nvi [flags] -- <command>\n"
           "       nvi scan [ext] [ext] ...etc (no <command>)\n"
           "\n"
@@ -62,15 +63,19 @@ void log_help(void) {
           " \u2022 Zig -> zig\n"
           "\n",
           stdout);
+
+    return EXIT_EARLY;
 }
 
-void log_version(void) {
+result_t log_version(void) {
     fprintf(stdout, "nvi %s (%s)\n", NVI_VERSION, NVI_BUILD);
     fprintf(stdout, "commit %s\n", NVI_COMMIT);
 #ifdef __clang__
     fprintf(stdout, "clang %d.%d.%d\n", __clang_major__, __clang_minor__, __clang_patchlevel__);
 #endif
     fprintf(stdout, "%s\n", NVI_TARGET);
+
+    return EXIT_EARLY;
 }
 
 void log_time(double start) {

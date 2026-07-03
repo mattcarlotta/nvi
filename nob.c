@@ -346,7 +346,7 @@ static bool run_integration(void) {
         return false;
     }
 
-    nob_log(NOB_INFO, "ALl integration tests passed");
+    nob_log(NOB_INFO, "All integration tests passed");
     return true;
 }
 

@@ -12,4 +12,9 @@ typedef struct {
     int code;
 } result_t;
 
+static const result_t RESULT_OK = {.ok = true, .code = 0};
+static const result_t EXIT_EARLY = {.ok = false, .code = 0};
+static const result_t OPERATION_FAILURE = {.ok = false, .code = 1};
+static const result_t USAGE_FAILURE = {.ok = false, .code = 2};
+
 #endif

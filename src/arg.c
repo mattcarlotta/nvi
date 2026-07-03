@@ -7,6 +7,7 @@
 #include "info.h"
 #include "list.h"
 #include "log.h"
+#include "result.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -62,7 +63,7 @@ static result_t require_value(args_t *args, const char *flag, const char **param
         return usage_error("The '%s' flag requires at least one argument", flag);
     }
 
-    return (result_t){.ok = true};
+    return RESULT_OK;
 }
 
 static void log_items(const char *label, const list_t *list, const char *sep) {
@@ -165,7 +166,7 @@ static inline result_t validate_file_name(const char *f) {
         }
     }
 
-    return (result_t){.ok = true, .code = 0};
+    return RESULT_OK;
 }
 
 result_t parse_args(int argc, const char **argv, args_t *args) {
@@ -176,7 +177,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     args->format = get_default_format();
     args->dry_run = false;
 
-    result_t result = {.ok = true, .code = 0};
+    result_t result = RESULT_OK;
 
     while (args->i < args->argc) {
 
@@ -280,16 +281,10 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 break;
             }
             case HELP: {
-                log_help();
-
-                result.ok = false;
-                return result;
+                return log_help();
             }
             case VERSION: {
-                log_version();
-
-                result.ok = false;
-                return result;
+                return log_version();
             }
             default: {
                 const char *token = args->argv[args->i];

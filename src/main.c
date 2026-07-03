@@ -19,7 +19,7 @@ int main(int argc, const char **argv) {
     // https://man7.org/linux/man-pages/man3/setvbuf.3p.html
     // setvbuf(stderr, NULL, _IOFBF, 1 << 16);
 
-    result_t result = {.ok = true, .code = 0};
+    result_t result = RESULT_OK;
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
