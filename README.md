@@ -402,10 +402,10 @@ e.DATABASE_URL;
 nvi --scan mjs ts --dry-run
 
 # collects scanned keys to be required and defined before 'npm run dev' command is emitted
-nvi --scan mjs --files .env -- npm run dev | xargs -0 env
+nvi --scan mjs --files .env -- npm run dev | <consumer>
 
 # excludes runtime-injected ENVs found within the 'npm run dev' command environment
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 env
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 ```
 
 Notes:
