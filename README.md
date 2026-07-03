@@ -16,29 +16,11 @@ For the best compatibility [build and install from source](https://github.com/ma
 
 Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-For the PowerShell (Windows) build, you'll want to add the binary to a directory then add that directory to the PowerShell `Path`. For more information, take a look at the
-[building and installing](https://github.com/mattcarlotta/nvi-bin#building-and-installing) subsection for Windows on how to add a directory to your PowerShell `Path`.
+Extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `PATH` (PowerShell).
 
-For POSIX (Unix or Unix-like) builds, place the binary in one of the directories owned by `$USER` (not by `root`) located in your shell `$PATH`:
-```sh
-echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
-```
-
-If there aren't any `$USER` own bin directories, then create a local bin directory:
-```sh
-mkdir -p $HOME/.local/bin
-```
-
-Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
-```sh
-typeset -U PATH # optionally remove duplicate directories in $PATH
-PATH+=("$HOME/.local/bin")
-```
-
-Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
-```sh
-source <profile_url>
-```
+If you're not sure if the directory is recognized, use the corresponding links below and skip to the instructions about `PATH` regonition:
+- [POSIX](https://github.com/mattcarlotta/nvi-bin#posix-linux-macos-wsl)
+- [PowerShell](https://github.com/mattcarlotta/nvi-bin#powershell-windows)
 
 ## Build and install from source
 
@@ -61,7 +43,7 @@ cd ~/Downloads
 
 git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
 
-clang -o nob nob.c
+clang nob.c
 ```
 
 Build for debugging:
@@ -74,25 +56,41 @@ Build for release:
 ./nob release
 ```
 
-> [!NOTE]
-> A Linux OS's virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). The default page sizing for nvi is 64KB (to maintain compatibility with 16KB/64KB-page kernels).
-> Release builds link with lld, where this setting no longer measurably changes the on-disk binary size, but the override remains available via the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
-> `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
+Before placing or installing a release binary, ensure the destination directory is recognized as a shell `$PATH` owned by `$USER` and not by `root`:
+```sh
+echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
+```
+
+If there aren't any `$USER` own bin directories, then create a local bin directory:
+```sh
+mkdir -p $HOME/.local/bin
+```
+
+Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
+```sh
+typeset -U PATH # optionally remove duplicate directories in $PATH
+PATH+=("$HOME/.local/bin")
+```
+
+Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
+```sh
+source <PROFILE>
+```
+
+Lastly, build and install the release binary into the destination directory:
+```sh
+# install in a directory that is recognized by the shell $PATH
+# for example: ./nob install $HOME/.local/bin
+./nob install <DIR>
+```
 
 > [!NOTE]
 > To build a fully static, portable Linux binary with musl instead of clang+glibc, install `musl-tools` and run `NVI_LIBC=musl ./nob <release|install>`.
 
-Build and install a release binary in a shell directory path:
-```sh
-# install in a directory that is recognized by the shell $PATH
-# for example: ./nob install $HOME/.local/bin
-./nob install <directory>
-```
-
 To verify system installation, run:
 ```sh
 which nvi
-# <directory>
+# <DIR>
 
 nvi version
 # nvi <version> (<build_type>)
@@ -100,9 +98,6 @@ nvi version
 # clang <version>
 # <architecture>
 ```
-
-If not found, then see [Installation](https://github.com/mattcarlotta/nvi-bin#installation) instructions for checking shell `$PATH`s.
-
 
 ### PowerShell (Windows)
 
@@ -136,8 +131,8 @@ winget install LLVM.LLVM --source winget
 & "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
 ```
 
-> [!IMPORTANT]
-> Without the `-Arch` and `HostArch` flags, the VS Dev Shell environment may default to 32bit!
+> [!CAUTION]
+> Spawning a VS Dev Shell without the `-Arch` and `-HostArch` flags may result in a 32bit (instead of 64bit) shell environment.
 
 6. Change directory to `Documents`:
 ```powershell
@@ -156,7 +151,7 @@ Then extract it:
 ```powershell
 Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
 ```
-Then set up git tracking (the commit will be used within the output for `nvi version`; otherwise it'll report the commit as "unknown"):
+Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
 ```powershell
 git init
 git remote add origin https://github.com/mattcarlotta/nvi-bin.git
@@ -171,9 +166,8 @@ cd nvi-bin
 
 9. Build `nob.c`:
 ```powershell
-cl nob nob.c
+cl nob.c
 ```
-#### Building and installing
 
 Build for debugging:
 ```powershell
@@ -185,22 +179,26 @@ Build for release:
 ./nob.exe release
 ```
 
-Build and install a release binary (change `C:\tools\bin` to whatever directory you'd like):
+Before placing or installing a release binary, ensure the destination directory is recognized as a PowerShell `PATH`:
 ```powershell
-mkdir C:\tools\bin -Force
-
-./nob.exe install C:\tools\bin
-
+$env:Path -split ';'
 ```
 
-Then add `C:\tools\bin` to your PowerShell `Path`:
+If not, then add the destination directory `<DIR>` to the PowerShell `PATH` (swap `<DIR>` below for the destination; eg, `C:\tools\bin`):
 ```powershell
-[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools\bin", "User")
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";<DIR>", "User")
 ```
 
-Close and reopen PowerShell, then run:
+Build and install a release binary to the destination directory (change `<DIR>` to the destination directory):
+```powershell
+./nob.exe install <DIR>
+```
+
+To verify system installation, close and reopen PowerShell, then run:
 ```powershell
 Get-Command nvi
+
+nvi version
 ```
 
 > [!NOTE]
@@ -208,10 +206,10 @@ Get-Command nvi
 
 ## Running
 
-### POSIX (Linux, macOS, WSL)
+### Run in POSIX (Linux, macOS, WSL)
 
-The POSIX build defaults to `--format nul`, emitting NUL-delimited ENVs: each `KEY=value` pair, then each command token.
-Then `xargs -0` splits the ENVs and hands them off to `env`, which sets the variables and runs the command.
+The POSIX build defaults to `--format nul`, emitting: `KEY=value\0` assignments followed by shell commands. Then `xargs -0` splits
+the emitted ENVs and hands them off to `env`, which sets the ENVs to the shell, and then the command runs.
 
 ```sh
 nvi [flags|command] -- [command] | xargs -0 env
@@ -226,10 +224,10 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 source <profile_url>
 ```
 
-### PowerShell (Windows)
+### Run in PowerShell (Windows)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
-PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string, and `Invoke-Expression` executes it.
+PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string and `Invoke-Expression` executes it.
 
 ```powershell
 nvi [flags|command] -- [command] | Out-String | Invoke-Expression
@@ -310,7 +308,6 @@ nvi --files .env --scan py -- python main.py  | <consumer>
 # shell expansion inside the command (single-quote so your shell doesn't expand first)
 nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 ```
-Values are passed through byte-exact without quoting or escaping: spaces, inner quotes, `$`, and even embedded newlines (multiline values) survive intact.
 
 ### Exit codes
 
@@ -405,10 +402,10 @@ e.DATABASE_URL;
 nvi --scan mjs ts --dry-run
 
 # collects scanned keys to be required and defined before 'npm run dev' command is emitted
-nvi --scan mjs --files .env -- npm run dev | xargs -0 -r env
+nvi --scan mjs --files .env -- npm run dev | xargs -0 env
 
 # excludes runtime-injected ENVs found within the 'npm run dev' command environment
-nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 -r env
+nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | xargs -0 env
 ```
 
 Notes:
@@ -479,10 +476,9 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 # indicates the end of a multiline value
 ```
 
-> [!NOTE]
-> Keys must match `[A-Za-z_][A-Za-z0-9_]*`; anything else is a tokenizer error.
-> Interpolated keys resolve first from the shell environment and then from keys parsed earlier (including earlier `.env` files specified by `--files`).
-> An undefined key interpolation without a `:-` fallback, a bare `KEY=` with no value, and a `--required` key that is undefined or empty after parsing all exit with an error.
+- Keys must match `[A-Za-z_][A-Za-z0-9_]*`; anything else is a tokenizer error.
+- Interpolated keys resolve first from the shell environment and then from any keys parsed from earlier `.env` files specified by `--files`.
+- An undefined key interpolation without a `:-` fallback, a bare `KEY=` with no value, or a `--required` key that is undefined/empty after parsing are parser errors.
 
 ## Testing
 
