@@ -16,29 +16,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) && defined(_MSC_VER)
-#include "shims.h"
-#include <windows.h>
-#define PATH_SEP "\\"
-#ifndef PATH_MAX
-#define PATH_MAX MAX_PATH
-#endif
-#else
-#include <dirent.h>
-#include <limits.h>
-#define PATH_SEP "/"
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-#endif
-
-#ifndef S_ISDIR
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
-#endif
-#ifndef S_ISREG
-#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
-#endif
-
 static inline const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
@@ -116,36 +93,27 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
 
 static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const char *path);
 
-// 'file' is a caller-owned scratch buffer of at least PATH_MAX bytes; keeping
-// it on the heap (one allocation per directory level) keeps recursion frames
-// small so deep trees can't blow the stack
-static result_t handle_entry(const args_t *args, scanner_t *scanner, const char *parent, const char *name, char *file) {
+static result_t handle_entry(const args_t *args, scanner_t *scanner, const char *parent, const char *name, char *path) {
     if (name[0] == '.' || is_blacklisted(name)) {
         return RESULT_OK;
     }
 
-    int n = snprintf(file, PATH_MAX, "%s" PATH_SEP "%s", parent, name);
+    int n = snprintf(path, PATH_MAX, "%s" PATH_SEP "%s", parent, name);
     if (n < 0 || (size_t)n >= PATH_MAX) {
         return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
     struct stat st;
-#if defined(_WIN32) && defined(_MSC_VER)
-    if (stat(file, &st) != 0) {
-        return operation_error("Unable to stat '%s'\n", file);
+    if (stat_path(path, &st) != 0) {
+        return operation_error("Cannot locate '%s': %s\n", path, strerror(errno));
     }
-#else
-    if (lstat(file, &st) != 0) {
-        return operation_error("Unable to stat '%s'\n", file);
-    }
-#endif
 
     if (S_ISDIR(st.st_mode)) {
-        return walk_file_tree(args, scanner, file);
+        return walk_file_tree(args, scanner, path);
     }
 
     if (S_ISREG(st.st_mode)) {
-        return scan_file(args, scanner, file, name);
+        return scan_file(args, scanner, path, name);
     }
 
     return RESULT_OK;

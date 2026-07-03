@@ -38,7 +38,6 @@ static int peek(const tokenizer_t *tokenizer, size_t offset) {
     return (unsigned char)tokenizer->file[index];
 }
 
-// appends the current byte to 'value' as a literal and advances past it
 static void take_byte(tokenizer_t *tokenizer, byte_list_t *value) {
     DYN_ARR_APPEND(value, tokenizer->file[tokenizer->i]);
     skip_byte(tokenizer, 1);

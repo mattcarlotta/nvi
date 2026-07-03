@@ -101,12 +101,12 @@ static void check(const char *name, const char *bin, const char *args, int exit_
     }
 
     if (ok) {
-        printf("ok %zu - %s\n", total, name);
+        printf("PASS %zu - %s\n", total, name);
         return;
     }
 
     ++failed;
-    printf("not ok %zu - %s\n", total, name);
+    printf("FAIL %zu - %s\n", total, name);
     fprintf(stderr, "  args: %s\n", args);
     fprintf(stderr, "  exit: expected %d, got %d\n", exit_code, rc);
     if (expected_stdout != NULL) {
@@ -204,7 +204,7 @@ int main(void) {
           "is empty");
 
     check("a missing --files file is a loud error", NVI_BIN, "--files build/it/missing.env -- x", 1, NO_STDOUT,
-          "Cannot open");
+          "Cannot locate");
 
     check("an unterminated interpolation is a tokenizer error", NVI_BIN, "--files build/it/bad_interp.env -- x", 1,
           NO_STDOUT, "unterminated value interpolation");
@@ -222,7 +222,7 @@ int main(void) {
           "--files build/it/req_empty.env --required EMPTYV -- x", 1, NO_STDOUT, "EMPTYV");
 
     check("a directory masquerading as an env file is a loud error", NVI_BIN, "--files build/it/dir.env -- x", 1,
-          NO_STDOUT, "not a regular file");
+          NO_STDOUT, "not a file");
 
     check("a missing required key is a loud error", NVI_BIN,
           "--files build/it/required.env --required DATABASE_URL -- x", 1, NO_STDOUT, "DATABASE_URL");

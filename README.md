@@ -78,7 +78,8 @@ Build for release:
 > A Linux OS's virtual memory page sizing can vary from 4KB (0x1000) to 64KB (0x10000). The default page sizing for nvi is 64KB (to maintain compatibility with 16KB/64KB-page kernels).
 > Release builds link with lld, where this setting no longer measurably changes the on-disk binary size, but the override remains available via the `NVI_MAX_PAGE_SIZE=<bytes_in_hex>` env, for example:
 > `NVI_MAX_PAGE_SIZE=0x1000 ./nob <release|install>`
->
+
+> [!NOTE]
 > To build a fully static, portable Linux binary with musl instead of clang+glibc, install `musl-tools` and run `NVI_LIBC=musl ./nob <release|install>`.
 
 Build and install a release binary in a shell directory path:
@@ -429,27 +430,35 @@ MESSAGE=hello
 
 # an interpolation ${KEY} represents a value from either the shell
 # environment or from a KEY in an .env file (must be defined before use)
-# for example: ${MESSSAGE} world -> hello world
+# for example: ${MESSSAGE} world => hello world
 GREETING=${MESSAGE} world
 
 # an equal sign after a key is a literal '=' (not a nested key)
 BASE64_OK=abc==
 
-# a dollar sign without braces is a literal '$' (not an interpolated key)
+# a dollar sign after a key without braces is a literal '$'
 PRICE=$5.00
 
-# a hash sign after a key is a literal '#' (not comment)
+# a hash sign after a key is a literal '#' (not a comment)
 CHANNEL=#why-is-this-bug-occuring
 
-# single or double quoted values are stripped and inner whitespace and characters are preserved as is
-GREETING="hello     world"
-GREETING='${NOT_AN_INTERPOLATED_KEY} hello     world'
+# single or double quoted values after a key are stripped from the value
+# but inner whitespace and characters are preserved as is
+DOUBLE_QUOTES="     hello world     "
 
-# single or double qoutes within a key are treated as literal characters
+# single quoted values will not interpolate ${KEY}
+SINGLE_QUOTES='abc${NOT_AN_INTERPOLATED_KEY}'
+
+# double quoted values after a key will interpolate ${KEY}
+GOODBYE="I will never say ${GREETING} ever again"
+
+# single or double qoutes within a value are not stripped and are treated
+# as literal characters
 MESSAGE=she said "hello world" in death
 RESPONSE=then he said 'goodbye my love' in life
 
-# an explicitly empty quoted value is allowed, but a bare 'KEY=' without a value is an error
+# an explicitly empty quoted value is allowed, but a bare 'KEY=' without
+# a value is an error
 EMPTY_OK=""
 
 # a shell-style export prefix is stripped
@@ -458,14 +467,16 @@ export EXPORTED=value
 # ${KEY:-default} substitutes the default when KEY is unset or empty
 RETRIES=${MAX_RETRIES:-3}
 
-# backslash-newline continues a multiline value (interpolation keys will still work on any line)
+# backslash-newline continues a multiline value
+# an interpolation ${KEY} will still work on any same line
 SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
 oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\
 owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
-# when there's no backslash and just a new-line or EOF, then that indicates the end of a multiline value
+# when there's no backslash and just a new-line or EOF, then that
+# indicates the end of a multiline value
 ```
 
 > [!NOTE]

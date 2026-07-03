@@ -64,7 +64,8 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
     const char *build_def = nob_temp_sprintf("-DNVI_BUILD=\"%s\"", build_label);
 
 #if defined(_WIN32) && defined(_MSC_VER)
-    nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17", "/utf-8");
+    nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17", "/utf-8",
+                   "/Zc:preprocessor");
 #elif defined(__APPLE__) || defined(__linux__)
     nob_cmd_append(cmd, use_musl() ? "musl-gcc" : "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall",
                    "-Wextra", "-Wpedantic", "-std=gnu17");

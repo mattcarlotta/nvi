@@ -1,5 +1,4 @@
 #include "file.h"
-
 #include "log.h"
 #include <errno.h>
 #include <stdbool.h>
@@ -8,26 +7,19 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) && defined(_MSC_VER)
-#include "shims.h"
-#endif
-
-#ifndef S_ISREG
-#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
-#endif
-
 file_details_t open_file(const char *path) {
     file_details_t file_details = {0};
     file_details.path = path;
     FILE *file = NULL;
 
-    // Gate on a regular file up front. On some platforms fopen happily opens
-    // directories (and ftell then reports a garbage size); on Windows fopen
-    // fails outright on a directory, which would otherwise surface as a
-    // generic "Cannot open" instead of this specific error.
     struct stat st;
-    if (stat(path, &st) == 0 && !S_ISREG(st.st_mode)) {
-        log_error("[ERROR] Cannot read '%s': not a regular file\n", path);
+    if (stat_path(path, &st) != 0) {
+        log_error("[ERROR] Cannot locate '%s': %s\n", path, strerror(errno));
+        goto done;
+    }
+
+    if (!S_ISREG(st.st_mode)) {
+        log_error("[ERROR] Cannot read '%s' because it's not a file\n", path);
         goto done;
     }
 

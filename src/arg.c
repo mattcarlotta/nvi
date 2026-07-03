@@ -7,27 +7,18 @@
 #include "info.h"
 #include "list.h"
 #include "log.h"
+#include "macros.h"
 #include "result.h"
+#include "utils.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
 static const flag_entry flags[] = {
-    {.name = "-f", .value = FILES},    {.name = "--files", .value = FILES},
-
-    {.name = "-d", .value = DRY_RUN},  {.name = "--dry-run", .value = DRY_RUN},
-
-    {.name = "-h", .value = HELP},     {.name = "--help", .value = HELP},         {.name = "help", .value = HELP},
-
-    {.name = "-i", .value = IGNORED},  {.name = "--ignored", .value = IGNORED},
-
-    {.name = "-F", .value = FORMAT},   {.name = "--format", .value = FORMAT},
-
-    {.name = "-r", .value = REQUIRED}, {.name = "--required", .value = REQUIRED},
-
-    {.name = "-s", .value = SCAN},     {.name = "--scan", .value = SCAN},         {.name = "scan", .value = SCAN},
-
-    {.name = "-v", .value = VERSION},  {.name = "--version", .value = VERSION},   {.name = "version", .value = VERSION},
+    FLAG("-f", "--files", FILES),       FLAG("-d", "--dry-run", DRY_RUN),
+    FLAG("-h", "--help", "help", HELP), FLAG("-i", "--ignored", IGNORED),
+    FLAG("-F", "--format", FORMAT),     FLAG("-r", "--required", REQUIRED),
+    FLAG("-s", "--scan", "scan", SCAN), FLAG("-v", "--version", "version", VERSION),
 };
 
 static inline flag_t get_flag(const char *arg) {
@@ -47,14 +38,14 @@ static const char *next_value(args_t *args) {
         return NULL;
     }
 
-    const char *nxt = args->argv[args->i + 1];
-    if (nxt[0] == DASH) {
+    const char *val = args->argv[args->i + 1];
+    if (val[0] == DASH) {
         return NULL;
     }
 
     ++args->i;
 
-    return nxt;
+    return val;
 }
 
 static result_t require_value(args_t *args, const char *flag, const char **param) {
@@ -100,7 +91,7 @@ static void log_ext_items(const char *label, const file_ext_map_t *map, const ch
     }
 }
 
-static void log_flags(args_t *args) {
+static void log_flags(const args_t *args) {
     log_info("\n[INFO]");
     log_f(" The following flags have been set...");
     log_items("command", (const list_t *)&args->command, " ");
@@ -122,48 +113,38 @@ static void append_unique_param(list_t *list, const char *value) {
     }
 }
 
-static inline result_t validate_file_name(const char *f) {
-    const char *last_slash = strrchr(f, '/');
-    const char *last_backslash = strrchr(f, '\\');
-    const char *sep = last_slash;
-    if (last_backslash != NULL && (sep == NULL || last_backslash > sep)) {
-        sep = last_backslash;
+static inline bool is_env_file(const char *base, size_t base_len) {
+    // .env
+    if (strcmp(base, ".env") == 0) {
+        return true;
     }
 
-    const char *base = sep ? sep + 1 : f;
-    size_t base_len = strlen(base);
-    if (!((strcmp(base, ".env") == 0) || (strncmp(base, ".env.", 5) == 0) ||
-          (base_len >= 4 && strcmp(base + base_len - 4, ".env") == 0))) {
-        return operation_error("The file flag '%s' is not a valid env file (file must contain '.env' extension)\n", f);
+    // .env.local
+    if (strncmp(base, ".env.", 5) == 0) {
+        return true;
     }
 
-    if ((f[0] == FORWARD_SLASH) || (f[0] == BACK_SLASH) || (isalpha((unsigned char)f[0]) && f[1] == COLON)) {
-        return operation_error("The file flag '%s' must be relative to the current directory\n", f);
+    // example.env
+    if (base_len >= 4 && strcmp(base + base_len - 4, ".env") == 0) {
+        return true;
     }
 
-    const char *p = f;
-    while (*p) {
-        const char *next_slash = strchr(p, '/');
-        const char *next_backslash = strchr(p, '\\');
+    return false;
+}
 
-        const char *next_sep;
-        if (!next_slash) {
-            next_sep = next_backslash;
-        } else if (!next_backslash) {
-            next_sep = next_slash;
-        } else {
-            next_sep = next_slash < next_backslash ? next_slash : next_backslash;
-        }
+static inline result_t validate_file_name(const char *p) {
+    const char *base = path_basename(p);
 
-        size_t component_len = next_sep ? (size_t)(next_sep - p) : strlen(p);
-        if (component_len == 2 && strncmp(p, "..", 2) == 0) {
-            return operation_error("The files flag param '%s' may not escape the current directory\n", f);
-        }
+    if (!is_env_file(base, strlen(base))) {
+        return operation_error("The file flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
+    }
 
-        p += component_len;
-        if (*p == FORWARD_SLASH || *p == BACK_SLASH) {
-            ++p;
-        }
+    if (is_absolute_path(p)) {
+        return operation_error("The file flag '%s' must be relative to the current directory\n", p);
+    }
+
+    if (path_escapes_cwd(p)) {
+        return operation_error("The files flag param '%s' may not escape the current directory\n", p);
     }
 
     return RESULT_OK;

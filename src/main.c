@@ -7,17 +7,12 @@
 #include "timer.h"
 #include "tokenizer.h"
 #include "tty.h"
+#include <stdlib.h>
 
 int main(int argc, const char **argv) {
     tty_init();
 
     const double start = monotonic_seconds();
-
-    // this would set stderr to be fully buffered to prevent unnecessary line by line prints
-    // this may increase performance when dry-running a large code base, but the disadvantage
-    // is that partial logs flush to stderr and it feels choppy, disabling for now
-    // https://man7.org/linux/man-pages/man3/setvbuf.3p.html
-    // setvbuf(stderr, NULL, _IOFBF, 1 << 16);
 
     result_t result = RESULT_OK;
     args_t args = {0};

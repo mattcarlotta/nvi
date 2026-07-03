@@ -6,6 +6,10 @@
 #include <stdio.h>
 
 bool ends_with(const char *name, const char *suffix);
+bool is_path_sep(char c);
+bool is_absolute_path(const char *f);
+const char *path_basename(const char *f);
+bool path_escapes_cwd(const char *f);
 bool is_blacklisted(const char *name);
 size_t index_of_scalar(const char *s, size_t len, size_t pos, int ch);
 size_t index_of(const file_details_t *file, size_t from, char ch);

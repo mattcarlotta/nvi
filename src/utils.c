@@ -16,6 +16,44 @@ static const char *blacklist[] = {
 
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
+bool is_path_sep(char c) { return c == FORWARD_SLASH || c == BACK_SLASH; }
+
+bool is_absolute_path(const char *f) { return is_path_sep(f[0]) || (isalpha((unsigned char)f[0]) && f[1] == COLON); }
+
+bool path_escapes_cwd(const char *f) {
+    const char *path = f;
+    while (*path) {
+        const char *start = path;
+
+        while (*path && !is_path_sep(*path)) {
+            // skip character
+            ++path;
+        }
+
+        if (path - start == 2 && start[0] == DOT && start[1] == DOT) {
+            return true;
+        }
+
+        // skip the separator
+        if (*path) {
+            ++path;
+        }
+    }
+
+    return false;
+}
+
+const char *path_basename(const char *f) {
+    const char *base = f;
+    for (const char *p = f; *p; ++p) {
+        if (is_path_sep(*p)) {
+            base = p + 1;
+        }
+    }
+
+    return base;
+}
+
 bool ends_with(const char *name, const char *suffix) {
     size_t nlen = strlen(name);
     size_t slen = strlen(suffix);

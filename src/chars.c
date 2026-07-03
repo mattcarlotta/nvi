@@ -6,14 +6,11 @@ const unsigned char LITERAL_STOPS[] = {
 };
 const size_t LITERAL_STOPS_LEN = ARR_LEN(LITERAL_STOPS);
 
-// Inside double quotes '$' (interpolation) and '\' (continuation) stay active;
-// '=' and '#' are literal after a key
 const unsigned char DQ_STOPS[] = {
     NULL_CHAR, LINE_DELIMITER, CARRIAGE_RETURN, DOUBLE_QUOTE, DOLLAR_SIGN, BACK_SLASH,
 };
 const size_t DQ_STOPS_LEN = ARR_LEN(DQ_STOPS);
 
-// Inside single quotes everything is literal until the closing quote.
 const unsigned char SQ_STOPS[] = {
     NULL_CHAR,
     LINE_DELIMITER,
