@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "chars.h"
 #include "dynarr.h"
 #include "errors.h"
 #include "log.h"
@@ -67,7 +68,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     const char *fallback = NULL;
                     size_t fallback_len = 0;
                     for (size_t k = 0; k + 1 < raw_value_len; ++k) {
-                        if (raw_value[k] == ':' && raw_value[k + 1] == '-') {
+                        if (raw_value[k] == COLON && raw_value[k + 1] == DASH) {
                             key_len = k;
                             fallback = raw_value + k + 2;
                             fallback_len = raw_value_len - k - 2;
@@ -75,33 +76,34 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                         }
                     }
 
-                    // only copy when a fallback separator shortened the key portion
-                    const char *fallback_value = raw_value;
-                    char *default_value = NULL;
+                    const char *lookup_key = raw_value;
+                    char *key_copy = NULL;
                     if (key_len != raw_value_len) {
-                        default_value = strndup(raw_value, key_len);
-                        if (default_value == NULL) {
+                        key_copy = strndup(raw_value, key_len);
+                        if (key_copy == NULL) {
                             result = operation_error(
                                 "Unable to copy an interpolation key (not enough system memory?); aborting.\n");
                             goto done;
                         }
-                        fallback_value = default_value;
+                        lookup_key = key_copy;
                     }
 
-                    const char *env = resolve_env(env_map, fallback_value);
-                    free(default_value);
+                    const char *env = resolve_env(env_map, lookup_key);
+                    free(key_copy);
 
-                    if (env != NULL && env[0] != '\0') {
-                        DYN_ARR_APPEND_MANY(&value, env, strlen(env));
-                    } else if (fallback != NULL) {
-                        DYN_ARR_APPEND_MANY(&value, fallback, fallback_len);
-                    } else if (env == NULL) {
+                    if (env == NULL && fallback == NULL) {
                         result = operation_error(
                             "The '%s' key contains an interpolated key variable %.*s (%s:%zu:%zu) that is not "
                             "defined.\n",
                             token_key ? token_key : "(none)", (int)key_len, raw_value, token->file, value_token->line,
                             value_token->byte);
                         goto done;
+                    }
+
+                    if (env != NULL && env[0] != '\0') {
+                        DYN_ARR_APPEND_MANY(&value, env, strlen(env));
+                    } else if (fallback != NULL) {
+                        DYN_ARR_APPEND_MANY(&value, fallback, fallback_len);
                     }
                     break;
                 }

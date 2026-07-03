@@ -14,7 +14,7 @@
             if (_p == NULL) {                                                                                          \
                 fprintf(stderr, "[ERROR] Failed to reallocate memory (system of out memory?); aborting.\n");           \
                 fflush(stderr);                                                                                        \
-                abort();                                                                                               \
+                exit(EXIT_FAILURE);                                                                                    \
             }                                                                                                          \
             (da)->items = _p;                                                                                          \
             (da)->capacity = _new_cap;                                                                                 \
@@ -36,7 +36,7 @@
                 if (_p == NULL) {                                                                                      \
                     fprintf(stderr, "[ERROR] Failed to reallocate memory (system out of memory?); aborting.\n");       \
                     fflush(stderr);                                                                                    \
-                    abort();                                                                                           \
+                    exit(EXIT_FAILURE);                                                                                \
                 }                                                                                                      \
                 (da)->items = _p;                                                                                      \
                 (da)->capacity = _new_cap;                                                                             \

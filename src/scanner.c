@@ -57,7 +57,7 @@ static inline void append_unique_envs(scanner_t *scanner, const env_key_match_t 
     if (new_key == NULL) {
         log_error("[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
         fflush(stderr);
-        abort();
+        exit(EXIT_FAILURE);
     }
 
     hashmap_append(&scanner->envs, new_key, env->key_len, 0);
@@ -158,7 +158,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     if (file == NULL) {
         fprintf(stderr, "[ERROR] Failed to allocate a path buffer (system out of memory?); aborting.\n");
         fflush(stderr);
-        abort();
+        exit(EXIT_FAILURE);
     }
 
 #if defined(_WIN32) && defined(_MSC_VER)

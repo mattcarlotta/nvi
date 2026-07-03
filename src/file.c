@@ -57,7 +57,7 @@ file_details_t open_file(const char *path) {
                   path);
         fclose(file);
         fflush(stderr);
-        abort();
+        exit(EXIT_FAILURE);
     }
 
     file_details.len = fread(file_details.contents, 1, size, file);

@@ -55,7 +55,7 @@ static inline void hashmap_grow(hashmap_t *map, size_t need) {
     if (new_slots == NULL) {
         fprintf(stderr, "[ERROR] Failed to allocate hash map (system out of memory?); aborting.\n");
         fflush(stderr);
-        abort();
+        exit(EXIT_FAILURE);
     }
 
     size_t mask = new_cap - 1;

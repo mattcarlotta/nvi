@@ -61,7 +61,7 @@ static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *tok
     if (copy == NULL) {
         log_error("[ERROR] Unable to copy token value (not enough system memory?); aborting.");
         fflush(stderr);
-        abort();
+        exit(EXIT_FAILURE);
     }
 
     if (value->count > 0) {
