@@ -268,17 +268,17 @@ Notes for Windows users:
 
 ## Flags
 
-| Flag | Alias | Parameters | Description |
-| --- | --- | --- | --- |
-| `--dry-run` | `-d` | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
-| `--files` | `-f` | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
-| `--format` | `-F` | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on POSIX and `powershell` on Windows (chosen at compile time per target). |
-| `--help` | `-h` | | Prints usage help to stdout and exits with 0. |
-| `--ignored` | `-i` | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
-| `--required` | `-r` | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
-| `--scan` | `-s`| one or more file extensions | Recursively scans `<ext>` files for environment-variable accessors and sets the ENV required list.† |
-| `--version` | `-v` | | Prints version info to stdout and exits with 0. |
-| `--` | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
+| Flag | Alias | Command | Parameters | Description |
+| --- | --- | --- | --- | --- |
+| `--dry-run` | `-d` | | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
+| `--files` | `-f` | | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
+| `--format` | `-F` | | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on POSIX and `powershell` on Windows (chosen at compile time per target). |
+| `--help` | `-h` | `help` | | Prints usage help to stdout and exits with 0. |
+| `--ignored` | `-i` | | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
+| `--required` | `-r` | | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
+| `--scan` | `-s`| `scan` | one or more file extensions | Recursively scans `<ext>` files for environment-variable accessors and sets the ENV required list.† |
+| `--version` | `-v` | `version` | | Prints version info to stdout and exits with 0. |
+| `--` | | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
 > [!NOTE]
 > † Without a `--` command, scan will only report what it finds and exit (must include *--dry-run*). With a `--` command, scan sets the found ENV keys to the required ENVs list.
