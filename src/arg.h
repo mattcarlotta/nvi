@@ -25,7 +25,7 @@ typedef enum { DRY_RUN, END_OF_OPTIONS, FILES, FORMAT, HELP, IGNORED, REQUIRED, 
 typedef struct {
     const char *name;
     flag_t value;
-} flag_entry;
+} flag_entry_t;
 
 typedef struct {
     const char **items;

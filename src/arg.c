@@ -14,16 +14,16 @@
 #include <stdio.h>
 #include <string.h>
 
-static const flag_entry flags[] = {
+static const flag_entry_t flags[] = {
     FLAG("--", END_OF_OPTIONS),         FLAG("-f", "--files", FILES),       FLAG("-d", "--dry-run", DRY_RUN),
     FLAG("-h", "--help", "help", HELP), FLAG("-i", "--ignored", IGNORED),   FLAG("-F", "--format", FORMAT),
     FLAG("-r", "--required", REQUIRED), FLAG("-s", "--scan", "scan", SCAN), FLAG("-v", "--version", "version", VERSION),
 };
 
-static inline flag_t get_flag(const char *arg) {
-    size_t n = sizeof(flags) / sizeof(flags[0]);
+static const size_t flags_len = ARR_LEN(flags);
 
-    for (size_t i = 0; i < n; ++i) {
+static inline flag_t get_flag(const char *arg) {
+    for (size_t i = 0; i < flags_len; ++i) {
         if (strcmp(arg, flags[i].name) == 0) {
             return flags[i].value;
         }
