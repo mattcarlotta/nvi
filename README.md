@@ -7,20 +7,20 @@ nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, sca
 - Parses one or more `.env` files
 - Handles `${KEY}` interpolations
 - Supports multiline values via `\` (backslash-newline) delimiter
-- Optionally scans project files for environment-variable references across many [languages](https://github.com/mattcarlotta/nvi-bin#supported-file-extensions-to-the-right-of-the-language) and sets them as required
+- Optionally scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and sets them as required
 - Optionally validates required keys to be defined before command execution
 
 ## Installation
 
-For the best compatibility [build and install from source](https://github.com/mattcarlotta/nvi-bin#build-and-install-from-source).
+For the best compatibility [build and install from source](#build-and-install-from-source).
 
 Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
 
-Extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell).
+Then extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell).
 
-If you're not sure if the directory is recognized, use the corresponding links below and skip to the instructions about path recognition:
-- [POSIX](https://github.com/mattcarlotta/nvi-bin#posix-linux-macos-wsl)
-- [PowerShell](https://github.com/mattcarlotta/nvi-bin#powershell-windows)
+If you're not sure if the destination directory is recognized by your shell, use the corresponding links below and skip to the instructions about path recognition:
+- [POSIX](#posix-linux-macos-wsl)
+- [PowerShell](#powershell-windows)
 
 ## Build and install from source
 
@@ -68,7 +68,6 @@ mkdir -p $HOME/.local/bin
 
 Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
 ```sh
-typeset -U PATH # optionally remove duplicate directories in $PATH
 PATH+=("$HOME/.local/bin")
 ```
 
@@ -77,10 +76,10 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 source <PROFILE>
 ```
 
-Lastly, build and install the release binary into the destination directory:
+Lastly, build and install the release binary into the destination `<DIR>`:
 ```sh
 # install in a directory that is recognized by the shell $PATH
-# for example: ./nob install $HOME/.local/bin
+# for example, if you followed the instruction sabove, then: ./nob install $HOME/.local/bin
 ./nob install <DIR>
 ```
 
@@ -201,9 +200,6 @@ Get-Command nvi
 nvi version
 ```
 
-> [!NOTE]
-> Windows builds, by default, will emit ENVs in the PowerShell format.
-
 ## Running
 
 ### Run in POSIX (Linux, macOS, WSL)
@@ -263,7 +259,7 @@ Notes for Windows users:
 - **Persistence:** `$env:` assignments apply to the invoking PowerShell session, so the variables remain set after the command exits. For an isolated, throwaway environment, run the pipeline inside `pwsh -Command "..."`.
 - **Encoding:** PowerShell decodes nvi's output using the console encoding. PowerShell 7+ defaults to UTF-8; on Windows PowerShell 5.1, set `[Console]::OutputEncoding` to UTF-8 if your values contain non-ASCII characters.
 - **Git Bash / MSYS2:** if you have GNU `xargs` and `env` available, the native Windows binary can use the POSIX pipeline directly with `--format nul`.
-- **WSL:** use the Linux binary and the POSIX pipeline.
+- **WSL:** use the Linux binary and the POSIX instructions.
 - `cmd.exe` is not supported.
 
 ## Flags
@@ -285,7 +281,7 @@ Notes for Windows users:
 
 Unrecognized flags or arguments are usage errors.
 
-Diagnostics written to stderr are colorized only when stderr is a TTY; setting a non-empty `NO_COLOR` env disables color regardless:
+Diagnostics written to stderr are colorized only when stderr is a TTY; however, setting a non-empty `NO_COLOR` env disables the color:
 ```sh
 NO_COLOR=true nvi [flags]
 ```
@@ -305,7 +301,7 @@ nvi --files .env --scan ts --dry-run >2 nvi.log; less nvi.log
 # require every env key referenced in py source files to be present
 nvi --files .env --scan py -- python main.py  | <consumer>
 
-# shell expansion inside the command (single-quote so your shell doesn't expand first)
+# POSIX shell expansion inside the command (single-quote so your shell doesn't expand first)
 nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 ```
 
@@ -425,8 +421,8 @@ Here are some examples of how ENVs can be defined in an `.env` file:
 # a literal value
 MESSAGE=hello
 
-# an interpolation ${KEY} represents a value from either the shell
-# environment or from a KEY in an .env file (must be defined before use)
+# an interpolation ${KEY} can be used after a key and it represents a value
+# from either the shell environment or from a KEY in an .env file (must be defined before use)
 # for example: ${MESSSAGE} world => hello world
 GREETING=${MESSAGE} world
 
@@ -439,29 +435,30 @@ PRICE=$5.00
 # a hash sign after a key is a literal '#' (not a comment)
 CHANNEL=#why-is-this-bug-occuring
 
-# single or double quoted values after a key are stripped from the value
-# but inner whitespace and characters are preserved as is
+# single or double quotes after a key are stripped from the value,
+# but the inner whitespace and characters are preserved as is
 DOUBLE_QUOTES="     hello world     "
 
-# single quoted values will not interpolate ${KEY}
+# single quoted values after a key WILL NOT interpolate ${KEY}
 SINGLE_QUOTES='abc${NOT_AN_INTERPOLATED_KEY}'
 
-# double quoted values after a key will interpolate ${KEY}
+# double quoted values after a key WILL interpolate ${KEY}
 GOODBYE="I will never say ${GREETING} ever again"
 
-# single or double qoutes within a value are not stripped and are treated
-# as literal characters
+# single or double qoutes within a value after a key are not stripped
+# and are treated as literal characters
 MESSAGE=she said "hello world" in death
 RESPONSE=then he said 'goodbye my love' in life
 
-# an explicitly empty quoted value is allowed, but a bare 'KEY=' without
-# a value is an error
+# an explicitly empty quoted value after a key is allowed, but a
+# bare 'KEY=' without a value is an error
 EMPTY_OK=""
 
-# a shell-style export prefix is stripped
+# a POSIX shell-style export prefix is stripped
 export EXPORTED=value
 
-# ${KEY:-default} substitutes the default when KEY is unset or empty
+# a POSIX shell-style default ':-' value after a key is supported
+# for an interpolated ${KEY} (it's used when the KEY is unset or empty)
 RETRIES=${MAX_RETRIES:-3}
 
 # backslash-newline continues a multiline value
@@ -522,7 +519,6 @@ Run all unit tests:
 Run all integration tests:
 ```powershell
 ./nob.exe integration
-
 ```
 
 Run all test suites:
@@ -532,8 +528,9 @@ Run all test suites:
 
 ## Security model
 
-- `nvi` doesn't perform execution operations (like `execl`, `execlp`, `execle`, and so on), no process spawning nor shell invocation.
-- It will only parse the `.env` files you provide and write ENVs to stdout.
+- It doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
+- It doesn't use any [regular expressions](https://pubs.opengroup.org/onlinepubs/7908799/xsh/regex.h.html) and never will for as long as I live!
+- It will only parse the `.env` files you provide and write parsed ENVs to stdout.
 - Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
