@@ -276,8 +276,7 @@ Notes for Windows users:
 | `--version` | `-v` | `version` | | Prints version info to stdout and exits with 0. |
 | `--` | | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
-> [!NOTE]
-> † Without a `--` command, scan will only report what it finds and exit (must include *--dry-run*). With a `--` command, scan sets the found ENV keys to the required ENVs list.
+> † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
 
 Unrecognized flags or arguments are usage errors.
 
@@ -389,7 +388,11 @@ e.DATABASE_URL;
 - Tcl -> `tcl`
 - V -> `v`
 - Visual Basic -> `vb`
+- YAML -> `yaml`, `yml` †
 - Zig -> `zig`
+
+> † YAML has no language-level accessor, so the scanner matches POSIX-style parameter expansion: `${KEY}` plus the operator forms `${KEY:-default}`, `${KEY:?err}`, etc.
+> A bare `$KEY`, `$${KEY}`, and `${{ ... }}` expressions are ignored.
 
 #### Scan Usage Examples
 

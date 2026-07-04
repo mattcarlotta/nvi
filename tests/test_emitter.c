@@ -25,7 +25,7 @@ static size_t capture_emit(const args_t *args, const env_map_t *map, char *out, 
     return capture_fd(stdout, out, cap, call_emitter, &ctx);
 }
 
-static env_map_t map_of(env_t *items, size_t count) {
+static env_map_t mock_env_map(env_t *items, size_t count) {
     env_map_t m = {.items = items, .count = count, .capacity = count};
     return m;
 }
@@ -40,7 +40,7 @@ static args_t emit_args(format_t fmt, const char **cmd, size_t cmd_count) {
 
 static void test_nul_pairs_then_command(void) {
     env_t items[] = {{.key = "A", .value = (char *)"1"}, {.key = "B", .value = (char *)"two words"}};
-    env_map_t m = map_of(items, 2);
+    env_map_t m = mock_env_map(items, 2);
     const char *cmd[] = {"echo", "hi"};
     args_t a = emit_args(FORMAT_NULL, cmd, 2);
 
@@ -55,7 +55,7 @@ static void test_nul_pairs_then_command(void) {
 
 static void test_nul_values_with_spaces_and_newlines(void) {
     env_t items[] = {{.key = "MULTI", .value = (char *)"line1\nline2"}};
-    env_map_t m = map_of(items, 1);
+    env_map_t m = mock_env_map(items, 1);
     const char *cmd[] = {"env"};
     args_t a = emit_args(FORMAT_NULL, cmd, 1);
 
@@ -70,7 +70,7 @@ static void test_nul_values_with_spaces_and_newlines(void) {
 
 static void test_nul_pairs_only_when_command_empty(void) {
     env_t items[] = {{.key = "A", .value = (char *)"1"}};
-    env_map_t m = map_of(items, 1);
+    env_map_t m = mock_env_map(items, 1);
     args_t a = emit_args(FORMAT_NULL, NULL, 0);
 
     char buf[256];
@@ -84,7 +84,7 @@ static void test_nul_pairs_only_when_command_empty(void) {
 
 static void test_powershell_assignments_then_call(void) {
     env_t items[] = {{.key = "A", .value = (char *)"1"}, {.key = "B", .value = (char *)"two words"}};
-    env_map_t m = map_of(items, 2);
+    env_map_t m = mock_env_map(items, 2);
     const char *cmd[] = {"echo", "hi"};
     args_t a = emit_args(FORMAT_POWERSHELL, cmd, 2);
 
@@ -97,7 +97,7 @@ static void test_powershell_assignments_then_call(void) {
 
 static void test_powershell_escapes_single_quotes(void) {
     env_t items[] = {{.key = "MSG", .value = (char *)"it's o'clock"}};
-    env_map_t m = map_of(items, 1);
+    env_map_t m = mock_env_map(items, 1);
     const char *cmd[] = {"env"};
     args_t a = emit_args(FORMAT_POWERSHELL, cmd, 1);
 

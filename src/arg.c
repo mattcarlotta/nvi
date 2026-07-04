@@ -322,6 +322,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     " \u2022 Tcl -> tcl\n"
                     " \u2022 V -> v\n"
                     " \u2022 Visual Basic -> vb\n"
+                    " \u2022 YAML -> yaml, yml\n"
                     " \u2022 Zig -> zig\n"
                     "\n",
                     stdout);

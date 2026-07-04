@@ -176,6 +176,10 @@ static const accessor_t nushell[] = {
     ACCESSOR("$env.", ident),
 };
 
+static const accessor_t yaml[] = {
+    ACCESSOR("${", expansion),
+};
+
 static const ext_entry extensions[] = {
     ENTRY("js", javascript),
     ENTRY("mjs", javascript),
@@ -254,6 +258,8 @@ static const ext_entry extensions[] = {
     ENTRY("dpr", pascal),
     ENTRY("tcl", tcl),
     ENTRY("nu", nushell),
+    ENTRY("yaml", yaml),
+    ENTRY("yml", yaml),
 };
 
 static const size_t ext_len = ARR_LEN(extensions);

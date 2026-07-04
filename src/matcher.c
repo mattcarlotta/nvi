@@ -20,6 +20,11 @@ static inline const accessor_t *get_accessor(const file_details_t *file, const f
             continue;
         }
 
+        // only support ${}, reject $${}
+        if (acc->pattern == expansion && i > 0 && file->contents[i - 1] == DOLLAR_SIGN) {
+            continue;
+        }
+
         return acc;
     }
 
@@ -95,6 +100,23 @@ static env_key_t extract_env_by_pattern(const file_details_t *file, pattern_t ki
                                .key_len = key_end - key_start,
                                .start = key_start,
                                .end = brace + 1};
+        }
+        case expansion: {
+            size_t end = start;
+            while (end < file->len && is_ident_char(file->contents[end])) {
+                ++end;
+            }
+
+            if (end == start) {
+                return (env_key_t){0};
+            }
+
+            size_t brace = index_of(file, end, CLOSE_BRACE);
+            if (brace == file->len || !is_same_line(file, start, brace)) {
+                return (env_key_t){0};
+            }
+
+            return (env_key_t){.key = file->contents + start, .key_len = end - start, .start = start, .end = end};
         }
         case parened: {
             size_t paren = index_of(file, start, CLOSE_PAREN);
