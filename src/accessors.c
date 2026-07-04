@@ -256,8 +256,10 @@ static const ext_entry extensions[] = {
     ENTRY("nu", nushell),
 };
 
+static const size_t ext_len = ARR_LEN(extensions);
+
 const ext_entry *find_ext(const char *ext) {
-    for (size_t i = 0; i < ARR_LEN(extensions); ++i) {
+    for (size_t i = 0; i < ext_len; ++i) {
         if (strcmp(ext, extensions[i].ext) == 0) {
             return &extensions[i];
         }

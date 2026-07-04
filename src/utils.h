@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 bool ends_with(const char *name, const char *suffix);
-bool is_path_sep(char c);
+bool is_path_sep(const char c);
 bool is_absolute_path(const char *f);
 const char *path_basename(const char *f);
 bool path_escapes_cwd(const char *f);

@@ -16,7 +16,7 @@ static const char *blacklist[] = {
 
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
-bool is_path_sep(char c) { return c == FORWARD_SLASH || c == BACK_SLASH; }
+bool is_path_sep(const char c) { return c == FORWARD_SLASH || c == BACK_SLASH; }
 
 bool is_absolute_path(const char *f) { return is_path_sep(f[0]) || (isalpha((unsigned char)f[0]) && f[1] == COLON); }
 

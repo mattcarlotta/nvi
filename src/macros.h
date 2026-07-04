@@ -3,13 +3,14 @@
 
 #define EXPAND(x) x
 
+#define FLAG_2(a, v) {(a), (v)}
 #define FLAG_3(a, b, v)                                                                                                \
     {(a), (v)}, { (b), (v) }
 #define FLAG_4(a, b, c, v)                                                                                             \
     {(a), (v)}, {(b), (v)}, { (c), (v) }
 
 #define FLAG_PICK(_1, _2, _3, _4, NAME, ...) NAME
-#define FLAG(...) EXPAND(FLAG_PICK(__VA_ARGS__, FLAG_4, FLAG_3, FLAG_BAD_ARITY, FLAG_BAD_ARITY)(__VA_ARGS__))
+#define FLAG(...) EXPAND(FLAG_PICK(__VA_ARGS__, FLAG_4, FLAG_3, FLAG_2, FLAG_BAD_ARITY)(__VA_ARGS__))
 
 #define ARR_LEN(a) (sizeof(a) / sizeof((a)[0]))
 

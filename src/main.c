@@ -1,6 +1,5 @@
 #include "arg.h"
 #include "emitter.h"
-#include "info.h"
 #include "parser.h"
 #include "result.h"
 #include "scanner.h"
@@ -55,7 +54,7 @@ int main(int argc, const char **argv) {
 
 done:
     if (result.ok && args.dry_run) {
-        log_time(start);
+        log_dry_run_time(start);
     }
     fflush(stderr);
     fflush(stdout);

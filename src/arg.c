@@ -4,21 +4,20 @@
 #include "dynarr.h"
 #include "errors.h"
 #include "format.h"
-#include "info.h"
 #include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "result.h"
 #include "utils.h"
+#include "version.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
 static const flag_entry flags[] = {
-    FLAG("-f", "--files", FILES),       FLAG("-d", "--dry-run", DRY_RUN),
-    FLAG("-h", "--help", "help", HELP), FLAG("-i", "--ignored", IGNORED),
-    FLAG("-F", "--format", FORMAT),     FLAG("-r", "--required", REQUIRED),
-    FLAG("-s", "--scan", "scan", SCAN), FLAG("-v", "--version", "version", VERSION),
+    FLAG("--", END_OF_OPTIONS),         FLAG("-f", "--files", FILES),       FLAG("-d", "--dry-run", DRY_RUN),
+    FLAG("-h", "--help", "help", HELP), FLAG("-i", "--ignored", IGNORED),   FLAG("-F", "--format", FORMAT),
+    FLAG("-r", "--required", REQUIRED), FLAG("-s", "--scan", "scan", SCAN), FLAG("-v", "--version", "version", VERSION),
 };
 
 static inline flag_t get_flag(const char *arg) {
@@ -113,7 +112,7 @@ static void append_unique_param(list_t *list, const char *value) {
     }
 }
 
-static inline bool is_env_file(const char *base, size_t base_len) {
+static inline bool is_env_file(const char *base) {
     // .env
     if (strcmp(base, ".env") == 0) {
         return true;
@@ -123,6 +122,8 @@ static inline bool is_env_file(const char *base, size_t base_len) {
     if (strncmp(base, ".env.", 5) == 0) {
         return true;
     }
+
+    const size_t base_len = strlen(base);
 
     // example.env
     if (base_len >= 4 && strcmp(base + base_len - 4, ".env") == 0) {
@@ -135,7 +136,7 @@ static inline bool is_env_file(const char *base, size_t base_len) {
 static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
-    if (!is_env_file(base, strlen(base))) {
+    if (!is_env_file(base)) {
         return operation_error("The file flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
     }
 
@@ -161,23 +162,23 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     result_t result = RESULT_OK;
 
     while (args->i < args->argc) {
-
-        // end of options delimiter
-        if (strcmp(args->argv[args->i], "--") == 0) {
-            if (args->dry_run) {
-                log_warning("\n[WARNING]");
-                log_f(" Found a command with dry-run enabled; skipping.\n");
-                break;
-            }
-
-            args->command.count = args->argc - (args->i + 1);
-            args->command.items = &args->argv[args->i + 1];
-            break;
-        }
-
-        switch (get_flag(args->argv[args->i])) {
+        const char *arg = args->argv[args->i];
+        switch (get_flag(arg)) {
             case DRY_RUN: {
                 args->dry_run = true;
+                break;
+            }
+            case END_OF_OPTIONS: {
+                if (args->dry_run) {
+                    log_warning("\n[WARNING]");
+                    log_f(" Found a command with dry-run enabled; skipping.\n");
+                    args->i = args->argc - 1;
+                    break;
+                }
+
+                args->command.count = args->argc - (args->i + 1);
+                args->command.items = &args->argv[args->i + 1];
+                args->i = args->argc - 1;
                 break;
             }
             case FILES: {
@@ -187,7 +188,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param != NULL) {
+                while (param) {
                     result = validate_file_name(param);
                     if (!result.ok) {
                         return result;
@@ -221,7 +222,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param != NULL) {
+                while (param) {
                     append_unique_param(&args->ignored, param);
                     param = next_value(args);
                 }
@@ -235,7 +236,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param != NULL) {
+                while (param) {
                     append_unique_param(&args->required, param);
                     param = next_value(args);
                 }
@@ -249,7 +250,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param != NULL) {
+                while (param) {
                     const ext_entry *entry = find_ext(param);
                     if (entry == NULL) {
                         return usage_error("The file extension '%s' is not a supported scan extension", param);
@@ -262,19 +263,87 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 break;
             }
             case HELP: {
-                return log_help();
+                fputs(
+                    "Usage: nvi [flags] -- <command>\n"
+                    "       nvi scan [ext] [ext] ...etc (no <command>)\n"
+                    "\n"
+                    "Flags:\n"
+                    "  -d, --dry-run                prints flags, scan results, file tokens and parsed ENVs to stderr\n"
+                    "  -f, --files <paths>          parses .env files in sequential order (at 1 .env file must be "
+                    "specified)\n"
+                    "  -F, --format <fmt>           formats ENVs for the downsteam consumer (options: nul|powershell)\n"
+                    "  -h, --help, help             prints this help and exits with 0\n"
+                    "  -i, --ignored <keys>         ignores ENV keys that scan may find and add to the required ENV "
+                    "key list\n"
+                    "  -r, --required <keys>        ensures ENV keys are defined before the <command> is emitted\n"
+                    "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
+                    "\u2020\n"
+                    "  -v, --version, version       prints the version and exits with 0\n"
+                    "\n"
+                    " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
+                    "ENV keys are "
+                    "added to the required ENV list\n"
+                    "\n"
+                    "Supported scan file extensions (to the right -> of the language):\n"
+                    " \u2022 C -> c, h\n"
+                    " \u2022 Clojure -> clj, cljs, cljc\n"
+                    " \u2022 Crystal -> cr\n"
+                    " \u2022 C++ -> cc, cpp, cxx, hh, hpp, hxx\n"
+                    " \u2022 C# -> cs\n"
+                    " \u2022 D -> d\n"
+                    " \u2022 Dart -> dart\n"
+                    " \u2022 Elixir -> ex, exs\n"
+                    " \u2022 Erlang -> erl, hrl\n"
+                    " \u2022 Fortran -> f, f90, f95, f03, f08, for\n"
+                    " \u2022 F# -> fs, fsi, fsx\n"
+                    " \u2022 Go -> go\n"
+                    " \u2022 Gradle -> gradle\n"
+                    " \u2022 Groovy -> groovy\n"
+                    " \u2022 Haskell -> hs, lhs\n"
+                    " \u2022 Java -> java\n"
+                    " \u2022 JavaScript/TypeScript -> cjs, cts, js, jsx, mjs, mts, ts, tsx\n"
+                    " \u2022 Julia -> jl\n"
+                    " \u2022 Kotlin -> kt, kts\n"
+                    " \u2022 Lua -> lua\n"
+                    " \u2022 Nim -> nim\n"
+                    " \u2022 Nushell -> nu\n"
+                    " \u2022 Objective-C -> m, mm\n"
+                    " \u2022 OCaml -> ml, mli\n"
+                    " \u2022 Pascal/Delphi -> dpr, pas, pp\n"
+                    " \u2022 Perl -> pl, pm, t\n"
+                    " \u2022 PHP -> php\n"
+                    " \u2022 PowerShell -> ps1, psm1, psd1\n"
+                    " \u2022 Python -> py, pyi, pyw\n"
+                    " \u2022 R -> r\n"
+                    " \u2022 Ruby -> gemspec, rb, rake\n"
+                    " \u2022 Rust -> rs\n"
+                    " \u2022 Scala -> sc, scala\n"
+                    " \u2022 Swift -> swift\n"
+                    " \u2022 Tcl -> tcl\n"
+                    " \u2022 V -> v\n"
+                    " \u2022 Visual Basic -> vb\n"
+                    " \u2022 Zig -> zig\n"
+                    "\n",
+                    stdout);
+
+                return EXIT_EARLY;
             }
             case VERSION: {
-                return log_version();
+                fprintf(stdout, "nvi %s (%s)\n", NVI_VERSION, NVI_BUILD);
+                fprintf(stdout, "commit %s\n", NVI_COMMIT);
+#ifdef __clang__
+                fprintf(stdout, "clang %d.%d.%d\n", __clang_major__, __clang_minor__, __clang_patchlevel__);
+#endif
+                fprintf(stdout, "%s\n", NVI_TARGET);
+
+                return EXIT_EARLY;
             }
             default: {
-                const char *token = args->argv[args->i];
-
-                if (token[0] == DASH) {
-                    return usage_error("Unrecognized flag '%s'", token);
+                if (arg[0] == DASH) {
+                    return usage_error("Unrecognized flag '%s'", arg);
                 }
 
-                return usage_error("Unexpected argument '%s'", token);
+                return usage_error("Unexpected argument '%s'", arg);
             }
         }
 

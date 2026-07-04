@@ -5,6 +5,8 @@
 // (not the system clock) so it is unaffected by NTP steps or clock changes
 // during the run.
 
+#include "tty.h"
+#include <stdio.h>
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <windows.h>
 
@@ -24,4 +26,24 @@ static inline double monotonic_seconds(void) {
 }
 #endif
 
+static inline void log_dry_run_time(double start) {
+    double elapsed_ms = (monotonic_seconds() - start) * 1000.0;
+    if (use_color) {
+        fprintf(stderr, CYAN);
+    }
+    fputs("[INFO]", stderr);
+    if (use_color) {
+        fprintf(stderr, RESET);
+    }
+
+    fputs(" Dry run completed in ", stderr);
+
+    if (elapsed_ms >= 1000.0) {
+        fprintf(stderr, "%.3fs", elapsed_ms / 1000.0);
+    } else {
+        fprintf(stderr, "%.1fms", elapsed_ms);
+    }
+
+    fputc('\n', stderr);
+}
 #endif
