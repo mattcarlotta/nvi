@@ -18,8 +18,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// I/O-bound walk; more workers than this hit diminishing returns
-#define MAX_SCAN_THREADS 8
+// I/O-bound walk; more workers than this hit worse returns
+#define MAX_SCAN_THREADS 6
 
 // the walker's best knowledge of an entry's type before dispatch;
 // ENTRY_UNKNOWN means a stat() is required to classify it
