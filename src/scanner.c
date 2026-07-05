@@ -222,8 +222,6 @@ static result_t handle_entry(walk_ctx_t *ctx, scanner_t *scanner, const char *pa
         return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
-    // only classify via stat() when the directory listing couldn't
-    // (e.g. DT_UNKNOWN filesystems or symlinks, which stat() follows)
     if (kind == ENTRY_UNKNOWN) {
         struct stat st;
         if (stat_path(path, &st) != 0) {

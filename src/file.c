@@ -40,7 +40,7 @@ file_details_t open_file(const char *path) {
     }
 
     struct stat st;
-    if (stat_path(path, &st) != 0) {
+    if (fstat(fd, &st) != 0) {
         log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
         goto done;
     }
