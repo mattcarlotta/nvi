@@ -28,7 +28,7 @@ env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
     return &env_map->items[i];
 }
 
-static inline const char *resolve_env(env_map_t *env_map, const char *key) {
+static const char *resolve_env(env_map_t *env_map, const char *key) {
     const char *val = getenv(key);
     if (val != NULL) {
         return val;
@@ -59,7 +59,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             const value_token_t *value_token = &token->values.items[vt];
 
             switch (value_token->kind) {
-                case INTERPOLATED: {
+                case INTERPOLATED_KEY: {
                     const char *raw_value = value_token->value;
                     size_t raw_value_len = value_token->value_len;
 
@@ -107,7 +107,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     }
                     break;
                 }
-                case COMMENTED: {
+                case COMMENTED_LINE: {
                     if (args->dry_run) {
                         log_info("[INFO]");
                         log_f(" Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);

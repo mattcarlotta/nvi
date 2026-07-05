@@ -240,13 +240,6 @@ static bool build_release(void) {
         return false;
     }
 
-#ifdef __APPLE__
-    nob_cmd_append(&cmd, "strip", "-rSTx", OUT_BIN);
-    if (!nob_cmd_run(&cmd)) {
-        return false;
-    }
-#endif
-
     return true;
 }
 

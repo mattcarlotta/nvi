@@ -10,7 +10,7 @@
 // values and ENV values don't have invalid key interpolations. For something as simple as an
 // .env file, an AST really isn't needed.
 
-typedef enum { LITERAL, COMMENTED, INTERPOLATED } value_kind_t;
+typedef enum { LITERAL_VALUE, COMMENTED_LINE, INTERPOLATED_KEY } value_kind_t;
 
 typedef struct {
     char *value;
@@ -50,15 +50,15 @@ typedef struct {
 
 static inline const char *get_value_kind_name(value_kind_t kind) {
     switch (kind) {
-        case LITERAL:
+        case LITERAL_VALUE:
             return "literal value";
-        case COMMENTED:
+        case COMMENTED_LINE:
             return "commented line";
-        case INTERPOLATED:
+        case INTERPOLATED_KEY:
             return "interpolated key";
     }
 
-    return "unknown";
+    return "unknown value kind";
 }
 
 result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer);

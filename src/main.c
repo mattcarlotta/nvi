@@ -58,9 +58,9 @@ done:
     }
     fflush(stderr);
     fflush(stdout);
-    free_args(&args);
     free_scanner(&scanner);
-    free_tokenizer(&tokenizer);
     free_envs(&env_map);
+    free_tokenizer(&tokenizer);
+    free_args(&args);
     return result.code;
 }

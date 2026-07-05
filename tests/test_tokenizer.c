@@ -46,7 +46,7 @@ static void test_simple_key_value(void) {
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.count);
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.items[0].values.count);
-    TEST_ASSERT_EQUAL_INT(LITERAL, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("value", val(&t, 0, 0)->value);
     free_tokenizer(&t);
 }
@@ -81,11 +81,11 @@ static void test_interpolation_inside_multiline(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.count);
     TEST_ASSERT_EQUAL_size_t(3, t.tokens.items[0].values.count);
-    TEST_ASSERT_EQUAL_INT(LITERAL, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("abc", val(&t, 0, 0)->value);
-    TEST_ASSERT_EQUAL_INT(INTERPOLATED, val(&t, 0, 1)->kind);
+    TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 1)->kind);
     TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 1)->value);
-    TEST_ASSERT_EQUAL_INT(LITERAL, val(&t, 0, 2)->kind);
+    TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 2)->kind);
     TEST_ASSERT_EQUAL_STRING("def", val(&t, 0, 2)->value);
     free_tokenizer(&t);
 }
@@ -100,7 +100,7 @@ static void test_multiline_ssh_key_with_interp_and_literals(void) {
     TEST_ASSERT_EQUAL_STRING("ssh-rsa ABC", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("g3HI$", val(&t, 0, 1)->value);
     TEST_ASSERT_EQUAL_STRING("+jk", val(&t, 0, 2)->value);
-    TEST_ASSERT_EQUAL_INT(INTERPOLATED, val(&t, 0, 3)->kind);
+    TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 3)->kind);
     TEST_ASSERT_EQUAL_STRING("MESSAGE", val(&t, 0, 3)->value);
     TEST_ASSERT_EQUAL_STRING("/4", val(&t, 0, 4)->value);
     TEST_ASSERT_EQUAL_STRING("Lm5Mn== test@example.com", val(&t, 0, 5)->value);
@@ -122,7 +122,7 @@ static void test_parses_a_comment(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.count);
     TEST_ASSERT_NULL(t.tokens.items[0].key);
-    TEST_ASSERT_EQUAL_INT(COMMENTED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(COMMENTED_LINE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("# a comment", val(&t, 0, 0)->value);
     free_tokenizer(&t);
 }
@@ -132,7 +132,7 @@ static void test_parses_interpolated_value(void) {
     result_t r = tokenize("KEY=${OTHER}\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
-    TEST_ASSERT_EQUAL_INT(INTERPOLATED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 0)->value);
     free_tokenizer(&t);
 }
@@ -218,7 +218,7 @@ static void test_crlf_after_interpolation(void) {
     result_t r = tokenize("KEY=${OTHER}\r\nB=2\r\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
-    TEST_ASSERT_EQUAL_INT(INTERPOLATED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("2", val(&t, 1, 0)->value);
     free_tokenizer(&t);
@@ -229,7 +229,7 @@ static void test_crlf_comment(void) {
     result_t r = tokenize("# a comment\r\nA=1\r\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
-    TEST_ASSERT_EQUAL_INT(COMMENTED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(COMMENTED_LINE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("# a comment", val(&t, 0, 0)->value);
     free_tokenizer(&t);
 }
@@ -307,7 +307,7 @@ static void test_single_quotes_suppress_interpolation(void) {
     result_t r = tokenize("KEY='${OTHER}'\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.items[0].values.count);
-    TEST_ASSERT_EQUAL_INT(LITERAL, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("${OTHER}", val(&t, 0, 0)->value);
     free_tokenizer(&t);
 }
@@ -325,7 +325,7 @@ static void test_interpolation_inside_double_quotes(void) {
     result_t r = tokenize("KEY=\"${A}b\"\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.items[0].values.count);
-    TEST_ASSERT_EQUAL_INT(INTERPOLATED, val(&t, 0, 0)->kind);
+    TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("A", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("b", val(&t, 0, 1)->value);
     free_tokenizer(&t);

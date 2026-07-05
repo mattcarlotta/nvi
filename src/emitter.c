@@ -4,7 +4,7 @@
 #include "parser.h"
 #include <stdio.h>
 
-static inline void write_to_ps_format(const char *s) {
+static void write_to_ps_format(const char *s) {
     size_t value_len = strlen(s);
     size_t start = 0;
 

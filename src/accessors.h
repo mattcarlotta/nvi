@@ -46,9 +46,9 @@ typedef struct {
     size_t capacity;
 } file_ext_map_t;
 
-const ext_entry *find_ext(const char *ext);
-const file_ext_t *get_file_ext(const file_ext_map_t *map, const char *ext);
-void file_ext_append(file_ext_map_t *map, const ext_entry *entry);
+const ext_entry *get_scan_extension(const char *ext);
+const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext);
+void append_file_extension(file_ext_map_t *map, const ext_entry *entry);
 
 static inline void free_file_ext_map(file_ext_map_t *map) { DYN_ARR_FREE(map); }
 

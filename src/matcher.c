@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static inline const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t i) {
+static const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t i) {
     for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
         const accessor_t *acc = &file_ext_match->accessors[a];
 

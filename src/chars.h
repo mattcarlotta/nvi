@@ -25,15 +25,4 @@ enum {
     DOT = '.',
 };
 
-extern const unsigned char LITERAL_STOPS[];
-extern const size_t LITERAL_STOPS_LEN;
-extern const unsigned char DQ_STOPS[];
-extern const size_t DQ_STOPS_LEN;
-extern const unsigned char SQ_STOPS[];
-extern const size_t SQ_STOPS_LEN;
-extern const unsigned char STOP_NL[];
-extern const size_t STOP_NL_LEN;
-extern const unsigned char STOP_BRACE_NL[];
-extern const size_t STOP_BRACE_NL_LEN;
-
 #endif

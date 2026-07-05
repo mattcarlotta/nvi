@@ -14,66 +14,30 @@
 #include <stdio.h>
 #include <string.h>
 
-static const flag_entry_t flags[] = {
-    FLAG("--", END_OF_OPTIONS),         FLAG("-f", "--files", FILES),       FLAG("-d", "--dry-run", DRY_RUN),
-    FLAG("-h", "--help", "help", HELP), FLAG("-i", "--ignored", IGNORED),   FLAG("-F", "--format", FORMAT),
-    FLAG("-r", "--required", REQUIRED), FLAG("-s", "--scan", "scan", SCAN), FLAG("-v", "--version", "version", VERSION),
-};
-
-static const size_t flags_len = ARR_LEN(flags);
-
-static inline flag_t get_flag(const char *arg) {
-    for (size_t i = 0; i < flags_len; ++i) {
-        if (strcmp(arg, flags[i].name) == 0) {
-            return flags[i].value;
-        }
-    }
-
-    return UNKNOWN;
-}
-
-static const char *next_value(args_t *args) {
-    if (args->i + 1 >= args->argc) {
-        return NULL;
-    }
-
-    const char *val = args->argv[args->i + 1];
-    if (val[0] == DASH) {
-        return NULL;
-    }
-
-    ++args->i;
-
-    return val;
-}
-
-static result_t require_value(args_t *args, const char *flag, const char **param) {
-    *param = next_value(args);
-    if (*param == NULL) {
-        return usage_error("The '%s' flag requires at least one argument", flag);
-    }
-
-    return RESULT_OK;
-}
-
-static void log_items(const char *label, const list_t *list, const char *sep) {
+static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
     log_f("\n    \u2022");
     log_info(" %s: ", label);
 
-    if (list->count == 0) {
+    if (count == 0) {
         log_comment("(empty)");
         return;
     }
 
-    for (size_t i = 0; i < list->count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         if (i != 0) {
             log_f("%s", sep);
         }
-        log_f("%s", list->items[i]);
+        log_f("%s", items[i]);
     }
 }
 
-static void log_ext_items(const char *label, const file_ext_map_t *map, const char *sep) {
+static void report_flag_format(const format_t format) {
+    log_f("\n    \u2022");
+    log_info(" format: ");
+    log_f("%s\n\n", get_format_name(format));
+}
+
+static void report_flag_scan_extensions(const char *label, const file_ext_map_t *map, const char *sep) {
     log_f("\n    \u2022");
     log_info(" %s: ", label);
 
@@ -90,20 +54,76 @@ static void log_ext_items(const char *label, const file_ext_map_t *map, const ch
     }
 }
 
-static void log_flags(const args_t *args) {
+static void report_flags(const args_t *args) {
+    if (!args->dry_run) {
+        return;
+    }
+
     log_info("\n[INFO]");
     log_f(" The following flags have been set...");
-    log_items("command", (const list_t *)&args->command, " ");
-    log_f("\n    \u2022");
-    log_info(" dry run: ");
-    log_f("on");
-    log_items("files", &args->files, ", ");
-    log_items("ignored ENVs", &args->ignored, ", ");
-    log_items("required ENVs", &args->required, ", ");
-    log_ext_items("scan extensions", &args->scan_exts, ", ");
-    log_f("\n    \u2022");
-    log_info(" format: ");
-    log_f("%s\n\n", get_format_name(args->format));
+    report_flag_items("command", args->command.items, args->command.count, " ");
+    report_flag_items("files", args->files.items, args->files.count, ", ");
+    report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
+    report_flag_items("required ENVs", args->required.items, args->required.count, ", ");
+    report_flag_scan_extensions("scan extensions", &args->scan_exts, ", ");
+    report_flag_format(args->format);
+}
+
+static void report_command_skipped_warning(const args_t *args) {
+    if (!args->dry_run) {
+        return;
+    }
+
+    log_warning("\n[WARNING]");
+    log_f(" Found a command with dry-run enabled; skipping.\n");
+}
+
+static const flag_entry_t flags[] = {
+    FLAG("--", END_OF_OPTIONS),
+    FLAG("-f", "--files", FILES_FLAG),
+    FLAG("-d", "--dry-run", DRY_RUN_FLAG),
+    FLAG("-h", "--help", "help", HELP_FLAG),
+    FLAG("-i", "--ignored", IGNORED_FLAG),
+    FLAG("-F", "--format", FORMAT_FLAG),
+    FLAG("-r", "--required", REQUIRED_FLAG),
+    FLAG("-s", "--scan", "scan", SCAN_FLAG),
+    FLAG("-v", "--version", "version", VERSION_FLAG),
+};
+
+static const size_t flags_len = ARR_LEN(flags);
+
+static inline flag_t get_flag(const char *arg) {
+    for (size_t i = 0; i < flags_len; ++i) {
+        if (strcmp(arg, flags[i].name) == 0) {
+            return flags[i].value;
+        }
+    }
+
+    return UNKNOWN_FLAG;
+}
+
+static const char *get_next_param(args_t *args) {
+    if (args->i + 1 >= args->argc) {
+        return NULL;
+    }
+
+    const char *val = args->argv[args->i + 1];
+    if (val[0] == DASH) {
+        return NULL;
+    }
+
+    ++args->i;
+
+    return val;
+}
+
+static result_t get_next_value(args_t *args, const char *flag, const char **param) {
+    *param = get_next_param(args);
+    if (*param == NULL) {
+        return usage_error("The '%s' flag requires at least one argument", flag);
+    }
+
+    return RESULT_OK;
 }
 
 static void append_unique_param(list_t *list, const char *value) {
@@ -112,7 +132,7 @@ static void append_unique_param(list_t *list, const char *value) {
     }
 }
 
-static inline bool is_env_file(const char *base) {
+static bool is_env_file(const char *base) {
     // .env
     if (strcmp(base, ".env") == 0) {
         return true;
@@ -164,14 +184,13 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     while (args->i < args->argc) {
         const char *arg = args->argv[args->i];
         switch (get_flag(arg)) {
-            case DRY_RUN: {
+            case DRY_RUN_FLAG: {
                 args->dry_run = true;
                 break;
             }
             case END_OF_OPTIONS: {
                 if (args->dry_run) {
-                    log_warning("\n[WARNING]");
-                    log_f(" Found a command with dry-run enabled; skipping.\n");
+                    report_command_skipped_warning(args);
                     args->i = args->argc - 1;
                     break;
                 }
@@ -181,9 +200,9 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 args->i = args->argc - 1;
                 break;
             }
-            case FILES: {
+            case FILES_FLAG: {
                 const char *param;
-                result = require_value(args, "files", &param);
+                result = get_next_value(args, "files", &param);
                 if (!result.ok) {
                     return result;
                 }
@@ -195,14 +214,14 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     }
 
                     append_unique_param(&args->files, param);
-                    param = next_value(args);
+                    param = get_next_param(args);
                 }
 
                 break;
             }
-            case FORMAT: {
+            case FORMAT_FLAG: {
                 const char *param;
-                result = require_value(args, "format", &param);
+                result = get_next_value(args, "format", &param);
                 if (!result.ok) {
                     return result;
                 }
@@ -215,54 +234,54 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 args->format = format;
                 break;
             }
-            case IGNORED: {
+            case IGNORED_FLAG: {
                 const char *param;
-                result = require_value(args, "ignored", &param);
+                result = get_next_value(args, "ignored", &param);
                 if (!result.ok) {
                     return result;
                 }
 
                 while (param) {
                     append_unique_param(&args->ignored, param);
-                    param = next_value(args);
+                    param = get_next_param(args);
                 }
 
                 break;
             }
-            case REQUIRED: {
+            case REQUIRED_FLAG: {
                 const char *param;
-                result = require_value(args, "required", &param);
+                result = get_next_value(args, "required", &param);
                 if (!result.ok) {
                     return result;
                 }
 
                 while (param) {
                     append_unique_param(&args->required, param);
-                    param = next_value(args);
+                    param = get_next_param(args);
                 }
 
                 break;
             }
-            case SCAN: {
+            case SCAN_FLAG: {
                 const char *param;
-                result = require_value(args, "scan", &param);
+                result = get_next_value(args, "scan", &param);
                 if (!result.ok) {
                     return result;
                 }
 
                 while (param) {
-                    const ext_entry *entry = find_ext(param);
+                    const ext_entry *entry = get_scan_extension(param);
                     if (entry == NULL) {
                         return usage_error("The file extension '%s' is not a supported scan extension", param);
                     }
 
-                    file_ext_append(&args->scan_exts, entry);
-                    param = next_value(args);
+                    append_file_extension(&args->scan_exts, entry);
+                    param = get_next_param(args);
                 }
 
                 break;
             }
-            case HELP: {
+            case HELP_FLAG: {
                 fputs(
                     "Usage: nvi [flags] -- <command>\n"
                     "       nvi scan [ext] [ext] ...etc (no <command>)\n"
@@ -329,7 +348,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
 
                 return EXIT_EARLY;
             }
-            case VERSION: {
+            case VERSION_FLAG: {
                 fprintf(stdout, "nvi %s (%s)\n", NVI_VERSION, NVI_BUILD);
                 fprintf(stdout, "commit %s\n", NVI_COMMIT);
 #ifdef __clang__
@@ -351,9 +370,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
         ++args->i;
     }
 
-    if (args->dry_run) {
-        log_flags(args);
-    }
+    report_flags(args);
 
     if (args->scan_exts.count == 0 && args->files.count == 0) {
         return usage_error("The '--files' or '--scan' flag requires at least one argument");

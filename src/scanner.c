@@ -16,16 +16,101 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-static inline const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
+static void report_scan_start(const args_t *args) {
+    if (!args->dry_run) {
+        return;
+    }
+
+    log_info("[INFO]");
+    log_f(" Scanning for environment keys in");
+
+    for (size_t i = 0; i < args->scan_exts.count; ++i) {
+        if (i != 0 && args->scan_exts.count > 2) {
+            log_f(",");
+        }
+
+        if (i == args->scan_exts.count - 1 && args->scan_exts.count > 1) {
+            log_f(" and");
+        }
+
+        log_fi(" *.%s", args->scan_exts.items[i].ext);
+    }
+
+    log_f(" files...\n\n");
+}
+
+static void report_empty_file_warning(const args_t *args, const char *path) {
+    if (!args->dry_run) {
+        return;
+    }
+
+    log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
+}
+
+static void report_file_scan_results(const args_t *args, const char *path, const env_key_matches_t *matches) {
+    if (!args->dry_run || matches->count == 0) {
+        return;
+    }
+
+    log_info("[INFO]");
+    log_f(" Scanned ");
+    log_fi("%s", path);
+    log_f(" and found %zu key%s...\n", matches->count, TO_PLURAL(matches->count));
+
+    for (size_t i = 0; i < matches->count; ++i) {
+        const env_key_match_t *m = &matches->items[i];
+        log_f("    \u2022 ");
+        log_bold_info("%.*s", (int)m->key_len, m->key);
+        log_comment(" [%zu:%zu]\n", m->line, m->byte);
+    }
+
+    log_f("\n");
+}
+
+static void report_scan_summary(const args_t *args, const scanner_t *scanner) {
+    if (!args->dry_run) {
+        return;
+    }
+
+    log_info("[INFO]");
+    log_f(" Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
+          scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
+          TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references), scanner->envs.count,
+          TO_PLURAL(scanner->envs.count));
+}
+
+static void report_required_keys(const args_t *args) {
+    if (!args->dry_run) {
+        return;
+    }
+
+    log_info("[INFO]");
+    log_f(" The following ENV keys are now required...\n");
+
+    if (args->required.count > 0) {
+        for (size_t i = 0; i < args->required.count; ++i) {
+            log_f("    \u2022 ");
+            log_bold_info("%s", args->required.items[i]);
+            log_f("\n");
+        }
+    } else {
+        log_f("    \u2022 ");
+        log_comment("(none)\n");
+    }
+
+    log_f("\n");
+}
+
+static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
         return NULL;
     }
 
-    return get_file_ext(map, dot + 1);
+    return get_file_extension(map, dot + 1);
 }
 
-static inline void append_unique_envs(scanner_t *scanner, const env_key_match_t *env) {
+static void copy_unique_env_key(scanner_t *scanner, const env_key_match_t *env) {
     if (hashmap_contains(&scanner->envs, env->key, env->key_len)) {
         return;
     }
@@ -52,9 +137,7 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
     }
 
     if (file.len == 0) {
-        if (args->dry_run) {
-            log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
-        }
+        report_empty_file_warning(args, path);
         free(file.contents);
         return RESULT_OK;
     }
@@ -64,25 +147,11 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
     env_key_matches_t env_key_matches = {0};
     scan_file_content(&file, file_ext_match, &env_key_matches);
 
-    if (args->dry_run && env_key_matches.count > 0) {
-        log_info("[INFO]");
-        log_f(" Scanned ");
-        log_fi("%s", path);
-        log_f(" and found %zu key%s...\n", env_key_matches.count, TO_PLURAL(env_key_matches.count));
-
-        for (size_t i = 0; i < env_key_matches.count; ++i) {
-            const env_key_match_t *m = &env_key_matches.items[i];
-            log_f("    \u2022 ");
-            log_bold_info("%.*s", (int)m->key_len, m->key);
-            log_comment(" [%zu:%zu]\n", m->line, m->byte);
-        }
-
-        log_f("\n");
-    }
+    report_file_scan_results(args, path, &env_key_matches);
 
     for (size_t i = 0; i < env_key_matches.count; ++i) {
         ++scanner->references;
-        append_unique_envs(scanner, &env_key_matches.items[i]);
+        copy_unique_env_key(scanner, &env_key_matches.items[i]);
     }
 
     free_env_key_matches(&env_key_matches);
@@ -181,7 +250,7 @@ static result_t walk_file_tree(const args_t *args, scanner_t *scanner, const cha
     return result;
 }
 
-static void add_unique_env_keys(hashmap_t *env_map, const list_t *list) {
+static void append_list_keys(hashmap_t *env_map, const list_t *list) {
     for (size_t i = 0; i < list->count; ++i) {
         const char *key = list->items[i];
         hashmap_append(env_map, key, strlen(key), 0);
@@ -195,8 +264,8 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
 
     hashmap_t env_map = {0};
 
-    add_unique_env_keys(&env_map, &args->ignored);
-    add_unique_env_keys(&env_map, &args->required);
+    append_list_keys(&env_map, &args->ignored);
+    append_list_keys(&env_map, &args->required);
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
         const hashmap_entry_t *entry = &scanner->envs.slots[i];
@@ -209,60 +278,21 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
 
     free_hashmap(&env_map);
 
-    if (args->dry_run) {
-        log_info("[INFO]");
-        log_f(" The following ENV keys are now required...\n");
-
-        if (args->required.count > 0) {
-            for (size_t i = 0; i < args->required.count; ++i) {
-                log_f("    \u2022 ");
-                log_bold_info("%s", args->required.items[i]);
-                log_f("\n");
-            }
-        } else {
-            log_f("    \u2022 ");
-            log_comment("(none)\n");
-        }
-
-        log_f("\n");
-    }
+    report_required_keys(args);
 }
 
 result_t run_scanner(args_t *args, scanner_t *scanner) {
     result_t result = RESULT_OK;
     scanner->scan_exts = &args->scan_exts;
 
-    if (args->dry_run) {
-        log_info("[INFO]");
-        log_f(" Scanning for environment keys in");
-
-        for (size_t i = 0; i < args->scan_exts.count; ++i) {
-            if (i != 0 && args->scan_exts.count > 2) {
-                log_f(",");
-            }
-
-            if (i == args->scan_exts.count - 1 && args->scan_exts.count > 1) {
-                log_f(" and");
-            }
-
-            log_fi(" *.%s", args->scan_exts.items[i].ext);
-        }
-
-        log_f(" files...\n\n");
-    }
+    report_scan_start(args);
 
     result = walk_file_tree(args, scanner, ".");
     if (!result.ok) {
         return result;
     }
 
-    if (args->dry_run) {
-        log_info("[INFO]");
-        log_f(" Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
-              scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
-              TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references),
-              scanner->envs.count, TO_PLURAL(scanner->envs.count));
-    }
+    report_scan_summary(args, scanner);
 
     merge_required_envs(args, scanner);
 

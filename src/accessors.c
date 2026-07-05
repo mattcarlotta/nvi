@@ -264,7 +264,7 @@ static const ext_entry extensions[] = {
 
 static const size_t ext_len = ARR_LEN(extensions);
 
-const ext_entry *find_ext(const char *ext) {
+const ext_entry *get_scan_extension(const char *ext) {
     for (size_t i = 0; i < ext_len; ++i) {
         if (strcmp(ext, extensions[i].ext) == 0) {
             return &extensions[i];
@@ -273,7 +273,7 @@ const ext_entry *find_ext(const char *ext) {
     return NULL;
 }
 
-const file_ext_t *get_file_ext(const file_ext_map_t *map, const char *ext) {
+const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext) {
     for (size_t i = 0; i < map->count; ++i) {
         if (strcmp(map->items[i].ext, ext) == 0) {
             return &map->items[i];
@@ -282,8 +282,8 @@ const file_ext_t *get_file_ext(const file_ext_map_t *map, const char *ext) {
     return NULL;
 }
 
-void file_ext_append(file_ext_map_t *map, const ext_entry *entry) {
-    if (get_file_ext(map, entry->ext) != NULL) {
+void append_file_extension(file_ext_map_t *map, const ext_entry *entry) {
+    if (get_file_extension(map, entry->ext) != NULL) {
         return;
     }
 

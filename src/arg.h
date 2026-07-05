@@ -20,7 +20,18 @@
 // scan -> a list of file extensions to scan for in the CWD
 // version -> displays current binary info
 
-typedef enum { DRY_RUN, END_OF_OPTIONS, FILES, FORMAT, HELP, IGNORED, REQUIRED, SCAN, UNKNOWN, VERSION } flag_t;
+typedef enum {
+    DRY_RUN_FLAG,
+    END_OF_OPTIONS,
+    FILES_FLAG,
+    FORMAT_FLAG,
+    HELP_FLAG,
+    IGNORED_FLAG,
+    REQUIRED_FLAG,
+    SCAN_FLAG,
+    UNKNOWN_FLAG,
+    VERSION_FLAG
+} flag_t;
 
 typedef struct {
     const char *name;

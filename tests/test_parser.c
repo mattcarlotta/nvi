@@ -56,7 +56,7 @@ static token_t make_token(const char *key, value_kind_t kind, const char *value,
 
 static void test_sets_normalized_key_value(void) {
     value_token_t v;
-    token_t toks[] = {make_token("KEY", LITERAL, "value", &v)};
+    token_t toks[] = {make_token("KEY", LITERAL_VALUE, "value", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
     args_t args = {0};
 
@@ -70,8 +70,8 @@ static void test_sets_normalized_key_value(void) {
 
 static void test_concatenates_multiple_value_tokens(void) {
     value_token_t vs[2] = {
-        {.value = (char *)"12", .value_len = 2, .kind = LITERAL, .line = 1, .byte = 1},
-        {.value = (char *)"34", .value_len = 2, .kind = LITERAL, .line = 2, .byte = 1},
+        {.value = (char *)"12", .value_len = 2, .kind = LITERAL_VALUE, .line = 1, .byte = 1},
+        {.value = (char *)"34", .value_len = 2, .kind = LITERAL_VALUE, .line = 2, .byte = 1},
     };
     token_t tok = {.key = (char *)"MULTI", .file = "testp.env"};
     tok.values.items = vs;
@@ -91,7 +91,7 @@ static void test_resolves_interpolation_from_environment(void) {
     set_env("NVI_TEST_HOME", "/home/test");
 
     value_token_t v;
-    token_t toks[] = {make_token("DIR", INTERPOLATED, "NVI_TEST_HOME", &v)};
+    token_t toks[] = {make_token("DIR", INTERPOLATED_KEY, "NVI_TEST_HOME", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
     args_t args = {0};
 
@@ -109,8 +109,8 @@ static void test_resolves_interpolation_from_previous_env(void) {
 
     value_token_t vfoo, vbaz;
     token_t toks[] = {
-        make_token("NVI_TEST_FOO", LITERAL, "bar", &vfoo),
-        make_token("NVI_TEST_BAZ", INTERPOLATED, "NVI_TEST_FOO", &vbaz),
+        make_token("NVI_TEST_FOO", LITERAL_VALUE, "bar", &vfoo),
+        make_token("NVI_TEST_BAZ", INTERPOLATED_KEY, "NVI_TEST_FOO", &vbaz),
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
     args_t args = {0};
@@ -124,7 +124,7 @@ static void test_resolves_interpolation_from_previous_env(void) {
 
 static void test_required_env_present_passes(void) {
     value_token_t v;
-    token_t toks[] = {make_token("REQUIRED", LITERAL, "ok", &v)};
+    token_t toks[] = {make_token("REQUIRED", LITERAL_VALUE, "ok", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
@@ -154,8 +154,8 @@ static void test_errors_when_nothing_parses(void) {
 static void test_duplicate_key_updates_in_place(void) {
     value_token_t v1, v2;
     token_t toks[] = {
-        make_token("KEY", LITERAL, "first", &v1),
-        make_token("KEY", LITERAL, "second", &v2),
+        make_token("KEY", LITERAL_VALUE, "first", &v1),
+        make_token("KEY", LITERAL_VALUE, "second", &v2),
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
     args_t args = {0};
@@ -176,7 +176,7 @@ static void test_index_survives_growth(void) {
 
     for (size_t i = 0; i < N; ++i) {
         snprintf(keys[i], sizeof(keys[i]), "KEY_%zu", i);
-        toks[i] = make_token(keys[i], LITERAL, "v", &vs[i]);
+        toks[i] = make_token(keys[i], LITERAL_VALUE, "v", &vs[i]);
     }
 
     token_list_t tl = {.items = toks, .count = N, .capacity = N};
@@ -199,7 +199,7 @@ static void test_index_survives_growth(void) {
 
 static void test_errors_when_required_env_missing(void) {
     value_token_t v;
-    token_t toks[] = {make_token("OTHER", LITERAL, "x", &v)};
+    token_t toks[] = {make_token("OTHER", LITERAL_VALUE, "x", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
@@ -219,7 +219,7 @@ static void test_errors_when_required_env_missing(void) {
 static void test_fallback_used_when_unset(void) {
     clear_env("NVI_TEST_FB_UNSET");
     value_token_t v;
-    token_t toks[] = {make_token("KEY", INTERPOLATED, "NVI_TEST_FB_UNSET:-fell back", &v)};
+    token_t toks[] = {make_token("KEY", INTERPOLATED_KEY, "NVI_TEST_FB_UNSET:-fell back", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
@@ -234,8 +234,8 @@ static void test_fallback_used_when_map_value_empty(void) {
     value_token_t v1;
     value_token_t v2;
     token_t toks[] = {
-        make_token("EMPTYSRC", LITERAL, "", &v1),
-        make_token("KEY", INTERPOLATED, "EMPTYSRC:-fb", &v2),
+        make_token("EMPTYSRC", LITERAL_VALUE, "", &v1),
+        make_token("KEY", INTERPOLATED_KEY, "EMPTYSRC:-fb", &v2),
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
 
@@ -250,7 +250,7 @@ static void test_fallback_used_when_map_value_empty(void) {
 static void test_value_wins_over_fallback(void) {
     set_env("NVI_TEST_FB_SET", "real");
     value_token_t v;
-    token_t toks[] = {make_token("KEY", INTERPOLATED, "NVI_TEST_FB_SET:-fb", &v)};
+    token_t toks[] = {make_token("KEY", INTERPOLATED_KEY, "NVI_TEST_FB_SET:-fb", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
@@ -266,8 +266,8 @@ static void test_defined_empty_without_fallback_resolves_empty(void) {
     value_token_t v1;
     value_token_t v2;
     token_t toks[] = {
-        make_token("EMPTYSRC", LITERAL, "", &v1),
-        make_token("KEY", INTERPOLATED, "EMPTYSRC", &v2),
+        make_token("EMPTYSRC", LITERAL_VALUE, "", &v1),
+        make_token("KEY", INTERPOLATED_KEY, "EMPTYSRC", &v2),
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
 
@@ -282,7 +282,7 @@ static void test_defined_empty_without_fallback_resolves_empty(void) {
 static void test_errors_on_undefined_interpolation(void) {
     clear_env("NVI_TEST_UNDEF");
     value_token_t v;
-    token_t toks[] = {make_token("KEY", INTERPOLATED, "NVI_TEST_UNDEF", &v)};
+    token_t toks[] = {make_token("KEY", INTERPOLATED_KEY, "NVI_TEST_UNDEF", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
@@ -295,7 +295,7 @@ static void test_errors_on_undefined_interpolation(void) {
 
 static void test_errors_when_required_env_is_empty(void) {
     value_token_t v;
-    token_t toks[] = {make_token("KEY", LITERAL, "", &v)};
+    token_t toks[] = {make_token("KEY", LITERAL_VALUE, "", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
