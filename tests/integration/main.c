@@ -222,7 +222,7 @@ int main(void) {
           "--files build/it/req_empty.env --required EMPTYV -- x", 1, NO_STDOUT, "EMPTYV");
 
     check("a directory masquerading as an env file is a loud error", NVI_BIN, "--files build/it/dir.env -- x", 1,
-          NO_STDOUT, "not a file");
+          NO_STDOUT, "Unable to open");
 
     check("a missing required key is a loud error", NVI_BIN,
           "--files build/it/required.env --required DATABASE_URL -- x", 1, NO_STDOUT, "DATABASE_URL");

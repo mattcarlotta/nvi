@@ -46,7 +46,7 @@ file_details_t open_file(const char *path) {
     }
 
     if (!S_ISREG(st.st_mode)) {
-        log_error("[ERROR] Cannot read '%s' because it's not a file\n", path);
+        log_error("[ERROR] Unable to open '%s' (not a valid file?)", path);
         goto done;
     }
 
