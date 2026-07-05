@@ -11,34 +11,36 @@
 #include <fcntl.h>
 #include <io.h>
 
-static int f_open_readonly(const char *path) { return _open(path, _O_RDONLY | _O_BINARY); }
+static int open_file_rdo(const char *path) { return _open(path, _O_RDONLY | _O_BINARY); }
 
-static long f_read(int fd, void *buf, size_t count) { return _read(fd, buf, (unsigned int)count); }
+static long read_file(int fd, void *buf, size_t count) { return _read(fd, buf, (unsigned int)count); }
 
-static void f_close(int fd) { _close(fd); }
+static void close_file(int fd) { _close(fd); }
+
 #else
 #include <fcntl.h>
 #include <unistd.h>
 
-static int f_open_readonly(const char *path) { return open(path, O_RDONLY); }
+static int open_file_rdo(const char *path) { return open(path, O_RDONLY); }
 
-static long f_read(int fd, void *buf, size_t count) { return (long)read(fd, buf, count); }
+static long read_file(int fd, void *buf, size_t count) { return (long)read(fd, buf, count); }
 
-static void f_close(int fd) { close(fd); }
+static void close_file(int fd) { close(fd); }
+
 #endif
 
 file_details_t open_file(const char *path) {
     file_details_t file_details = {0};
     file_details.path = path;
 
-    int fd = f_open_readonly(path);
+    int fd = open_file_rdo(path);
     if (fd < 0) {
-        log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
+        log_error("[ERROR] Unable to open '%s' (not a valid file?)\n", path);
         return file_details;
     }
 
     struct stat st;
-    if (fstat(fd, &st) != 0) {
+    if (stat_path(path, &st) != 0) {
         log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
         goto done;
     }
@@ -65,7 +67,7 @@ file_details_t open_file(const char *path) {
 
     size_t total = 0;
     while (total < size) {
-        long n = f_read(fd, file_details.contents + total, size - total);
+        long n = read_file(fd, file_details.contents + total, size - total);
 
         if (n < 0) {
 #if !defined(_WIN32)
@@ -92,6 +94,6 @@ file_details_t open_file(const char *path) {
     }
 
 done:
-    f_close(fd);
+    close_file(fd);
     return file_details;
 }

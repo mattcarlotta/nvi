@@ -48,6 +48,7 @@ typedef struct {
 
 const ext_entry *get_scan_extension(const char *ext);
 const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext);
+file_ext_t make_file_extension(const ext_entry *entry);
 void append_file_extension(file_ext_map_t *map, const ext_entry *entry);
 
 static inline void free_file_ext_map(file_ext_map_t *map) { DYN_ARR_FREE(map); }

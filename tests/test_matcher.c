@@ -10,8 +10,7 @@ void tearDown(void) {}
 static file_ext_t ext_for(const char *ext) {
     const ext_entry *e = get_scan_extension(ext);
     TEST_ASSERT_NOT_NULL(e);
-    file_ext_t fe = {.ext = e->ext, .accessors = e->accessors, .accessor_count = e->count};
-    return fe;
+    return (file_ext_t){.ext = e->ext, .accessors = e->accessors, .accessor_count = e->count};
 }
 
 static file_details_t mock_file(const char *src) {
