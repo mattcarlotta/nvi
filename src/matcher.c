@@ -11,6 +11,10 @@ static const accessor_t *get_accessor(const file_details_t *file, const file_ext
     for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
         const accessor_t *acc = &file_ext_match->accessors[a];
 
+        if ((unsigned char)acc->prefix[0] != (unsigned char)file->contents[i]) {
+            continue;
+        }
+
         if (i + acc->prefix_len > file->len || memcmp(file->contents + i, acc->prefix, acc->prefix_len) != 0) {
             continue;
         }
@@ -134,15 +138,26 @@ static env_key_t extract_env_by_pattern(const file_details_t *file, pattern_t ki
 
 void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_match,
                        env_key_matches_t *env_key_matches) {
+    bool first_byte[256] = {0};
+    for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
+        first_byte[(unsigned char)file_ext_match->accessors[a].prefix[0]] = true;
+    }
+
     size_t i = 0;
     size_t line = 1;
     size_t line_start = 0;
 
     while (i < file->len) {
-        // skip to next line
-        if (file->contents[i] == LINE_DELIMITER) {
+        unsigned char c = (unsigned char)file->contents[i];
+
+        if (c == LINE_DELIMITER) {
             ++line;
             line_start = i + 1;
+            ++i;
+            continue;
+        }
+
+        if (!first_byte[c]) {
             ++i;
             continue;
         }

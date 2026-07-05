@@ -7,14 +7,39 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#if defined(_WIN32) && defined(_MSC_VER)
+#include <fcntl.h>
+#include <io.h>
+
+static int f_open_readonly(const char *path) { return _open(path, _O_RDONLY | _O_BINARY); }
+
+static long f_read(int fd, void *buf, size_t count) { return _read(fd, buf, (unsigned int)count); }
+
+static void f_close(int fd) { _close(fd); }
+#else
+#include <fcntl.h>
+#include <unistd.h>
+
+static int f_open_readonly(const char *path) { return open(path, O_RDONLY); }
+
+static long f_read(int fd, void *buf, size_t count) { return (long)read(fd, buf, count); }
+
+static void f_close(int fd) { close(fd); }
+#endif
+
 file_details_t open_file(const char *path) {
     file_details_t file_details = {0};
     file_details.path = path;
-    FILE *file = NULL;
+
+    int fd = f_open_readonly(path);
+    if (fd < 0) {
+        log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
+        return file_details;
+    }
 
     struct stat st;
-    if (stat_path(path, &st) != 0) {
-        log_error("[ERROR] Cannot locate '%s': %s\n", path, strerror(errno));
+    if (fstat(fd, &st) != 0) {
+        log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
         goto done;
     }
 
@@ -23,42 +48,50 @@ file_details_t open_file(const char *path) {
         goto done;
     }
 
-    file = fopen(path, "rb");
-    if (file == NULL) {
-        log_error("[ERROR] Cannot open '%s' file: %s\n", path, strerror(errno));
-        goto done;
-    }
-
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    if (size < 0) {
-        log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
-        goto done;
-    }
-
-    if ((size_t)size > MAX_FILE_SIZE) {
+    if ((size_t)st.st_size > MAX_FILE_SIZE) {
         log_warning("[WARNING] The file '%s' exceeds %zu bytes; skipping.\n", path, MAX_FILE_SIZE);
         goto done;
     }
 
+    size_t size = (size_t)st.st_size;
+
     file_details.contents = malloc(size + 1);
     if (file_details.contents == NULL) {
-        log_error("[ERROR] Failed to allocate %ld bytes for file '%s' (system out of memory?); aborting.\n", size + 1,
+        log_error("[ERROR] Failed to allocate %zu bytes for file '%s' (system out of memory?); aborting.\n", size + 1,
                   path);
-        fclose(file);
         fflush(stderr);
         exit(EXIT_FAILURE);
     }
 
-    file_details.len = fread(file_details.contents, 1, size, file);
-    file_details.contents[file_details.len] = '\0';
-    goto done;
+    size_t total = 0;
+    while (total < size) {
+        long n = f_read(fd, file_details.contents + total, size - total);
+
+        if (n < 0) {
+#if !defined(_WIN32)
+            if (errno == EINTR) {
+                continue;
+            }
+#endif
+            log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
+            free(file_details.contents);
+            file_details.contents = NULL;
+            goto done;
+        }
+
+        if (n == 0) {
+            break;
+        }
+
+        total += (size_t)n;
+    }
+
+    file_details.len = total;
+    if (file_details.contents != NULL) {
+        file_details.contents[total] = '\0';
+    }
 
 done:
-    if (file != NULL) {
-        fclose(file);
-    }
+    f_close(fd);
     return file_details;
 }

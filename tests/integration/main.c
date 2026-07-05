@@ -204,7 +204,7 @@ int main(void) {
           "is empty");
 
     check("a missing --files file is a loud error", NVI_BIN, "--files build/it/missing.env -- x", 1, NO_STDOUT,
-          "Cannot locate");
+          "Cannot open");
 
     check("an unterminated interpolation is a tokenizer error", NVI_BIN, "--files build/it/bad_interp.env -- x", 1,
           NO_STDOUT, "unterminated value interpolation");

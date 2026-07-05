@@ -68,7 +68,7 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
                    "/Zc:preprocessor");
 #elif defined(__APPLE__) || defined(__linux__)
     nob_cmd_append(cmd, use_musl() ? "musl-gcc" : "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall",
-                   "-Wextra", "-Wpedantic", "-std=gnu17");
+                   "-Wextra", "-Wpedantic", "-std=gnu17", "-pthread");
 #else
 #error "unsupported platform (expected Windows/MSVC, macOS, or Linux)"
 #endif
@@ -315,8 +315,6 @@ static bool build_integration_runner(const char *out_path) {
     return nob_cmd_run(&cmd);
 }
 
-// Builds the dev binary and a standalone runner (tests/integration/main.c)
-// that spawns it against generated inputs under build/it/.
 static bool run_integration(void) {
     if (!nob_mkdir_if_not_exists("build") || !nob_mkdir_if_not_exists("build/tests")) {
         return false;
