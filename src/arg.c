@@ -35,8 +35,8 @@ static void report_flag_items(const char *label, const char **items, size_t coun
 
 static void report_flag_threads(const uint8_t threads) {
     log_f("\n    \u2022");
-    log_info(" threads: ");
-    log_f("%d\n", threads);
+    log_info(" scan threads: ");
+    log_f("%d", threads);
 }
 
 static void report_flag_format(const format_t format) {
@@ -312,7 +312,6 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
             case HELP_FLAG: {
                 fputs(
                     "Usage: nvi [flags] -- <command>\n"
-                    "       nvi scan [ext] [ext] ...etc (no <command>)\n"
                     "\n"
                     "Flags:\n"
                     "  -d, --dry-run                prints flags, scan results, file tokens and parsed ENVs to stderr\n"
@@ -331,7 +330,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     "\n"
                     " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
                     "ENV keys are added to the required ENV list\n"
-                    " \u2020\u2020 using more threads than available CPU cores and/or operation system IO limitations "
+                    " \u2020\u2020 using more threads than available CPU cores and/or the OS's IO limitations "
                     "will degrade scanning performance\n"
                     "\n"
                     "Supported scan file extensions (to the right -> of the language):\n"

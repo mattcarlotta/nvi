@@ -25,8 +25,8 @@ If you're not sure if the destination directory is recognized by your shell, use
 ## Build and install from source
 
 Optional requirements:
-- [Clangd](https://clangd.llvm.org/) `17.0.0` or later (for LSP)
-- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `17.0.0`
+- [Clangd](https://clangd.llvm.org/) `14.0.0` or later (for LSP)
+- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `14.0.0`
 
 Building source code:
 - [nob.h](https://github.com/tsoding/nob.h)
@@ -34,7 +34,7 @@ Building source code:
 ### POSIX (Linux, macOS, WSL)
 
 Requirements:
-- [Clang](https://clang.llvm.org/) `17.0.0` or later
+- [Clang](https://clang.llvm.org/) `14.0.0` or later
 - [LLD](https://lld.llvm.org/) on Linux (release builds link with `-fuse-ld=lld`; usually packaged as `lld`)
 
 Clone repo and build `nob`:
@@ -102,7 +102,7 @@ nvi version
 
 Requirements:
 - [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
-- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `17.0.0` or later
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `14.0.0` or later
 
 Follow these steps:
 1. Install MSVC Build Tools:
@@ -219,7 +219,10 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
 source <profile_url>
 ```
-
+To verify it's available, run:
+```sh
+which nvix
+```
 ### Run in PowerShell (Windows)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
@@ -264,22 +267,22 @@ Notes for Windows users:
 
 ## Flags
 
-| Flag | Alias | Command | Parameters | Description |
-| --- | --- | --- | --- | --- |
-| `--dry-run` | `-d` | | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
-| `--files` | `-f` | | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
-| `--format` | `-F` | | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on POSIX and `powershell` on Windows (chosen at compile time per target). |
-| `--help` | `-h` | `help` | | Prints usage help to stdout and exits with 0. |
-| `--ignored` | `-i` | | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
-| `--required` | `-r` | | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
-| `--scan` | `-s`| `scan` | one or more file extensions | Recursively scans `<ext>` files for environment-variable accessors and sets the ENV required list.† |
-| `--threads` | `-t`| | 1-255 | The number of threads to use when scanning for ENV variables (max: your CPU core count).†† |
-| `--version` | `-v` | `version` | | Prints version info to stdout and exits with 0. |
-| `--` | | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
+| Flag Usage | Description |
+| --- | --- |
+| `-d, --dry-run` | Prints results to stderr and exits with 0. |
+| `-f, --files <file> ...`| Parses one or more `.env` files in sequential order. |
+| `-F, --format <format>` | Formats ENVs for the downstream consumer (formats: `nul` or `powershell`). |
+| `-h, --help` | Prints usage help to stdout and exits with 0. |
+| `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
+| `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
+| `-s, --scan <ext> ...` | Recursively scans `<ext>` files for environment-variable accessors. † |
+| `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
+| `-v, --version` |  Prints version info to stdout and exits with 0. |
+| `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
 
-> †† using more threads than available CPU cores and/or operation system IO limitations will degrade scanning performance
+> †† using more threads than available CPU cores and/or the OS's IO limitations will degrade scanning performance
 
 Unrecognized flags or arguments are usage errors.
 
@@ -317,7 +320,7 @@ The exit code of *your command* will be reported by the downstream consumer, not
 
 ## Scanning for ENV keys
 
-`-s`, `--scan` or just `scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
+`-s`, `--scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
 For example, every line below is recognized and yields the key `DATABASE_URL`:
 
@@ -403,8 +406,8 @@ e.DATABASE_URL;
 # scans and reports matching ENVs in .mjs and .ts files, then exits
 nvi --scan mjs ts --dry-run
 
-# collects scanned keys to be required and defined before 'npm run dev' command is emitted
-nvi --scan mjs --files .env -- npm run dev | <consumer>
+# collects scanned keys to be required and defined before 'node index.js' command is emitted
+nvi --scan mjs --files .env -- node index.mjs | <consumer>
 
 # excludes runtime-injected ENVs found within the 'npm run dev' command environment
 nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
