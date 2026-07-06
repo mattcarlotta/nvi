@@ -1,14 +1,16 @@
 # nvi
 
-nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
+A fast cross-platform CLI `.env` parser, environment-variable scanner and emitter.
+
+## Features
 
 - 0 dependencies
-- Language and framework agnostic
-- Parses one or more `.env` files
-- Handles `${KEY}` interpolations
-- Supports multiline values via `\` (backslash-newline) delimiter
-- Optionally scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and sets them as required
-- Optionally validates required keys to be defined before command execution
+- Language and framework agnostic (replaces language specfic env packages)
+- Sequentially parses one or more `.env` files
+- Supports `${KEY}` interpolations, `#` comments, `'` and `"` quotes, and `\` delimited multiline values
+- Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
+- Checks required environment-variables are defined before command execution
+- Ignores environment-variables that may be set at run-time
 
 ## Installation
 
