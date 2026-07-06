@@ -319,7 +319,7 @@ static result_t process_dir(walk_ctx_t *ctx, scanner_t *scanner, const char *pat
 // worker loop: pop a directory, process it, repeat. Exits when a failure is
 // flagged or when the queue is empty with no directories still in flight
 // (pending == 0), which is the guaranteed-quiescent termination condition.
-static thread_ret_t NVI_THREAD_CALL scan_worker(void *arg) {
+static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     scan_worker_t *worker = arg;
     walk_ctx_t *ctx = worker->ctx;
 

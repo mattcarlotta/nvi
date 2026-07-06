@@ -50,24 +50,24 @@ file_details_t open_file(const char *path) {
         goto done;
     }
 
-    if ((size_t)st.st_size > MAX_FILE_SIZE) {
+    size_t file_size = (size_t)st.st_size;
+
+    if (file_size > MAX_FILE_SIZE) {
         log_warning("[WARNING] The file '%s' exceeds %zu bytes; skipping.\n", path, MAX_FILE_SIZE);
         goto done;
     }
 
-    size_t size = (size_t)st.st_size;
-
-    file_details.contents = malloc(size + 1);
+    file_details.contents = malloc(file_size + 1);
     if (file_details.contents == NULL) {
-        log_error("[ERROR] Failed to allocate %zu bytes for file '%s' (system out of memory?); aborting.\n", size + 1,
-                  path);
+        log_error("[ERROR] Failed to allocate %zu bytes for file '%s' (system out of memory?); aborting.\n",
+                  file_size + 1, path);
         fflush(stderr);
         exit(EXIT_FAILURE);
     }
 
     size_t total = 0;
-    while (total < size) {
-        long n = read_file(fd, file_details.contents + total, size - total);
+    while (total < file_size) {
+        long n = read_file(fd, file_details.contents + total, file_size - total);
 
         if (n < 0) {
 #if !defined(_WIN32)

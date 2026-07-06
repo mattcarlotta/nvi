@@ -20,9 +20,9 @@ typedef HANDLE thread_t;
 typedef SRWLOCK mutex_t;
 typedef CONDITION_VARIABLE cond_t;
 typedef unsigned thread_ret_t;
-#define NVI_THREAD_CALL __stdcall
+#define THREAD_CALL __stdcall
 
-static inline int thread_create(thread_t *t, thread_ret_t(NVI_THREAD_CALL *fn)(void *), void *arg) {
+static inline int thread_create(thread_t *t, thread_ret_t(THREAD_CALL *fn)(void *), void *arg) {
     *t = (HANDLE)_beginthreadex(NULL, 0, fn, arg, 0, NULL);
     return *t == NULL ? -1 : 0;
 }
@@ -65,7 +65,7 @@ typedef pthread_t thread_t;
 typedef pthread_mutex_t mutex_t;
 typedef pthread_cond_t cond_t;
 typedef void *thread_ret_t;
-#define NVI_THREAD_CALL
+#define THREAD_CALL
 
 static inline int thread_create(thread_t *t, thread_ret_t (*fn)(void *), void *arg) {
     return pthread_create(t, NULL, fn, arg);
@@ -98,4 +98,4 @@ static inline size_t cpu_count(void) {
 
 #endif
 
-#endif // NVI_NTHREAD_H
+#endif // NTHREAD_H
