@@ -6,6 +6,7 @@
 #include "result.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // Rolling a custom argv parser to support short (-), long (--) and command style flags
 //
@@ -18,6 +19,7 @@
 // ignored -> a list of ENV keys that will be ignored (mostly useful for scans)
 // required -> a list of ENV keys to mark as required and defined before a command is emitted
 // scan -> a list of file extensions to scan for in the CWD
+// threads -> maximum number of threads to use for scanning
 // version -> displays current binary info
 
 typedef enum {
@@ -29,6 +31,7 @@ typedef enum {
     IGNORED_FLAG,
     REQUIRED_FLAG,
     SCAN_FLAG,
+    THREADS_FLAG,
     UNKNOWN_FLAG,
     VERSION_FLAG
 } flag_t;
@@ -48,6 +51,7 @@ typedef struct {
     int argc;
     const char **argv;
     bool dry_run;
+    uint8_t threads;
     format_t format;
     list_t files;
     list_t required;

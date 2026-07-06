@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -119,4 +120,35 @@ void fput_repeat(FILE *f, char c, size_t n) {
     while (n--) {
         fputc(c, f);
     }
+}
+
+int str_to_u8(const char *s) {
+    const char *p = s;
+
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\v' || *p == '\f' || *p == '\r') {
+        ++p;
+    }
+
+    if (*p == '-' || *p == '+' || *p < '0' || *p > '9') {
+        return -1;
+    }
+
+    unsigned int v = 0;
+    while (*p >= '0' && *p <= '9') {
+        v = v * 10 + (unsigned int)(*p - '0');
+        if (v > 255) {
+            return -1;
+        }
+        ++p;
+    }
+
+    if (*p != '\0') {
+        return -1;
+    }
+
+    if (v > 255) {
+        return -1;
+    }
+
+    return (unsigned int)v;
 }

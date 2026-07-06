@@ -112,6 +112,25 @@ static void test_parses_ignored_envs(void) {
     free_args(&a);
 }
 
+// -- threads --
+
+static void test_parses_threads_flag(void) {
+    const char *argv[] = {"nvi", "--scan", "c", "--threads", "2", "--", "echo", "hello"};
+    args_t a = {0};
+    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(2, a.threads);
+    free_args(&a);
+}
+
+static void test_errors_on_invalid_threads_flag(void) {
+    const char *argv[] = {"nvi", "--threads", "abc"};
+    args_t a = {0};
+    result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
+    TEST_ASSERT_FALSE(r.ok);
+    free_args(&a);
+}
+
 // --- scan ---
 
 static void test_parses_scan_extensions(void) {
@@ -194,6 +213,8 @@ int main(void) {
     RUN_TEST(test_errors_on_invalid_format);
     RUN_TEST(test_parses_required_envs);
     RUN_TEST(test_parses_ignored_envs);
+    RUN_TEST(test_parses_threads_flag);
+    RUN_TEST(test_errors_on_invalid_threads_flag);
     RUN_TEST(test_parses_scan_extensions);
     RUN_TEST(test_errors_on_unsupported_scan_extension);
     RUN_TEST(test_parses_dry_run_flag);

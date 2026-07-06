@@ -7,10 +7,12 @@
 #include "list.h"
 #include "log.h"
 #include "macros.h"
+#include "nthread.h"
 #include "result.h"
 #include "utils.h"
 #include "version.h"
 #include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -29,6 +31,12 @@ static void report_flag_items(const char *label, const char **items, size_t coun
         }
         log_f("%s", items[i]);
     }
+}
+
+static void report_flag_threads(const uint8_t threads) {
+    log_f("\n    \u2022");
+    log_info(" threads: ");
+    log_f("%d\n", threads);
 }
 
 static void report_flag_format(const format_t format) {
@@ -66,6 +74,7 @@ static void report_flags(const args_t *args) {
     report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
     report_flag_items("required ENVs", args->required.items, args->required.count, ", ");
     report_flag_scan_extensions("scan extensions", &args->scan_exts, ", ");
+    report_flag_threads(args->threads);
     report_flag_format(args->format);
 }
 
@@ -87,6 +96,7 @@ static const flag_entry_t flags[] = {
     FLAG("-F", "--format", FORMAT_FLAG),
     FLAG("-r", "--required", REQUIRED_FLAG),
     FLAG("-s", "--scan", "scan", SCAN_FLAG),
+    FLAG("-t", "--threads", THREADS_FLAG),
     FLAG("-v", "--version", "version", VERSION_FLAG),
 };
 
@@ -178,6 +188,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     args->argv = argv;
     args->format = get_default_format();
     args->dry_run = false;
+    args->threads = 1;
 
     result_t result = RESULT_OK;
 
@@ -281,6 +292,23 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
 
                 break;
             }
+            case THREADS_FLAG: {
+                const char *param;
+                result = get_next_value(args, "threads", &param);
+                if (!result.ok) {
+                    return result;
+                }
+
+                const int MAX_CPU_CORES = cpu_count();
+                int threads = str_to_u8(param);
+                if (threads < 1 || threads > MAX_CPU_CORES) {
+                    return usage_error("The 'threads' flag only supports up to %d thread%s, instead found %s",
+                                       MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
+                }
+
+                args->threads = (uint8_t)threads;
+                break;
+            }
             case HELP_FLAG: {
                 fputs(
                     "Usage: nvi [flags] -- <command>\n"
@@ -297,11 +325,14 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     "  -r, --required <keys>        ensures ENV keys are defined before the <command> is emitted\n"
                     "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
                     "\u2020\n"
+                    "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
+                    "your CPU core count) \u2020\u2020\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
                     "\n"
                     " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
-                    "ENV keys are "
-                    "added to the required ENV list\n"
+                    "ENV keys are added to the required ENV list\n"
+                    " \u2020\u2020 using more threads than available CPU cores and/or operation system IO limitations "
+                    "will degrade scanning performance\n"
                     "\n"
                     "Supported scan file extensions (to the right -> of the language):\n"
                     " \u2022 C -> c, h\n"

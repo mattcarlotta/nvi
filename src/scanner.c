@@ -18,9 +18,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// I/O-bound walk; more workers than this seems to produce slower run times
-#define MAX_SCAN_THREADS 4
-
 // the walker's best knowledge of an entry's type before dispatch;
 // ENTRY_UNKNOWN means a stat() is required to classify it
 typedef enum {
@@ -454,10 +451,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     // dry-run runs parallel too: buffered reports keep each block whole, at
     // the cost of file order varying run to run (completion order)
-    size_t nthreads = cpu_count();
-    if (nthreads > MAX_SCAN_THREADS) {
-        nthreads = MAX_SCAN_THREADS;
-    }
+    size_t nthreads = args->threads;
 
     if (nthreads == 1) {
         // run the worker loop on the calling thread: no spawn, same code path

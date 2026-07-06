@@ -2,8 +2,6 @@
 
 A fast cross-platform CLI `.env` parser, environment-variable scanner and emitter.
 
-## Features
-
 - 0 dependencies
 - Language and framework agnostic (replaces language specfic env packages)
 - Sequentially parses one or more `.env` files
@@ -275,10 +273,13 @@ Notes for Windows users:
 | `--ignored` | `-i` | | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
 | `--required` | `-r` | | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
 | `--scan` | `-s`| `scan` | one or more file extensions | Recursively scans `<ext>` files for environment-variable accessors and sets the ENV required list.† |
+| `--threads` | `-t`| | 1-255 | The number of threads to use when scanning for ENV variables (max: your CPU core count).†† |
 | `--version` | `-v` | `version` | | Prints version info to stdout and exits with 0. |
 | `--` | | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
+
+> †† using more threads than available CPU cores and/or operation system IO limitations will degrade scanning performance
 
 Unrecognized flags or arguments are usage errors.
 

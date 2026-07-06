@@ -140,6 +140,7 @@ static void setup_inputs(void) {
     write_file(IT_DIR "/empty_key.env", EXPECT("=ABC\n"));
     write_file(IT_DIR "/required.env", EXPECT("API_KEY=abc\n"));
 
+    write_file(IT_DIR "/bad_quote.env", EXPECT("ABC=\"123\n"));
     write_file(IT_DIR "/quoted.env", EXPECT("DQ=\"hello world\"\nSQ='keep ${LIT}'\nEMPTYQ=\"\"\n"));
     write_file(IT_DIR "/export.env", EXPECT("export EXPORTED=value\n"));
     write_file(IT_DIR "/fallback.env", EXPECT("FB=${NVI_IT_NOT_SET:-fell back}\n"));
@@ -212,11 +213,14 @@ int main(void) {
     check("an assignment without a key is a tokenizer error", NVI_BIN, "--files build/it/empty_key.env -- x", 1,
           NO_STDOUT, "without a key name");
 
-    check("an undefined interpolation without a fallback is a loud error", NVI_BIN, "--files build/it/undef.env -- x",
-          1, NO_STDOUT, "not defined");
+    check("an unterminated quote is a tokenizer error", NVI_BIN, "--files build/it/bad_quote.env -- x", 1, NO_STDOUT,
+          "an unterminated quoted");
 
     check("an invalid key name is a tokenizer error", NVI_BIN, "--files build/it/badkey.env -- x", 1, NO_STDOUT,
           "not a valid ENV name");
+
+    check("an undefined interpolation without a fallback is a loud error", NVI_BIN, "--files build/it/undef.env -- x",
+          1, NO_STDOUT, "not defined");
 
     check("a required key that resolves empty is a loud error", NVI_BIN,
           "--files build/it/req_empty.env --required EMPTYV -- x", 1, NO_STDOUT, "EMPTYV");
