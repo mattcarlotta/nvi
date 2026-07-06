@@ -27,10 +27,10 @@ static void collect_candidates(const file_details_t *file, const file_ext_t *fil
     for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
         const accessor_t *acc = &file_ext_match->accessors[a];
         const bool prefix_is_ident = is_ident_char(acc->prefix[0]);
-        size_t pos = 0;
 
-        while (pos + acc->prefix_len <= file->len) {
-            const char *p = memchr(file->contents + pos, acc->prefix[0], file->len - pos);
+        size_t cursor = 0;
+        while (cursor + acc->prefix_len <= file->len) {
+            const char *p = memchr(file->contents + cursor, acc->prefix[0], file->len - cursor);
             if (p == NULL) {
                 break;
             }
@@ -40,7 +40,7 @@ static void collect_candidates(const file_details_t *file, const file_ext_t *fil
                 break;
             }
 
-            pos = i + 1;
+            cursor = i + 1;
 
             if (memcmp(file->contents + i, acc->prefix, acc->prefix_len) != 0) {
                 continue;

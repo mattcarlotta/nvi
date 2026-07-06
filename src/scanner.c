@@ -18,8 +18,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// I/O-bound walk; more workers than this hit worse returns
-#define MAX_SCAN_THREADS 6
+// I/O-bound walk; more workers than this seems to produce slower run times
+#define MAX_SCAN_THREADS 4
 
 // the walker's best knowledge of an entry's type before dispatch;
 // ENTRY_UNKNOWN means a stat() is required to classify it
@@ -48,8 +48,19 @@ typedef struct {
 typedef struct {
     walk_ctx_t *ctx;
     scanner_t scanner; // share-nothing: private counters and env hashmap
+    log_buf_t report;  // per-worker report buffer; each flush is one fwrite,
+                       // so blocks land whole even under concurrency
     thread_t thread;
 } scan_worker_t;
+
+// ---------------------------------------------------------------------------
+// dry-run reporting
+//
+// Reports emitted from worker threads (per-file results, empty-file warnings)
+// compose into the worker's log_buf_t and flush once, which is the atomicity
+// boundary stdio guarantees. Reports emitted from the main thread before or
+// after the join keep using the direct log_ functions.
+// ---------------------------------------------------------------------------
 
 static void report_scan_start(const args_t *args) {
     if (!args->dry_run) {
@@ -74,32 +85,35 @@ static void report_scan_start(const args_t *args) {
     log_f(" files...\n\n");
 }
 
-static void report_empty_file_warning(const args_t *args, const char *path) {
+static void report_empty_file_warning(const args_t *args, log_buf_t *buf, const char *path) {
     if (!args->dry_run) {
         return;
     }
 
-    log_warning("[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
+    log_buf_warning(buf, "[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
+    log_buf_flush(buf);
 }
 
-static void report_file_scan_results(const args_t *args, const char *path, const env_key_matches_t *matches) {
+static void report_file_scan_results(const args_t *args, log_buf_t *buf, const char *path,
+                                     const env_key_matches_t *matches) {
     if (!args->dry_run || matches->count == 0) {
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" Scanned ");
-    log_fi("%s", path);
-    log_f(" and found %zu key%s...\n", matches->count, TO_PLURAL(matches->count));
+    log_buf_info(buf, "[INFO]");
+    log_buf_f(buf, " Scanned ");
+    log_buf_fi(buf, "%s", path);
+    log_buf_f(buf, " and found %zu key%s...\n", matches->count, TO_PLURAL(matches->count));
 
     for (size_t i = 0; i < matches->count; ++i) {
         const env_key_match_t *m = &matches->items[i];
-        log_f("    \u2022 ");
-        log_bold_info("%.*s", (int)m->key_len, m->key);
-        log_comment(" [%zu:%zu]\n", m->line, m->byte);
+        log_buf_f(buf, "    \u2022 ");
+        log_buf_bold_info(buf, "%.*s", (int)m->key_len, m->key);
+        log_buf_comment(buf, " [%zu:%zu]\n", m->line, m->byte);
     }
 
-    log_f("\n");
+    log_buf_f(buf, "\n");
+    log_buf_flush(buf);
 }
 
 static void report_scan_summary(const args_t *args, const scanner_t *scanner) {
@@ -136,6 +150,10 @@ static void report_required_keys(const args_t *args) {
     log_f("\n");
 }
 
+// ---------------------------------------------------------------------------
+// scanning
+// ---------------------------------------------------------------------------
+
 static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const char *name) {
     const char *dot = strrchr(name, DOT);
     if (dot == NULL || dot[1] == '\0') {
@@ -160,7 +178,7 @@ static void copy_unique_env_key(scanner_t *scanner, const env_key_match_t *env) 
     hashmap_append(&scanner->envs, new_key, env->key_len, 0);
 }
 
-static result_t scan_file(const args_t *args, scanner_t *scanner, const char *path, const char *name) {
+static result_t scan_file(const args_t *args, scan_worker_t *worker, const char *path, const char *name) {
     const file_ext_t *file_ext_match = get_file_accessors(&args->scan_exts, name);
     if (file_ext_match == NULL) {
         return RESULT_OK;
@@ -172,21 +190,21 @@ static result_t scan_file(const args_t *args, scanner_t *scanner, const char *pa
     }
 
     if (file.len == 0) {
-        report_empty_file_warning(args, path);
+        report_empty_file_warning(args, &worker->report, path);
         free(file.contents);
         return RESULT_OK;
     }
 
-    ++scanner->files_scanned;
+    ++worker->scanner.files_scanned;
 
     env_key_matches_t env_key_matches = {0};
     scan_file_content(&file, file_ext_match, &env_key_matches);
 
-    report_file_scan_results(args, path, &env_key_matches);
+    report_file_scan_results(args, &worker->report, path, &env_key_matches);
 
     for (size_t i = 0; i < env_key_matches.count; ++i) {
-        ++scanner->references;
-        copy_unique_env_key(scanner, &env_key_matches.items[i]);
+        ++worker->scanner.references;
+        copy_unique_env_key(&worker->scanner, &env_key_matches.items[i]);
     }
 
     free_env_key_matches(&env_key_matches);
@@ -211,7 +229,7 @@ static void queue_dir(walk_ctx_t *ctx, const char *path) {
     mutex_unlock(&ctx->lock);
 }
 
-static result_t handle_entry(walk_ctx_t *ctx, scanner_t *scanner, const char *parent, const char *name, char *path,
+static result_t handle_entry(scan_worker_t *worker, const char *parent, const char *name, char *path,
                              entry_kind_t kind) {
     if (name[0] == '.' || is_blacklisted(name)) {
         return RESULT_OK;
@@ -222,6 +240,9 @@ static result_t handle_entry(walk_ctx_t *ctx, scanner_t *scanner, const char *pa
         return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
+    // only classify via stat_path() when the directory listing couldn't
+    // (e.g. DT_UNKNOWN filesystems, or links: stat_path is lstat on POSIX,
+    // so links classify as neither dir nor file and are skipped)
     if (kind == ENTRY_UNKNOWN) {
         struct stat st;
         if (stat_path(path, &st) != 0) {
@@ -238,16 +259,16 @@ static result_t handle_entry(walk_ctx_t *ctx, scanner_t *scanner, const char *pa
     }
 
     if (kind == ENTRY_DIR) {
-        queue_dir(ctx, path);
+        queue_dir(worker->ctx, path);
         return RESULT_OK;
     }
 
-    return scan_file(ctx->args, scanner, path, name);
+    return scan_file(worker->ctx->args, worker, path, name);
 }
 
 // list one directory: scan matching files inline, queue subdirectories.
 // 'scratch' is a PATH_MAX buffer owned by the calling worker.
-static result_t process_dir(walk_ctx_t *ctx, scanner_t *scanner, const char *path, char *scratch) {
+static result_t process_dir(scan_worker_t *worker, const char *path, char *scratch) {
     result_t result = RESULT_OK;
 
 #if defined(_WIN32) && defined(_MSC_VER)
@@ -263,7 +284,7 @@ static result_t process_dir(walk_ctx_t *ctx, scanner_t *scanner, const char *pat
         return operation_error("cannot open directory '%s'; aborting.", path);
     }
 
-    ++scanner->dirs_scanned;
+    ++worker->scanner.dirs_scanned;
 
     do {
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
@@ -271,10 +292,10 @@ static result_t process_dir(walk_ctx_t *ctx, scanner_t *scanner, const char *pat
         }
 
         // FindFirstFile/FindNextFile already report the entry type, so no
-        // stat() is needed on this platform
+        // stat is needed on this platform
         entry_kind_t kind = (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? ENTRY_DIR : ENTRY_FILE;
 
-        result = handle_entry(ctx, scanner, path, fd.cFileName, scratch, kind);
+        result = handle_entry(worker, path, fd.cFileName, scratch, kind);
         if (!result.ok) {
             break;
         }
@@ -286,16 +307,16 @@ static result_t process_dir(walk_ctx_t *ctx, scanner_t *scanner, const char *pat
         return operation_error("cannot open directory '%s'; aborting.", path);
     }
 
-    ++scanner->dirs_scanned;
+    ++worker->scanner.dirs_scanned;
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
         entry_kind_t kind = ENTRY_UNKNOWN;
 
         // d_type classifies most entries straight from the directory listing,
-        // saving one stat() syscall per entry; DT_UNKNOWN (filesystems that
-        // don't populate d_type) and DT_LNK (stat() follows the link) fall
-        // back to the stat() path in handle_entry
+        // saving one stat syscall per entry; DT_UNKNOWN (filesystems that
+        // don't populate d_type) and DT_LNK fall back to the stat_path path
+        // in handle_entry
 #if defined(DT_DIR) && defined(DT_REG)
         if (entry->d_type == DT_DIR) {
             kind = ENTRY_DIR;
@@ -304,7 +325,7 @@ static result_t process_dir(walk_ctx_t *ctx, scanner_t *scanner, const char *pat
         }
 #endif
 
-        result = handle_entry(ctx, scanner, path, entry->d_name, scratch, kind);
+        result = handle_entry(worker, path, entry->d_name, scratch, kind);
         if (!result.ok) {
             break;
         }
@@ -344,7 +365,7 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
         char *dir = ctx->dirs.items[--ctx->dirs.count];
         mutex_unlock(&ctx->lock);
 
-        result_t result = process_dir(ctx, &worker->scanner, dir, scratch);
+        result_t result = process_dir(worker, dir, scratch);
         free(dir);
 
         mutex_lock(&ctx->lock);
@@ -359,6 +380,7 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
         mutex_unlock(&ctx->lock);
     }
 
+    log_buf_free(&worker->report);
     free(scratch);
     return 0;
 }
@@ -430,8 +452,8 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     queue_dir(&ctx, ".");
 
-    // dry-run stays serial so its interleaved per-file reports remain
-    // deterministic; everything else scales to the core count
+    // dry-run runs parallel too: buffered reports keep each block whole, at
+    // the cost of file order varying run to run (completion order)
     size_t nthreads = cpu_count();
     if (nthreads > MAX_SCAN_THREADS) {
         nthreads = MAX_SCAN_THREADS;
