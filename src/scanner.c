@@ -451,7 +451,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     // dry-run runs parallel too: buffered reports keep each block whole, at
     // the cost of file order varying run to run (completion order)
-    size_t nthreads = args->threads;
+    size_t nthreads = args->scan_threads;
 
     if (nthreads == 1) {
         // run the worker loop on the calling thread: no spawn, same code path

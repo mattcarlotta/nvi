@@ -119,7 +119,7 @@ static void test_parses_threads_flag(void) {
     args_t a = {0};
     result_t r = parse_args(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_size_t(2, a.threads);
+    TEST_ASSERT_EQUAL_size_t(2, a.scan_threads);
     free_args(&a);
 }
 

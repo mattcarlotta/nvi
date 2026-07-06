@@ -74,7 +74,7 @@ static void report_flags(const args_t *args) {
     report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
     report_flag_items("required ENVs", args->required.items, args->required.count, ", ");
     report_flag_scan_extensions("scan extensions", &args->scan_exts, ", ");
-    report_flag_threads(args->threads);
+    report_flag_threads(args->scan_threads);
     report_flag_format(args->format);
 }
 
@@ -188,7 +188,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     args->argv = argv;
     args->format = get_default_format();
     args->dry_run = false;
-    args->threads = 1;
+    args->scan_threads = 1;
 
     result_t result = RESULT_OK;
 
@@ -306,7 +306,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                                        MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
                 }
 
-                args->threads = (uint8_t)threads;
+                args->scan_threads = (uint8_t)threads;
                 break;
             }
             case HELP_FLAG: {

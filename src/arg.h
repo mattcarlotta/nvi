@@ -51,7 +51,7 @@ typedef struct {
     int argc;
     const char **argv;
     bool dry_run;
-    uint8_t threads;
+    uint8_t scan_threads;
     format_t format;
     list_t files;
     list_t required;
