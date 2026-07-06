@@ -13,12 +13,6 @@
 #include "shims.h"
 #endif
 
-typedef struct {
-    char *items;
-    size_t count;
-    size_t capacity;
-} value_buf_t;
-
 env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
     size_t i = hashmap_get(&env_map->index, entry, strlen(entry));
     if (i == HASHMAP_NOT_FOUND) {
@@ -42,11 +36,11 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
     result_t result = RESULT_OK;
 
     if (args->dry_run) {
-        log_info("[INFO]");
-        log_f(" Attempting to parse %zu token%s...\n\n", tokens->count, TO_PLURAL(tokens->count));
+        log_info(SINK_STDERR, "[INFO]");
+        log_f(SINK_STDERR, " Attempting to parse %zu token%s...\n\n", tokens->count, TO_PLURAL(tokens->count));
     }
 
-    value_buf_t value = {0};
+    buf_t value = {0};
     list_t missing_envs = {0};
 
     for (size_t ti = 0; ti < tokens->count; ++ti) {
@@ -109,9 +103,9 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                 }
                 case COMMENTED_LINE: {
                     if (args->dry_run) {
-                        log_info("[INFO]");
-                        log_f(" Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);
-                        log_comment("%s\n\n", value_token->value);
+                        log_info(SINK_STDERR, "[INFO]");
+                        log_f(SINK_STDERR, " Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);
+                        log_comment(SINK_STDERR, "%s\n\n", value_token->value);
                     }
                     break;
                 }
@@ -141,14 +135,14 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         env_t *existing = get_env_from_map(env_map, token_key);
         if (existing != NULL) {
             if (args->dry_run) {
-                log_info("[INFO]");
-                log_f(" Token #%zu updated ", ti + 1);
-                log_bold_info("%s", token_key);
-                log_f(" key's value from ");
-                log_info("%s", existing->value);
-                log_f(" to ");
-                log_info("%s", env_value);
-                log_f("...\n\n");
+                log_info(SINK_STDERR, "[INFO]");
+                log_f(SINK_STDERR, " Token #%zu updated ", ti + 1);
+                log_bold_info(SINK_STDERR, "%s", token_key);
+                log_f(SINK_STDERR, " key's value from ");
+                log_info(SINK_STDERR, "%s", existing->value);
+                log_f(SINK_STDERR, " to ");
+                log_info(SINK_STDERR, "%s", env_value);
+                log_f(SINK_STDERR, "...\n\n");
             }
             free(existing->value);
             existing->value = env_value;
@@ -159,11 +153,13 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         }
 
         if (args->dry_run) {
-            log_info("[INFO]");
-            log_f(" Successfully parsed Token #%zu...\n    \u2022 ", ti + 1);
-            log_bold_info("%s ", token_key);
-            log_info("\u219E %s", env_value);
-            log_f("\n\n");
+            log_info(SINK_STDERR, "[INFO]");
+            log_f(SINK_STDERR, " Successfully parsed Token #%zu...\n", ti + 1);
+            log_f(SINK_STDERR, "    \u2022 key: ");
+            log_bold_info(SINK_STDERR, "%s \n", token_key);
+            log_f(SINK_STDERR, "    \u2022 value: ");
+            log_info(SINK_STDERR, "%s", env_value);
+            log_f(SINK_STDERR, "\n\n");
         }
     }
 
@@ -181,24 +177,25 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
     }
 
     if (args->dry_run) {
-        log_info("[INFO]");
-        log_f(" The following %zu ENV%s were parsed and will be emitted to stdout... \n", env_map->count,
+        log_info(SINK_STDERR, "[INFO]");
+        log_f(SINK_STDERR, " The following %zu ENV%s were parsed and will be emitted to stdout... \n", env_map->count,
               TO_PLURAL(env_map->count));
         for (size_t i = 0; i < env_map->count; ++i) {
             const env_t env = env_map->items[i];
-            log_f("    \u2022 ");
-            log_bold_info("%s=%s\n", env.key, env.value);
+            log_f(SINK_STDERR, "    \u2022 ");
+            log_bold_info(SINK_STDERR, "%s=%s\n", env.key, env.value);
         }
-        log_f("\n");
+        log_f(SINK_STDERR, "\n");
         goto done;
     }
 
     if (args->command.count > 0 && missing_envs.count > 0) {
-        log_error("[ERROR] The following ENV keys were marked as required, but are undefined or empty after parsing:");
+        log_error(SINK_STDERR,
+                  "[ERROR] The following ENV keys were marked as required, but are undefined or empty after parsing:");
         for (size_t i = 0; i < missing_envs.count; ++i) {
-            log_error("\n   \u2022 %s", missing_envs.items[i]);
+            log_error(SINK_STDERR, "\n   \u2022 %s", missing_envs.items[i]);
         }
-        log_error("\n");
+        log_error(SINK_STDERR, "\n");
         result = OPERATION_FAILURE;
     }
 

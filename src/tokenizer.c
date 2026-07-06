@@ -17,21 +17,15 @@
 #include "shims.h"
 #endif
 
-typedef struct {
-    char *items;
-    size_t count;
-    size_t capacity;
-} byte_list_t;
-
 static void report_tokenizing_file(const args_t *args, const char *path) {
     if (!args->dry_run) {
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" Tokenizing ");
-    log_fi("%s", path);
-    log_f(" file...\n\n");
+    log_info(SINK_STDERR, "[INFO]");
+    log_f(SINK_STDERR, " Tokenizing ");
+    log_fi(SINK_STDERR, "%s", path);
+    log_f(SINK_STDERR, " file...\n\n");
 }
 
 static void report_missing_files_warning(const args_t *args) {
@@ -39,8 +33,9 @@ static void report_missing_files_warning(const args_t *args) {
         return;
     }
 
-    log_warning("[WARNING]");
-    log_f(" The '--files' flag was not set during a dry-run, therefore no .env files will be tokenized. If "
+    log_warning(SINK_STDERR, "[WARNING]");
+    log_f(SINK_STDERR,
+          " The '--files' flag was not set during a dry-run, therefore no .env files will be tokenized. If "
           "just testing '--scan' results, please omit the '--dry-run' flag.\n\n");
 }
 
@@ -49,10 +44,10 @@ static void report_tokenizer_start(const args_t *args) {
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" Attempting to tokenize %zu ", args->files.count);
-    log_fi(".env");
-    log_f(" file%s... \n\n", TO_PLURAL(args->files.count));
+    log_info(SINK_STDERR, "[INFO]");
+    log_f(SINK_STDERR, " Attempting to tokenize %zu ", args->files.count);
+    log_fi(SINK_STDERR, ".env");
+    log_f(SINK_STDERR, " file%s... \n\n", TO_PLURAL(args->files.count));
 }
 
 static void report_tokenizer_summary(const args_t *args, const tokenizer_t *tokenizer) {
@@ -60,46 +55,46 @@ static void report_tokenizer_summary(const args_t *args, const tokenizer_t *toke
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" The following %zu token%s were generated from the %zu ", tokenizer->tokens.count,
+    log_info(SINK_STDERR, "[INFO]");
+    log_f(SINK_STDERR, " The following %zu token%s were generated from the %zu ", tokenizer->tokens.count,
           TO_PLURAL(tokenizer->tokens.count), args->files.count);
-    log_fi(".env");
-    log_f(" files...\n");
+    log_fi(SINK_STDERR, ".env");
+    log_f(SINK_STDERR, " file%s...\n", TO_PLURAL(args->files.count));
 
     for (size_t ti = 0; ti < tokenizer->tokens.count; ++ti) {
         const token_t *token = &tokenizer->tokens.items[ti];
 
-        log_info("\n[INFO]");
-        log_f(" Token #%zu\n", ti + 1);
-        log_f("    \u2022 file: ");
-        log_fi("%s", token->file);
-        log_f("\n");
-        log_f("    \u2022 key: ");
-        log_bold_info("%s \n", token->key ? token->key : "(none)");
-        log_f("    \u2022 value%s:", TO_PLURAL(token->values.count));
+        log_info(SINK_STDERR, "\n[INFO]");
+        log_f(SINK_STDERR, " Token #%zu\n", ti + 1);
+        log_f(SINK_STDERR, "    \u2022 file: ");
+        log_fi(SINK_STDERR, "%s", token->file);
+        log_f(SINK_STDERR, "\n");
+        log_f(SINK_STDERR, "    \u2022 key: ");
+        log_bold_info(SINK_STDERR, "%s \n", token->key ? token->key : "(none)");
+        log_f(SINK_STDERR, "    \u2022 value%s:", TO_PLURAL(token->values.count));
 
         for (size_t vi = 0; vi < token->values.count; ++vi) {
             const value_token_t *v = &token->values.items[vi];
             bool is_last_value_token = vi == token->values.count - 1;
             const char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
 
-            log_f("\n      %s\u2500 ", sub_stem_sym);
-            log_info("%s \u21A0 ", get_value_kind_name(v->kind));
-            log_f("%.*s", (int)v->value_len, v->value);
-            log_comment(" [%zu:%zu]", v->line, v->byte);
+            log_f(SINK_STDERR, "\n      %s\u2500 ", sub_stem_sym);
+            log_info(SINK_STDERR, "%s \u21A0 ", get_value_kind_name(v->kind));
+            log_f(SINK_STDERR, "%.*s", (int)v->value_len, v->value);
+            log_comment(SINK_STDERR, " [%zu:%zu]", v->line, v->byte);
         }
 
         if (ti != tokenizer->tokens.count - 1) {
-            log_f("\n");
+            log_f(SINK_STDERR, "\n");
         }
     }
 
-    log_f("\n\n");
+    log_f(SINK_STDERR, "\n\n");
 }
 
 static size_t report_token_line(const token_t *token) {
     const char *key = token->key ? token->key : "(none)";
-    log_f("   %s=", key);
+    log_f(SINK_STDERR, "   %s=", key);
 
     size_t prefix_len = strlen(key) + 1;
     for (size_t k = 0; k < token->values.count; ++k) {
@@ -114,12 +109,12 @@ static size_t report_token_line(const token_t *token) {
 }
 
 static void report_token_error(const tokenizer_t *tokenizer) {
-    log_error("[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
+    log_error(SINK_STDERR, "[ERROR] A tokenizing error occurred in %s:%zu:%zu. ", tokenizer->file_name, tokenizer->line,
               tokenizer->byte);
 }
 
 static void report_token_error_at(size_t pad, size_t tildes, const char *hint_fmt, ...) {
-    log_f("   ");
+    log_f(SINK_STDERR, "   ");
     fput_repeat(stderr, ' ', pad);
     fputc('^', stderr);
     fput_repeat(stderr, '~', tildes);
@@ -133,13 +128,12 @@ static void report_token_error_at(size_t pad, size_t tildes, const char *hint_fm
     fputc('\n', stderr);
 }
 
-static result_t report_quote_error(const tokenizer_t *tokenizer, const token_t *token, const byte_list_t *value,
-                                   char quote) {
+static result_t report_quote_error(const tokenizer_t *tokenizer, const token_t *token, const buf_t *value, char quote) {
     report_token_error(tokenizer);
-    log_error("The %s key has an unterminated quoted value.\n", token->key ? token->key : "(none)");
+    log_error(SINK_STDERR, "The %s key has an unterminated quoted value.\n", token->key ? token->key : "(none)");
 
     size_t prefix_len = report_token_line(token);
-    log_f("%c%.*s\n", quote, (int)value->count, value->items);
+    log_f(SINK_STDERR, "%c%.*s\n", quote, (int)value->count, value->items);
     report_token_error_at(prefix_len, value->count, "(missing a closing quote %c)", quote);
 
     return OPERATION_FAILURE;
@@ -147,8 +141,8 @@ static result_t report_quote_error(const tokenizer_t *tokenizer, const token_t *
 
 static result_t report_empty_value_error(const tokenizer_t *tokenizer, const char *key) {
     report_token_error(tokenizer);
-    log_f("The '%s' key has an empty value assignment.\n", key);
-    log_f("   %s=\n", key);
+    log_f(SINK_STDERR, "The '%s' key has an empty value assignment.\n", key);
+    log_f(SINK_STDERR, "   %s=\n", key);
     report_token_error_at(strlen(key) + 1, 0, "(missing value)");
 
     return OPERATION_FAILURE;
@@ -156,13 +150,13 @@ static result_t report_empty_value_error(const tokenizer_t *tokenizer, const cha
 
 static result_t report_missing_key_error(const tokenizer_t *tokenizer) {
     report_token_error(tokenizer);
-    log_error("A value assignment ('=') was found without a key name.\n");
+    log_error(SINK_STDERR, "A value assignment ('=') was found without a key name.\n");
 
     size_t line_end = index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
     const char *rest = tokenizer->file + tokenizer->i;
     size_t rest_len = line_end - tokenizer->i;
 
-    log_f("   %.*s\n", (int)rest_len, rest);
+    log_f(SINK_STDERR, "   %.*s\n", (int)rest_len, rest);
     report_token_error_at(0, rest_len > 1 ? rest_len - 1 : 0, "(missing key)");
 
     return OPERATION_FAILURE;
@@ -170,21 +164,21 @@ static result_t report_missing_key_error(const tokenizer_t *tokenizer) {
 
 static result_t report_invalid_key_error(const tokenizer_t *tokenizer, const char *key, size_t key_len) {
     report_token_error(tokenizer);
-    log_error("The key '%.*s' is not a valid ENV name.\n", (int)key_len, key);
+    log_error(SINK_STDERR, "The key '%.*s' is not a valid ENV name.\n", (int)key_len, key);
 
-    log_f("   %.*s=\n", (int)key_len, key);
+    log_f(SINK_STDERR, "   %.*s=\n", (int)key_len, key);
     report_token_error_at(0, key_len - 1, "(keys must match [A-Za-z_][A-Za-z0-9_]*)");
 
     return OPERATION_FAILURE;
 }
 
 static result_t report_unterminated_interpolation_error(const tokenizer_t *tokenizer, const token_t *token,
-                                                        const byte_list_t *value) {
+                                                        const buf_t *value) {
     report_token_error(tokenizer);
-    log_error("The %s key has an unterminated value interpolation.\n", token->key ? token->key : "(none)");
+    log_error(SINK_STDERR, "The %s key has an unterminated value interpolation.\n", token->key ? token->key : "(none)");
 
     size_t prefix_len = report_token_line(token);
-    log_f("${%.*s\n", (int)value->count, value->items);
+    log_f(SINK_STDERR, "${%.*s\n", (int)value->count, value->items);
     report_token_error_at(prefix_len + 1, value->count, "(missing a closing brace '}')");
 
     return OPERATION_FAILURE;
@@ -192,10 +186,10 @@ static result_t report_unterminated_interpolation_error(const tokenizer_t *token
 
 static result_t report_empty_interpolation_error(const tokenizer_t *tokenizer, const token_t *token) {
     report_token_error(tokenizer);
-    log_error("The %s key has an undefined key interpolation.\n", token->key ? token->key : "(none)");
+    log_error(SINK_STDERR, "The %s key has an undefined key interpolation.\n", token->key ? token->key : "(none)");
 
     size_t prefix_len = report_token_line(token);
-    log_f("${}\n");
+    log_f(SINK_STDERR, "${}\n");
     report_token_error_at(prefix_len + 1, 1, "(unresolvable interpolation key)");
 
     return OPERATION_FAILURE;
@@ -203,7 +197,8 @@ static result_t report_empty_interpolation_error(const tokenizer_t *tokenizer, c
 
 static result_t report_trailing_chars_error(const tokenizer_t *tokenizer, const token_t *token) {
     report_token_error(tokenizer);
-    log_error("The %s key has unexpected characters after a closing quote.\n", token->key ? token->key : "(none)");
+    log_error(SINK_STDERR, "The %s key has unexpected characters after a closing quote.\n",
+              token->key ? token->key : "(none)");
 
     size_t line_start = tokenizer->i;
     while (line_start > 0 && tokenizer->file[line_start - 1] != LINE_DELIMITER) {
@@ -218,7 +213,7 @@ static result_t report_trailing_chars_error(const tokenizer_t *tokenizer, const 
     size_t caret_col = tokenizer->i - line_start;
     size_t rest_len = line_end - tokenizer->i;
 
-    log_f("   %.*s\n", (int)(line_end - line_start), tokenizer->file + line_start);
+    log_f(SINK_STDERR, "   %.*s\n", (int)(line_end - line_start), tokenizer->file + line_start);
     report_token_error_at(caret_col, rest_len > 1 ? rest_len - 1 : 0, "(only whitespace may follow a closing quote)");
 
     return OPERATION_FAILURE;
@@ -263,12 +258,12 @@ static int peek(const tokenizer_t *tokenizer, size_t offset) {
     return (unsigned char)tokenizer->file[index];
 }
 
-static void commit_byte(tokenizer_t *tokenizer, byte_list_t *value) {
+static void commit_byte(tokenizer_t *tokenizer, buf_t *value) {
     DYN_ARR_APPEND(value, tokenizer->file[tokenizer->i]);
     skip_byte(tokenizer, 1);
 }
 
-static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigned char *set, size_t set_len) {
+static void scan_until(tokenizer_t *tokenizer, buf_t *value, const unsigned char *set, size_t set_len) {
     size_t end = tokenizer->i;
     while (end < tokenizer->file_len && memchr(set, (unsigned char)tokenizer->file[end], set_len) == NULL) {
         ++end;
@@ -280,10 +275,10 @@ static void scan_until(tokenizer_t *tokenizer, byte_list_t *value, const unsigne
     tokenizer->i = end;
 }
 
-static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *token, const byte_list_t *value) {
+static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *token, const buf_t *value) {
     char *copy = malloc(value->count + 1);
     if (copy == NULL) {
-        log_error("[ERROR] Unable to copy token value (not enough system memory?); aborting.");
+        log_error(SINK_STDERR, "[ERROR] Unable to copy token value (not enough system memory?); aborting.");
         fflush(stderr);
         exit(EXIT_FAILURE);
     }
@@ -321,8 +316,7 @@ static void free_token(token_t *token) {
     token->values = (value_token_list_t){0};
 }
 
-static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, byte_list_t *value,
-                                          bool allow_empty) {
+static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, buf_t *value, bool allow_empty) {
     if (value->count > 0 || token->values.count == 0) {
         commit_token(LITERAL_VALUE, tokenizer, token, value);
     }
@@ -356,7 +350,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
 
     size_t prev_token_count = tokenizer->tokens.count;
     token_t token = {.file = tokenizer->file_name};
-    byte_list_t value = {0};
+    buf_t value = {0};
     result_t result = RESULT_OK;
 
     // 'quote' holds the active quote character (0 when unquoted) and only opens
@@ -592,7 +586,8 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
     }
 
     if (tokenizer->tokens.count == prev_token_count) {
-        log_error("[ERROR] Unable to generate tokens for %s. Ensure the .env file is valid by following the KEY=VALUE "
+        log_error(SINK_STDERR,
+                  "[ERROR] Unable to generate tokens for %s. Ensure the .env file is valid by following the KEY=VALUE "
                   "spec; aborting.",
                   tokenizer->file_name);
 

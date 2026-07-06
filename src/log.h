@@ -1,28 +1,25 @@
 #ifndef LOG_H
 #define LOG_H
-#include <stddef.h>
+#include "buf.h"
+#include <stdio.h>
 
 typedef struct {
-    char *items;
-    size_t count;
-    size_t capacity;
-} log_buf_t;
+    buf_t *buf;
+    FILE *file;
+} sink_t;
 
-void log_buf_f(log_buf_t *buf, const char *fmt, ...);
-void log_buf_fi(log_buf_t *buf, const char *fmt, ...);
-void log_buf_info(log_buf_t *buf, const char *fmt, ...);
-void log_buf_bold_info(log_buf_t *buf, const char *fmt, ...);
-void log_buf_comment(log_buf_t *buf, const char *fmt, ...);
-void log_buf_warning(log_buf_t *buf, const char *fmt, ...);
-void log_buf_flush(log_buf_t *buf);
-void log_buf_free(log_buf_t *buf);
+#define SINK_STDERR ((sink_t){.file = stderr})
+#define SINK_BUF(b) ((sink_t){.buf = (b)})
 
-void log_f(const char *fmt, ...);
-void log_fi(const char *fmt, ...);
-void log_info(const char *fmt, ...);
-void log_bold_info(const char *fmt, ...);
-void log_error(const char *fmt, ...);
-void log_warning(const char *fmt, ...);
-void log_comment(const char *fmt, ...);
+void log_f(sink_t s, const char *fmt, ...);
+void log_fi(sink_t s, const char *fmt, ...);
+void log_info(sink_t s, const char *fmt, ...);
+void log_bold_info(sink_t s, const char *fmt, ...);
+void log_warning(sink_t s, const char *fmt, ...);
+void log_comment(sink_t s, const char *fmt, ...);
+void log_error(sink_t s, const char *fmt, ...);
+
+void log_buf_flush(buf_t *buf);
+void log_buf_free(buf_t *buf);
 
 #endif

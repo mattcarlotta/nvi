@@ -45,7 +45,7 @@ typedef struct {
 typedef struct {
     walk_ctx_t *ctx;
     scanner_t scanner; // share-nothing: private counters and env hashmap
-    log_buf_t report;  // per-worker report buffer; each flush is one fwrite,
+    buf_t report;      // per-worker report buffer; each flush is one fwrite,
                        // so blocks land whole even under concurrency
     thread_t thread;
 } scan_worker_t;
@@ -64,52 +64,52 @@ static void report_scan_start(const args_t *args) {
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" Scanning for environment keys in");
+    log_info(SINK_STDERR, "[INFO]");
+    log_f(SINK_STDERR, " Scanning for environment keys in");
 
     for (size_t i = 0; i < args->scan_exts.count; ++i) {
         if (i != 0 && args->scan_exts.count > 2) {
-            log_f(",");
+            log_f(SINK_STDERR, ",");
         }
 
         if (i == args->scan_exts.count - 1 && args->scan_exts.count > 1) {
-            log_f(" and");
+            log_f(SINK_STDERR, " and");
         }
 
-        log_fi(" *.%s", args->scan_exts.items[i].ext);
+        log_fi(SINK_STDERR, " *.%s", args->scan_exts.items[i].ext);
     }
 
-    log_f(" files...\n\n");
+    log_f(SINK_STDERR, " files...\n\n");
 }
 
-static void report_empty_file_warning(const args_t *args, log_buf_t *buf, const char *path) {
+static void report_empty_file_warning(const args_t *args, buf_t *buf, const char *path) {
     if (!args->dry_run) {
         return;
     }
 
-    log_buf_warning(buf, "[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
+    log_warning(SINK_BUF(buf), "[WARNING] The file '%s' appears to be empty; skipping.\n\n", path);
     log_buf_flush(buf);
 }
 
-static void report_file_scan_results(const args_t *args, log_buf_t *buf, const char *path,
+static void report_file_scan_results(const args_t *args, buf_t *buf, const char *path,
                                      const env_key_matches_t *matches) {
     if (!args->dry_run || matches->count == 0) {
         return;
     }
 
-    log_buf_info(buf, "[INFO]");
-    log_buf_f(buf, " Scanned ");
-    log_buf_fi(buf, "%s", path);
-    log_buf_f(buf, " and found %zu key%s...\n", matches->count, TO_PLURAL(matches->count));
+    log_info(SINK_BUF(buf), "[INFO]");
+    log_f(SINK_BUF(buf), " Scanned ");
+    log_fi(SINK_BUF(buf), "%s", path);
+    log_f(SINK_BUF(buf), " and found %zu key%s...\n", matches->count, TO_PLURAL(matches->count));
 
     for (size_t i = 0; i < matches->count; ++i) {
         const env_key_match_t *m = &matches->items[i];
-        log_buf_f(buf, "    \u2022 ");
-        log_buf_bold_info(buf, "%.*s", (int)m->key_len, m->key);
-        log_buf_comment(buf, " [%zu:%zu]\n", m->line, m->byte);
+        log_f(SINK_BUF(buf), "    \u2022 ");
+        log_bold_info(SINK_BUF(buf), "%.*s", (int)m->key_len, m->key);
+        log_comment(SINK_BUF(buf), " [%zu:%zu]\n", m->line, m->byte);
     }
 
-    log_buf_f(buf, "\n");
+    log_f(SINK_BUF(buf), "\n");
     log_buf_flush(buf);
 }
 
@@ -118,8 +118,8 @@ static void report_scan_summary(const args_t *args, const scanner_t *scanner) {
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
+    log_info(SINK_STDERR, "[INFO]");
+    log_f(SINK_STDERR, " Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
           scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
           TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references), scanner->envs.count,
           TO_PLURAL(scanner->envs.count));
@@ -130,21 +130,21 @@ static void report_required_keys(const args_t *args) {
         return;
     }
 
-    log_info("[INFO]");
-    log_f(" The following ENV keys are now required...\n");
+    log_info(SINK_STDERR, "[INFO]");
+    log_f(SINK_STDERR, " The following ENV keys are now required...\n");
 
     if (args->required.count > 0) {
         for (size_t i = 0; i < args->required.count; ++i) {
-            log_f("    \u2022 ");
-            log_bold_info("%s", args->required.items[i]);
-            log_f("\n");
+            log_f(SINK_STDERR, "    \u2022 ");
+            log_bold_info(SINK_STDERR, "%s", args->required.items[i]);
+            log_f(SINK_STDERR, "\n");
         }
     } else {
-        log_f("    \u2022 ");
-        log_comment("(none)\n");
+        log_f(SINK_STDERR, "    \u2022 ");
+        log_comment(SINK_STDERR, "(none)\n");
     }
 
-    log_f("\n");
+    log_f(SINK_STDERR, "\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +167,7 @@ static void copy_unique_env_key(scanner_t *scanner, const env_key_match_t *env) 
 
     const char *new_key = strndup(env->key, env->key_len);
     if (new_key == NULL) {
-        log_error("[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
+        log_error(SINK_STDERR, "[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
         fflush(stderr);
         exit(EXIT_FAILURE);
     }
@@ -214,7 +214,7 @@ static result_t scan_file(const args_t *args, scan_worker_t *worker, const char 
 static void queue_dir(walk_ctx_t *ctx, const char *path) {
     char *copy = strdup(path);
     if (copy == NULL) {
-        log_error("[ERROR] Failed to copy a directory path (system is out of memory?); aborting.\n");
+        log_error(SINK_STDERR, "[ERROR] Failed to copy a directory path (system is out of memory?); aborting.\n");
         fflush(stderr);
         exit(EXIT_FAILURE);
     }
@@ -343,7 +343,7 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
 
     char *scratch = malloc(PATH_MAX);
     if (scratch == NULL) {
-        log_error("[ERROR] Failed to allocate a path buffer (system is out of memory?); aborting.\n");
+        log_error(SINK_STDERR, "[ERROR] Failed to allocate a path buffer (system is out of memory?); aborting.\n");
         fflush(stderr);
         exit(EXIT_FAILURE);
     }
@@ -461,7 +461,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
     } else {
         scan_worker_t *workers = calloc(nthreads, sizeof(*workers));
         if (workers == NULL) {
-            log_error("[ERROR] Failed to allocate scan workers (system is out of memory?); aborting.\n");
+            log_error(SINK_STDERR, "[ERROR] Failed to allocate scan workers (system is out of memory?); aborting.\n");
             fflush(stderr);
             exit(EXIT_FAILURE);
         }

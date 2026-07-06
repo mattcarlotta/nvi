@@ -35,31 +35,32 @@ file_details_t open_file(const char *path) {
 
     int fd = open_file_rdo(path);
     if (fd < 0) {
-        log_error("[ERROR] Unable to open '%s' (not a valid file?)\n", path);
+        log_error(SINK_STDERR, "[ERROR] Unable to open '%s' (not a valid file?)\n", path);
         return file_details;
     }
 
     struct stat st;
     if (fstat(fd, &st) != 0) {
-        log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
+        log_error(SINK_STDERR, "[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
         goto done;
     }
 
     if (!S_ISREG(st.st_mode)) {
-        log_error("[ERROR] Unable to open '%s' (not a valid file?)", path);
+        log_error(SINK_STDERR, "[ERROR] Unable to open '%s' (not a valid file?)", path);
         goto done;
     }
 
     size_t file_size = (size_t)st.st_size;
 
     if (file_size > MAX_FILE_SIZE) {
-        log_warning("[WARNING] The file '%s' exceeds %zu bytes; skipping.\n", path, MAX_FILE_SIZE);
+        log_warning(SINK_STDERR, "[WARNING] The file '%s' exceeds %zu bytes; skipping.\n", path, MAX_FILE_SIZE);
         goto done;
     }
 
     file_details.contents = malloc(file_size + 1);
     if (file_details.contents == NULL) {
-        log_error("[ERROR] Failed to allocate %zu bytes for file '%s' (system out of memory?); aborting.\n",
+        log_error(SINK_STDERR,
+                  "[ERROR] Failed to allocate %zu bytes for file '%s' (system out of memory?); aborting.\n",
                   file_size + 1, path);
         fflush(stderr);
         exit(EXIT_FAILURE);
@@ -75,7 +76,7 @@ file_details_t open_file(const char *path) {
                 continue;
             }
 #endif
-            log_error("[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
+            log_error(SINK_STDERR, "[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
             free(file_details.contents);
             file_details.contents = NULL;
             goto done;
