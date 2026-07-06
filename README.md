@@ -14,7 +14,7 @@ nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, sca
 
 For the best compatibility [build and install from source](#build-and-install-from-source).
 
-Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
+Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi/releases/).
 
 Then extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell).
 
@@ -41,7 +41,7 @@ Clone repo and build `nob`:
 ```sh
 cd ~/Downloads
 
-git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
+git clone git@github.com:mattcarlotta/nvi.git && cd nvi
 
 clang nob.c
 ```
@@ -140,27 +140,27 @@ cd Documents
 
 7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account):
 ```powershell
-git clone git@github.com:mattcarlotta/nvi-bin.git
+git clone git@github.com:mattcarlotta/nvi.git
 ```
 Optionally download it:
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi-bin/archive/refs/heads/main.zip" -OutFile "nvi-bin.zip"
+Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi/archive/refs/heads/main.zip" -OutFile "nvi.zip"
 ```
 Then extract it:
 ```powershell
-Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
+Expand-Archive -Path "nvi.zip" -DestinationPath "nvi"
 ```
 Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
 ```powershell
 git init
-git remote add origin https://github.com/mattcarlotta/nvi-bin.git
+git remote add origin https://github.com/mattcarlotta/nvi.git
 git fetch origin
 git reset origin
 ```
 
-8. Change directory to `nvi-bin`:
+8. Change directory to `nvi`:
 ```powershell
-cd nvi-bin
+cd nvi
 ```
 
 9. Build `nob.c`:
@@ -537,5 +537,5 @@ Run all test suites:
 - Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
-### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
-### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)
+### [Contributing](https://github.com/mattcarlotta/nvi/blob/main/CONTRIBUTING.MD)
+### [License](https://github.com/mattcarlotta/nvi/blob/main/LICENSE.md)
