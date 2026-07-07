@@ -124,7 +124,7 @@ void fput_repeat(FILE *f, char c, size_t n) {
 int str_to_u8(const char *s) {
     const char *p = s;
 
-    while (*p == ' ' || (*p >= '\t' && *p <= '\r')) {
+    while (*p == SPACE || (*p >= TAB && *p <= CARRIAGE_RETURN)) {
         ++p;
     }
 
