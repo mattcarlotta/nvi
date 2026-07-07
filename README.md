@@ -8,7 +8,7 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 - Supports `${KEY}` interpolations, `#` comments, `'` and `"` quotes, and `\` delimited multiline values
 - Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
 - Checks required environment-variables are defined before command execution
-- Ignores environment-variables that may be set at run-time
+- Supports ignoring environment-variables that may be set at run-time
 
 ## Installation
 
@@ -25,8 +25,8 @@ If you're not sure if the destination directory is recognized by your shell, use
 ## Build and install from source
 
 Optional requirements:
-- [Clangd](https://clangd.llvm.org/) `14.0.0` or later (for LSP)
-- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `14.0.0`
+- [Clangd](https://clangd.llvm.org/)
+- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html)
 
 Building source code:
 - [nob.h](https://github.com/tsoding/nob.h)
@@ -34,7 +34,7 @@ Building source code:
 ### POSIX (Linux, macOS, WSL)
 
 Requirements:
-- [Clang](https://clang.llvm.org/) `14.0.0` or later
+- [Clang](https://clang.llvm.org/)
 - [LLD](https://lld.llvm.org/) on Linux (release builds link with `-fuse-ld=lld`; usually packaged as `lld`)
 
 Clone repo and build `nob`:
@@ -102,7 +102,7 @@ nvi version
 
 Requirements:
 - [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
-- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `14.0.0` or later
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows)
 
 Follow these steps:
 1. Install MSVC Build Tools:
@@ -403,15 +403,20 @@ e.DATABASE_URL;
 #### Scan Usage Examples
 
 ```sh
-# scans and reports matching ENVs in .mjs and .ts files, then exits
-nvi --scan mjs ts --dry-run
+# scans for matching ENVs within .mjs and .ts files using 4 threads, reports findings, then exits
+nvi --scan mjs ts --threads 4 --dry-run
 
-# collects scanned keys to be required and defined before 'node index.js' command is emitted
+# collects scanned keys to be required and defined before the 'node index.js' command is emitted
 nvi --scan mjs --files .env -- node index.mjs | <consumer>
 
-# excludes runtime-injected ENVs found within the 'npm run dev' command environment
+# ignores runtime-injected ENVs often found within 'npm run dev' (node) environment
 nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 ```
+
+> [!CAUTION]
+> There's an OS bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
+> For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8 ..., up to the max CPU core count (16 threads).
+> More is not always better; too many threads may degrade scanning performance significantly (to the point where it's close to using a single thread).
 
 Notes:
 
