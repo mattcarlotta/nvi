@@ -200,11 +200,7 @@ static result_t report_trailing_chars_error(const tokenizer_t *tokenizer, const 
     log_error(SINK_STDERR, "The %s key has unexpected characters after a closing quote.\n",
               token->key ? token->key : "(none)");
 
-    size_t line_start = tokenizer->i;
-    while (line_start > 0 && tokenizer->file[line_start - 1] != LINE_DELIMITER) {
-        --line_start;
-    }
-
+    size_t line_start = tokenizer->i - (tokenizer->byte - 1);
     size_t line_end = index_of_scalar(tokenizer->file, tokenizer->file_len, tokenizer->i, LINE_DELIMITER);
     if (line_end > line_start && tokenizer->file[line_end - 1] == CARRIAGE_RETURN) {
         --line_end;
