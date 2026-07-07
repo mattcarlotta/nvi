@@ -83,11 +83,16 @@ static void test_index_of_scalar(void) {
 }
 
 static void test_str_to_u8(void) {
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8(""));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8(" "));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("00"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("01"));
     TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("abc"));
     TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("a1b2c8"));
     TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("256"));
     TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("-128"));
     TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("+128"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("128x"));
     TEST_ASSERT_EQUAL_size_t(0, str_to_u8("0"));
     TEST_ASSERT_EQUAL_size_t(128, str_to_u8("128"));
     TEST_ASSERT_EQUAL_size_t(255, str_to_u8("255"));

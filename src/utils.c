@@ -125,11 +125,15 @@ void fput_repeat(FILE *f, char c, size_t n) {
 int str_to_u8(const char *s) {
     const char *p = s;
 
-    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\v' || *p == '\f' || *p == '\r') {
+    while (*p == ' ' || (*p >= '\t' && *p <= '\r')) {
         ++p;
     }
 
-    if (*p == '-' || *p == '+' || *p < '0' || *p > '9') {
+    if (*p < '0' || *p > '9') {
+        return -1;
+    }
+
+    if (*p == '0' && *(p + 1) != '\0') {
         return -1;
     }
 
@@ -142,13 +146,5 @@ int str_to_u8(const char *s) {
         ++p;
     }
 
-    if (*p != '\0') {
-        return -1;
-    }
-
-    if (v > 255) {
-        return -1;
-    }
-
-    return (unsigned int)v;
+    return (*p == '\0') ? (int)v : -1;
 }
