@@ -24,4 +24,4 @@
 #define TO_PLURAL(...)                                                                                                 \
     EXPAND(TO_PLURAL_PICK(__VA_ARGS__, TO_PLURAL_3, TO_PLURAL_BAD_ARITY, TO_PLURAL_1, _PAD)(__VA_ARGS__))
 
-#endif
+#endif // MACROS_H

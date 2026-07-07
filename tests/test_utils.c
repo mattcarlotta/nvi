@@ -1,4 +1,5 @@
 #include "unity.h"
+#include "unity_internals.h"
 #include "utils.h"
 #include <string.h>
 
@@ -81,6 +82,22 @@ static void test_index_of_scalar(void) {
     TEST_ASSERT_EQUAL_size_t(5, index_of_scalar(s, 5, 0, 'z'));
 }
 
+static void test_str_to_u8(void) {
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8(""));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8(" "));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("00"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("01"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("abc"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("a1b2c8"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("256"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("-128"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("+128"));
+    TEST_ASSERT_EQUAL_size_t(-1, str_to_u8("128x"));
+    TEST_ASSERT_EQUAL_size_t(0, str_to_u8("0"));
+    TEST_ASSERT_EQUAL_size_t(128, str_to_u8("128"));
+    TEST_ASSERT_EQUAL_size_t(255, str_to_u8("255"));
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_is_ident_start_accepts_letters_and_underscore);
@@ -92,5 +109,6 @@ int main(void) {
     RUN_TEST(test_ends_with);
     RUN_TEST(test_is_blacklisted);
     RUN_TEST(test_index_of_scalar);
+    RUN_TEST(test_str_to_u8);
     return UNITY_END();
 }

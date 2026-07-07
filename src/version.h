@@ -1,7 +1,7 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define NVI_VERSION "0.0.19"
+#define NVI_VERSION "0.0.20"
 
 #ifndef NVI_BUILD
 #define NVI_BUILD "debug"
@@ -35,4 +35,4 @@
 
 #define NVI_TARGET NVI_ARCH "-" NVI_OS
 
-#endif
+#endif // VERSION_H

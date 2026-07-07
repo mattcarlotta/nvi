@@ -23,4 +23,4 @@ static inline bool list_contains(const list_t *list, const char *key) {
     return false;
 }
 
-#endif
+#endif // LIST_H

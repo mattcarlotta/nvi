@@ -5,4 +5,4 @@
 result_t operation_error(const char *fmt, ...);
 result_t usage_error(const char *fmt, ...);
 
-#endif
+#endif // ERRORS_H

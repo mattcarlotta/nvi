@@ -28,4 +28,4 @@ void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_ma
                        env_key_matches_t *env_key_matches);
 static inline void free_env_key_matches(env_key_matches_t *env_key_matches) { DYN_ARR_FREE(env_key_matches); }
 
-#endif
+#endif // MATCHER_H

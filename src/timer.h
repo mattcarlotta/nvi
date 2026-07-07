@@ -46,4 +46,4 @@ static inline void log_dry_run_time(double start) {
 
     fputc('\n', stderr);
 }
-#endif
+#endif // TIMER_H

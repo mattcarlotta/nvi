@@ -52,4 +52,4 @@ void append_file_extension(file_ext_map_t *map, const ext_entry *entry);
 
 static inline void free_file_ext_map(file_ext_map_t *map) { DYN_ARR_FREE(map); }
 
-#endif
+#endif // ACCESSORS_H

@@ -5,31 +5,8 @@
 #include "file.h"
 #include "utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-static const accessor_t *get_accessor(const file_details_t *file, const file_ext_t *file_ext_match, size_t i) {
-    for (size_t a = 0; a < file_ext_match->accessor_count; ++a) {
-        const accessor_t *acc = &file_ext_match->accessors[a];
-
-        if (i + acc->prefix_len > file->len || memcmp(file->contents + i, acc->prefix, acc->prefix_len) != 0) {
-            continue;
-        }
-
-        // reject mid-identifier matches
-        if (i > 0 && is_ident_char(file->contents[i - 1]) && is_ident_char(acc->prefix[0])) {
-            continue;
-        }
-
-        // only support ${}, reject $${}
-        if (acc->pattern == expansion && i > 0 && file->contents[i - 1] == DOLLAR_SIGN) {
-            continue;
-        }
-
-        return acc;
-    }
-
-    return NULL;
-}
 
 static env_key_t extract_env_by_pattern(const file_details_t *file, pattern_t kind, size_t start) {
     switch (kind) {
@@ -134,42 +111,71 @@ static env_key_t extract_env_by_pattern(const file_details_t *file, pattern_t ki
 
 void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_match,
                        env_key_matches_t *env_key_matches) {
-    size_t i = 0;
-    size_t line = 1;
-    size_t line_start = 0;
+    for (size_t acc_idx = 0; acc_idx < file_ext_match->accessor_count; ++acc_idx) {
+        const accessor_t *acc = &file_ext_match->accessors[acc_idx];
+        const bool prefix_starts_with_ident = is_ident_char(acc->prefix[0]);
+        const bool is_expansion = (acc->pattern == expansion);
 
-    while (i < file->len) {
-        // skip to next line
-        if (file->contents[i] == LINE_DELIMITER) {
-            ++line;
-            line_start = i + 1;
-            ++i;
-            continue;
+        size_t line = 1;
+        size_t line_start = 0;
+        size_t line_cursor = 0;
+        size_t search_start = 0;
+
+        while (search_start + acc->prefix_len <= file->len) {
+            const char *match = memchr(file->contents + search_start, acc->prefix[0], file->len - search_start);
+            if (match == NULL) {
+                break;
+            }
+
+            size_t match_pos = (size_t)(match - file->contents);
+            if (match_pos + acc->prefix_len > file->len) {
+                break;
+            }
+
+            search_start = match_pos + 1;
+
+            // reject incomplete prefix match
+            if (memcmp(file->contents + match_pos, acc->prefix, acc->prefix_len) != 0) {
+                continue;
+            }
+
+            // reject matches that begin partway through an identifier (e.g. avoid matching "VAR" inside "MYVAR").
+            if (match_pos > 0 && prefix_starts_with_ident && is_ident_char(file->contents[match_pos - 1])) {
+                continue;
+            }
+
+            // reject $$+{...} (accepts only ${})
+            if (is_expansion && match_pos > 0 && file->contents[match_pos - 1] == DOLLAR_SIGN) {
+                continue;
+            }
+
+            env_key_t env = extract_env_by_pattern(file, acc->pattern, match_pos + acc->prefix_len);
+            if (!is_valid_key(env.key, env.key_len)) {
+                continue;
+            }
+
+            // advance line from wherever it last stopped up to the start of the env
+            // NOTE: may be worth removing as this is purely for dry-run output; this would
+            // reduce overhead for an env_key_match by just storing the key and its length
+            while (line_cursor < env.start) {
+                const char *nl = memchr(file->contents + line_cursor, LINE_DELIMITER, env.start - line_cursor);
+                if (nl == NULL) {
+                    line_cursor = env.start;
+                    break;
+                }
+                size_t nl_pos = (size_t)(nl - file->contents);
+                ++line;
+                line_start = nl_pos + 1;
+                line_cursor = nl_pos + 1;
+            }
+
+            env_key_match_t new_env_key_match = {
+                .key = env.key,
+                .key_len = env.key_len,
+                .line = line,
+                .byte = env.start - line_start + 1,
+            };
+            DYN_ARR_APPEND(env_key_matches, new_env_key_match);
         }
-
-        const accessor_t *acc = get_accessor(file, file_ext_match, i);
-        if (acc == NULL) {
-            ++i;
-            continue;
-        }
-
-        env_key_t env = extract_env_by_pattern(file, acc->pattern, i + acc->prefix_len);
-
-        bool valid_key = is_valid_key(env.key, env.key_len);
-        if (!valid_key) {
-            i += acc->prefix_len;
-            continue;
-        }
-
-        env_key_match_t found_env_key_match = {
-            .key = env.key,
-            .key_len = env.key_len,
-            .line = line,
-            .byte = env.start - line_start + 1,
-        };
-
-        DYN_ARR_APPEND(env_key_matches, found_env_key_match);
-
-        i = env.end;
     }
 }

@@ -7,50 +7,58 @@
 #include "list.h"
 #include "log.h"
 #include "macros.h"
+#include "nthread.h"
 #include "result.h"
 #include "utils.h"
 #include "version.h"
 #include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
-    log_f("\n    \u2022");
-    log_info(" %s: ", label);
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " %s: ", label);
 
     if (count == 0) {
-        log_comment("(empty)");
+        log_comment(SINK_STDERR, "(empty)");
         return;
     }
 
     for (size_t i = 0; i < count; ++i) {
         if (i != 0) {
-            log_f("%s", sep);
+            log_f(SINK_STDERR, "%s", sep);
         }
-        log_f("%s", items[i]);
+        log_f(SINK_STDERR, "%s", items[i]);
     }
 }
 
+static void report_flag_threads(const uint8_t threads) {
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " scan threads: ");
+    log_f(SINK_STDERR, "%d", threads);
+}
+
 static void report_flag_format(const format_t format) {
-    log_f("\n    \u2022");
-    log_info(" format: ");
-    log_f("%s\n\n", get_format_name(format));
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " format: ");
+    log_f(SINK_STDERR, "%s\n\n", get_format_name(format));
 }
 
 static void report_flag_scan_extensions(const char *label, const file_ext_map_t *map, const char *sep) {
-    log_f("\n    \u2022");
-    log_info(" %s: ", label);
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " %s: ", label);
 
     if (map->count == 0) {
-        log_comment("(empty)");
+        log_comment(SINK_STDERR, "(empty)");
         return;
     }
 
     for (size_t i = 0; i < map->count; ++i) {
         if (i != 0) {
-            log_f("%s", sep);
+            log_f(SINK_STDERR, "%s", sep);
         }
-        log_f("%s", map->items[i].ext);
+        log_f(SINK_STDERR, "%s", map->items[i].ext);
     }
 }
 
@@ -59,13 +67,14 @@ static void report_flags(const args_t *args) {
         return;
     }
 
-    log_info("\n[INFO]");
-    log_f(" The following flags have been set...");
+    log_info(SINK_STDERR, "\n[INFO]");
+    log_f(SINK_STDERR, " The following flags have been set...");
     report_flag_items("command", args->command.items, args->command.count, " ");
     report_flag_items("files", args->files.items, args->files.count, ", ");
     report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
     report_flag_items("required ENVs", args->required.items, args->required.count, ", ");
     report_flag_scan_extensions("scan extensions", &args->scan_exts, ", ");
+    report_flag_threads(args->scan_threads);
     report_flag_format(args->format);
 }
 
@@ -74,8 +83,8 @@ static void report_command_skipped_warning(const args_t *args) {
         return;
     }
 
-    log_warning("\n[WARNING]");
-    log_f(" Found a command with dry-run enabled; skipping.\n");
+    log_warning(SINK_STDERR, "\n[WARNING]");
+    log_f(SINK_STDERR, " Found a command with dry-run enabled; skipping.\n");
 }
 
 static const flag_entry_t flags[] = {
@@ -87,6 +96,7 @@ static const flag_entry_t flags[] = {
     FLAG("-F", "--format", FORMAT_FLAG),
     FLAG("-r", "--required", REQUIRED_FLAG),
     FLAG("-s", "--scan", "scan", SCAN_FLAG),
+    FLAG("-t", "--threads", THREADS_FLAG),
     FLAG("-v", "--version", "version", VERSION_FLAG),
 };
 
@@ -157,11 +167,12 @@ static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
     if (!is_env_file(base)) {
-        return operation_error("The file flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
+        return operation_error(
+            "The 'files' flag argument '%s' is an invalid .env file (missing or invalid '.env' extension)\n", p);
     }
 
     if (is_absolute_path(p)) {
-        return operation_error("The file flag '%s' must be relative to the current directory\n", p);
+        return operation_error("The 'files' flag argument '%s' must be relative to the current directory\n", p);
     }
 
     if (path_escapes_cwd(p)) {
@@ -178,6 +189,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     args->argv = argv;
     args->format = get_default_format();
     args->dry_run = false;
+    args->scan_threads = 1;
 
     result_t result = RESULT_OK;
 
@@ -281,10 +293,27 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
 
                 break;
             }
+            case THREADS_FLAG: {
+                const char *param;
+                result = get_next_value(args, "threads", &param);
+                if (!result.ok) {
+                    return result;
+                }
+
+                const int MAX_CPU_CORES = cpu_count();
+                int threads = str_to_u8(param);
+                if (threads < 1 || threads > MAX_CPU_CORES) {
+                    return usage_error("The 'threads' flag only supports up to %d available thread%s (CPU core bound), "
+                                       "therefore %s is not valid",
+                                       MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
+                }
+
+                args->scan_threads = (uint8_t)threads;
+                break;
+            }
             case HELP_FLAG: {
                 fputs(
                     "Usage: nvi [flags] -- <command>\n"
-                    "       nvi scan [ext] [ext] ...etc (no <command>)\n"
                     "\n"
                     "Flags:\n"
                     "  -d, --dry-run                prints flags, scan results, file tokens and parsed ENVs to stderr\n"
@@ -297,11 +326,14 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                     "  -r, --required <keys>        ensures ENV keys are defined before the <command> is emitted\n"
                     "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
                     "\u2020\n"
+                    "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
+                    "your CPU core count) \u2020\u2020\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
                     "\n"
                     " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
-                    "ENV keys are "
-                    "added to the required ENV list\n"
+                    "ENV keys are added to the required ENV list\n"
+                    " \u2020\u2020 using more threads than available CPU cores and/or the OS's IO limitations "
+                    "will degrade scanning performance\n"
                     "\n"
                     "Supported scan file extensions (to the right -> of the language):\n"
                     " \u2022 C -> c, h\n"

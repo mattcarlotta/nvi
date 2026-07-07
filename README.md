@@ -1,20 +1,20 @@
 # nvi
 
-nvi (en-vee) is a fast, cross-platform, exec-free, RegEx-free `.env` parser, scanner and emitter.
+A fast and minimal cross-platform CLI `.env` parser, environment-variable scanner and emitter.
 
 - 0 dependencies
-- Language and framework agnostic
-- Parses one or more `.env` files
-- Handles `${KEY}` interpolations
-- Supports multiline values via `\` (backslash-newline) delimiter
-- Optionally scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and sets them as required
-- Optionally validates required keys to be defined before command execution
+- Language and framework agnostic (replaces language specfic env packages)
+- Sequentially parses one or more `.env` files
+- Supports `${KEY}` interpolations, `#` comments, `'` and `"` quotes, and `\` delimited multiline values
+- Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
+- Checks required environment-variables are defined before command execution
+- Supports ignoring environment-variables that may be set at run-time
 
 ## Installation
 
 For the best compatibility [build and install from source](#build-and-install-from-source).
 
-Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi-bin/releases/).
+Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi/releases/).
 
 Then extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell).
 
@@ -25,8 +25,8 @@ If you're not sure if the destination directory is recognized by your shell, use
 ## Build and install from source
 
 Optional requirements:
-- [Clangd](https://clangd.llvm.org/) `17.0.0` or later (for LSP)
-- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html) `17.0.0`
+- [Clangd](https://clangd.llvm.org/)
+- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html)
 
 Building source code:
 - [nob.h](https://github.com/tsoding/nob.h)
@@ -34,14 +34,14 @@ Building source code:
 ### POSIX (Linux, macOS, WSL)
 
 Requirements:
-- [Clang](https://clang.llvm.org/) `17.0.0` or later
+- [Clang](https://clang.llvm.org/)
 - [LLD](https://lld.llvm.org/) on Linux (release builds link with `-fuse-ld=lld`; usually packaged as `lld`)
 
 Clone repo and build `nob`:
 ```sh
 cd ~/Downloads
 
-git clone git@github.com:mattcarlotta/nvi-bin.git && cd nvi-bin
+git clone git@github.com:mattcarlotta/nvi.git && cd nvi
 
 clang nob.c
 ```
@@ -102,7 +102,7 @@ nvi version
 
 Requirements:
 - [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
-- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows) `17.0.0` or later
+- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows)
 
 Follow these steps:
 1. Install MSVC Build Tools:
@@ -140,27 +140,27 @@ cd Documents
 
 7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account):
 ```powershell
-git clone git@github.com:mattcarlotta/nvi-bin.git
+git clone git@github.com:mattcarlotta/nvi.git
 ```
 Optionally download it:
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi-bin/archive/refs/heads/main.zip" -OutFile "nvi-bin.zip"
+Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi/archive/refs/heads/main.zip" -OutFile "nvi.zip"
 ```
 Then extract it:
 ```powershell
-Expand-Archive -Path "nvi-bin.zip" -DestinationPath "nvi-bin"
+Expand-Archive -Path "nvi.zip" -DestinationPath "nvi"
 ```
 Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
 ```powershell
 git init
-git remote add origin https://github.com/mattcarlotta/nvi-bin.git
+git remote add origin https://github.com/mattcarlotta/nvi.git
 git fetch origin
 git reset origin
 ```
 
-8. Change directory to `nvi-bin`:
+8. Change directory to `nvi`:
 ```powershell
-cd nvi-bin
+cd nvi
 ```
 
 9. Build `nob.c`:
@@ -219,7 +219,10 @@ Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
 source <profile_url>
 ```
-
+To verify it's available, run:
+```sh
+which nvix
+```
 ### Run in PowerShell (Windows)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
@@ -264,19 +267,22 @@ Notes for Windows users:
 
 ## Flags
 
-| Flag | Alias | Command | Parameters | Description |
-| --- | --- | --- | --- | --- |
-| `--dry-run` | `-d` | | | Prints parsed flags, scan results, file tokens, and the parsed ENVs to stderr. |
-| `--files` | `-f` | | one or more paths | Parses `.env` files in sequential order (requires at least 1 `.env` file). Later files override earlier ones. Paths must be relative to the current directory, must not escape it, and must contain the `.env` extension. |
-| `--format` | `-F` | | `nul` or `powershell` | Formats ENVs for the downstream consumer. Defaults to `nul` on POSIX and `powershell` on Windows (chosen at compile time per target). |
-| `--help` | `-h` | `help` | | Prints usage help to stdout and exits with 0. |
-| `--ignored` | `-i` | | one or more keys | Ignores keys that `scan` may add to the required ENV list (e.g. `NODE_ENV`, which is typically injected at runtime). |
-| `--required` | `-r` | | one or more keys | Requires keys that must exist with non-empty values after parsing all `.env` files; exits with an 1 (operational error) with a list of keys that are undefined. |
-| `--scan` | `-s`| `scan` | one or more file extensions | Recursively scans `<ext>` files for environment-variable accessors and sets the ENV required list.† |
-| `--version` | `-v` | `version` | | Prints version info to stdout and exits with 0. |
-| `--` | | | command tokens | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). Remains untouched and is emitted with ENVs for a downstream consumer to run. |
+| Flag Usage | Description |
+| --- | --- |
+| `-d, --dry-run` | Prints results to stderr and exits with 0. |
+| `-f, --files <file> ...`| Parses one or more `.env` files in sequential order. |
+| `-F, --format <format>` | Formats ENVs for the downstream consumer (formats: `nul` or `powershell`). |
+| `-h, --help` | Prints usage help to stdout and exits with 0. |
+| `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
+| `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
+| `-s, --scan <ext> ...` | Recursively scans `<ext>` files for environment-variable accessors. † |
+| `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
+| `-v, --version` |  Prints version info to stdout and exits with 0. |
+| `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
+
+> †† using more threads than available CPU cores and/or the OS's IO limitations will degrade scanning performance
 
 Unrecognized flags or arguments are usage errors.
 
@@ -314,7 +320,7 @@ The exit code of *your command* will be reported by the downstream consumer, not
 
 ## Scanning for ENV keys
 
-`-s`, `--scan` or just `scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
+`-s`, `--scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
 For example, every line below is recognized and yields the key `DATABASE_URL`:
 
@@ -397,15 +403,20 @@ e.DATABASE_URL;
 #### Scan Usage Examples
 
 ```sh
-# scans and reports matching ENVs in .mjs and .ts files, then exits
-nvi --scan mjs ts --dry-run
+# scans for matching ENVs within .mjs and .ts files using 4 threads, reports findings, then exits
+nvi --scan mjs ts --threads 4 --dry-run
 
-# collects scanned keys to be required and defined before 'npm run dev' command is emitted
-nvi --scan mjs --files .env -- npm run dev | <consumer>
+# collects scanned keys to be required and defined before the 'node index.js' command is emitted
+nvi --scan mjs --files .env -- node index.mjs | <consumer>
 
-# excludes runtime-injected ENVs found within the 'npm run dev' command environment
+# ignores runtime-injected ENVs often found within 'npm run dev' (node) environment
 nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 ```
+
+> [!CAUTION]
+> There's an OS bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
+> For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8 ..., up to the max CPU core count (16 threads).
+> More is not always better; too many threads may degrade scanning performance significantly (to the point where it's close to using a single thread).
 
 Notes:
 
@@ -537,5 +548,5 @@ Run all test suites:
 - Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
-### [Contributing](https://github.com/mattcarlotta/nvi-bin/blob/main/CONTRIBUTING.MD)
-### [License](https://github.com/mattcarlotta/nvi-bin/blob/main/LICENSE.md)
+### [Contributing](CONTRIBUTING.MD)
+### [License](LICENSE.md)

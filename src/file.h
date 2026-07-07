@@ -38,4 +38,4 @@ typedef struct {
 
 file_details_t open_file(const char *path);
 
-#endif
+#endif // FILE_H
