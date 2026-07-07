@@ -11,15 +11,15 @@
 #include "macros.h"
 #include "matcher.h"
 #include "nthread.h"
+#include "result.h"
 #include "utils.h"
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
-// the walker's best knowledge of an entry's type before dispatch;
-// ENTRY_UNKNOWN means a stat() is required to classify it
 typedef enum {
     ENTRY_UNKNOWN,
     ENTRY_DIR,
@@ -27,7 +27,7 @@ typedef enum {
 } entry_kind_t;
 
 typedef struct {
-    char **items; // heap-owned directory paths, popped LIFO
+    char **items;
     size_t count;
     size_t capacity;
 } dir_queue_t;
@@ -37,27 +37,16 @@ typedef struct {
     mutex_t lock;
     cond_t work_ready;
     dir_queue_t dirs;
-    size_t pending;  // dirs queued or currently being processed
-    result_t result; // first error wins
-    bool failed;
+    size_t pending;
+    result_t result;
 } walk_ctx_t;
 
 typedef struct {
     walk_ctx_t *ctx;
-    scanner_t scanner; // share-nothing: private counters and env hashmap
-    buf_t report;      // per-worker report buffer; each flush is one fwrite,
-                       // so blocks land whole even under concurrency
+    scanner_t scanner;
+    buf_t report;
     thread_t thread;
 } scan_worker_t;
-
-// ---------------------------------------------------------------------------
-// dry-run reporting
-//
-// Reports emitted from worker threads (per-file results, empty-file warnings)
-// compose into the worker's log_buf_t and flush once, which is the atomicity
-// boundary stdio guarantees. Reports emitted from the main thread before or
-// after the join keep using the direct log_ functions.
-// ---------------------------------------------------------------------------
 
 static void report_scan_start(const args_t *args) {
     if (!args->dry_run) {
@@ -210,7 +199,6 @@ static result_t scan_file(const args_t *args, scan_worker_t *worker, const char 
     return RESULT_OK;
 }
 
-// queue a directory for any worker to pick up; the queue owns the copy
 static void queue_dir(walk_ctx_t *ctx, const char *path) {
     char *copy = strdup(path);
     if (copy == NULL) {
@@ -237,9 +225,6 @@ static result_t handle_entry(scan_worker_t *worker, const char *parent, const ch
         return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
-    // only classify via stat_path() when the directory listing couldn't
-    // (e.g. DT_UNKNOWN filesystems, or links: stat_path is lstat on POSIX,
-    // so links classify as neither dir nor file and are skipped)
     if (kind == ENTRY_UNKNOWN) {
         struct stat st;
         if (stat_path(path, &st) != 0) {
@@ -263,13 +248,11 @@ static result_t handle_entry(scan_worker_t *worker, const char *parent, const ch
     return scan_file(worker->ctx->args, worker, path, name);
 }
 
-// list one directory: scan matching files inline, queue subdirectories.
-// 'scratch' is a PATH_MAX buffer owned by the calling worker.
+// list a directory: scan matching files inline, queue subdirectories.
 static result_t process_dir(scan_worker_t *worker, const char *path, char *scratch) {
     result_t result = RESULT_OK;
 
 #if defined(_WIN32) && defined(_MSC_VER)
-    // build the search pattern in the scratch buffer, then reuse it for entries
     int n = snprintf(scratch, PATH_MAX, "%s" PATH_SEP "*", path);
     if (n < 0 || (size_t)n >= PATH_MAX) {
         return operation_error("path too long: '%s'", path);
@@ -288,8 +271,6 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
             continue;
         }
 
-        // FindFirstFile/FindNextFile already report the entry type, so no
-        // stat is needed on this platform
         entry_kind_t kind = (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? ENTRY_DIR : ENTRY_FILE;
 
         result = handle_entry(worker, path, fd.cFileName, scratch, kind);
@@ -310,10 +291,6 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
     while ((entry = readdir(dir)) != NULL) {
         entry_kind_t kind = ENTRY_UNKNOWN;
 
-        // d_type classifies most entries straight from the directory listing,
-        // saving one stat syscall per entry; DT_UNKNOWN (filesystems that
-        // don't populate d_type) and DT_LNK fall back to the stat_path path
-        // in handle_entry
 #if defined(DT_DIR) && defined(DT_REG)
         if (entry->d_type == DT_DIR) {
             kind = ENTRY_DIR;
@@ -334,9 +311,8 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
     return result;
 }
 
-// worker loop: pop a directory, process it, repeat. Exits when a failure is
+// pop a directory, process it, repeat. Exits when a failure is
 // flagged or when the queue is empty with no directories still in flight
-// (pending == 0), which is the guaranteed-quiescent termination condition.
 static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     scan_worker_t *worker = arg;
     walk_ctx_t *ctx = worker->ctx;
@@ -350,11 +326,11 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
 
     for (;;) {
         mutex_lock(&ctx->lock);
-        while (ctx->dirs.count == 0 && ctx->pending > 0 && !ctx->failed) {
+        while (ctx->dirs.count == 0 && ctx->pending > 0 && ctx->result.ok) {
             cond_wait(&ctx->work_ready, &ctx->lock);
         }
 
-        if (ctx->failed || ctx->dirs.count == 0) {
+        if (!ctx->result.ok || ctx->dirs.count == 0) {
             mutex_unlock(&ctx->lock);
             break;
         }
@@ -366,14 +342,16 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
         free(dir);
 
         mutex_lock(&ctx->lock);
-        if (!result.ok && !ctx->failed) {
-            ctx->failed = true;
+        if (!result.ok && ctx->result.ok) {
             ctx->result = result;
         }
+
         --ctx->pending;
-        if (ctx->pending == 0 || ctx->failed) {
+
+        if (ctx->pending == 0 || !ctx->result.ok) {
             cond_broadcast(&ctx->work_ready);
         }
+
         mutex_unlock(&ctx->lock);
     }
 
@@ -382,8 +360,6 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     return 0;
 }
 
-// fold a worker's private results into the main scanner, transferring key
-// ownership so no string is copied twice or freed twice
 static void merge_worker_scanner(scanner_t *dst, scanner_t *src) {
     dst->dirs_scanned += src->dirs_scanned;
     dst->files_scanned += src->files_scanned;
@@ -441,60 +417,47 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     report_scan_start(args);
 
-    walk_ctx_t ctx = {0};
-    ctx.args = args;
-    ctx.result = RESULT_OK;
+    walk_ctx_t ctx = {.args = args, .result = RESULT_OK};
     mutex_init(&ctx.lock);
     cond_init(&ctx.work_ready);
 
     queue_dir(&ctx, ".");
 
-    // dry-run runs parallel too: buffered reports keep each block whole, at
-    // the cost of file order varying run to run (completion order)
-    size_t nthreads = args->scan_threads;
-
-    if (nthreads == 1) {
-        // run the worker loop on the calling thread: no spawn, same code path
-        scan_worker_t worker = {.ctx = &ctx, .scanner = {.scan_exts = &args->scan_exts}};
-        scan_worker(&worker);
-        merge_worker_scanner(scanner, &worker.scanner);
-    } else {
-        scan_worker_t *workers = calloc(nthreads, sizeof(*workers));
-        if (workers == NULL) {
-            log_error(SINK_STDERR, "[ERROR] Failed to allocate scan workers (system is out of memory?); aborting.\n");
-            fflush(stderr);
-            exit(EXIT_FAILURE);
-        }
-
-        size_t spawned = 0;
-        for (size_t i = 0; i < nthreads; ++i) {
-            workers[i].ctx = &ctx;
-            workers[i].scanner.scan_exts = &args->scan_exts;
-
-            if (thread_create(&workers[i].thread, scan_worker, &workers[i]) != 0) {
-                break; // proceed with however many threads started
-            }
-            ++spawned;
-        }
-
-        if (spawned == 0) {
-            // no threads available: fall back to running inline (no join,
-            // since no thread handle exists)
-            scan_worker(&workers[0]);
-        } else {
-            for (size_t i = 0; i < spawned; ++i) {
-                thread_join(workers[i].thread);
-            }
-        }
-
-        for (size_t i = 0; i < nthreads; ++i) {
-            merge_worker_scanner(scanner, &workers[i].scanner);
-        }
-
-        free(workers);
+    uint8_t nthreads = args->scan_threads;
+    scan_worker_t *workers = calloc(nthreads, sizeof(*workers));
+    if (workers == NULL) {
+        log_error(SINK_STDERR, "[ERROR] Failed to allocate scan workers (system is out of memory?); aborting.\n");
+        fflush(stderr);
+        exit(EXIT_FAILURE);
     }
 
-    // a failure can leave queued directories unprocessed; release them
+    for (uint8_t i = 0; i < nthreads; ++i) {
+        workers[i].ctx = &ctx;
+        workers[i].scanner.scan_exts = &args->scan_exts;
+    }
+
+    uint8_t spawned = 0;
+    while (spawned < nthreads) {
+        if (thread_create(&workers[spawned].thread, scan_worker, &workers[spawned]) != 0) {
+            break;
+        }
+        ++spawned;
+    }
+
+    if (spawned == 0) {
+        scan_worker(&workers[0]);
+    } else {
+        for (uint8_t i = 0; i < spawned; ++i) {
+            thread_join(workers[i].thread);
+        }
+    }
+
+    for (uint8_t i = 0; i < nthreads; ++i) {
+        merge_worker_scanner(scanner, &workers[i].scanner);
+    }
+
+    free(workers);
+
     for (size_t i = 0; i < ctx.dirs.count; ++i) {
         free(ctx.dirs.items[i]);
     }

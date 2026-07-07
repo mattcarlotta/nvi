@@ -303,7 +303,8 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 const int MAX_CPU_CORES = cpu_count();
                 int threads = str_to_u8(param);
                 if (threads < 1 || threads > MAX_CPU_CORES) {
-                    return usage_error("The 'threads' flag only supports up to %d thread%s, instead found %s",
+                    return usage_error("The 'threads' flag only supports up to %d available thread%s (CPU core bound), "
+                                       "therefore %s is not valid",
                                        MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
                 }
 
