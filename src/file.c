@@ -35,7 +35,7 @@ file_details_t open_file(const char *path) {
 
     int fd = open_file_rdo(path);
     if (fd < 0) {
-        log_error(SINK_STDERR, "[ERROR] Unable to open '%s' (not a valid file?)\n", path);
+        log_error(SINK_STDERR, "[ERROR] Unable to open '%s' (file doesn't exist)\n", path);
         return file_details;
     }
 
@@ -46,7 +46,7 @@ file_details_t open_file(const char *path) {
     }
 
     if (!S_ISREG(st.st_mode)) {
-        log_error(SINK_STDERR, "[ERROR] Unable to open '%s' (not a valid file?)", path);
+        log_error(SINK_STDERR, "[ERROR] Unable to open '%s' (not a valid file)", path);
         goto done;
     }
 

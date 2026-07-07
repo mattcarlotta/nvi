@@ -167,11 +167,12 @@ static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
     if (!is_env_file(base)) {
-        return operation_error("The file flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
+        return operation_error(
+            "The 'files' flag argument '%s' is an invalid .env file (missing or invalid '.env' extension)\n", p);
     }
 
     if (is_absolute_path(p)) {
-        return operation_error("The file flag '%s' must be relative to the current directory\n", p);
+        return operation_error("The 'files' flag argument '%s' must be relative to the current directory\n", p);
     }
 
     if (path_escapes_cwd(p)) {

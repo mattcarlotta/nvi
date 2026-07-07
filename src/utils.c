@@ -19,10 +19,20 @@ static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
 bool is_path_sep(const char c) { return c == FORWARD_SLASH || c == BACK_SLASH; }
 
-bool is_absolute_path(const char *f) { return is_path_sep(f[0]) || (isalpha((unsigned char)f[0]) && f[1] == COLON); }
+bool is_absolute_path(const char *p) { return is_path_sep(p[0]) || (isalpha((unsigned char)p[0]) && p[1] == COLON); }
 
-bool path_escapes_cwd(const char *f) {
-    const char *path = f;
+const char *path_basename(const char *fp) {
+    const char *base = fp;
+    for (const char *path = fp; *path; ++path) {
+        if (is_path_sep(*path)) {
+            base = path + 1;
+        }
+    }
+
+    return base;
+}
+
+bool path_escapes_cwd(const char *path) {
     while (*path) {
         const char *start = path;
 
@@ -44,21 +54,10 @@ bool path_escapes_cwd(const char *f) {
     return false;
 }
 
-const char *path_basename(const char *f) {
-    const char *base = f;
-    for (const char *p = f; *p; ++p) {
-        if (is_path_sep(*p)) {
-            base = p + 1;
-        }
-    }
-
-    return base;
-}
-
 bool ends_with(const char *name, const char *suffix) {
     size_t nlen = strlen(name);
     size_t slen = strlen(suffix);
-    return nlen >= slen && strcmp(name + nlen - slen, suffix) == 0;
+    return nlen >= slen && memcmp(name + nlen - slen, suffix, slen) == 0;
 }
 
 bool is_blacklisted(const char *name) {
