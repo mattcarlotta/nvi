@@ -1,6 +1,6 @@
 # nvi
 
-A fast cross-platform CLI `.env` parser, environment-variable scanner and emitter.
+A fast and minimal cross-platform CLI `.env` parser, environment-variable scanner and emitter.
 
 - 0 dependencies
 - Language and framework agnostic (replaces language specfic env packages)
@@ -543,5 +543,5 @@ Run all test suites:
 - Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
-### [Contributing](https://github.com/mattcarlotta/nvi/blob/main/CONTRIBUTING.MD)
-### [License](https://github.com/mattcarlotta/nvi/blob/main/LICENSE.md)
+### [Contributing](CONTRIBUTING.MD)
+### [License](LICENSE.md)
