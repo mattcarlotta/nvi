@@ -63,4 +63,4 @@ typedef struct {
 result_t parse_args(int arg, const char **argv, args_t *args);
 void free_args(args_t *args);
 
-#endif
+#endif // ARG_H

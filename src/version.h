@@ -35,4 +35,4 @@
 
 #define NVI_TARGET NVI_ARCH "-" NVI_OS
 
-#endif
+#endif // VERSION_H

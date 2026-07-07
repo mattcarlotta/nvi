@@ -22,4 +22,4 @@ void log_error(sink_t s, const char *fmt, ...);
 void log_buf_flush(buf_t *buf);
 void log_buf_free(buf_t *buf);
 
-#endif
+#endif // LOG_H

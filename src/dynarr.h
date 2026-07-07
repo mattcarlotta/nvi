@@ -54,4 +54,4 @@
         (da)->capacity = 0;                                                                                            \
     } while (0)
 
-#endif
+#endif // DYN_ARR_H

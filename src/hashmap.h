@@ -145,4 +145,4 @@ static inline void free_hashmap(hashmap_t *map) {
     map->count = 0;
 }
 
-#endif
+#endif // HASHMAP_H

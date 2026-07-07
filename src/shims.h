@@ -32,4 +32,4 @@ static char *strndup(const char *s, size_t n) {
 #include <unistd.h>
 #endif
 
-#endif
+#endif // SHIMS_H

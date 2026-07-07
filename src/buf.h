@@ -9,4 +9,4 @@ typedef struct {
     size_t capacity;
 } buf_t;
 
-#endif
+#endif // BUF_H

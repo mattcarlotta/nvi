@@ -17,4 +17,4 @@ static const result_t EXIT_EARLY = {.ok = false, .code = 0};
 static const result_t OPERATION_FAILURE = {.ok = false, .code = 1};
 static const result_t USAGE_FAILURE = {.ok = false, .code = 2};
 
-#endif
+#endif // RESULT_H

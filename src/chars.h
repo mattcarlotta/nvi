@@ -25,4 +25,4 @@ enum {
     DOT = '.',
 };
 
-#endif
+#endif // CHARS_H

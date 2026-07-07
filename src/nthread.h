@@ -1,11 +1,6 @@
 #ifndef NTHREAD_H
 #define NTHREAD_H
 
-// minimal cross-platform threading shim: threads, a mutex, a condition
-// variable, and a core-count query. POSIX maps to pthreads; Windows maps
-// to _beginthreadex with SRWLOCK + CONDITION_VARIABLE (Vista+), which
-// need no explicit destruction.
-
 #include <stddef.h>
 
 #if defined(_WIN32)

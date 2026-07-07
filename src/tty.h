@@ -28,4 +28,4 @@ void tty_init(void);
 #define ITALIC "\x1b[3m"
 #define RESET "\x1b[0m"
 
-#endif
+#endif // TTY_H

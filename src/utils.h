@@ -20,4 +20,4 @@ bool is_valid_key(const char *key, size_t len);
 void fput_repeat(FILE *f, char c, size_t n);
 int str_to_u8(const char *s);
 
-#endif
+#endif // UTILS_H

@@ -37,4 +37,4 @@ static inline format_t get_format(const char *arg) {
     return FORMAT_UNKNOWN;
 }
 
-#endif
+#endif // FORMAT_H

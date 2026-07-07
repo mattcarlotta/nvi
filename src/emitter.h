@@ -6,4 +6,4 @@
 
 void run_emitter(const args_t *args, const env_map_t *env_map);
 
-#endif
+#endif // EMITTER_H
