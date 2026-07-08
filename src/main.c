@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "arg.h"
 #include "emitter.h"
 #include "parser.h"
@@ -13,16 +14,21 @@ int main(int argc, const char **argv) {
 
     const double start = monotonic_seconds();
 
+    arena_t arena;
+    arena_init(&arena, 0);
+
     result_t result = RESULT_OK;
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
     env_map_t env_map = {0};
 
-    result = parse_args(argc, argv, &args);
+    result = parse_args(argc, argv, &arena, &args);
     if (!result.ok) {
         goto done;
     }
+
+    goto done;
 
     if (args.scan_exts.count > 0) {
         result = run_scanner(&args, &scanner);
@@ -58,9 +64,9 @@ done:
     }
     fflush(stderr);
     fflush(stdout);
+    arena_free(&arena);
     free_scanner(&scanner);
     free_envs(&env_map);
     free_tokenizer(&tokenizer);
-    free_args(&args);
     return result.code;
 }

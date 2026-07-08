@@ -1,4 +1,6 @@
 #include "accessors.h"
+#include "arena.h"
+#include "arena_dyn_arr.h"
 #include "macros.h"
 #include <string.h>
 
@@ -277,7 +279,7 @@ const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext)
     return NULL;
 }
 
-void append_file_extension(file_ext_map_t *map, const ext_entry *entry) {
+void append_file_extension(arena_t *arena, file_ext_map_t *map, const ext_entry *entry) {
     if (get_file_extension(map, entry->ext) != NULL) {
         return;
     }
@@ -288,5 +290,5 @@ void append_file_extension(file_ext_map_t *map, const ext_entry *entry) {
         .accessor_count = entry->count,
     };
 
-    DYN_ARR_APPEND(map, match);
+    ARENA_DYN_ARR_APPEND(arena, map, match);
 }

@@ -11,7 +11,7 @@
 //   - aliasing:        const e = process.env; e.FOO
 //   - dynamic keys:    const key = "DATABASE_URL"; process.env[key]        os.getenv(key)
 
-#include "dynarr.h"
+#include "arena.h"
 #include <stddef.h>
 
 typedef enum {
@@ -48,8 +48,6 @@ typedef struct {
 
 const ext_entry *get_scan_extension(const char *ext);
 const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext);
-void append_file_extension(file_ext_map_t *map, const ext_entry *entry);
-
-static inline void free_file_ext_map(file_ext_map_t *map) { DYN_ARR_FREE(map); }
+void append_file_extension(arena_t *arena, file_ext_map_t *map, const ext_entry *entry);
 
 #endif // ACCESSORS_H
