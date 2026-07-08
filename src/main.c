@@ -14,24 +14,20 @@ int main(int argc, const char **argv) {
 
     const double start = monotonic_seconds();
 
-    arena_t arena;
-    arena_init(&arena, 0);
-
-    result_t result = RESULT_OK;
+    arena_t arena = arena_init(0);
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
     env_map_t env_map = {0};
+    result_t result = RESULT_OK;
 
     result = parse_args(argc, argv, &arena, &args);
     if (!result.ok) {
         goto done;
     }
 
-    goto done;
-
     if (args.scan_exts.count > 0) {
-        result = run_scanner(&args, &scanner);
+        result = run_scanner(&arena, &args, &scanner);
 
         if (!result.ok) {
             goto done;
@@ -42,12 +38,12 @@ int main(int argc, const char **argv) {
         goto done;
     }
 
-    result = run_tokenizer(&args, &tokenizer);
+    result = run_tokenizer(&arena, &args, &tokenizer);
     if (!result.ok) {
         goto done;
     }
 
-    result = run_parser(&args, &tokenizer.tokens, &env_map);
+    result = run_parser(&arena, &args, &tokenizer.tokens, &env_map);
     if (!result.ok) {
         goto done;
     }
@@ -65,8 +61,5 @@ done:
     fflush(stderr);
     fflush(stdout);
     arena_free(&arena);
-    free_scanner(&scanner);
-    free_envs(&env_map);
-    free_tokenizer(&tokenizer);
     return result.code;
 }

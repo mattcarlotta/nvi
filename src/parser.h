@@ -1,7 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "arg.h"
-#include "hashmap.h"
+#include "map.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -23,11 +23,11 @@ typedef struct {
     env_t *items;
     size_t count;
     size_t capacity;
-    hashmap_t index;
+    map_t index;
 } env_map_t;
 
 env_t *get_env_from_map(env_map_t *env_map, const char *entry);
-result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map);
+result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, env_map_t *env_map);
 void free_envs(env_map_t *env_map);
 
 #endif // PARSER_H

@@ -1,17 +1,19 @@
 #include "scanner.h"
 #include "accessors.h"
+#include "arena.h"
 #include "arg.h"
 #include "chars.h"
 #include "dynarr.h"
 #include "errors.h"
 #include "file.h"
-#include "hashmap.h"
 #include "list.h"
 #include "log.h"
 #include "macros.h"
+#include "map.h"
 #include "matcher.h"
 #include "nthread.h"
 #include "result.h"
+#include "set.h"
 #include "utils.h"
 #include <errno.h>
 #include <stdint.h>
@@ -36,6 +38,7 @@ typedef struct {
     const args_t *args;
     mutex_t lock;
     cond_t work_ready;
+    arena_t arena; // backs the dirs slot array only; guarded by lock; freed after join
     dir_queue_t dirs;
     size_t pending;
     result_t result;
@@ -44,6 +47,8 @@ typedef struct {
 typedef struct {
     walk_ctx_t *ctx;
     scanner_t scanner;
+    arena_t arena;   // per-worker findings arena; backs scanner.envs, freed wholesale after merge
+    arena_t scratch; // per-worker file scratch; holds file.contents + matches, reset per file
     buf_t report;
     thread_t thread;
 } scan_worker_t;
@@ -149,52 +154,41 @@ static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const cha
     return get_file_extension(map, dot + 1);
 }
 
-static void copy_unique_env_key(scanner_t *scanner, const env_key_match_t *env) {
-    if (hashmap_contains(&scanner->envs, env->key, env->key_len)) {
-        return;
-    }
-
-    const char *new_key = strndup(env->key, env->key_len);
-    if (new_key == NULL) {
-        log_error(SINK_STDERR, "[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
-
-    hashmap_append(&scanner->envs, new_key, env->key_len, 0);
-}
-
 static result_t scan_file(const args_t *args, scan_worker_t *worker, const char *path, const char *name) {
     const file_ext_t *file_ext_match = get_file_accessors(&args->scan_exts, name);
     if (file_ext_match == NULL) {
         return RESULT_OK;
     }
 
-    file_details_t file = open_file(path);
+    // file.contents and matches are per-file scratch: read into the scratch arena and rewind
+    // it at the end so steady-state allocator traffic converges to zero across the tree
+    file_details_t file = open_file(&worker->scratch, path);
     if (file.contents == NULL) {
         return RESULT_OK;
     }
 
     if (file.len == 0) {
         report_empty_file_warning(args, &worker->report, path);
-        free(file.contents);
+        arena_reset(&worker->scratch);
         return RESULT_OK;
     }
 
     ++worker->scanner.files_scanned;
 
     env_key_matches_t env_key_matches = {0};
-    scan_file_content(&file, file_ext_match, &env_key_matches);
+    scan_file_content(&worker->scratch, &file, file_ext_match, &env_key_matches);
 
     report_file_scan_results(args, &worker->report, path, &env_key_matches);
 
+    // set_add copies each unique key into the findings arena; matches point into the scratch
+    // arena, so the copy must happen before the reset below
     for (size_t i = 0; i < env_key_matches.count; ++i) {
+        const env_key_match_t *m = &env_key_matches.items[i];
         ++worker->scanner.references;
-        copy_unique_env_key(&worker->scanner, &env_key_matches.items[i]);
+        set_add(&worker->scanner.envs, m->key, m->key_len);
     }
 
-    free_env_key_matches(&env_key_matches);
-    free(file.contents);
+    arena_reset(&worker->scratch);
 
     return RESULT_OK;
 }
@@ -208,7 +202,9 @@ static void queue_dir(walk_ctx_t *ctx, const char *path) {
     }
 
     mutex_lock(&ctx->lock);
-    DYN_ARR_APPEND(&ctx->dirs, copy);
+    // the slot array lives in the ctx arena (serialized by this lock); each path string
+    // stays on malloc and is freed on pop so peak memory tracks in-flight dirs, not all dirs
+    ARENA_DYN_ARR_APPEND(&ctx->arena, &ctx->dirs, copy);
     ++ctx->pending;
     cond_signal(&ctx->work_ready);
     mutex_unlock(&ctx->lock);
@@ -360,64 +356,69 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     return 0;
 }
 
-static void merge_worker_scanner(scanner_t *dst, scanner_t *src) {
+// Merges a worker's findings into the destination (main-arena) set. set_add copies each key
+// into the destination arena, so the worker's own arena can be freed wholesale afterward.
+static void merge_worker_scanner(scanner_t *dst, const scanner_t *src) {
     dst->dirs_scanned += src->dirs_scanned;
     dst->files_scanned += src->files_scanned;
     dst->references += src->references;
 
     for (size_t i = 0; i < src->envs.capacity; ++i) {
-        const hashmap_entry_t *entry = &src->envs.slots[i];
+        const set_entry_t *entry = &src->envs.items[i];
         if (entry->key == NULL) {
             continue;
         }
 
-        if (hashmap_contains(&dst->envs, entry->key, entry->len)) {
-            free((void *)entry->key);
-        } else {
-            hashmap_append(&dst->envs, entry->key, entry->len, 0);
-        }
-    }
-
-    free_hashmap(&src->envs);
-}
-
-static void append_list_keys(hashmap_t *env_map, const list_t *list) {
-    for (size_t i = 0; i < list->count; ++i) {
-        const char *key = list->items[i];
-        hashmap_append(env_map, key, strlen(key), 0);
+        set_add(&dst->envs, entry->key, entry->len);
     }
 }
 
-void merge_required_envs(args_t *args, const scanner_t *scanner) {
+void merge_required_envs(arena_t *arena, args_t *args, const scanner_t *scanner) {
     if (scanner->envs.count == 0) {
         return;
     }
 
-    hashmap_t env_map = {0};
+    // temporary borrowed-key lookup of ignored + already-required keys. It's scratch that
+    // dies before return, so it gets its own arena rather than stranding in the main one.
+    // Scanner keys are already unique (deduped in scanner->envs), so this lookup only needs
+    // the fixed ignored + CLI-required sets, not the keys appended below.
+    arena_t lookup_arena = arena_init(0);
+    map_t lookup = map_init(&lookup_arena, args->ignored.count + args->required.count);
 
-    append_list_keys(&env_map, &args->ignored);
-    append_list_keys(&env_map, &args->required);
+    for (size_t i = 0; i < args->ignored.count; ++i) {
+        const char *key = args->ignored.items[i];
+        map_add(&lookup, key, strlen(key), 0);
+    }
+    for (size_t i = 0; i < args->required.count; ++i) {
+        const char *key = args->required.items[i];
+        map_add(&lookup, key, strlen(key), 0);
+    }
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        const hashmap_entry_t *entry = &scanner->envs.slots[i];
-        if (entry->key == NULL || hashmap_contains(&env_map, entry->key, entry->len)) {
+        const set_entry_t *entry = &scanner->envs.items[i];
+        if (entry->key == NULL || map_contains(&lookup, entry->key, entry->len)) {
             continue;
         }
 
-        DYN_ARR_APPEND(&args->required, entry->key);
+        // required borrows the set's main-arena key pointer; both live until arena_free
+        ARENA_DYN_ARR_APPEND(arena, &args->required, entry->key);
     }
 
-    free_hashmap(&env_map);
+    arena_free(&lookup_arena);
 
     report_required_keys(args);
 }
 
-result_t run_scanner(args_t *args, scanner_t *scanner) {
+result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
     scanner->scan_exts = &args->scan_exts;
+    // the union set of all workers' findings lives in the main arena, so its keys survive
+    // until exec and can be borrowed by args->required
+    scanner->envs = set_init(arena, 0);
 
     report_scan_start(args);
 
     walk_ctx_t ctx = {.args = args, .result = RESULT_OK};
+    ctx.arena = arena_init(0);
     mutex_init(&ctx.lock);
     cond_init(&ctx.work_ready);
 
@@ -434,6 +435,10 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
     for (uint8_t i = 0; i < nthreads; ++i) {
         workers[i].ctx = &ctx;
         workers[i].scanner.scan_exts = &args->scan_exts;
+        // each worker owns private arenas so its bumps never contend across threads
+        workers[i].arena = arena_init(0);
+        workers[i].scratch = arena_init(0);
+        workers[i].scanner.envs = set_init(&workers[i].arena, 0);
     }
 
     uint8_t spawned = 0;
@@ -452,16 +457,21 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
         }
     }
 
+    // single-threaded from here: merge each worker's findings into the main-arena set, then
+    // release that worker's arena wholesale (keys were copied into the main arena by the merge)
     for (uint8_t i = 0; i < nthreads; ++i) {
         merge_worker_scanner(scanner, &workers[i].scanner);
+        arena_free(&workers[i].arena);
+        arena_free(&workers[i].scratch);
     }
 
     free(workers);
 
+    // free the remaining malloc'd path strings; the slot array is arena-owned
     for (size_t i = 0; i < ctx.dirs.count; ++i) {
         free(ctx.dirs.items[i]);
     }
-    free(ctx.dirs.items);
+    arena_free(&ctx.arena);
 
     cond_destroy(&ctx.work_ready);
     mutex_destroy(&ctx.lock);
@@ -472,14 +482,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     report_scan_summary(args, scanner);
 
-    merge_required_envs(args, scanner);
+    merge_required_envs(arena, args, scanner);
 
     return ctx.result;
-}
-
-void free_scanner(scanner_t *scanner) {
-    for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        free((void *)scanner->envs.slots[i].key);
-    }
-    free_hashmap(&scanner->envs);
 }

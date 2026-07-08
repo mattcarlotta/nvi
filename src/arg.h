@@ -1,7 +1,6 @@
 #ifndef ARG_H
 #define ARG_H
 #include "accessors.h"
-#include "arena.h"
 #include "format.h"
 #include "list.h"
 #include "result.h"

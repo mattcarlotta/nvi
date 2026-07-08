@@ -1,4 +1,5 @@
 #include "file.h"
+#include "arena.h"
 #include "log.h"
 #include <errno.h>
 #include <stdbool.h>
@@ -29,7 +30,7 @@ static void close_file(int fd) { close(fd); }
 
 #endif
 
-file_details_t open_file(const char *path) {
+file_details_t open_file(arena_t *arena, const char *path) {
     file_details_t file_details = {0};
     file_details.path = path;
 
@@ -57,14 +58,7 @@ file_details_t open_file(const char *path) {
         goto done;
     }
 
-    file_details.contents = malloc(file_size + 1);
-    if (file_details.contents == NULL) {
-        log_error(SINK_STDERR,
-                  "[ERROR] Failed to allocate %zu bytes for file '%s' (system out of memory?); aborting.\n",
-                  file_size + 1, path);
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
+    file_details.contents = arena_alloc(arena, file_size + 1);
 
     size_t total = 0;
     while (total < file_size) {
@@ -77,7 +71,8 @@ file_details_t open_file(const char *path) {
             }
 #endif
             log_error(SINK_STDERR, "[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
-            free(file_details.contents);
+            // the partial buffer strands in the arena until the next reset; null the pointer
+            // so the caller sees the failure
             file_details.contents = NULL;
             goto done;
         }

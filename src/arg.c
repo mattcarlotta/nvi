@@ -1,7 +1,6 @@
 #include "arg.h"
 #include "accessors.h"
 #include "arena.h"
-#include "arena_dyn_arr.h"
 #include "chars.h"
 #include "errors.h"
 #include "format.h"
@@ -137,12 +136,6 @@ static result_t get_next_value(args_t *args, const char *flag, const char **para
     return RESULT_OK;
 }
 
-static void append_unique_param(arena_t *arena, list_t *list, const char *value) {
-    if (!list_contains(list, value)) {
-        ARENA_DYN_ARR_APPEND(arena, list, value);
-    }
-}
-
 static bool is_env_file(const char *base) {
     // .env
     if (strcmp(base, ".env") == 0) {
@@ -226,7 +219,7 @@ result_t parse_args(int argc, const char **argv, arena_t *arena, args_t *args) {
                         return result;
                     }
 
-                    append_unique_param(arena, &args->files, param);
+                    list_append_unique(arena, &args->files, param);
                     param = get_next_param(args);
                 }
 
@@ -255,7 +248,7 @@ result_t parse_args(int argc, const char **argv, arena_t *arena, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(arena, &args->ignored, param);
+                    list_append_unique(arena, &args->ignored, param);
                     param = get_next_param(args);
                 }
 
@@ -269,7 +262,7 @@ result_t parse_args(int argc, const char **argv, arena_t *arena, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(arena, &args->required, param);
+                    list_append_unique(arena, &args->required, param);
                     param = get_next_param(args);
                 }
 

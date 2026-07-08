@@ -1,7 +1,7 @@
 #ifndef MATCHER_H
 #define MATCHER_H
 #include "accessors.h"
-#include "dynarr.h"
+#include "arena.h"
 #include "file.h"
 
 typedef struct {
@@ -24,8 +24,7 @@ typedef struct {
     size_t capacity;
 } env_key_matches_t;
 
-void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_match,
+void scan_file_content(arena_t *arena, const file_details_t *file, const file_ext_t *file_ext_match,
                        env_key_matches_t *env_key_matches);
-static inline void free_env_key_matches(env_key_matches_t *env_key_matches) { DYN_ARR_FREE(env_key_matches); }
 
 #endif // MATCHER_H

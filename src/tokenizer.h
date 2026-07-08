@@ -1,5 +1,6 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
+#include "arena.h"
 #include "arg.h"
 #include "file.h"
 #include "result.h"
@@ -9,6 +10,10 @@
 // understand. It also does a little bit of syntax checking to ensure ENV keys aren't missing
 // values and ENV values don't have invalid key interpolations. For something as simple as an
 // .env file, an AST really isn't needed.
+//
+// All durable output (token keys, value tokens, and the token/value dynamic arrays) is
+// allocated from the arena and lives until arena_free; the transient per-parse scratch
+// buffer stays on malloc. There is no free_tokenizer: teardown is arena_free alone.
 
 typedef enum { LITERAL_VALUE, COMMENTED_LINE, INTERPOLATED_KEY } value_kind_t;
 
@@ -45,6 +50,7 @@ typedef struct {
     const char *file;
     size_t file_len;
     const char *file_name;
+    arena_t *arena;
     token_list_t tokens;
 } tokenizer_t;
 
@@ -61,8 +67,7 @@ static inline const char *get_value_kind_name(value_kind_t kind) {
     return "unknown value kind";
 }
 
-result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer);
-result_t generate_tokens(const args_t *args, const file_details_t *file, tokenizer_t *tokenizer);
-void free_tokenizer(tokenizer_t *tokenizer);
+result_t run_tokenizer(arena_t *arena, const args_t *args, tokenizer_t *tokenizer);
+result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_t *file, tokenizer_t *tokenizer);
 
 #endif // TOKENIZER_H

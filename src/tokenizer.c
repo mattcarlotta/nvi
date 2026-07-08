@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "arena.h"
 #include "arg.h"
 #include "chars.h"
 #include "dynarr.h"
@@ -254,8 +255,11 @@ static int peek(const tokenizer_t *tokenizer, size_t offset) {
     return (unsigned char)tokenizer->file[index];
 }
 
+// commit_byte and scan_until append into the transient `value` scratch buffer, which stays
+// on malloc (freed at done) and is reused across the whole parse; only committed tokens are
+// copied into the arena.
 static void commit_byte(tokenizer_t *tokenizer, buf_t *value) {
-    DYN_ARR_APPEND(value, tokenizer->file[tokenizer->i]);
+    ARENA_DYN_ARR_APPEND(tokenizer->arena, value, tokenizer->file[tokenizer->i]);
     skip_byte(tokenizer, 1);
 }
 
@@ -265,20 +269,17 @@ static void scan_until(tokenizer_t *tokenizer, buf_t *value, const unsigned char
         ++end;
     }
 
-    DYN_ARR_APPEND_MANY(value, tokenizer->file + tokenizer->i, end - tokenizer->i);
+    ARENA_DYN_ARR_APPEND_MANY(tokenizer->arena, value, tokenizer->file + tokenizer->i, end - tokenizer->i);
 
     tokenizer->byte += end - tokenizer->i;
     tokenizer->i = end;
 }
 
-static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *token, const buf_t *value) {
-    char *copy = malloc(value->count + 1);
-    if (copy == NULL) {
-        log_error(SINK_STDERR, "[ERROR] Unable to copy token value (not enough system memory?); aborting.");
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
-
+// copies the scratch value into the arena as a durable value token; the parser reads these
+// until exec, so they must outlive file.contents (which is freed per file)
+static void commit_token(arena_t *arena, value_kind_t kind, tokenizer_t *tokenizer, token_t *token,
+                         const buf_t *value) {
+    char *copy = arena_alloc(arena, value->count + 1);
     if (value->count > 0) {
         memcpy(copy, value->items, value->count);
     }
@@ -292,29 +293,17 @@ static void commit_token(value_kind_t kind, tokenizer_t *tokenizer, token_t *tok
         .byte = tokenizer->byte,
     };
 
-    DYN_ARR_APPEND(&token->values, vt);
+    ARENA_DYN_ARR_APPEND(arena, &token->values, vt);
 }
 
-static void append_token(tokenizer_t *tokenizer, token_t *token) {
-    DYN_ARR_APPEND(&tokenizer->tokens, *token);
+static void append_token(arena_t *arena, tokenizer_t *tokenizer, token_t *token) {
+    ARENA_DYN_ARR_APPEND(arena, &tokenizer->tokens, *token);
     *token = (token_t){.file = tokenizer->file_name};
-}
-
-static void free_token(token_t *token) {
-    free(token->key);
-
-    for (size_t k = 0; k < token->values.count; ++k) {
-        free(token->values.items[k].value);
-    }
-
-    free(token->values.items);
-    token->key = NULL;
-    token->values = (value_token_list_t){0};
 }
 
 static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token, buf_t *value, bool allow_empty) {
     if (value->count > 0 || token->values.count == 0) {
-        commit_token(LITERAL_VALUE, tokenizer, token, value);
+        commit_token(tokenizer->arena, LITERAL_VALUE, tokenizer, token, value);
     }
 
     value->count = 0;
@@ -324,12 +313,13 @@ static result_t validate_and_append_token(tokenizer_t *tokenizer, token_t *token
         return report_empty_value_error(tokenizer, token->key);
     }
 
-    append_token(tokenizer, token);
+    append_token(tokenizer->arena, tokenizer, token);
 
     return RESULT_OK;
 }
 
-result_t generate_tokens(const args_t *args, const file_details_t *file, tokenizer_t *tokenizer) {
+result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_t *file, tokenizer_t *tokenizer) {
+    tokenizer->arena = arena;
     tokenizer->file_name = file->path;
     tokenizer->file = file->contents;
     tokenizer->file_len = file->len;
@@ -431,11 +421,8 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     goto done;
                 }
 
-                token.key = strndup(value.items + start, end - start);
-                if (token.key == NULL) {
-                    result = OPERATION_FAILURE;
-                    goto done;
-                }
+                // durable key: borrowed by the parser's env_map until exec
+                token.key = arena_strndup(arena, value.items + start, end - start);
 
                 value.count = 0;
                 // skip '='
@@ -462,8 +449,8 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
 
                 scan_until(tokenizer, &value, STOP_NL, STOP_NL_LEN);
 
-                commit_token(COMMENTED_LINE, tokenizer, &token, &value);
-                append_token(tokenizer, &token);
+                commit_token(arena, COMMENTED_LINE, tokenizer, &token, &value);
+                append_token(arena, tokenizer, &token);
                 value.count = 0;
                 break;
             case DOLLAR_SIGN: {
@@ -476,7 +463,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
 
                 // commit anything accumulated before the "${"
                 if (value.count != 0) {
-                    commit_token(LITERAL_VALUE, tokenizer, &token, &value);
+                    commit_token(arena, LITERAL_VALUE, tokenizer, &token, &value);
                     value.count = 0;
                 }
 
@@ -498,7 +485,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                     goto done;
                 }
 
-                commit_token(INTERPOLATED_KEY, tokenizer, &token, &value);
+                commit_token(arena, INTERPOLATED_KEY, tokenizer, &token, &value);
                 value.count = 0;
                 break;
             }
@@ -519,7 +506,7 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
                 // the same token, so '$', '#', and '=' on continuation lines are
                 // handled normally by the main loop
                 if (value.count != 0) {
-                    commit_token(LITERAL_VALUE, tokenizer, &token, &value);
+                    commit_token(arena, LITERAL_VALUE, tokenizer, &token, &value);
                 }
 
                 value.count = 0;
@@ -592,12 +579,13 @@ result_t generate_tokens(const args_t *args, const file_details_t *file, tokeniz
     }
 
 done:
-    free_token(&token);
+    // the pending token's arena allocations (key, values) strand until arena_free; only the
+    // malloc scratch buffer needs releasing
     free(value.items);
     return result;
 }
 
-result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
+result_t run_tokenizer(arena_t *arena, const args_t *args, tokenizer_t *tokenizer) {
     result_t result = RESULT_OK;
 
     if (args->files.count == 0) {
@@ -610,7 +598,7 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
     for (size_t fi = 0; fi < args->files.count; ++fi) {
         const char *path = args->files.items[fi];
 
-        file_details_t file = open_file(path);
+        file_details_t file = open_file(arena, path);
         if (file.contents == NULL) {
             return OPERATION_FAILURE;
         }
@@ -620,7 +608,7 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
             return operation_error("The '%s' file is empty; expected at least one KEY=VALUE assignment.\n", path);
         }
 
-        result = generate_tokens(args, &file, tokenizer);
+        result = generate_tokens(arena, args, &file, tokenizer);
         free(file.contents);
         tokenizer->file = NULL;
 
@@ -632,11 +620,4 @@ result_t run_tokenizer(const args_t *args, tokenizer_t *tokenizer) {
     report_tokenizer_summary(args, tokenizer);
 
     return result;
-}
-
-void free_tokenizer(tokenizer_t *tokenizer) {
-    for (size_t i = 0; i < tokenizer->tokens.count; ++i) {
-        free_token(&tokenizer->tokens.items[i]);
-    }
-    free(tokenizer->tokens.items);
 }

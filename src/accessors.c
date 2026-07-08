@@ -1,6 +1,6 @@
 #include "accessors.h"
 #include "arena.h"
-#include "arena_dyn_arr.h"
+#include "dynarr.h"
 #include "macros.h"
 #include <string.h>
 

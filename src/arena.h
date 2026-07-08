@@ -49,7 +49,7 @@ typedef struct {
 // A first_chunk_size of 0 uses ARENA_DEFAULT_CHUNK_SIZE. When the input size is known up
 // front (fstat), seeding with something like file_size * 2 + 16K makes a second chunk
 // nearly impossible.
-void arena_init(arena_t *arena, size_t first_chunk_size);
+arena_t arena_init(size_t first_chunk_size);
 
 // Returns a pointer to `size` bytes aligned to ARENA_ALIGNMENT. Never returns NULL
 // (aborts on OOM, matching dynarr.h). A size of 0 returns a valid unique pointer.

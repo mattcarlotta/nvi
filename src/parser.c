@@ -4,6 +4,7 @@
 #include "errors.h"
 #include "log.h"
 #include "macros.h"
+#include "map.h"
 #include "result.h"
 #include "tokenizer.h"
 #include <stdlib.h>
@@ -14,8 +15,8 @@
 #endif
 
 env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
-    size_t i = hashmap_get(&env_map->index, entry, strlen(entry));
-    if (i == HASHMAP_NOT_FOUND) {
+    size_t i = map_get(&env_map->index, entry, strlen(entry));
+    if (i == MAP_NOT_FOUND) {
         return NULL;
     }
 
@@ -32,14 +33,18 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
     return entry != NULL ? entry->value : NULL;
 }
 
-result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map) {
+result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, env_map_t *env_map) {
     result_t result = RESULT_OK;
+
+    // tokens->count is an upper bound on unique keys, so the index never rehashes
+    env_map->index = map_init(arena, tokens->count);
 
     if (args->dry_run) {
         log_info(SINK_STDERR, "[INFO]");
         log_f(SINK_STDERR, " Attempting to parse %zu token%s...\n\n", tokens->count, TO_PLURAL(tokens->count));
     }
 
+    // transient per-token scratch: stays on malloc (freed at done), never the arena
     buf_t value = {0};
     list_t missing_envs = {0};
 
@@ -95,9 +100,9 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     }
 
                     if (env != NULL && env[0] != '\0') {
-                        DYN_ARR_APPEND_MANY(&value, env, strlen(env));
+                        ARENA_DYN_ARR_APPEND_MANY(arena, &value, env, strlen(env));
                     } else if (fallback != NULL) {
-                        DYN_ARR_APPEND_MANY(&value, fallback, fallback_len);
+                        ARENA_DYN_ARR_APPEND_MANY(arena, &value, fallback, fallback_len);
                     }
                     break;
                 }
@@ -110,7 +115,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     break;
                 }
                 default: {
-                    DYN_ARR_APPEND_MANY(&value, value_token->value, value_token->value_len);
+                    ARENA_DYN_ARR_APPEND_MANY(arena, &value, value_token->value, value_token->value_len);
                     break;
                 }
             }
@@ -121,12 +126,8 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             continue;
         }
 
-        char *env_value = malloc(value.count + 1);
-        if (env_value == NULL) {
-            result = operation_error("Unable to copy token value (not enough system memory?); aborting.\n");
-            goto done;
-        }
-
+        // durable value: lives in env_map and is read until exec, so it comes from the arena
+        char *env_value = arena_alloc(arena, value.count + 1);
         if (value.count > 0) {
             memcpy(env_value, value.items, value.count);
         }
@@ -144,12 +145,12 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                 log_info(SINK_STDERR, "%s", env_value);
                 log_f(SINK_STDERR, "...\n\n");
             }
-            free(existing->value);
+            // old value strands in the arena until arena_free; never freed individually
             existing->value = env_value;
         } else {
             env_t new_env = {.key = token_key, .value = env_value};
-            DYN_ARR_APPEND(env_map, new_env);
-            hashmap_append(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
+            ARENA_DYN_ARR_APPEND(arena, env_map, new_env);
+            map_add(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
         }
 
         if (args->dry_run) {
@@ -172,7 +173,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         const char *required_key = args->required.items[i];
         const env_t *entry = get_env_from_map(env_map, required_key);
         if (entry == NULL || entry->value[0] == '\0') {
-            DYN_ARR_APPEND(&missing_envs, required_key);
+            ARENA_DYN_ARR_APPEND(arena, &missing_envs, required_key);
         }
     }
 
@@ -201,14 +202,5 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
 
 done:
     free(value.items);
-    free_list(&missing_envs);
     return result;
-}
-
-void free_envs(env_map_t *env_map) {
-    for (size_t i = 0; i < env_map->count; i++) {
-        free(env_map->items[i].value);
-    }
-    free(env_map->items);
-    free_hashmap(&env_map->index);
 }

@@ -1,28 +1,23 @@
-#ifndef DYN_ARR_H
-#define DYN_ARR_H
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef ARENA_DYNARR_H
+#define ARENA_DYNARR_H
+#include "arena.h"
 
 #define DYN_ARR_INIT_CAP 8
 
-#define DYN_ARR_APPEND(da, item)                                                                                       \
+// Arena-backed append. The buffer is grown via arena_extend and never freed individually;
+// it lives until arena_reset/arena_free. `da` must be zero-initialized before first use.
+#define ARENA_DYN_ARR_APPEND(arena, da, item)                                                                          \
     do {                                                                                                               \
         if ((da)->count == (da)->capacity) {                                                                           \
             size_t _new_cap = (da)->capacity == 0 ? DYN_ARR_INIT_CAP : (da)->capacity * 2;                             \
-            void *_p = realloc((da)->items, _new_cap * sizeof(*(da)->items));                                          \
-            if (_p == NULL) {                                                                                          \
-                fprintf(stderr, "[ERROR] Failed to reallocate memory (system of out memory?); aborting.\n");           \
-                fflush(stderr);                                                                                        \
-                exit(EXIT_FAILURE);                                                                                    \
-            }                                                                                                          \
-            (da)->items = _p;                                                                                          \
+            (da)->items = arena_extend((arena), (da)->items, (da)->capacity * sizeof(*(da)->items),                    \
+                                       _new_cap * sizeof(*(da)->items));                                               \
             (da)->capacity = _new_cap;                                                                                 \
         }                                                                                                              \
         (da)->items[(da)->count++] = (item);                                                                           \
     } while (0)
 
-#define DYN_ARR_APPEND_MANY(da, src, n)                                                                                \
+#define ARENA_DYN_ARR_APPEND_MANY(arena, da, src, n)                                                                   \
     do {                                                                                                               \
         const void *_src = (src);                                                                                      \
         size_t _n = (n);                                                                                               \
@@ -32,13 +27,8 @@
                 while (_new_cap < (da)->count + _n) {                                                                  \
                     _new_cap *= 2;                                                                                     \
                 }                                                                                                      \
-                void *_p = realloc((da)->items, _new_cap * sizeof(*(da)->items));                                      \
-                if (_p == NULL) {                                                                                      \
-                    fprintf(stderr, "[ERROR] Failed to reallocate memory (system out of memory?); aborting.\n");       \
-                    fflush(stderr);                                                                                    \
-                    exit(EXIT_FAILURE);                                                                                \
-                }                                                                                                      \
-                (da)->items = _p;                                                                                      \
+                (da)->items = arena_extend((arena), (da)->items, (da)->capacity * sizeof(*(da)->items),                \
+                                           _new_cap * sizeof(*(da)->items));                                           \
                 (da)->capacity = _new_cap;                                                                             \
             }                                                                                                          \
             memcpy((da)->items + (da)->count, _src, _n * sizeof(*(da)->items));                                        \
@@ -46,12 +36,15 @@
         }                                                                                                              \
     } while (0)
 
-#define DYN_ARR_FREE(da)                                                                                               \
+// Optional: pre-size when a bound is known, so appends never grow (zero abandoned buffers).
+#define ARENA_DYN_ARR_RESERVE(arena, da, want)                                                                         \
     do {                                                                                                               \
-        free((da)->items);                                                                                             \
-        (da)->items = NULL;                                                                                            \
-        (da)->count = 0;                                                                                               \
-        (da)->capacity = 0;                                                                                            \
+        size_t _want = (want);                                                                                         \
+        if (_want > (da)->capacity) {                                                                                  \
+            (da)->items = arena_extend((arena), (da)->items, (da)->capacity * sizeof(*(da)->items),                    \
+                                       _want * sizeof(*(da)->items));                                                  \
+            (da)->capacity = _want;                                                                                    \
+        }                                                                                                              \
     } while (0)
 
-#endif // DYN_ARR_H
+#endif // ARENA_DYNARR_H

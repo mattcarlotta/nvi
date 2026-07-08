@@ -66,11 +66,13 @@ static char *arena_chunk_bump(arena_chunk_t *chunk, size_t size) {
     return (char *)aligned;
 }
 
-void arena_init(arena_t *arena, size_t first_chunk_size) {
-    arena->head = NULL;
-    arena->next_chunk_size = first_chunk_size != 0 ? first_chunk_size : ARENA_DEFAULT_CHUNK_SIZE;
-    arena->last_alloc = NULL;
-    arena->last_size = 0;
+arena_t arena_init(size_t first_chunk_size) {
+    return (arena_t){
+        .head = NULL,
+        .next_chunk_size = first_chunk_size != 0 ? first_chunk_size : ARENA_DEFAULT_CHUNK_SIZE,
+        .last_alloc = NULL,
+        .last_size = 0,
+    };
 }
 
 void *arena_alloc(arena_t *arena, size_t size) {
