@@ -7,7 +7,6 @@
 #include "errors.h"
 #include "file.h"
 #include "hashmap.h"
-#include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
@@ -389,9 +388,9 @@ static void merge_worker_scanner(arena_t *main_arena, scanner_t *dst, scanner_t 
     }
 }
 
-static void append_list_keys(arena_t *arena, hashmap_t *env_map, const list_t *list) {
-    for (size_t i = 0; i < list->count; ++i) {
-        const char *key = list->items[i];
+static void append_list_keys(arena_t *arena, hashmap_t *env_map, const set_t *set) {
+    for (size_t i = 0; i < set->count; ++i) {
+        const char *key = set->items[i];
         hashmap_append(arena, env_map, key, strlen(key), 0);
     }
 }

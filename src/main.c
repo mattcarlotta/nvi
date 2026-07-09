@@ -13,10 +13,6 @@ int main(int argc, const char **argv) {
 
     const double start = monotonic_seconds();
 
-    // one arena owns everything with process lifetime: args lists, scan extensions, merged
-    // scan keys, tokens, and the parsed env map. Worker- and file-scoped arenas live inside
-    // the scanner and tokenizer. The single free below replaces all per-structure cleanup
-    // and is itself optional before an exec, since the process image is replaced anyway.
     arena_t arena;
     arena_init(&arena, 0);
 

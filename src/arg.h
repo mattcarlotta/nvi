@@ -3,8 +3,8 @@
 #include "accessors.h"
 #include "arena.h"
 #include "format.h"
-#include "list.h"
 #include "result.h"
+#include "set.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -54,9 +54,9 @@ typedef struct {
     bool dry_run;
     uint8_t scan_threads;
     format_t format;
-    list_t files;
-    list_t required;
-    list_t ignored;
+    set_t files;
+    set_t required;
+    set_t ignored;
     file_ext_map_t scan_exts;
     command_t command;
 } args_t;

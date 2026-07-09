@@ -22,8 +22,8 @@ static void test_merge_skips_ignored_keys(void) {
     merge_required_envs(&test_arena, &args, &scanner);
 
     TEST_ASSERT_EQUAL_size_t(1, args.required.count);
-    TEST_ASSERT_TRUE(list_contains(&args.required, "API_KEY"));
-    TEST_ASSERT_FALSE(list_contains(&args.required, "NODE_ENV"));
+    TEST_ASSERT_TRUE(set_contains(&args.required, "API_KEY"));
+    TEST_ASSERT_FALSE(set_contains(&args.required, "NODE_ENV"));
 }
 
 static void test_merge_dedups_already_required(void) {
@@ -37,8 +37,8 @@ static void test_merge_dedups_already_required(void) {
     merge_required_envs(&test_arena, &args, &scanner);
 
     TEST_ASSERT_EQUAL_size_t(2, args.required.count);
-    TEST_ASSERT_TRUE(list_contains(&args.required, "API_KEY"));
-    TEST_ASSERT_TRUE(list_contains(&args.required, "DB_URL"));
+    TEST_ASSERT_TRUE(set_contains(&args.required, "API_KEY"));
+    TEST_ASSERT_TRUE(set_contains(&args.required, "DB_URL"));
 }
 
 static void test_merge_empty_envs_is_noop(void) {

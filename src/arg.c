@@ -1,10 +1,8 @@
 #include "arg.h"
 #include "accessors.h"
 #include "chars.h"
-#include "dynarr.h"
 #include "errors.h"
 #include "format.h"
-#include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "nthread.h"
@@ -63,10 +61,6 @@ static void report_flag_scan_extensions(const char *label, const file_ext_map_t 
 }
 
 static void report_flags(const args_t *args) {
-    if (!args->dry_run) {
-        return;
-    }
-
     log_info(SINK_STDERR, "\n[INFO]");
     log_f(SINK_STDERR, " The following flags have been set...");
     report_flag_items("command", args->command.items, args->command.count, " ");
@@ -134,12 +128,6 @@ static result_t get_next_value(args_t *args, const char *flag, const char **para
     }
 
     return RESULT_OK;
-}
-
-static void append_unique_param(arena_t *arena, list_t *list, const char *value) {
-    if (!list_contains(list, value)) {
-        DYN_ARR_APPEND(arena, list, value);
-    }
 }
 
 static bool is_env_file(const char *base) {
@@ -224,7 +212,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                         return result;
                     }
 
-                    append_unique_param(arena, &args->files, param);
+                    set_add(arena, &args->files, param);
                     param = get_next_param(args);
                 }
 
@@ -253,7 +241,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(arena, &args->ignored, param);
+                    set_add(arena, &args->ignored, param);
                     param = get_next_param(args);
                 }
 
@@ -267,7 +255,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(arena, &args->required, param);
+                    set_add(arena, &args->required, param);
                     param = get_next_param(args);
                 }
 
@@ -400,7 +388,9 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
         ++args->i;
     }
 
-    report_flags(args);
+    if (args->dry_run) {
+        report_flags(args);
+    }
 
     if (args->scan_exts.count == 0 && args->files.count == 0) {
         return usage_error("The '--files' or '--scan' flag requires at least one argument");
