@@ -2,6 +2,7 @@
 #include "arg.h"
 #include "dynarr.h"
 #include "file.h"
+#include "list.h"
 #include "test_capture.h"
 #include "tokenizer.h"
 #include "unity.h"
@@ -15,10 +16,10 @@ void tearDown(void) { arena_free(&test_arena); }
 static result_t tokenize(const char *src, tokenizer_t *out) {
     // one arena serves as both the persistent token store and the scratch value buffer;
     // tearDown releases everything, so per-test cleanup is gone
-    args_t args = {.arena = &test_arena};
+    args_t args = {0};
     file_details_t file = {.contents = (char *)src, .path = "test.env", .len = strlen(src)};
     *out = (tokenizer_t){0};
-    return generate_tokens(&args, &file, out, &test_arena);
+    return generate_tokens(&test_arena, &args, &file, out, &test_arena);
 }
 
 static const value_token_t *val(const tokenizer_t *t, size_t tok, size_t v) {
@@ -241,7 +242,7 @@ typedef struct {
 
 static void call_run_tokenizer(void *ctx) {
     run_ctx_t *c = ctx;
-    c->result = run_tokenizer(c->args, c->t);
+    c->result = run_tokenizer(&test_arena, c->args, c->t);
 }
 
 static void test_run_tokenizer_errors_on_empty_file(void) {
@@ -250,7 +251,7 @@ static void test_run_tokenizer_errors_on_empty_file(void) {
     TEST_ASSERT_NOT_NULL(f);
     fclose(f);
 
-    args_t args = {.arena = &test_arena};
+    args_t args = {0};
     DYN_ARR_APPEND(&test_arena, &args.files, path);
 
     tokenizer_t t = {0};
@@ -396,10 +397,10 @@ typedef struct {
 
 static void call_tokenize_n(void *ctx) {
     tokenize_n_ctx_t *c = ctx;
-    args_t args = {.arena = &test_arena};
+    args_t args = {0};
     file_details_t file = {.contents = (char *)c->src, .path = "test.env", .len = c->len};
     *c->out = (tokenizer_t){0};
-    c->result = generate_tokens(&args, &file, c->out, &test_arena);
+    c->result = generate_tokens(&test_arena, &args, &file, c->out, &test_arena);
 }
 
 static void test_errors_on_nul_inside_interpolation(void) {

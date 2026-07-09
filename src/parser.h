@@ -1,7 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
+#include "arena.h"
 #include "arg.h"
 #include "hashmap.h"
+#include "list.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -26,8 +28,14 @@ typedef struct {
     hashmap_t index;
 } env_map_t;
 
+typedef struct {
+    env_map_t env_map;   // KV pairs parsed from tokens; consumers (the emitter) take this directly
+    list_t missing_envs; // required keys that resolved undefined or empty
+} parser_t;
+
 env_t *get_env_from_map(env_map_t *env_map, const char *entry);
-// env_map items, index slots, and values are all owned by the main arena (args->arena)
-result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map);
+// Everything the parser produces (env_map items, index slots, values, missing_envs) is
+// owned by 'arena' (the main arena)
+result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, parser_t *parser);
 
 #endif

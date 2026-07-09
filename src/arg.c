@@ -183,7 +183,6 @@ static inline result_t validate_file_name(const char *p) {
 
 result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
     // skip program name
-    args->arena = arena;
     args->i = 1;
     args->argc = argc;
     args->argv = argv;

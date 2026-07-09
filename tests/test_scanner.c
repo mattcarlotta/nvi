@@ -12,14 +12,14 @@ void setUp(void) { arena_init(&test_arena, 0); }
 void tearDown(void) { arena_free(&test_arena); }
 
 static void test_merge_skips_ignored_keys(void) {
-    args_t args = {.arena = &test_arena}; // dry_run = false, so the merge stays quiet
+    args_t args = {0}; // dry_run = false, so the merge stays quiet
     DYN_ARR_APPEND(&test_arena, &args.ignored, "NODE_ENV");
 
     scanner_t scanner = {0};
     hashmap_append(&test_arena, &scanner.envs, "NODE_ENV", strlen("NODE_ENV"), 0);
     hashmap_append(&test_arena, &scanner.envs, "API_KEY", strlen("API_KEY"), 0);
 
-    merge_required_envs(&args, &scanner);
+    merge_required_envs(&test_arena, &args, &scanner);
 
     TEST_ASSERT_EQUAL_size_t(1, args.required.count);
     TEST_ASSERT_TRUE(list_contains(&args.required, "API_KEY"));
@@ -27,14 +27,14 @@ static void test_merge_skips_ignored_keys(void) {
 }
 
 static void test_merge_dedups_already_required(void) {
-    args_t args = {.arena = &test_arena};
+    args_t args = {0};
     DYN_ARR_APPEND(&test_arena, &args.required, "API_KEY");
 
     scanner_t scanner = {0};
     hashmap_append(&test_arena, &scanner.envs, "API_KEY", strlen("API_KEY"), 0);
     hashmap_append(&test_arena, &scanner.envs, "DB_URL", strlen("DB_URL"), 0);
 
-    merge_required_envs(&args, &scanner);
+    merge_required_envs(&test_arena, &args, &scanner);
 
     TEST_ASSERT_EQUAL_size_t(2, args.required.count);
     TEST_ASSERT_TRUE(list_contains(&args.required, "API_KEY"));
@@ -42,10 +42,10 @@ static void test_merge_dedups_already_required(void) {
 }
 
 static void test_merge_empty_envs_is_noop(void) {
-    args_t args = {.arena = &test_arena};
+    args_t args = {0};
     scanner_t scanner = {0};
 
-    merge_required_envs(&args, &scanner);
+    merge_required_envs(&test_arena, &args, &scanner);
 
     TEST_ASSERT_EQUAL_size_t(0, args.required.count);
 }

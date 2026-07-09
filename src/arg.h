@@ -51,7 +51,6 @@ typedef struct {
     int i;
     int argc;
     const char **argv;
-    arena_t *arena; // main arena: owns every allocation with process lifetime
     bool dry_run;
     uint8_t scan_threads;
     format_t format;

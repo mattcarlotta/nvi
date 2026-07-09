@@ -396,15 +396,16 @@ static void append_list_keys(arena_t *arena, hashmap_t *env_map, const list_t *l
     }
 }
 
-void merge_required_envs(args_t *args, const scanner_t *scanner) {
+void merge_required_envs(arena_t *arena, args_t *args, const scanner_t *scanner) {
     if (scanner->envs.count == 0) {
         return;
     }
 
+    // temporary dedupe map; its slots are abandoned in the main arena afterwards
     hashmap_t env_map = {0};
 
-    append_list_keys(args->arena, &env_map, &args->ignored);
-    append_list_keys(args->arena, &env_map, &args->required);
+    append_list_keys(arena, &env_map, &args->ignored);
+    append_list_keys(arena, &env_map, &args->required);
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
         const hashmap_entry_t *entry = &scanner->envs.slots[i];
@@ -412,13 +413,13 @@ void merge_required_envs(args_t *args, const scanner_t *scanner) {
             continue;
         }
 
-        DYN_ARR_APPEND(args->arena, &args->required, entry->key);
+        DYN_ARR_APPEND(arena, &args->required, entry->key);
     }
 
     report_required_keys(args);
 }
 
-result_t run_scanner(args_t *args, scanner_t *scanner) {
+result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
     scanner->scan_exts = &args->scan_exts;
 
     report_scan_start(args);
@@ -444,12 +445,12 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
         worker.report.arena = &worker.persist;
 
         scan_worker(&worker);
-        merge_worker_scanner(args->arena, scanner, &worker.scanner);
+        merge_worker_scanner(arena, scanner, &worker.scanner);
 
         arena_free(&worker.scratch);
         arena_free(&worker.persist);
     } else {
-        scan_worker_t *workers = arena_alloc_zeroed(args->arena, nthreads * sizeof(*workers));
+        scan_worker_t *workers = arena_alloc_zeroed(arena, nthreads * sizeof(*workers));
 
         // arenas are initialized on the main thread before any spawn so the post-join merge
         // and frees below never race a worker
@@ -478,7 +479,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
         }
 
         for (size_t i = 0; i < nthreads; ++i) {
-            merge_worker_scanner(args->arena, scanner, &workers[i].scanner);
+            merge_worker_scanner(arena, scanner, &workers[i].scanner);
             arena_free(&workers[i].scratch);
             arena_free(&workers[i].persist);
         }
@@ -497,7 +498,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     report_scan_summary(args, scanner);
 
-    merge_required_envs(args, scanner);
+    merge_required_envs(arena, args, scanner);
 
     return ctx.result;
 }

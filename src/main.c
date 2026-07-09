@@ -24,7 +24,7 @@ int main(int argc, const char **argv) {
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
-    env_map_t env_map = {0};
+    parser_t parser = {0};
 
     result = parse_args(&arena, argc, argv, &args);
     if (!result.ok) {
@@ -32,7 +32,7 @@ int main(int argc, const char **argv) {
     }
 
     if (args.scan_exts.count > 0) {
-        result = run_scanner(&args, &scanner);
+        result = run_scanner(&arena, &args, &scanner);
 
         if (!result.ok) {
             goto done;
@@ -43,12 +43,12 @@ int main(int argc, const char **argv) {
         goto done;
     }
 
-    result = run_tokenizer(&args, &tokenizer);
+    result = run_tokenizer(&arena, &args, &tokenizer);
     if (!result.ok) {
         goto done;
     }
 
-    result = run_parser(&args, &tokenizer.tokens, &env_map);
+    result = run_parser(&arena, &args, &tokenizer.tokens, &parser);
     if (!result.ok) {
         goto done;
     }
@@ -57,7 +57,7 @@ int main(int argc, const char **argv) {
         goto done;
     }
 
-    run_emitter(&args, &env_map);
+    run_emitter(&args, &parser.env_map);
 
 done:
     if (result.ok && args.dry_run) {
