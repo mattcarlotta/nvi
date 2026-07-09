@@ -1,4 +1,5 @@
 #include "accessors.h"
+#include "dynarr.h"
 #include "macros.h"
 #include <string.h>
 
@@ -9,9 +10,9 @@ static const accessor_t javascript[] = {
 };
 
 static const accessor_t python[] = {
-    ACCESSOR("os.environ.setdefault(", quoted),
-    ACCESSOR("getenv(", quoted),
-    ACCESSOR("environ[", quoted),
+    ACCESSOR("os.getenv(", quoted),      ACCESSOR("os.environ[", quoted),
+    ACCESSOR("os.environ.get(", quoted), ACCESSOR("os.environ.setdefault(", quoted),
+    ACCESSOR("getenv(", quoted),         ACCESSOR("environ[", quoted),
     ACCESSOR("environ.get(", quoted),
 };
 
@@ -21,10 +22,9 @@ static const accessor_t go[] = {
 };
 
 static const accessor_t rust[] = {
-    ACCESSOR("env::var(", quoted),
-    ACCESSOR("env::var_os(", quoted),
-    ACCESSOR("env!(", quoted),
-    ACCESSOR("option_env!(", quoted),
+    ACCESSOR("std::env::var(", quoted), ACCESSOR("std::env::var_os(", quoted),
+    ACCESSOR("env::var(", quoted),      ACCESSOR("env::var_os(", quoted),
+    ACCESSOR("env!(", quoted),          ACCESSOR("option_env!(", quoted),
 };
 
 static const accessor_t ruby[] = {
@@ -33,9 +33,12 @@ static const accessor_t ruby[] = {
 };
 
 static const accessor_t zig[] = {
-    ACCESSOR("getenv(", quoted),         ACCESSOR("getEnvVarOwned(", quoted),
-    ACCESSOR("hasEnvVar(", quoted),      ACCESSOR("hasEnvVarConstant(", quoted),
-    ACCESSOR("parseEnvVarInt(", quoted),
+    ACCESSOR("std.posix.getenv(", quoted),
+    ACCESSOR("posix.getenv(", quoted),
+    ACCESSOR("std.process.getEnvVarOwned(", quoted),
+    ACCESSOR("std.process.hasEnvVar(", quoted),
+    ACCESSOR("std.process.hasEnvVarConstant(", quoted),
+    ACCESSOR("std.process.parseEnvVarInt(", quoted),
 };
 
 static const accessor_t java[] = {
@@ -59,11 +62,14 @@ static const accessor_t c[] = {
 };
 
 static const accessor_t cpp[] = {
+    ACCESSOR("std::getenv(", quoted),
     ACCESSOR("getenv(", quoted),
+    ACCESSOR("secure_getenv(", quoted),
 };
 
 static const accessor_t dotnet[] = {
     ACCESSOR("Environment.GetEnvironmentVariable(", quoted),
+    ACCESSOR("System.Environment.GetEnvironmentVariable(", quoted),
 };
 
 static const accessor_t visualbasic[] = {
@@ -277,7 +283,7 @@ const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext)
     return NULL;
 }
 
-void append_file_extension(file_ext_map_t *map, const ext_entry *entry) {
+void append_file_extension(arena_t *arena, file_ext_map_t *map, const ext_entry *entry) {
     if (get_file_extension(map, entry->ext) != NULL) {
         return;
     }
@@ -288,5 +294,5 @@ void append_file_extension(file_ext_map_t *map, const ext_entry *entry) {
         .accessor_count = entry->count,
     };
 
-    DYN_ARR_APPEND(map, match);
+    DYN_ARR_APPEND(arena, map, match);
 }

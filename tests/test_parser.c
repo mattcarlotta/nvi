@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "arg.h"
 #include "parser.h"
 #include "test_capture.h"
@@ -6,8 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+static arena_t test_arena;
+
+void setUp(void) { arena_init(&test_arena, 0); }
+void tearDown(void) { arena_free(&test_arena); }
 
 #if defined(_WIN32) && defined(_MSC_VER)
 static void set_env(const char *k, const char *v) { _putenv_s(k, v); }
@@ -58,14 +61,13 @@ static void test_sets_normalized_key_value(void) {
     value_token_t v;
     token_t toks[] = {make_token("KEY", LITERAL_VALUE, "value", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
 
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, envs.count);
     TEST_ASSERT_EQUAL_STRING("value", lookup(&envs, "KEY"));
-    free_envs(&envs);
 }
 
 static void test_concatenates_multiple_value_tokens(void) {
@@ -78,13 +80,12 @@ static void test_concatenates_multiple_value_tokens(void) {
     tok.values.count = 2;
     tok.values.capacity = 2;
     token_list_t tl = {.items = &tok, .count = 1, .capacity = 1};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
 
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("1234", lookup(&envs, "MULTI"));
-    free_envs(&envs);
 }
 
 static void test_resolves_interpolation_from_environment(void) {
@@ -93,13 +94,12 @@ static void test_resolves_interpolation_from_environment(void) {
     value_token_t v;
     token_t toks[] = {make_token("DIR", INTERPOLATED_KEY, "NVI_TEST_HOME", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
 
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("/home/test", lookup(&envs, "DIR"));
-    free_envs(&envs);
 
     clear_env("NVI_TEST_HOME");
 }
@@ -113,13 +113,12 @@ static void test_resolves_interpolation_from_previous_env(void) {
         make_token("NVI_TEST_BAZ", INTERPOLATED_KEY, "NVI_TEST_FOO", &vbaz),
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
 
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("bar", lookup(&envs, "NVI_TEST_BAZ"));
-    free_envs(&envs);
 }
 
 static void test_required_env_present_passes(void) {
@@ -127,7 +126,7 @@ static void test_required_env_present_passes(void) {
     token_t toks[] = {make_token("REQUIRED", LITERAL_VALUE, "ok", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     const char *req[] = {"REQUIRED"};
     args.required.items = (const char **)req;
     args.required.count = 1;
@@ -139,16 +138,14 @@ static void test_required_env_present_passes(void) {
     result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("ok", lookup(&envs, "REQUIRED"));
-    free_envs(&envs);
 }
 
 static void test_errors_when_nothing_parses(void) {
     token_list_t tl = {0};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     env_map_t envs = {0};
     result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_FALSE(r.ok);
-    free_envs(&envs);
 }
 
 static void test_duplicate_key_updates_in_place(void) {
@@ -158,14 +155,13 @@ static void test_duplicate_key_updates_in_place(void) {
         make_token("KEY", LITERAL_VALUE, "second", &v2),
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
 
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, envs.count);
     TEST_ASSERT_EQUAL_STRING("second", lookup(&envs, "KEY"));
-    free_envs(&envs);
 }
 
 static void test_index_survives_growth(void) {
@@ -180,7 +176,7 @@ static void test_index_survives_growth(void) {
     }
 
     token_list_t tl = {.items = toks, .count = N, .capacity = N};
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
 
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
@@ -194,7 +190,6 @@ static void test_index_survives_growth(void) {
     TEST_ASSERT_EQUAL_STRING("v", first->value);
     TEST_ASSERT_EQUAL_STRING("v", last->value);
     TEST_ASSERT_NULL(get_env_from_map(&envs, "KEY_100"));
-    free_envs(&envs);
 }
 
 static void test_errors_when_required_env_missing(void) {
@@ -202,7 +197,7 @@ static void test_errors_when_required_env_missing(void) {
     token_t toks[] = {make_token("OTHER", LITERAL_VALUE, "x", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     const char *req[] = {"REQUIRED"};
     args.required.items = (const char **)req;
     args.required.count = 1;
@@ -213,7 +208,6 @@ static void test_errors_when_required_env_missing(void) {
     env_map_t envs = {0};
     result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_FALSE(r.ok);
-    free_envs(&envs);
 }
 
 static void test_fallback_used_when_unset(void) {
@@ -222,12 +216,11 @@ static void test_fallback_used_when_unset(void) {
     token_t toks[] = {make_token("KEY", INTERPOLATED_KEY, "NVI_TEST_FB_UNSET:-fell back", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("fell back", lookup(&envs, "KEY"));
-    free_envs(&envs);
 }
 
 static void test_fallback_used_when_map_value_empty(void) {
@@ -239,12 +232,11 @@ static void test_fallback_used_when_map_value_empty(void) {
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("fb", lookup(&envs, "KEY"));
-    free_envs(&envs);
 }
 
 static void test_value_wins_over_fallback(void) {
@@ -253,13 +245,12 @@ static void test_value_wins_over_fallback(void) {
     token_t toks[] = {make_token("KEY", INTERPOLATED_KEY, "NVI_TEST_FB_SET:-fb", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("real", lookup(&envs, "KEY"));
     clear_env("NVI_TEST_FB_SET");
-    free_envs(&envs);
 }
 
 static void test_defined_empty_without_fallback_resolves_empty(void) {
@@ -271,12 +262,11 @@ static void test_defined_empty_without_fallback_resolves_empty(void) {
     };
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     env_map_t envs = {0};
     result_t r = run_parser(&args, &tl, &envs);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("", lookup(&envs, "KEY"));
-    free_envs(&envs);
 }
 
 static void test_errors_on_undefined_interpolation(void) {
@@ -285,12 +275,11 @@ static void test_errors_on_undefined_interpolation(void) {
     token_t toks[] = {make_token("KEY", INTERPOLATED_KEY, "NVI_TEST_UNDEF", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     env_map_t envs = {0};
     result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_FALSE(r.ok);
     TEST_ASSERT_EQUAL_INT(1, r.code);
-    free_envs(&envs);
 }
 
 static void test_errors_when_required_env_is_empty(void) {
@@ -298,7 +287,7 @@ static void test_errors_when_required_env_is_empty(void) {
     token_t toks[] = {make_token("KEY", LITERAL_VALUE, "", &v)};
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     const char *req[] = {"KEY"};
     args.required.items = (const char **)req;
     args.required.count = 1;
@@ -309,7 +298,6 @@ static void test_errors_when_required_env_is_empty(void) {
     env_map_t envs = {0};
     result_t r = parser_silent(&args, &tl, &envs);
     TEST_ASSERT_FALSE(r.ok);
-    free_envs(&envs);
 }
 
 int main(void) {

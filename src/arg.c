@@ -136,9 +136,9 @@ static result_t get_next_value(args_t *args, const char *flag, const char **para
     return RESULT_OK;
 }
 
-static void append_unique_param(list_t *list, const char *value) {
+static void append_unique_param(arena_t *arena, list_t *list, const char *value) {
     if (!list_contains(list, value)) {
-        DYN_ARR_APPEND(list, value);
+        DYN_ARR_APPEND(arena, list, value);
     }
 }
 
@@ -167,12 +167,11 @@ static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
     if (!is_env_file(base)) {
-        return operation_error(
-            "The 'files' flag argument '%s' is an invalid .env file (missing or invalid '.env' extension)\n", p);
+        return operation_error("The file flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
     }
 
     if (is_absolute_path(p)) {
-        return operation_error("The 'files' flag argument '%s' must be relative to the current directory\n", p);
+        return operation_error("The file flag '%s' must be relative to the current directory\n", p);
     }
 
     if (path_escapes_cwd(p)) {
@@ -182,8 +181,9 @@ static inline result_t validate_file_name(const char *p) {
     return RESULT_OK;
 }
 
-result_t parse_args(int argc, const char **argv, args_t *args) {
+result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
     // skip program name
+    args->arena = arena;
     args->i = 1;
     args->argc = argc;
     args->argv = argv;
@@ -225,7 +225,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                         return result;
                     }
 
-                    append_unique_param(&args->files, param);
+                    append_unique_param(arena, &args->files, param);
                     param = get_next_param(args);
                 }
 
@@ -254,7 +254,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(&args->ignored, param);
+                    append_unique_param(arena, &args->ignored, param);
                     param = get_next_param(args);
                 }
 
@@ -268,7 +268,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(&args->required, param);
+                    append_unique_param(arena, &args->required, param);
                     param = get_next_param(args);
                 }
 
@@ -287,7 +287,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                         return usage_error("The file extension '%s' is not a supported scan extension", param);
                     }
 
-                    append_file_extension(&args->scan_exts, entry);
+                    append_file_extension(arena, &args->scan_exts, entry);
                     param = get_next_param(args);
                 }
 
@@ -303,8 +303,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 const int MAX_CPU_CORES = cpu_count();
                 int threads = str_to_u8(param);
                 if (threads < 1 || threads > MAX_CPU_CORES) {
-                    return usage_error("The 'threads' flag only supports up to %d available thread%s (CPU core bound), "
-                                       "therefore %s is not valid",
+                    return usage_error("The 'threads' flag only supports up to %d thread%s, instead found %s",
                                        MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
                 }
 
@@ -409,11 +408,4 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
     }
 
     return result;
-}
-
-void free_args(args_t *args) {
-    free_list(&args->files);
-    free_list(&args->ignored);
-    free_list(&args->required);
-    free_file_ext_map(&args->scan_exts);
 }

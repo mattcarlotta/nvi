@@ -1,9 +1,12 @@
 #include "accessors.h"
+#include "arena.h"
 #include "unity.h"
 #include <string.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+static arena_t test_arena;
+
+void setUp(void) { arena_init(&test_arena, 0); }
+void tearDown(void) { arena_free(&test_arena); }
 
 static void test_get_scan_extension_known(void) {
     const ext_entry *ts = get_scan_extension("ts");
@@ -47,7 +50,7 @@ static void test_file_ext_map_round_trip(void) {
 
     const ext_entry *ts = get_scan_extension("ts");
     TEST_ASSERT_NOT_NULL(ts);
-    append_file_extension(&map, ts);
+    append_file_extension(&test_arena, &map, ts);
 
     const file_ext_t *file_ext = get_file_extension(&map, "ts");
     TEST_ASSERT_NOT_NULL(file_ext);
@@ -55,8 +58,6 @@ static void test_file_ext_map_round_trip(void) {
     TEST_ASSERT_EQUAL_PTR(ts->accessors, file_ext->accessors);
 
     TEST_ASSERT_NULL(get_file_extension(&map, "py"));
-
-    free_file_ext_map(&map);
 }
 
 int main(void) {

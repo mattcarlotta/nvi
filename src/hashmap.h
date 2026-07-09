@@ -1,12 +1,13 @@
 #ifndef HASHMAP_H
 #define HASHMAP_H
+#include "arena.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-// Linear probing hash map of borrowed string pointers to size_t values.
+// Linear probing hash map of borrowed string pointers to size_t values. Slot storage is
+// arena-backed: growth allocates a fresh slot table from the arena and orphans the old one,
+// which is reclaimed when the owning arena is reset or freed.
 
 #define HASHMAP_INIT_CAP 16
 #define HASHMAP_NOT_FOUND SIZE_MAX
@@ -24,7 +25,7 @@ typedef struct {
     size_t count;
 } hashmap_t;
 
-static inline void hashmap_grow(hashmap_t *map, size_t need) {
+static inline void hashmap_grow(arena_t *arena, hashmap_t *map, size_t need) {
     size_t new_cap = map->capacity == 0 ? HASHMAP_INIT_CAP : map->capacity;
 
     // With linear probing, the expected number of probes for a successful lookup is approximately:
@@ -51,12 +52,7 @@ static inline void hashmap_grow(hashmap_t *map, size_t need) {
         return;
     }
 
-    hashmap_entry_t *new_slots = calloc(new_cap, sizeof(*new_slots));
-    if (new_slots == NULL) {
-        fprintf(stderr, "[ERROR] Failed to allocate hash map (system out of memory?); aborting.\n");
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
+    hashmap_entry_t *new_slots = arena_alloc_zeroed(arena, new_cap * sizeof(*new_slots));
 
     size_t mask = new_cap - 1;
     for (size_t i = 0; i < map->capacity; ++i) {
@@ -72,7 +68,6 @@ static inline void hashmap_grow(hashmap_t *map, size_t need) {
         new_slots[j] = map->slots[i];
     }
 
-    free(map->slots);
     map->slots = new_slots;
     map->capacity = new_cap;
 }
@@ -116,8 +111,8 @@ static inline bool hashmap_contains(const hashmap_t *map, const char *key, size_
     return hashmap_get(map, key, len) != HASHMAP_NOT_FOUND;
 }
 
-static inline void hashmap_append(hashmap_t *map, const char *key, size_t len, size_t value) {
-    hashmap_grow(map, 1);
+static inline void hashmap_append(arena_t *arena, hashmap_t *map, const char *key, size_t len, size_t value) {
+    hashmap_grow(arena, map, 1);
 
     uint64_t hash = fnv1a(key, len);
     size_t mask = map->capacity - 1;
@@ -138,11 +133,4 @@ static inline void hashmap_append(hashmap_t *map, const char *key, size_t len, s
     ++map->count;
 }
 
-static inline void free_hashmap(hashmap_t *map) {
-    free(map->slots);
-    map->slots = NULL;
-    map->capacity = 0;
-    map->count = 0;
-}
-
-#endif // HASHMAP_H
+#endif

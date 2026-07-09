@@ -1,6 +1,7 @@
 #ifndef ARG_H
 #define ARG_H
 #include "accessors.h"
+#include "arena.h"
 #include "format.h"
 #include "list.h"
 #include "result.h"
@@ -50,6 +51,7 @@ typedef struct {
     int i;
     int argc;
     const char **argv;
+    arena_t *arena; // main arena: owns every allocation with process lifetime
     bool dry_run;
     uint8_t scan_threads;
     format_t format;
@@ -60,7 +62,6 @@ typedef struct {
     command_t command;
 } args_t;
 
-result_t parse_args(int arg, const char **argv, args_t *args);
-void free_args(args_t *args);
+result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args);
 
-#endif // ARG_H
+#endif

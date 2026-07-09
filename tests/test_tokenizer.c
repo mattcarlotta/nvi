@@ -1,20 +1,24 @@
+#include "arena.h"
 #include "arg.h"
 #include "dynarr.h"
 #include "file.h"
-#include "list.h"
 #include "test_capture.h"
 #include "tokenizer.h"
 #include "unity.h"
 #include <string.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+static arena_t test_arena;
+
+void setUp(void) { arena_init(&test_arena, 0); }
+void tearDown(void) { arena_free(&test_arena); }
 
 static result_t tokenize(const char *src, tokenizer_t *out) {
-    args_t args = {0};
+    // one arena serves as both the persistent token store and the scratch value buffer;
+    // tearDown releases everything, so per-test cleanup is gone
+    args_t args = {.arena = &test_arena};
     file_details_t file = {.contents = (char *)src, .path = "test.env", .len = strlen(src)};
     *out = (tokenizer_t){0};
-    return generate_tokens(&args, &file, out);
+    return generate_tokens(&args, &file, out, &test_arena);
 }
 
 static const value_token_t *val(const tokenizer_t *t, size_t tok, size_t v) {
@@ -48,7 +52,6 @@ static void test_simple_key_value(void) {
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.items[0].values.count);
     TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("value", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_key_value_without_trailing_newline(void) {
@@ -58,7 +61,6 @@ static void test_key_value_without_trailing_newline(void) {
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.count);
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_STRING("value", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_multiline_continuation(void) {
@@ -72,7 +74,6 @@ static void test_multiline_continuation(void) {
     TEST_ASSERT_EQUAL_STRING("456", val(&t, 0, 1)->value);
     TEST_ASSERT_EQUAL_size_t(1, val(&t, 0, 0)->line);
     TEST_ASSERT_EQUAL_size_t(2, val(&t, 0, 1)->line);
-    free_tokenizer(&t);
 }
 
 static void test_interpolation_inside_multiline(void) {
@@ -87,7 +88,6 @@ static void test_interpolation_inside_multiline(void) {
     TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 1)->value);
     TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 2)->kind);
     TEST_ASSERT_EQUAL_STRING("def", val(&t, 0, 2)->value);
-    free_tokenizer(&t);
 }
 
 static void test_multiline_ssh_key_with_interp_and_literals(void) {
@@ -104,7 +104,6 @@ static void test_multiline_ssh_key_with_interp_and_literals(void) {
     TEST_ASSERT_EQUAL_STRING("MESSAGE", val(&t, 0, 3)->value);
     TEST_ASSERT_EQUAL_STRING("/4", val(&t, 0, 4)->value);
     TEST_ASSERT_EQUAL_STRING("Lm5Mn== test@example.com", val(&t, 0, 5)->value);
-    free_tokenizer(&t);
 }
 
 static void test_equals_is_literal_after_key(void) {
@@ -113,7 +112,6 @@ static void test_equals_is_literal_after_key(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_STRING("a==b", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_parses_a_comment(void) {
@@ -124,7 +122,6 @@ static void test_parses_a_comment(void) {
     TEST_ASSERT_NULL(t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_INT(COMMENTED_LINE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("# a comment", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_parses_interpolated_value(void) {
@@ -134,7 +131,6 @@ static void test_parses_interpolated_value(void) {
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 // --- error paths (these intentionally log diagnostics to stderr) ---
@@ -143,42 +139,36 @@ static void test_errors_on_unterminated_interpolation(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY=${OTHER\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_unterminated_interpolation_eof(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY=${OTHER", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_when_no_tokens_generated(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("novalue\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_empty_key(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("=abc123\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_whitespace_only_key(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("   =value\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_empty_interpolation_key(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY=abc${}123\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 // --- Windows-style input (CRLF, BOM) ---
@@ -191,7 +181,6 @@ static void test_crlf_line_endings(void) {
     TEST_ASSERT_EQUAL_STRING("1", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("2", val(&t, 1, 0)->value);
     TEST_ASSERT_EQUAL_size_t(2, val(&t, 1, 0)->line);
-    free_tokenizer(&t);
 }
 
 static void test_lone_carriage_return_is_literal(void) {
@@ -199,7 +188,6 @@ static void test_lone_carriage_return_is_literal(void) {
     result_t r = tokenize("KEY=a\rb\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("a\rb", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_crlf_multiline_continuation(void) {
@@ -210,7 +198,6 @@ static void test_crlf_multiline_continuation(void) {
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.items[0].values.count);
     TEST_ASSERT_EQUAL_STRING("123", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("456", val(&t, 0, 1)->value);
-    free_tokenizer(&t);
 }
 
 static void test_crlf_after_interpolation(void) {
@@ -221,7 +208,6 @@ static void test_crlf_after_interpolation(void) {
     TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("OTHER", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("2", val(&t, 1, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_crlf_comment(void) {
@@ -231,14 +217,12 @@ static void test_crlf_comment(void) {
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
     TEST_ASSERT_EQUAL_INT(COMMENTED_LINE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("# a comment", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_unterminated_interpolation_crlf(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY=${OTHER\r\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_utf8_bom_is_stripped(void) {
@@ -247,7 +231,6 @@ static void test_utf8_bom_is_stripped(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_STRING("value", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 typedef struct {
@@ -267,8 +250,8 @@ static void test_run_tokenizer_errors_on_empty_file(void) {
     TEST_ASSERT_NOT_NULL(f);
     fclose(f);
 
-    args_t args = {0};
-    DYN_ARR_APPEND(&args.files, path);
+    args_t args = {.arena = &test_arena};
+    DYN_ARR_APPEND(&test_arena, &args.files, path);
 
     tokenizer_t t = {0};
     run_ctx_t ctx = {.args = &args, .t = &t};
@@ -279,8 +262,6 @@ static void test_run_tokenizer_errors_on_empty_file(void) {
     TEST_ASSERT_EQUAL_INT(1, ctx.result.code);
 
     remove(path);
-    free_tokenizer(&t);
-    free_list(&args.files);
 }
 
 // --- quoted values ---
@@ -291,7 +272,6 @@ static void test_double_quotes_are_stripped(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.count);
     TEST_ASSERT_EQUAL_STRING("hello world", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_double_quotes_preserve_inner_whitespace(void) {
@@ -299,7 +279,6 @@ static void test_double_quotes_preserve_inner_whitespace(void) {
     result_t r = tokenize("KEY=\"  padded  \"\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("  padded  ", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_single_quotes_suppress_interpolation(void) {
@@ -309,7 +288,6 @@ static void test_single_quotes_suppress_interpolation(void) {
     TEST_ASSERT_EQUAL_size_t(1, t.tokens.items[0].values.count);
     TEST_ASSERT_EQUAL_INT(LITERAL_VALUE, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("${OTHER}", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_single_quotes_keep_backslashes_literal(void) {
@@ -317,7 +295,6 @@ static void test_single_quotes_keep_backslashes_literal(void) {
     result_t r = tokenize("KEY='a\\b'\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("a\\b", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_interpolation_inside_double_quotes(void) {
@@ -328,7 +305,6 @@ static void test_interpolation_inside_double_quotes(void) {
     TEST_ASSERT_EQUAL_INT(INTERPOLATED_KEY, val(&t, 0, 0)->kind);
     TEST_ASSERT_EQUAL_STRING("A", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("b", val(&t, 0, 1)->value);
-    free_tokenizer(&t);
 }
 
 static void test_continuation_inside_double_quotes(void) {
@@ -338,7 +314,6 @@ static void test_continuation_inside_double_quotes(void) {
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.items[0].values.count);
     TEST_ASSERT_EQUAL_STRING("a", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("b", val(&t, 0, 1)->value);
-    free_tokenizer(&t);
 }
 
 static void test_quoted_empty_values_are_allowed(void) {
@@ -348,7 +323,6 @@ static void test_quoted_empty_values_are_allowed(void) {
     TEST_ASSERT_EQUAL_size_t(2, t.tokens.count);
     TEST_ASSERT_EQUAL_STRING("", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("", val(&t, 1, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_mid_value_quotes_stay_literal(void) {
@@ -357,7 +331,6 @@ static void test_mid_value_quotes_stay_literal(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("it's", val(&t, 0, 0)->value);
     TEST_ASSERT_EQUAL_STRING("sad\"wow\"bak", val(&t, 1, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_trailing_whitespace_after_closing_quote_ok(void) {
@@ -365,28 +338,24 @@ static void test_trailing_whitespace_after_closing_quote_ok(void) {
     result_t r = tokenize("KEY=\"a\"  \n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("a", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_unterminated_quote(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY=\"abc\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_unterminated_quote_eof(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY='abc", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_content_after_closing_quote(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("KEY=\"a\"b\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 // --- key handling ---
@@ -397,7 +366,6 @@ static void test_export_prefix_is_stripped(void) {
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("KEY", t.tokens.items[0].key);
     TEST_ASSERT_EQUAL_STRING("value", val(&t, 0, 0)->value);
-    free_tokenizer(&t);
 }
 
 static void test_export_alone_is_a_key(void) {
@@ -405,21 +373,18 @@ static void test_export_alone_is_a_key(void) {
     result_t r = tokenize("export=value\n", &t);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_STRING("export", t.tokens.items[0].key);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_key_with_space(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("MY KEY=1\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 static void test_errors_on_key_starting_with_digit(void) {
     tokenizer_t t;
     result_t r = tokenize_capture_fd("1KEY=x\n", &t);
     TEST_ASSERT_FALSE(r.ok);
-    free_tokenizer(&t);
 }
 
 typedef struct {
@@ -431,10 +396,10 @@ typedef struct {
 
 static void call_tokenize_n(void *ctx) {
     tokenize_n_ctx_t *c = ctx;
-    args_t args = {0};
+    args_t args = {.arena = &test_arena};
     file_details_t file = {.contents = (char *)c->src, .path = "test.env", .len = c->len};
     *c->out = (tokenizer_t){0};
-    c->result = generate_tokens(&args, &file, c->out);
+    c->result = generate_tokens(&args, &file, c->out, &test_arena);
 }
 
 static void test_errors_on_nul_inside_interpolation(void) {
@@ -444,7 +409,6 @@ static void test_errors_on_nul_inside_interpolation(void) {
     char sink[1];
     capture_fd(stderr, sink, sizeof(sink), call_tokenize_n, &ctx);
     TEST_ASSERT_FALSE(ctx.result.ok);
-    free_tokenizer(&t);
 }
 
 int main(void) {

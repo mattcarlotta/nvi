@@ -27,7 +27,7 @@ typedef struct {
 } env_map_t;
 
 env_t *get_env_from_map(env_map_t *env_map, const char *entry);
+// env_map items, index slots, and values are all owned by the main arena (args->arena)
 result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map);
-void free_envs(env_map_t *env_map);
 
-#endif // PARSER_H
+#endif

@@ -17,8 +17,8 @@ typedef struct {
     const file_ext_map_t *scan_exts;
 } scanner_t;
 
+// The merged env key set (slots and key copies) is owned by the main arena (args->arena)
 result_t run_scanner(args_t *args, scanner_t *scanner);
 void merge_required_envs(args_t *args, const scanner_t *scanner);
-void free_scanner(scanner_t *scanner);
 
-#endif // SCANNER_H
+#endif

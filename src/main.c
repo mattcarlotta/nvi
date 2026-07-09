@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "arg.h"
 #include "emitter.h"
 #include "parser.h"
@@ -6,12 +7,18 @@
 #include "timer.h"
 #include "tokenizer.h"
 #include "tty.h"
-#include <stdlib.h>
 
 int main(int argc, const char **argv) {
     tty_init();
 
     const double start = monotonic_seconds();
+
+    // one arena owns everything with process lifetime: args lists, scan extensions, merged
+    // scan keys, tokens, and the parsed env map. Worker- and file-scoped arenas live inside
+    // the scanner and tokenizer. The single free below replaces all per-structure cleanup
+    // and is itself optional before an exec, since the process image is replaced anyway.
+    arena_t arena;
+    arena_init(&arena, 0);
 
     result_t result = RESULT_OK;
     args_t args = {0};
@@ -19,7 +26,7 @@ int main(int argc, const char **argv) {
     tokenizer_t tokenizer = {0};
     env_map_t env_map = {0};
 
-    result = parse_args(argc, argv, &args);
+    result = parse_args(&arena, argc, argv, &args);
     if (!result.ok) {
         goto done;
     }
@@ -58,9 +65,6 @@ done:
     }
     fflush(stderr);
     fflush(stdout);
-    free_scanner(&scanner);
-    free_envs(&env_map);
-    free_tokenizer(&tokenizer);
-    free_args(&args);
+    arena_free(&arena);
     return result.code;
 }
