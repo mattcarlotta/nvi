@@ -16,8 +16,8 @@ static void test_merge_skips_ignored_keys(void) {
     DYN_ARR_APPEND(&test_arena, &args.ignored, "NODE_ENV");
 
     scanner_t scanner = {0};
-    hashset_append(&test_arena, &scanner.envs, "NODE_ENV", strlen("NODE_ENV"));
-    hashset_append(&test_arena, &scanner.envs, "API_KEY", strlen("API_KEY"));
+    hashset_append(&test_arena, &scanner.env_keys, "NODE_ENV", strlen("NODE_ENV"));
+    hashset_append(&test_arena, &scanner.env_keys, "API_KEY", strlen("API_KEY"));
 
     merge_required_envs(&test_arena, &args, &scanner);
 
@@ -31,8 +31,8 @@ static void test_merge_dedups_already_required(void) {
     DYN_ARR_APPEND(&test_arena, &args.required, "API_KEY");
 
     scanner_t scanner = {0};
-    hashset_append(&test_arena, &scanner.envs, "API_KEY", strlen("API_KEY"));
-    hashset_append(&test_arena, &scanner.envs, "DB_URL", strlen("DB_URL"));
+    hashset_append(&test_arena, &scanner.env_keys, "API_KEY", strlen("API_KEY"));
+    hashset_append(&test_arena, &scanner.env_keys, "DB_URL", strlen("DB_URL"));
 
     merge_required_envs(&test_arena, &args, &scanner);
 

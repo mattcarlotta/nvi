@@ -15,7 +15,7 @@ typedef struct {
     size_t dirs_scanned;
     size_t files_scanned;
     size_t references;
-    hashset_t envs;
+    hashset_t env_keys;
     const file_ext_map_t *scan_exts;
 } scanner_t;
 

@@ -27,7 +27,7 @@ typedef enum {
 } entry_kind_t;
 
 typedef struct {
-    char **items; // heap-owned directory paths, popped LIFO
+    char **items;
     size_t count;
     size_t capacity;
 } dir_queue_t;
@@ -52,15 +52,6 @@ typedef struct {
     arena_t scratch;   // file lifetime: contents and match list, reset after each file
     thread_t thread;
 } scan_worker_t;
-
-// ---------------------------------------------------------------------------
-// dry-run reporting
-//
-// Reports emitted from worker threads (per-file results, empty-file warnings)
-// compose into the worker's log_buf_t and flush once, which is the atomicity
-// boundary stdio guarantees. Reports emitted from the main thread before or
-// after the join keep using the direct log_ functions.
-// ---------------------------------------------------------------------------
 
 static void report_scan_start(const args_t *args) {
     if (!args->dry_run) {
@@ -124,8 +115,8 @@ static void report_scan_summary(const args_t *args, const scanner_t *scanner) {
     log_info(SINK_STDERR, "[INFO]");
     log_f(SINK_STDERR, " Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
           scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
-          TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references), scanner->envs.count,
-          TO_PLURAL(scanner->envs.count));
+          TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references),
+          scanner->env_keys.count, TO_PLURAL(scanner->env_keys.count));
 }
 
 static void report_required_keys(const args_t *args) {
@@ -163,13 +154,13 @@ static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const cha
     return get_file_extension(map, dot + 1);
 }
 
-static void copy_unique_env_key(arena_t *persist, scanner_t *scanner, const env_key_match_t *env) {
-    if (hashset_contains(&scanner->envs, env->key, env->key_len)) {
+static void copy_unique_env_key(arena_t *worker_arena, scanner_t *scanner, const env_key_match_t *env_match) {
+    if (hashset_contains(&scanner->env_keys, env_match->key, env_match->key_len)) {
         return;
     }
 
-    const char *new_key = arena_strndup(persist, env->key, env->key_len);
-    hashset_append(persist, &scanner->envs, new_key, env->key_len);
+    const char *new_key = arena_strndup(worker_arena, env_match->key, env_match->key_len);
+    hashset_append(worker_arena, &scanner->env_keys, new_key, env_match->key_len);
 }
 
 static result_t scan_file(const args_t *args, scan_worker_t *worker, const char *path, const char *name) {
@@ -370,48 +361,49 @@ static void merge_worker_scanner(arena_t *main_arena, scanner_t *dst, scanner_t 
     dst->files_scanned += src->files_scanned;
     dst->references += src->references;
 
-    for (size_t i = 0; i < src->envs.capacity; ++i) {
-        const hashset_entry_t *entry = &src->envs.items[i];
-        if (entry->key == NULL || hashset_contains(&dst->envs, entry->key, entry->len)) {
+    for (size_t i = 0; i < src->env_keys.capacity; ++i) {
+        const hashset_entry_t *entry = &src->env_keys.items[i];
+        if (entry->key == NULL || hashset_contains(&dst->env_keys, entry->key, entry->len)) {
             continue;
         }
 
         const char *key = arena_strndup(main_arena, entry->key, entry->len);
-        hashset_append(main_arena, &dst->envs, key, entry->len);
+        hashset_append(main_arena, &dst->env_keys, key, entry->len);
     }
 }
 
-static void append_list_keys(arena_t *arena, hashset_t *env_set, const set_t *set) {
+static void append_list_keys(arena_t *main_arena, hashset_t *env_set, const set_t *set) {
     for (size_t i = 0; i < set->count; ++i) {
         const char *key = set->items[i];
-        hashset_append(arena, env_set, key, strlen(key));
+        hashset_append(main_arena, env_set, key, strlen(key));
     }
 }
 
-void merge_required_envs(arena_t *arena, args_t *args, const scanner_t *scanner) {
-    if (scanner->envs.count == 0) {
+void merge_required_envs(arena_t *main_arena, args_t *args, const scanner_t *scanner) {
+    if (scanner->env_keys.count == 0) {
         return;
     }
 
-    // temporary dedupe map; its items are abandoned in the main arena afterwards
     hashset_t env_set = {0};
 
-    append_list_keys(arena, &env_set, &args->ignored);
-    append_list_keys(arena, &env_set, &args->required);
+    append_list_keys(main_arena, &env_set, &args->ignored);
+    append_list_keys(main_arena, &env_set, &args->required);
 
-    for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        const hashset_entry_t *entry = &scanner->envs.items[i];
-        if (entry->key == NULL || hashset_contains(&env_set, entry->key, entry->len)) {
+    for (size_t i = 0; i < scanner->env_keys.capacity; ++i) {
+        const hashset_entry_t *entry = &scanner->env_keys.items[i];
+        if (entry->key == NULL) {
             continue;
         }
 
-        DYN_ARR_APPEND(arena, &args->required, entry->key);
+        if (hashset_append(main_arena, &env_set, entry->key, entry->len)) {
+            DYN_ARR_APPEND(main_arena, &args->required, entry->key);
+        }
     }
 
     report_required_keys(args);
 }
 
-result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
+result_t run_scanner(arena_t *main_arena, args_t *args, scanner_t *scanner) {
     scanner->scan_exts = &args->scan_exts;
 
     report_scan_start(args);
@@ -424,7 +416,7 @@ result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
     queue_dir(&ctx, ".");
 
     uint8_t nthreads = args->scan_threads;
-    scan_worker_t *workers = arena_alloc_zeroed(arena, nthreads * sizeof(*workers));
+    scan_worker_t *workers = arena_alloc_zeroed(main_arena, nthreads * sizeof(*workers));
 
     for (uint8_t i = 0; i < nthreads; ++i) {
         workers[i].ctx = &ctx;
@@ -451,7 +443,7 @@ result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
     }
 
     for (uint8_t i = 0; i < nthreads; ++i) {
-        merge_worker_scanner(arena, scanner, &workers[i].scanner);
+        merge_worker_scanner(main_arena, scanner, &workers[i].scanner);
         arena_free(&workers[i].scratch);
         arena_free(&workers[i].arena);
     }
@@ -467,7 +459,7 @@ result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
 
     report_scan_summary(args, scanner);
 
-    merge_required_envs(arena, args, scanner);
+    merge_required_envs(main_arena, args, scanner);
 
     return ctx.result;
 }
