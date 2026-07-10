@@ -1,3 +1,4 @@
+#include "emitter.h"
 #include "arg.h"
 #include "chars.h"
 #include "format.h"

@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "arena.h"
 #include "chars.h"
 #include "dynarr.h"
 #include "errors.h"
@@ -8,10 +9,6 @@
 #include "tokenizer.h"
 #include <stdlib.h>
 #include <string.h>
-
-#if defined(_WIN32) && defined(_MSC_VER)
-#include "shims.h"
-#endif
 
 env_t *get_env_from_map(env_map_t *env_map, const char *entry) {
     size_t i = hashmap_get(&env_map->index, entry, strlen(entry));
@@ -32,7 +29,7 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
     return entry != NULL ? entry->value : NULL;
 }
 
-result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *env_map) {
+result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, parser_t *parser) {
     result_t result = RESULT_OK;
 
     if (args->dry_run) {
@@ -40,8 +37,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         log_f(SINK_STDERR, " Attempting to parse %zu token%s...\n\n", tokens->count, TO_PLURAL(tokens->count));
     }
 
-    buf_t value = {0};
-    list_t missing_envs = {0};
+    buf_t value = {.arena = arena};
 
     for (size_t ti = 0; ti < tokens->count; ++ti) {
         const token_t *token = &tokens->items[ti];
@@ -71,19 +67,11 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     }
 
                     const char *lookup_key = raw_value;
-                    char *key_copy = NULL;
                     if (key_len != raw_value_len) {
-                        key_copy = strndup(raw_value, key_len);
-                        if (key_copy == NULL) {
-                            result = operation_error(
-                                "Unable to copy an interpolation key (not enough system memory?); aborting.\n");
-                            goto done;
-                        }
-                        lookup_key = key_copy;
+                        lookup_key = arena_strndup(arena, raw_value, key_len);
                     }
 
-                    const char *env = resolve_env(env_map, lookup_key);
-                    free(key_copy);
+                    const char *env = resolve_env(&parser->env_map, lookup_key);
 
                     if (env == NULL && fallback == NULL) {
                         result = operation_error(
@@ -95,9 +83,9 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     }
 
                     if (env != NULL && env[0] != '\0') {
-                        DYN_ARR_APPEND_MANY(&value, env, strlen(env));
+                        DYN_ARR_APPEND_MANY(arena, &value, env, strlen(env));
                     } else if (fallback != NULL) {
-                        DYN_ARR_APPEND_MANY(&value, fallback, fallback_len);
+                        DYN_ARR_APPEND_MANY(arena, &value, fallback, fallback_len);
                     }
                     break;
                 }
@@ -110,7 +98,7 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                     break;
                 }
                 default: {
-                    DYN_ARR_APPEND_MANY(&value, value_token->value, value_token->value_len);
+                    DYN_ARR_APPEND_MANY(arena, &value, value_token->value, value_token->value_len);
                     break;
                 }
             }
@@ -121,18 +109,14 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
             continue;
         }
 
-        char *env_value = malloc(value.count + 1);
-        if (env_value == NULL) {
-            result = operation_error("Unable to copy token value (not enough system memory?); aborting.\n");
-            goto done;
-        }
+        char *env_value = arena_alloc(arena, value.count + 1);
 
         if (value.count > 0) {
             memcpy(env_value, value.items, value.count);
         }
         env_value[value.count] = '\0';
 
-        env_t *existing = get_env_from_map(env_map, token_key);
+        env_t *existing = get_env_from_map(&parser->env_map, token_key);
         if (existing != NULL) {
             if (args->dry_run) {
                 log_info(SINK_STDERR, "[INFO]");
@@ -144,12 +128,11 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
                 log_info(SINK_STDERR, "%s", env_value);
                 log_f(SINK_STDERR, "...\n\n");
             }
-            free(existing->value);
             existing->value = env_value;
         } else {
             env_t new_env = {.key = token_key, .value = env_value};
-            DYN_ARR_APPEND(env_map, new_env);
-            hashmap_append(&env_map->index, token_key, strlen(token_key), env_map->count - 1);
+            DYN_ARR_APPEND(arena, &parser->env_map, new_env);
+            hashmap_append(arena, &parser->env_map.index, token_key, strlen(token_key), parser->env_map.count - 1);
         }
 
         if (args->dry_run) {
@@ -163,25 +146,25 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         }
     }
 
-    if (env_map->count == 0) {
+    if (parser->env_map.count == 0) {
         result = operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
         goto done;
     }
 
     for (size_t i = 0; i < args->required.count; ++i) {
         const char *required_key = args->required.items[i];
-        const env_t *entry = get_env_from_map(env_map, required_key);
+        const env_t *entry = get_env_from_map(&parser->env_map, required_key);
         if (entry == NULL || entry->value[0] == '\0') {
-            DYN_ARR_APPEND(&missing_envs, required_key);
+            DYN_ARR_APPEND(arena, &parser->missing_envs, required_key);
         }
     }
 
     if (args->dry_run) {
         log_info(SINK_STDERR, "[INFO]");
-        log_f(SINK_STDERR, " The following %zu ENV%s were parsed and will be emitted to stdout... \n", env_map->count,
-              TO_PLURAL(env_map->count));
-        for (size_t i = 0; i < env_map->count; ++i) {
-            const env_t env = env_map->items[i];
+        log_f(SINK_STDERR, " The following %zu ENV%s were parsed and will be emitted to stdout... \n",
+              parser->env_map.count, TO_PLURAL(parser->env_map.count));
+        for (size_t i = 0; i < parser->env_map.count; ++i) {
+            const env_t env = parser->env_map.items[i];
             log_f(SINK_STDERR, "    \u2022 ");
             log_bold_info(SINK_STDERR, "%s=%s\n", env.key, env.value);
         }
@@ -189,26 +172,16 @@ result_t run_parser(const args_t *args, const token_list_t *tokens, env_map_t *e
         goto done;
     }
 
-    if (args->command.count > 0 && missing_envs.count > 0) {
+    if (args->command.count > 0 && parser->missing_envs.count > 0) {
         log_error(SINK_STDERR,
                   "[ERROR] The following ENV keys were marked as required, but are undefined or empty after parsing:");
-        for (size_t i = 0; i < missing_envs.count; ++i) {
-            log_error(SINK_STDERR, "\n   \u2022 %s", missing_envs.items[i]);
+        for (size_t i = 0; i < parser->missing_envs.count; ++i) {
+            log_error(SINK_STDERR, "\n   \u2022 %s", parser->missing_envs.items[i]);
         }
         log_error(SINK_STDERR, "\n");
         result = OPERATION_FAILURE;
     }
 
 done:
-    free(value.items);
-    free_list(&missing_envs);
     return result;
-}
-
-void free_envs(env_map_t *env_map) {
-    for (size_t i = 0; i < env_map->count; i++) {
-        free(env_map->items[i].value);
-    }
-    free(env_map->items);
-    free_hashmap(&env_map->index);
 }

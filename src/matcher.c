@@ -1,10 +1,10 @@
 #include "matcher.h"
 #include "accessors.h"
+#include "arena.h"
 #include "chars.h"
 #include "dynarr.h"
 #include "file.h"
 #include "utils.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -109,7 +109,7 @@ static env_key_t extract_env_by_pattern(const file_details_t *file, pattern_t ki
     }
 }
 
-void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_match,
+void scan_file_content(arena_t *scratch, const file_details_t *file, const file_ext_t *file_ext_match,
                        env_key_matches_t *env_key_matches) {
     for (size_t acc_idx = 0; acc_idx < file_ext_match->accessor_count; ++acc_idx) {
         const accessor_t *acc = &file_ext_match->accessors[acc_idx];
@@ -175,7 +175,11 @@ void scan_file_content(const file_details_t *file, const file_ext_t *file_ext_ma
                 .line = line,
                 .byte = env.start - line_start + 1,
             };
-            DYN_ARR_APPEND(env_key_matches, new_env_key_match);
+            DYN_ARR_APPEND(scratch, env_key_matches, new_env_key_match);
+
+            // resume past the extracted span; every accessor prefix contains at least one
+            // non-identifier byte, so no prefix can begin inside the matched key
+            search_start = env.end;
         }
     }
 }

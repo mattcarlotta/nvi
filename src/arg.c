@@ -1,10 +1,8 @@
 #include "arg.h"
 #include "accessors.h"
 #include "chars.h"
-#include "dynarr.h"
 #include "errors.h"
 #include "format.h"
-#include "list.h"
 #include "log.h"
 #include "macros.h"
 #include "nthread.h"
@@ -15,6 +13,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
+typedef struct {
+    const char *name;
+    flag_t value;
+} flag_entry_t;
 
 static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
     log_f(SINK_STDERR, "\n    \u2022");
@@ -136,12 +139,6 @@ static result_t get_next_value(args_t *args, const char *flag, const char **para
     return RESULT_OK;
 }
 
-static void append_unique_param(list_t *list, const char *value) {
-    if (!list_contains(list, value)) {
-        DYN_ARR_APPEND(list, value);
-    }
-}
-
 static bool is_env_file(const char *base) {
     // .env
     if (strcmp(base, ".env") == 0) {
@@ -167,12 +164,11 @@ static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
     if (!is_env_file(base)) {
-        return operation_error(
-            "The 'files' flag argument '%s' is an invalid .env file (missing or invalid '.env' extension)\n", p);
+        return operation_error("The 'files' flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
     }
 
     if (is_absolute_path(p)) {
-        return operation_error("The 'files' flag argument '%s' must be relative to the current directory\n", p);
+        return operation_error("The 'files' flag '%s' must be relative to the current directory\n", p);
     }
 
     if (path_escapes_cwd(p)) {
@@ -182,7 +178,7 @@ static inline result_t validate_file_name(const char *p) {
     return RESULT_OK;
 }
 
-result_t parse_args(int argc, const char **argv, args_t *args) {
+result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
     // skip program name
     args->i = 1;
     args->argc = argc;
@@ -225,7 +221,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                         return result;
                     }
 
-                    append_unique_param(&args->files, param);
+                    set_add(arena, &args->files, param);
                     param = get_next_param(args);
                 }
 
@@ -240,7 +236,8 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
 
                 const format_t format = get_format(param);
                 if (format == FORMAT_UNKNOWN) {
-                    return usage_error("Invalid ENV format '%s' (expected: nul|powershell)", param);
+                    return usage_error(
+                        "The 'format' flag contains an invalid ENV format '%s' (expected: nul|powershell)", param);
                 }
 
                 args->format = format;
@@ -254,7 +251,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(&args->ignored, param);
+                    set_add(arena, &args->ignored, param);
                     param = get_next_param(args);
                 }
 
@@ -268,7 +265,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    append_unique_param(&args->required, param);
+                    set_add(arena, &args->required, param);
                     param = get_next_param(args);
                 }
 
@@ -282,12 +279,13 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    const ext_entry *entry = get_scan_extension(param);
+                    const file_ext_t *entry = get_scan_extension(param);
                     if (entry == NULL) {
-                        return usage_error("The file extension '%s' is not a supported scan extension", param);
+                        return usage_error("The 'scan' flag contains the '%s' file extension that is not supported",
+                                           param);
                     }
 
-                    append_file_extension(&args->scan_exts, entry);
+                    append_file_extension(arena, &args->scan_exts, entry);
                     param = get_next_param(args);
                 }
 
@@ -303,8 +301,7 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
                 const int MAX_CPU_CORES = cpu_count();
                 int threads = str_to_u8(param);
                 if (threads < 1 || threads > MAX_CPU_CORES) {
-                    return usage_error("The 'threads' flag only supports up to %d available thread%s (CPU core bound), "
-                                       "therefore %s is not valid",
+                    return usage_error("The 'threads' flag only supports up to %d thread%s, instead found %s",
                                        MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
                 }
 
@@ -408,12 +405,13 @@ result_t parse_args(int argc, const char **argv, args_t *args) {
         return usage_error("The '--files' or '--scan' flag requires at least one argument");
     }
 
-    return result;
-}
+    if (args->ignored.count > 0 && args->required.count > 0) {
+        for (size_t i = 0; i < args->ignored.count; ++i) {
+            if (set_contains(&args->required, args->ignored.items[i])) {
+                return usage_error("The '%s' key cannot be both required and ignored.", args->ignored.items[i]);
+            }
+        }
+    }
 
-void free_args(args_t *args) {
-    free_list(&args->files);
-    free_list(&args->ignored);
-    free_list(&args->required);
-    free_file_ext_map(&args->scan_exts);
+    return result;
 }

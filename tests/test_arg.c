@@ -1,12 +1,16 @@
+#include "arena.h"
 #include "arg.h"
 #include "format.h"
 #include "macros.h"
+#include "nthread.h"
 #include "test_capture.h"
 #include "unity.h"
 #include <string.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+static arena_t test_arena;
+
+void setUp(void) { test_arena = (arena_t){0}; }
+void tearDown(void) { arena_free(&test_arena); }
 
 typedef struct {
     int argc;
@@ -17,7 +21,7 @@ typedef struct {
 
 static void call_parse_args(void *ctx) {
     arg_ctx_t *c = ctx;
-    c->result = parse_args(c->argc, c->argv, c->a);
+    c->result = parse_args(&test_arena, c->argc, c->argv, c->a);
 }
 
 static result_t parse_args_silent(int argc, const char **argv, args_t *a) {
@@ -30,12 +34,11 @@ static result_t parse_args_silent(int argc, const char **argv, args_t *a) {
 static void test_parses_multiple_files(void) {
     const char *argv[] = {"nvi", "--files", ".env.local", ".env"};
     args_t a = {0};
-    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, a.files.count);
     TEST_ASSERT_EQUAL_STRING(".env.local", a.files.items[0]);
     TEST_ASSERT_EQUAL_STRING(".env", a.files.items[1]);
-    free_args(&a);
 }
 
 static void test_errors_on_file_missing_env_extension(void) {
@@ -43,7 +46,6 @@ static void test_errors_on_file_missing_env_extension(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 static void test_errors_on_absolute_file_path(void) {
@@ -51,7 +53,6 @@ static void test_errors_on_absolute_file_path(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 static void test_errors_on_escaping_file_path(void) {
@@ -59,7 +60,6 @@ static void test_errors_on_escaping_file_path(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 static void test_errors_on_missing_files_param(void) {
@@ -67,7 +67,6 @@ static void test_errors_on_missing_files_param(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 // --- format ---
@@ -78,7 +77,6 @@ static void test_parses_format_flag(void) {
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_INT(FORMAT_POWERSHELL, a.format);
-    free_args(&a);
 }
 
 static void test_errors_on_invalid_format(void) {
@@ -86,7 +84,6 @@ static void test_errors_on_invalid_format(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 // --- required / ignored ---
@@ -94,33 +91,36 @@ static void test_errors_on_invalid_format(void) {
 static void test_parses_required_envs(void) {
     const char *argv[] = {"nvi", "--files", ".env", "--required", "ENV_1", "ENV_2"};
     args_t a = {0};
-    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, a.required.count);
     TEST_ASSERT_EQUAL_STRING("ENV_1", a.required.items[0]);
     TEST_ASSERT_EQUAL_STRING("ENV_2", a.required.items[1]);
-    free_args(&a);
 }
 
 static void test_parses_ignored_envs(void) {
     const char *argv[] = {"nvi", "scan", "mjs", "--ignored", "NODE_ENV"};
     args_t a = {0};
-    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(1, a.ignored.count);
     TEST_ASSERT_EQUAL_STRING("NODE_ENV", a.ignored.items[0]);
-    free_args(&a);
 }
 
 // -- threads --
 
 static void test_parses_threads_flag(void) {
-    const char *argv[] = {"nvi", "--scan", "c", "--threads", "2", "--", "echo", "hello"};
+    // cpu_count() is the parser's upper bound, so it's the largest portable value;
+    // a hardcoded "2" fails on single-core machines
+    char threads[4];
+    int max = cpu_count();
+    snprintf(threads, sizeof(threads), "%d", max);
+
+    const char *argv[] = {"nvi", "--scan", "c", "--threads", threads, "--", "echo", "hello"};
     args_t a = {0};
-    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_size_t(2, a.scan_threads);
-    free_args(&a);
+    TEST_ASSERT_EQUAL_size_t((size_t)max, a.scan_threads);
 }
 
 static void test_errors_on_invalid_threads_flag(void) {
@@ -128,7 +128,6 @@ static void test_errors_on_invalid_threads_flag(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 // --- scan ---
@@ -136,12 +135,11 @@ static void test_errors_on_invalid_threads_flag(void) {
 static void test_parses_scan_extensions(void) {
     const char *argv[] = {"nvi", "scan", "ts", "mjs"};
     args_t a = {0};
-    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, a.scan_exts.count);
     TEST_ASSERT_EQUAL_STRING("ts", a.scan_exts.items[0].ext);
     TEST_ASSERT_EQUAL_STRING("mjs", a.scan_exts.items[1].ext);
-    free_args(&a);
 }
 
 static void test_errors_on_unsupported_scan_extension(void) {
@@ -149,7 +147,6 @@ static void test_errors_on_unsupported_scan_extension(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 // --- dry-run, delimiter, unknown, help/version ---
@@ -160,18 +157,16 @@ static void test_parses_dry_run_flag(void) {
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_TRUE(a.dry_run);
-    free_args(&a);
 }
 
 static void test_delimiter_sets_command(void) {
     const char *argv[] = {"nvi", "--files", ".env", "--", "echo", "hi"};
     args_t a = {0};
-    result_t r = parse_args(ARR_LEN(argv), argv, &a);
+    result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
     TEST_ASSERT_EQUAL_size_t(2, a.command.count);
     TEST_ASSERT_EQUAL_STRING("echo", a.command.items[0]);
     TEST_ASSERT_EQUAL_STRING("hi", a.command.items[1]);
-    free_args(&a);
 }
 
 static void test_errors_on_unknown_flag(void) {
@@ -179,7 +174,6 @@ static void test_errors_on_unknown_flag(void) {
     args_t a = {0};
     result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
     TEST_ASSERT_FALSE(r.ok);
-    free_args(&a);
 }
 
 static void test_help_short_circuits(void) {
@@ -189,7 +183,6 @@ static void test_help_short_circuits(void) {
     char sink[1];
     capture_fd(stdout, sink, sizeof(sink), call_parse_args, &ctx);
     TEST_ASSERT_FALSE(ctx.result.ok);
-    free_args(&a);
 }
 
 static void test_version_short_circuits(void) {
@@ -199,7 +192,6 @@ static void test_version_short_circuits(void) {
     char sink[1];
     capture_fd(stdout, sink, sizeof(sink), call_parse_args, &ctx);
     TEST_ASSERT_FALSE(ctx.result.ok);
-    free_args(&a);
 }
 
 int main(void) {

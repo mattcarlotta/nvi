@@ -1,25 +1,25 @@
 #include "scanner.h"
 #include "accessors.h"
+#include "arena.h"
 #include "arg.h"
 #include "chars.h"
 #include "dynarr.h"
 #include "errors.h"
 #include "file.h"
-#include "hashmap.h"
-#include "list.h"
+#include "hashset.h"
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
 #include "nthread.h"
-#include "result.h"
 #include "utils.h"
 #include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
+// the walker's best knowledge of an entry's type before dispatch;
+// ENTRY_UNKNOWN means a stat() is required to classify it
 typedef enum {
     ENTRY_UNKNOWN,
     ENTRY_DIR,
@@ -36,15 +36,20 @@ typedef struct {
     const args_t *args;
     mutex_t lock;
     cond_t work_ready;
+    arena_t arena; // shared queue storage; only ever touched under 'lock'
     dir_queue_t dirs;
-    size_t pending;
-    result_t result;
+    size_t pending;  // dirs queued or currently being processed
+    result_t result; // first error wins
+    bool failed;
 } walk_ctx_t;
 
 typedef struct {
     walk_ctx_t *ctx;
-    scanner_t scanner;
-    buf_t report;
+    scanner_t scanner; // share-nothing: private counters and env hashset
+    buf_t report;      // per-worker report buffer; each flush is one fwrite,
+                       // so blocks land whole even under concurrency
+    arena_t arena;     // worker lifetime: env key set, report buffer, path scratch
+    arena_t scratch;   // file lifetime: contents and match list, reset after each file
     thread_t thread;
 } scan_worker_t;
 
@@ -110,8 +115,8 @@ static void report_scan_summary(const args_t *args, const scanner_t *scanner) {
     log_info(SINK_STDERR, "[INFO]");
     log_f(SINK_STDERR, " Walked %zu director%s, scanned %zu file%s, and found %zu reference%s to %zu unique key%s\n\n",
           scanner->dirs_scanned, TO_PLURAL(scanner->dirs_scanned, "ies", "y"), scanner->files_scanned,
-          TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references), scanner->envs.count,
-          TO_PLURAL(scanner->envs.count));
+          TO_PLURAL(scanner->files_scanned), scanner->references, TO_PLURAL(scanner->references),
+          scanner->env_keys.count, TO_PLURAL(scanner->env_keys.count));
 }
 
 static void report_required_keys(const args_t *args) {
@@ -149,19 +154,13 @@ static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const cha
     return get_file_extension(map, dot + 1);
 }
 
-static void copy_unique_env_key(scanner_t *scanner, const env_key_match_t *env) {
-    if (hashmap_contains(&scanner->envs, env->key, env->key_len)) {
+static void copy_unique_env_key(arena_t *worker_arena, scanner_t *scanner, const env_key_match_t *env_match) {
+    if (hashset_contains(&scanner->env_keys, env_match->key, env_match->key_len)) {
         return;
     }
 
-    const char *new_key = strndup(env->key, env->key_len);
-    if (new_key == NULL) {
-        log_error(SINK_STDERR, "[ERROR] Failed to copy key '%s' (system is out of memory?); aborting.\n", env->key);
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
-
-    hashmap_append(&scanner->envs, new_key, env->key_len, 0);
+    const char *new_key = arena_strndup(worker_arena, env_match->key, env_match->key_len);
+    hashset_append(worker_arena, &scanner->env_keys, new_key, env_match->key_len);
 }
 
 static result_t scan_file(const args_t *args, scan_worker_t *worker, const char *path, const char *name) {
@@ -170,45 +169,39 @@ static result_t scan_file(const args_t *args, scan_worker_t *worker, const char 
         return RESULT_OK;
     }
 
-    file_details_t file = open_file(path);
+    file_details_t file = open_file(&worker->scratch, path);
     if (file.contents == NULL) {
+        arena_reset(&worker->scratch);
         return RESULT_OK;
     }
 
     if (file.len == 0) {
         report_empty_file_warning(args, &worker->report, path);
-        free(file.contents);
+        arena_reset(&worker->scratch);
         return RESULT_OK;
     }
 
     ++worker->scanner.files_scanned;
 
     env_key_matches_t env_key_matches = {0};
-    scan_file_content(&file, file_ext_match, &env_key_matches);
+    scan_file_content(&worker->scratch, &file, file_ext_match, &env_key_matches);
 
     report_file_scan_results(args, &worker->report, path, &env_key_matches);
 
     for (size_t i = 0; i < env_key_matches.count; ++i) {
         ++worker->scanner.references;
-        copy_unique_env_key(&worker->scanner, &env_key_matches.items[i]);
+        copy_unique_env_key(&worker->arena, &worker->scanner, &env_key_matches.items[i]);
     }
 
-    free_env_key_matches(&env_key_matches);
-    free(file.contents);
+    arena_reset(&worker->scratch);
 
     return RESULT_OK;
 }
 
 static void queue_dir(walk_ctx_t *ctx, const char *path) {
-    char *copy = strdup(path);
-    if (copy == NULL) {
-        log_error(SINK_STDERR, "[ERROR] Failed to copy a directory path (system is out of memory?); aborting.\n");
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
-
     mutex_lock(&ctx->lock);
-    DYN_ARR_APPEND(&ctx->dirs, copy);
+    char *copy = arena_strdup(&ctx->arena, path);
+    DYN_ARR_APPEND(&ctx->arena, &ctx->dirs, copy);
     ++ctx->pending;
     cond_signal(&ctx->work_ready);
     mutex_unlock(&ctx->lock);
@@ -225,6 +218,9 @@ static result_t handle_entry(scan_worker_t *worker, const char *parent, const ch
         return operation_error("The file path is too long: '%s" PATH_SEP "%s'\n", parent, name);
     }
 
+    // only classify via stat_path() when the directory listing couldn't
+    // (e.g. DT_UNKNOWN filesystems, or links: stat_path is lstat on POSIX,
+    // so links classify as neither dir nor file and are skipped)
     if (kind == ENTRY_UNKNOWN) {
         struct stat st;
         if (stat_path(path, &st) != 0) {
@@ -248,7 +244,6 @@ static result_t handle_entry(scan_worker_t *worker, const char *parent, const ch
     return scan_file(worker->ctx->args, worker, path, name);
 }
 
-// list a directory: scan matching files inline, queue subdirectories.
 static result_t process_dir(scan_worker_t *worker, const char *path, char *scratch) {
     result_t result = RESULT_OK;
 
@@ -291,6 +286,10 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
     while ((entry = readdir(dir)) != NULL) {
         entry_kind_t kind = ENTRY_UNKNOWN;
 
+        // d_type classifies most entries straight from the directory listing,
+        // saving one stat syscall per entry; DT_UNKNOWN (filesystems that
+        // don't populate d_type) and DT_LNK fall back to the stat_path path
+        // in handle_entry
 #if defined(DT_DIR) && defined(DT_REG)
         if (entry->d_type == DT_DIR) {
             kind = ENTRY_DIR;
@@ -311,26 +310,21 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
     return result;
 }
 
-// pop a directory, process it, repeat. Exits when a failure is
+// worker loop: pop a directory, process it, repeat. Exits when a failure is
 // flagged or when the queue is empty with no directories still in flight
 static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     scan_worker_t *worker = arg;
     walk_ctx_t *ctx = worker->ctx;
 
-    char *scratch = malloc(PATH_MAX);
-    if (scratch == NULL) {
-        log_error(SINK_STDERR, "[ERROR] Failed to allocate a path buffer (system is out of memory?); aborting.\n");
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
+    char *scratch = arena_alloc(&worker->arena, PATH_MAX);
 
     for (;;) {
         mutex_lock(&ctx->lock);
-        while (ctx->dirs.count == 0 && ctx->pending > 0 && ctx->result.ok) {
+        while (ctx->dirs.count == 0 && ctx->pending > 0 && !ctx->failed) {
             cond_wait(&ctx->work_ready, &ctx->lock);
         }
 
-        if (!ctx->result.ok || ctx->dirs.count == 0) {
+        if (ctx->failed || ctx->dirs.count == 0) {
             mutex_unlock(&ctx->lock);
             break;
         }
@@ -339,80 +333,70 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
         mutex_unlock(&ctx->lock);
 
         result_t result = process_dir(worker, dir, scratch);
-        free(dir);
 
         mutex_lock(&ctx->lock);
-        if (!result.ok && ctx->result.ok) {
+        if (!result.ok && !ctx->failed) {
+            ctx->failed = true;
             ctx->result = result;
         }
-
         --ctx->pending;
-
-        if (ctx->pending == 0 || !ctx->result.ok) {
+        if (ctx->pending == 0 || ctx->failed) {
             cond_broadcast(&ctx->work_ready);
         }
-
         mutex_unlock(&ctx->lock);
     }
 
-    log_buf_free(&worker->report);
-    free(scratch);
     return 0;
 }
 
-static void merge_worker_scanner(scanner_t *dst, scanner_t *src) {
+static void merge_worker_scanner(arena_t *main_arena, scanner_t *dst, scanner_t *src) {
     dst->dirs_scanned += src->dirs_scanned;
     dst->files_scanned += src->files_scanned;
     dst->references += src->references;
 
-    for (size_t i = 0; i < src->envs.capacity; ++i) {
-        const hashmap_entry_t *entry = &src->envs.slots[i];
+    for (size_t i = 0; i < src->env_keys.capacity; ++i) {
+        const hashset_entry_t *entry = &src->env_keys.items[i];
+        if (entry->key == NULL || hashset_contains(&dst->env_keys, entry->key, entry->len)) {
+            continue;
+        }
+
+        const char *key = arena_strndup(main_arena, entry->key, entry->len);
+        hashset_append(main_arena, &dst->env_keys, key, entry->len);
+    }
+}
+
+static void append_list_keys(arena_t *main_arena, hashset_t *env_set, const set_t *set) {
+    for (size_t i = 0; i < set->count; ++i) {
+        const char *key = set->items[i];
+        hashset_append(main_arena, env_set, key, strlen(key));
+    }
+}
+
+void merge_required_envs(arena_t *main_arena, args_t *args, const scanner_t *scanner) {
+    if (scanner->env_keys.count == 0) {
+        return;
+    }
+
+    hashset_t env_set = {0};
+
+    append_list_keys(main_arena, &env_set, &args->ignored);
+    append_list_keys(main_arena, &env_set, &args->required);
+
+    for (size_t i = 0; i < scanner->env_keys.capacity; ++i) {
+        const hashset_entry_t *entry = &scanner->env_keys.items[i];
         if (entry->key == NULL) {
             continue;
         }
 
-        if (hashmap_contains(&dst->envs, entry->key, entry->len)) {
-            free((void *)entry->key);
-        } else {
-            hashmap_append(&dst->envs, entry->key, entry->len, 0);
+        if (hashset_append(main_arena, &env_set, entry->key, entry->len)) {
+            DYN_ARR_APPEND(main_arena, &args->required, entry->key);
         }
     }
-
-    free_hashmap(&src->envs);
-}
-
-static void append_list_keys(hashmap_t *env_map, const list_t *list) {
-    for (size_t i = 0; i < list->count; ++i) {
-        const char *key = list->items[i];
-        hashmap_append(env_map, key, strlen(key), 0);
-    }
-}
-
-void merge_required_envs(args_t *args, const scanner_t *scanner) {
-    if (scanner->envs.count == 0) {
-        return;
-    }
-
-    hashmap_t env_map = {0};
-
-    append_list_keys(&env_map, &args->ignored);
-    append_list_keys(&env_map, &args->required);
-
-    for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        const hashmap_entry_t *entry = &scanner->envs.slots[i];
-        if (entry->key == NULL || hashmap_contains(&env_map, entry->key, entry->len)) {
-            continue;
-        }
-
-        DYN_ARR_APPEND(&args->required, entry->key);
-    }
-
-    free_hashmap(&env_map);
 
     report_required_keys(args);
 }
 
-result_t run_scanner(args_t *args, scanner_t *scanner) {
+result_t run_scanner(arena_t *main_arena, args_t *args, scanner_t *scanner) {
     scanner->scan_exts = &args->scan_exts;
 
     report_scan_start(args);
@@ -424,16 +408,12 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
     queue_dir(&ctx, ".");
 
     uint8_t nthreads = args->scan_threads;
-    scan_worker_t *workers = calloc(nthreads, sizeof(*workers));
-    if (workers == NULL) {
-        log_error(SINK_STDERR, "[ERROR] Failed to allocate scan workers (system is out of memory?); aborting.\n");
-        fflush(stderr);
-        exit(EXIT_FAILURE);
-    }
+    scan_worker_t *workers = arena_alloc_zeroed(main_arena, nthreads * sizeof(*workers));
 
     for (uint8_t i = 0; i < nthreads; ++i) {
         workers[i].ctx = &ctx;
         workers[i].scanner.scan_exts = &args->scan_exts;
+        workers[i].report.arena = &workers[i].arena;
     }
 
     uint8_t spawned = 0;
@@ -453,15 +433,12 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
     }
 
     for (uint8_t i = 0; i < nthreads; ++i) {
-        merge_worker_scanner(scanner, &workers[i].scanner);
+        merge_worker_scanner(main_arena, scanner, &workers[i].scanner);
+        arena_free(&workers[i].scratch);
+        arena_free(&workers[i].arena);
     }
 
-    free(workers);
-
-    for (size_t i = 0; i < ctx.dirs.count; ++i) {
-        free(ctx.dirs.items[i]);
-    }
-    free(ctx.dirs.items);
+    arena_free(&ctx.arena);
 
     cond_destroy(&ctx.work_ready);
     mutex_destroy(&ctx.lock);
@@ -472,14 +449,7 @@ result_t run_scanner(args_t *args, scanner_t *scanner) {
 
     report_scan_summary(args, scanner);
 
-    merge_required_envs(args, scanner);
+    merge_required_envs(main_arena, args, scanner);
 
     return ctx.result;
-}
-
-void free_scanner(scanner_t *scanner) {
-    for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        free((void *)scanner->envs.slots[i].key);
-    }
-    free_hashmap(&scanner->envs);
 }

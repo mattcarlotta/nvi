@@ -1,9 +1,9 @@
 #include "log.h"
+#include "arena.h"
 #include "buf.h"
 #include "tty.h"
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 static void buf_vappendf(buf_t *buf, const char *fmt, va_list args) {
     va_list measure;
@@ -20,19 +20,7 @@ static void buf_vappendf(buf_t *buf, const char *fmt, va_list args) {
         while (cap < buf->count + (size_t)n + 1) {
             cap *= 2;
         }
-        char *grown = realloc(buf->items, cap);
-        if (grown == NULL) {
-            if (use_color) {
-                fputs(RED, stderr);
-            }
-            fputs("[ERROR] Failed to grow a report buffer (system out of memory?); aborting.\n", stderr);
-            if (use_color) {
-                fputs(RESET, stderr);
-            }
-            fflush(stderr);
-            exit(EXIT_FAILURE);
-        }
-        buf->items = grown;
+        buf->items = arena_extend(buf->arena, buf->items, buf->capacity, cap);
         buf->capacity = cap;
     }
 
@@ -120,9 +108,4 @@ void log_buf_flush(buf_t *buf) {
         fwrite(buf->items, 1, buf->count, stderr);
         buf->count = 0;
     }
-}
-
-void log_buf_free(buf_t *buf) {
-    free(buf->items);
-    *buf = (buf_t){0};
 }

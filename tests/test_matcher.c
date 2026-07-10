@@ -1,16 +1,19 @@
 #include "accessors.h"
+#include "arena.h"
 #include "file.h"
 #include "matcher.h"
 #include "unity.h"
 #include <string.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+static arena_t test_arena;
+
+void setUp(void) { test_arena = (arena_t){0}; }
+void tearDown(void) { arena_free(&test_arena); }
 
 static file_ext_t ext_for(const char *ext) {
-    const ext_entry *e = get_scan_extension(ext);
+    const file_ext_t *e = get_scan_extension(ext);
     TEST_ASSERT_NOT_NULL(e);
-    return (file_ext_t){.ext = e->ext, .accessors = e->accessors, .accessor_count = e->count};
+    return *e;
 }
 
 static file_details_t mock_file(const char *src) {
@@ -28,14 +31,12 @@ static void test_ident_key_with_location(void) {
     file_details_t f = mock_file("const k = process.env.API_KEY;\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "API_KEY");
     TEST_ASSERT_EQUAL_size_t(1, matches.items[0].line);
     TEST_ASSERT_EQUAL_size_t(23, matches.items[0].byte);
-
-    free_env_key_matches(&matches);
 }
 
 static void test_bracket_quoted_key_with_location(void) {
@@ -43,14 +44,12 @@ static void test_bracket_quoted_key_with_location(void) {
     file_details_t f = mock_file("const k = process.env[\"API_KEY\"];\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "API_KEY");
     TEST_ASSERT_EQUAL_size_t(1, matches.items[0].line);
     TEST_ASSERT_EQUAL_size_t(24, matches.items[0].byte);
-
-    free_env_key_matches(&matches);
 }
 
 static void test_tracks_lines_across_quoted_keys(void) {
@@ -58,7 +57,7 @@ static void test_tracks_lines_across_quoted_keys(void) {
     file_details_t f = mock_file("\n\nos.getenv(\"FOO\")\nos.getenv(\"BAR\")\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(2, matches.count);
     expect_key(&matches.items[0], "FOO");
@@ -67,8 +66,6 @@ static void test_tracks_lines_across_quoted_keys(void) {
     expect_key(&matches.items[1], "BAR");
     TEST_ASSERT_EQUAL_size_t(4, matches.items[1].line);
     TEST_ASSERT_EQUAL_size_t(12, matches.items[1].byte);
-
-    free_env_key_matches(&matches);
 }
 
 static void test_skips_dynamic_keys(void) {
@@ -76,12 +73,10 @@ static void test_skips_dynamic_keys(void) {
     file_details_t f = mock_file("os.getenv(name) os.getenv(\"REAL\")\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "REAL");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_skips_mid_identifier_prefix(void) {
@@ -89,12 +84,10 @@ static void test_skips_mid_identifier_prefix(void) {
     file_details_t f = mock_file("xprocess.env.FAKE process.env.REAL\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "REAL");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_braced_strips_optional_quotes(void) {
@@ -102,13 +95,11 @@ static void test_braced_strips_optional_quotes(void) {
     file_details_t f = mock_file("$ENV{FOO} $ENV{'BAR'}\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(2, matches.count);
     expect_key(&matches.items[0], "FOO");
     expect_key(&matches.items[1], "BAR");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_python_getenv_and_environ_forms(void) {
@@ -116,14 +107,12 @@ static void test_python_getenv_and_environ_forms(void) {
     file_details_t f = mock_file("x = os.getenv(\"A\")\ny = os.environ[\"B\"]\nz = os.environ.get(\"C\")\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(3, matches.count);
     expect_key(&matches.items[0], "A");
     expect_key(&matches.items[1], "B");
     expect_key(&matches.items[2], "C");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_rust_var_and_macros(void) {
@@ -132,14 +121,12 @@ static void test_rust_var_and_macros(void) {
         mock_file("let a = env::var(\"A\").unwrap();\nlet b = env!(\"B\");\nlet c = option_env!(\"C\");\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(3, matches.count);
     expect_key(&matches.items[0], "A");
     expect_key(&matches.items[1], "B");
     expect_key(&matches.items[2], "C");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_powershell_sigil_and_dotnet_accessor(void) {
@@ -147,31 +134,27 @@ static void test_powershell_sigil_and_dotnet_accessor(void) {
     file_details_t f = mock_file("$a = $env:A\n$b = [Environment]::GetEnvironmentVariable(\"B\")\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(2, matches.count);
     expect_key(&matches.items[0], "A");
     expect_key(&matches.items[1], "B");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_tcl_paren_and_nushell_dotted(void) {
     file_ext_t tcl = ext_for("tcl");
     file_details_t f1 = mock_file("set a $env(A)\n");
     env_key_matches_t m1 = {0};
-    scan_file_content(&f1, &tcl, &m1);
+    scan_file_content(&test_arena, &f1, &tcl, &m1);
     TEST_ASSERT_EQUAL_size_t(1, m1.count);
     expect_key(&m1.items[0], "A");
-    free_env_key_matches(&m1);
 
     file_ext_t nu = ext_for("nu");
     file_details_t f2 = mock_file("let a = $env.A\n");
     env_key_matches_t m2 = {0};
-    scan_file_content(&f2, &nu, &m2);
+    scan_file_content(&test_arena, &f2, &nu, &m2);
     TEST_ASSERT_EQUAL_size_t(1, m2.count);
     expect_key(&m2.items[0], "A");
-    free_env_key_matches(&m2);
 }
 
 static void test_yaml_expansion_with_location(void) {
@@ -179,14 +162,12 @@ static void test_yaml_expansion_with_location(void) {
     file_details_t f = mock_file("image: ${IMAGE_TAG}\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "IMAGE_TAG");
     TEST_ASSERT_EQUAL_size_t(1, matches.items[0].line);
     TEST_ASSERT_EQUAL_size_t(10, matches.items[0].byte);
-
-    free_env_key_matches(&matches);
 }
 
 static void test_yaml_expansion_operator_forms(void) {
@@ -194,14 +175,12 @@ static void test_yaml_expansion_operator_forms(void) {
     file_details_t f = mock_file("a: ${PORT:-8080}\nb: ${DB_URL:?required}\nc: ${HOST-localhost}\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(3, matches.count);
     expect_key(&matches.items[0], "PORT");
     expect_key(&matches.items[1], "DB_URL");
     expect_key(&matches.items[2], "HOST");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_yaml_expansion_nested_default(void) {
@@ -209,13 +188,11 @@ static void test_yaml_expansion_nested_default(void) {
     file_details_t f = mock_file("url: ${PRIMARY:-${FALLBACK}}\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(2, matches.count);
     expect_key(&matches.items[0], "PRIMARY");
     expect_key(&matches.items[1], "FALLBACK");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_yaml_expansion_skips_escaped_dollars(void) {
@@ -223,12 +200,10 @@ static void test_yaml_expansion_skips_escaped_dollars(void) {
     file_details_t f = mock_file("a: $${LITERAL} b: ${REAL} c: $$${ESCAPED_THEN_REAL}\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "REAL");
-
-    free_env_key_matches(&matches);
 }
 
 static void test_yaml_expansion_skips_actions_and_unterminated(void) {
@@ -236,12 +211,10 @@ static void test_yaml_expansion_skips_actions_and_unterminated(void) {
     file_details_t f = mock_file("run: ${{ env.SECRET }}\nbroken: ${NO_BRACE\nok: ${VALID}\n");
 
     env_key_matches_t matches = {0};
-    scan_file_content(&f, &fe, &matches);
+    scan_file_content(&test_arena, &f, &fe, &matches);
 
     TEST_ASSERT_EQUAL_size_t(1, matches.count);
     expect_key(&matches.items[0], "VALID");
-
-    free_env_key_matches(&matches);
 }
 
 int main(void) {

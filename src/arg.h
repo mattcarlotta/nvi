@@ -1,9 +1,11 @@
 #ifndef ARG_H
 #define ARG_H
+
 #include "accessors.h"
+#include "arena.h"
 #include "format.h"
-#include "list.h"
 #include "result.h"
+#include "set.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -37,11 +39,6 @@ typedef enum {
 } flag_t;
 
 typedef struct {
-    const char *name;
-    flag_t value;
-} flag_entry_t;
-
-typedef struct {
     const char **items;
     size_t count;
 } command_t;
@@ -53,14 +50,13 @@ typedef struct {
     bool dry_run;
     uint8_t scan_threads;
     format_t format;
-    list_t files;
-    list_t required;
-    list_t ignored;
+    set_t files;
+    set_t required;
+    set_t ignored;
     file_ext_map_t scan_exts;
     command_t command;
 } args_t;
 
-result_t parse_args(int arg, const char **argv, args_t *args);
-void free_args(args_t *args);
+result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args);
 
 #endif // ARG_H

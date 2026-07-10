@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "arg.h"
 #include "parser.h"
 #include "test_capture.h"
@@ -6,8 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-void setUp(void) {}
-void tearDown(void) {}
+static arena_t test_arena;
+
+void setUp(void) { test_arena = (arena_t){0}; }
+void tearDown(void) { arena_free(&test_arena); }
 
 #if defined(_WIN32) && defined(_MSC_VER)
 static void set_env(const char *k, const char *v) { _putenv_s(k, v); }
@@ -20,17 +23,17 @@ static void clear_env(const char *k) { unsetenv(k); }
 typedef struct {
     const args_t *args;
     token_list_t *tl;
-    env_map_t *envs;
+    parser_t *parser;
     result_t result;
 } parser_ctx_t;
 
 static void call_parser(void *ctx) {
     parser_ctx_t *c = ctx;
-    c->result = run_parser(c->args, c->tl, c->envs);
+    c->result = run_parser(&test_arena, c->args, c->tl, c->parser);
 }
 
-static result_t parser_silent(const args_t *args, token_list_t *tl, env_map_t *envs) {
-    parser_ctx_t ctx = {.args = args, .tl = tl, .envs = envs};
+static result_t parser_silent(const args_t *args, token_list_t *tl, parser_t *parser) {
+    parser_ctx_t ctx = {.args = args, .tl = tl, .parser = parser};
     char sink[1];
     capture_fd(stderr, sink, sizeof(sink), call_parser, &ctx);
     return ctx.result;
@@ -60,12 +63,11 @@ static void test_sets_normalized_key_value(void) {
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
     args_t args = {0};
 
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_size_t(1, envs.count);
-    TEST_ASSERT_EQUAL_STRING("value", lookup(&envs, "KEY"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_size_t(1, parser.env_map.count);
+    TEST_ASSERT_EQUAL_STRING("value", lookup(&parser.env_map, "KEY"));
 }
 
 static void test_concatenates_multiple_value_tokens(void) {
@@ -80,11 +82,10 @@ static void test_concatenates_multiple_value_tokens(void) {
     token_list_t tl = {.items = &tok, .count = 1, .capacity = 1};
     args_t args = {0};
 
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("1234", lookup(&envs, "MULTI"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("1234", lookup(&parser.env_map, "MULTI"));
 }
 
 static void test_resolves_interpolation_from_environment(void) {
@@ -95,11 +96,10 @@ static void test_resolves_interpolation_from_environment(void) {
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
     args_t args = {0};
 
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("/home/test", lookup(&envs, "DIR"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("/home/test", lookup(&parser.env_map, "DIR"));
 
     clear_env("NVI_TEST_HOME");
 }
@@ -115,11 +115,10 @@ static void test_resolves_interpolation_from_previous_env(void) {
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
     args_t args = {0};
 
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("bar", lookup(&envs, "NVI_TEST_BAZ"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("bar", lookup(&parser.env_map, "NVI_TEST_BAZ"));
 }
 
 static void test_required_env_present_passes(void) {
@@ -135,20 +134,18 @@ static void test_required_env_present_passes(void) {
     args.command.items = cmd;
     args.command.count = 1;
 
-    env_map_t envs = {0};
-    result_t r = parser_silent(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("ok", lookup(&envs, "REQUIRED"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("ok", lookup(&parser.env_map, "REQUIRED"));
 }
 
 static void test_errors_when_nothing_parses(void) {
     token_list_t tl = {0};
     args_t args = {0};
-    env_map_t envs = {0};
-    result_t r = parser_silent(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
     TEST_ASSERT_FALSE(r.ok);
-    free_envs(&envs);
 }
 
 static void test_duplicate_key_updates_in_place(void) {
@@ -160,12 +157,11 @@ static void test_duplicate_key_updates_in_place(void) {
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
     args_t args = {0};
 
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_size_t(1, envs.count);
-    TEST_ASSERT_EQUAL_STRING("second", lookup(&envs, "KEY"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_size_t(1, parser.env_map.count);
+    TEST_ASSERT_EQUAL_STRING("second", lookup(&parser.env_map, "KEY"));
 }
 
 static void test_index_survives_growth(void) {
@@ -182,19 +178,18 @@ static void test_index_survives_growth(void) {
     token_list_t tl = {.items = toks, .count = N, .capacity = N};
     args_t args = {0};
 
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_size_t(N, envs.count);
+    TEST_ASSERT_EQUAL_size_t(N, parser.env_map.count);
 
-    env_t *first = get_env_from_map(&envs, "KEY_0");
-    env_t *last = get_env_from_map(&envs, "KEY_99");
+    env_t *first = get_env_from_map(&parser.env_map, "KEY_0");
+    env_t *last = get_env_from_map(&parser.env_map, "KEY_99");
     TEST_ASSERT_NOT_NULL(first);
     TEST_ASSERT_NOT_NULL(last);
     TEST_ASSERT_EQUAL_STRING("v", first->value);
     TEST_ASSERT_EQUAL_STRING("v", last->value);
-    TEST_ASSERT_NULL(get_env_from_map(&envs, "KEY_100"));
-    free_envs(&envs);
+    TEST_ASSERT_NULL(get_env_from_map(&parser.env_map, "KEY_100"));
 }
 
 static void test_errors_when_required_env_missing(void) {
@@ -210,10 +205,9 @@ static void test_errors_when_required_env_missing(void) {
     args.command.items = cmd;
     args.command.count = 1;
 
-    env_map_t envs = {0};
-    result_t r = parser_silent(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
     TEST_ASSERT_FALSE(r.ok);
-    free_envs(&envs);
 }
 
 static void test_fallback_used_when_unset(void) {
@@ -223,11 +217,10 @@ static void test_fallback_used_when_unset(void) {
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("fell back", lookup(&envs, "KEY"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("fell back", lookup(&parser.env_map, "KEY"));
 }
 
 static void test_fallback_used_when_map_value_empty(void) {
@@ -240,11 +233,10 @@ static void test_fallback_used_when_map_value_empty(void) {
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
 
     args_t args = {0};
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("fb", lookup(&envs, "KEY"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("fb", lookup(&parser.env_map, "KEY"));
 }
 
 static void test_value_wins_over_fallback(void) {
@@ -254,12 +246,11 @@ static void test_value_wins_over_fallback(void) {
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("real", lookup(&envs, "KEY"));
+    TEST_ASSERT_EQUAL_STRING("real", lookup(&parser.env_map, "KEY"));
     clear_env("NVI_TEST_FB_SET");
-    free_envs(&envs);
 }
 
 static void test_defined_empty_without_fallback_resolves_empty(void) {
@@ -272,11 +263,10 @@ static void test_defined_empty_without_fallback_resolves_empty(void) {
     token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
 
     args_t args = {0};
-    env_map_t envs = {0};
-    result_t r = run_parser(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_STRING("", lookup(&envs, "KEY"));
-    free_envs(&envs);
+    TEST_ASSERT_EQUAL_STRING("", lookup(&parser.env_map, "KEY"));
 }
 
 static void test_errors_on_undefined_interpolation(void) {
@@ -286,11 +276,10 @@ static void test_errors_on_undefined_interpolation(void) {
     token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
 
     args_t args = {0};
-    env_map_t envs = {0};
-    result_t r = parser_silent(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
     TEST_ASSERT_FALSE(r.ok);
     TEST_ASSERT_EQUAL_INT(1, r.code);
-    free_envs(&envs);
 }
 
 static void test_errors_when_required_env_is_empty(void) {
@@ -306,10 +295,9 @@ static void test_errors_when_required_env_is_empty(void) {
     args.command.items = cmd;
     args.command.count = 1;
 
-    env_map_t envs = {0};
-    result_t r = parser_silent(&args, &tl, &envs);
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
     TEST_ASSERT_FALSE(r.ok);
-    free_envs(&envs);
 }
 
 int main(void) {
