@@ -31,12 +31,6 @@ typedef struct {
 typedef struct {
     const char *ext;
     const accessor_t *accessors;
-    size_t count;
-} ext_entry;
-
-typedef struct {
-    const char *ext;
-    const accessor_t *accessors;
     size_t accessor_count;
 } file_ext_t;
 
@@ -46,8 +40,8 @@ typedef struct {
     size_t capacity;
 } file_ext_map_t;
 
-const ext_entry *get_scan_extension(const char *ext);
+const file_ext_t *get_scan_extension(const char *ext);
 const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext);
-void append_file_extension(arena_t *arena, file_ext_map_t *map, const ext_entry *entry);
+void append_file_extension(arena_t *arena, file_ext_map_t *map, const file_ext_t *entry);
 
 #endif // ACCESSORS_H

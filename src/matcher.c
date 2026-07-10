@@ -176,6 +176,10 @@ void scan_file_content(arena_t *scratch, const file_details_t *file, const file_
                 .byte = env.start - line_start + 1,
             };
             DYN_ARR_APPEND(scratch, env_key_matches, new_env_key_match);
+
+            // resume past the extracted span; every accessor prefix contains at least one
+            // non-identifier byte, so no prefix can begin inside the matched key
+            search_start = env.end;
         }
     }
 }

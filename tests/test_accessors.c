@@ -9,10 +9,10 @@ void setUp(void) { test_arena = (arena_t){0}; }
 void tearDown(void) { arena_free(&test_arena); }
 
 static void test_get_scan_extension_known(void) {
-    const ext_entry *ts = get_scan_extension("ts");
+    const file_ext_t *ts = get_scan_extension("ts");
     TEST_ASSERT_NOT_NULL(ts);
     TEST_ASSERT_EQUAL_STRING("ts", ts->ext);
-    TEST_ASSERT_TRUE(ts->count > 0);
+    TEST_ASSERT_TRUE(ts->accessor_count > 0);
 }
 
 static void test_get_scan_extension_unknown_is_null(void) {
@@ -22,9 +22,9 @@ static void test_get_scan_extension_unknown_is_null(void) {
 }
 
 static void test_js_family_shares_one_table(void) {
-    const ext_entry *js = get_scan_extension("js");
-    const ext_entry *ts = get_scan_extension("ts");
-    const ext_entry *mjs = get_scan_extension("mjs");
+    const file_ext_t *js = get_scan_extension("js");
+    const file_ext_t *ts = get_scan_extension("ts");
+    const file_ext_t *mjs = get_scan_extension("mjs");
     TEST_ASSERT_NOT_NULL(js);
     TEST_ASSERT_NOT_NULL(ts);
     TEST_ASSERT_NOT_NULL(mjs);
@@ -33,9 +33,9 @@ static void test_js_family_shares_one_table(void) {
 }
 
 static void test_kotlin_groovy_reuse_java_table(void) {
-    const ext_entry *java = get_scan_extension("java");
-    const ext_entry *kt = get_scan_extension("kt");
-    const ext_entry *groovy = get_scan_extension("groovy");
+    const file_ext_t *java = get_scan_extension("java");
+    const file_ext_t *kt = get_scan_extension("kt");
+    const file_ext_t *groovy = get_scan_extension("groovy");
     TEST_ASSERT_NOT_NULL(java);
     TEST_ASSERT_NOT_NULL(kt);
     TEST_ASSERT_NOT_NULL(groovy);
@@ -48,7 +48,7 @@ static void test_kotlin_groovy_reuse_java_table(void) {
 static void test_file_ext_map_round_trip(void) {
     file_ext_map_t map = {0};
 
-    const ext_entry *ts = get_scan_extension("ts");
+    const file_ext_t *ts = get_scan_extension("ts");
     TEST_ASSERT_NOT_NULL(ts);
     append_file_extension(&test_arena, &map, ts);
 

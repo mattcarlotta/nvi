@@ -11,9 +11,9 @@ void setUp(void) { test_arena = (arena_t){0}; }
 void tearDown(void) { arena_free(&test_arena); }
 
 static file_ext_t ext_for(const char *ext) {
-    const ext_entry *e = get_scan_extension(ext);
+    const file_ext_t *e = get_scan_extension(ext);
     TEST_ASSERT_NOT_NULL(e);
-    return (file_ext_t){.ext = e->ext, .accessors = e->accessors, .accessor_count = e->count};
+    return *e;
 }
 
 static file_details_t mock_file(const char *src) {

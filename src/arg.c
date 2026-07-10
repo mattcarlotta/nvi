@@ -279,7 +279,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                 }
 
                 while (param) {
-                    const ext_entry *entry = get_scan_extension(param);
+                    const file_ext_t *entry = get_scan_extension(param);
                     if (entry == NULL) {
                         return usage_error("The 'scan' flag contains the '%s' file extension that is not supported",
                                            param);

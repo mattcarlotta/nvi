@@ -176,7 +176,7 @@ static const accessor_t yaml[] = {
     ACCESSOR("${", expansion),
 };
 
-static const ext_entry extensions[] = {
+static const file_ext_t extensions[] = {
     ENTRY("js", javascript),
     ENTRY("mjs", javascript),
     ENTRY("cjs", javascript),
@@ -260,7 +260,7 @@ static const ext_entry extensions[] = {
 
 static const size_t ext_len = ARR_LEN(extensions);
 
-const ext_entry *get_scan_extension(const char *ext) {
+const file_ext_t *get_scan_extension(const char *ext) {
     for (size_t i = 0; i < ext_len; ++i) {
         if (strcmp(ext, extensions[i].ext) == 0) {
             return &extensions[i];
@@ -278,16 +278,10 @@ const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext)
     return NULL;
 }
 
-void append_file_extension(arena_t *arena, file_ext_map_t *map, const ext_entry *entry) {
+void append_file_extension(arena_t *arena, file_ext_map_t *map, const file_ext_t *entry) {
     if (get_file_extension(map, entry->ext) != NULL) {
         return;
     }
 
-    file_ext_t match = {
-        .ext = entry->ext,
-        .accessors = entry->accessors,
-        .accessor_count = entry->count,
-    };
-
-    DYN_ARR_APPEND(arena, map, match);
+    DYN_ARR_APPEND(arena, map, *entry);
 }

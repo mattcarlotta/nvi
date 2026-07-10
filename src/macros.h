@@ -14,7 +14,7 @@
 
 #define ARR_LEN(a) (sizeof(a) / sizeof((a)[0]))
 
-#define ENTRY(ext, arr) {(ext), (arr), ARR_LEN(arr)}
+#define ENTRY(e, arr) {.ext = (e), .accessors = (arr), .accessor_count = ARR_LEN(arr)}
 #define ACCESSOR(str, pat) {.prefix = (str), .prefix_len = sizeof("" str) - 1, .pattern = (pat)}
 
 #define TO_PLURAL_1(a) ((a) != 1 ? "s" : "")
