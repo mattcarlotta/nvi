@@ -4,7 +4,7 @@
 #include "accessors.h"
 #include "arena.h"
 #include "arg.h"
-#include "hashmap.h"
+#include "hashset.h"
 
 // The scanner is strictly responsible for recursively walking through the CWD for files
 // containing ENV keys and marking them as required. The goal for scanner is to
@@ -15,7 +15,7 @@ typedef struct {
     size_t dirs_scanned;
     size_t files_scanned;
     size_t references;
-    hashmap_t envs;
+    hashset_t envs;
     const file_ext_map_t *scan_exts;
 } scanner_t;
 

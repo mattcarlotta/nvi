@@ -6,7 +6,7 @@
 #include "dynarr.h"
 #include "errors.h"
 #include "file.h"
-#include "hashmap.h"
+#include "hashset.h"
 #include "log.h"
 #include "macros.h"
 #include "matcher.h"
@@ -45,10 +45,10 @@ typedef struct {
 
 typedef struct {
     walk_ctx_t *ctx;
-    scanner_t scanner; // share-nothing: private counters and env hashmap
+    scanner_t scanner; // share-nothing: private counters and env hashset
     buf_t report;      // per-worker report buffer; each flush is one fwrite,
                        // so blocks land whole even under concurrency
-    arena_t persist;   // worker lifetime: env key set, report buffer, path scratch
+    arena_t arena;     // worker lifetime: env key set, report buffer, path scratch
     arena_t scratch;   // file lifetime: contents and match list, reset after each file
     thread_t thread;
 } scan_worker_t;
@@ -163,15 +163,13 @@ static const file_ext_t *get_file_accessors(const file_ext_map_t *map, const cha
     return get_file_extension(map, dot + 1);
 }
 
-// duplicate a match key out of the scratch arena (it points into file contents) into the
-// worker's persist arena before the per-file scratch reset invalidates it
 static void copy_unique_env_key(arena_t *persist, scanner_t *scanner, const env_key_match_t *env) {
-    if (hashmap_contains(&scanner->envs, env->key, env->key_len)) {
+    if (hashset_contains(&scanner->envs, env->key, env->key_len)) {
         return;
     }
 
     const char *new_key = arena_strndup(persist, env->key, env->key_len);
-    hashmap_append(persist, &scanner->envs, new_key, env->key_len, 0);
+    hashset_append(persist, &scanner->envs, new_key, env->key_len);
 }
 
 static result_t scan_file(const args_t *args, scan_worker_t *worker, const char *path, const char *name) {
@@ -201,7 +199,7 @@ static result_t scan_file(const args_t *args, scan_worker_t *worker, const char 
 
     for (size_t i = 0; i < env_key_matches.count; ++i) {
         ++worker->scanner.references;
-        copy_unique_env_key(&worker->persist, &worker->scanner, &env_key_matches.items[i]);
+        copy_unique_env_key(&worker->arena, &worker->scanner, &env_key_matches.items[i]);
     }
 
     // contents and matches die together; keys were copied into persist above
@@ -259,13 +257,10 @@ static result_t handle_entry(scan_worker_t *worker, const char *parent, const ch
     return scan_file(worker->ctx->args, worker, path, name);
 }
 
-// list one directory: scan matching files inline, queue subdirectories.
-// 'scratch' is a PATH_MAX buffer owned by the calling worker.
 static result_t process_dir(scan_worker_t *worker, const char *path, char *scratch) {
     result_t result = RESULT_OK;
 
 #if defined(_WIN32) && defined(_MSC_VER)
-    // build the search pattern in the scratch buffer, then reuse it for entries
     int n = snprintf(scratch, PATH_MAX, "%s" PATH_SEP "*", path);
     if (n < 0 || (size_t)n >= PATH_MAX) {
         return operation_error("path too long: '%s'", path);
@@ -332,12 +327,11 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
 
 // worker loop: pop a directory, process it, repeat. Exits when a failure is
 // flagged or when the queue is empty with no directories still in flight
-// (pending == 0), which is the guaranteed-quiescent termination condition.
 static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     scan_worker_t *worker = arg;
     walk_ctx_t *ctx = worker->ctx;
 
-    char *scratch = arena_alloc(&worker->persist, PATH_MAX);
+    char *scratch = arena_alloc(&worker->arena, PATH_MAX);
 
     for (;;) {
         mutex_lock(&ctx->lock);
@@ -370,28 +364,27 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     return 0;
 }
 
-// fold a worker's private results into the main scanner. Unique keys are copied out of the
-// worker's persist arena into the main arena so the worker arenas can be freed afterwards.
+// unique keys are copied out of the worker's arena into the main arena so the worker arenas can be freed
 static void merge_worker_scanner(arena_t *main_arena, scanner_t *dst, scanner_t *src) {
     dst->dirs_scanned += src->dirs_scanned;
     dst->files_scanned += src->files_scanned;
     dst->references += src->references;
 
     for (size_t i = 0; i < src->envs.capacity; ++i) {
-        const hashmap_entry_t *entry = &src->envs.slots[i];
-        if (entry->key == NULL || hashmap_contains(&dst->envs, entry->key, entry->len)) {
+        const hashset_entry_t *entry = &src->envs.items[i];
+        if (entry->key == NULL || hashset_contains(&dst->envs, entry->key, entry->len)) {
             continue;
         }
 
         const char *key = arena_strndup(main_arena, entry->key, entry->len);
-        hashmap_append(main_arena, &dst->envs, key, entry->len, 0);
+        hashset_append(main_arena, &dst->envs, key, entry->len);
     }
 }
 
-static void append_list_keys(arena_t *arena, hashmap_t *env_map, const set_t *set) {
+static void append_list_keys(arena_t *arena, hashset_t *env_set, const set_t *set) {
     for (size_t i = 0; i < set->count; ++i) {
         const char *key = set->items[i];
-        hashmap_append(arena, env_map, key, strlen(key), 0);
+        hashset_append(arena, env_set, key, strlen(key));
     }
 }
 
@@ -400,15 +393,15 @@ void merge_required_envs(arena_t *arena, args_t *args, const scanner_t *scanner)
         return;
     }
 
-    // temporary dedupe map; its slots are abandoned in the main arena afterwards
-    hashmap_t env_map = {0};
+    // temporary dedupe map; its items are abandoned in the main arena afterwards
+    hashset_t env_set = {0};
 
-    append_list_keys(arena, &env_map, &args->ignored);
-    append_list_keys(arena, &env_map, &args->required);
+    append_list_keys(arena, &env_set, &args->ignored);
+    append_list_keys(arena, &env_set, &args->required);
 
     for (size_t i = 0; i < scanner->envs.capacity; ++i) {
-        const hashmap_entry_t *entry = &scanner->envs.slots[i];
-        if (entry->key == NULL || hashmap_contains(&env_map, entry->key, entry->len)) {
+        const hashset_entry_t *entry = &scanner->envs.items[i];
+        if (entry->key == NULL || hashset_contains(&env_set, entry->key, entry->len)) {
             continue;
         }
 
@@ -423,69 +416,46 @@ result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner) {
 
     report_scan_start(args);
 
-    walk_ctx_t ctx = {0};
-    ctx.args = args;
-    ctx.result = RESULT_OK;
+    walk_ctx_t ctx = {.args = args, .result = RESULT_OK};
     arena_init(&ctx.arena, 0);
     mutex_init(&ctx.lock);
     cond_init(&ctx.work_ready);
 
     queue_dir(&ctx, ".");
 
-    // dry-run runs parallel too: buffered reports keep each block whole, at
-    // the cost of file order varying run to run (completion order)
-    size_t nthreads = args->scan_threads;
+    uint8_t nthreads = args->scan_threads;
+    scan_worker_t *workers = arena_alloc_zeroed(arena, nthreads * sizeof(*workers));
 
-    if (nthreads == 1) {
-        // run the worker loop on the calling thread: no spawn, same code path
-        scan_worker_t worker = {.ctx = &ctx, .scanner = {.scan_exts = &args->scan_exts}};
-        arena_init(&worker.persist, 0);
-        arena_init(&worker.scratch, 0);
-        worker.report.arena = &worker.persist;
+    for (uint8_t i = 0; i < nthreads; ++i) {
+        workers[i].ctx = &ctx;
+        workers[i].scanner.scan_exts = &args->scan_exts;
+        arena_init(&workers[i].arena, 0);
+        arena_init(&workers[i].scratch, 0);
+        workers[i].report.arena = &workers[i].arena;
+    }
 
-        scan_worker(&worker);
-        merge_worker_scanner(arena, scanner, &worker.scanner);
+    uint8_t spawned = 0;
+    while (spawned < nthreads) {
+        if (thread_create(&workers[spawned].thread, scan_worker, &workers[spawned]) != 0) {
+            break;
+        }
+        ++spawned;
+    }
 
-        arena_free(&worker.scratch);
-        arena_free(&worker.persist);
+    if (spawned == 0) {
+        scan_worker(&workers[0]);
     } else {
-        scan_worker_t *workers = arena_alloc_zeroed(arena, nthreads * sizeof(*workers));
-
-        // arenas are initialized on the main thread before any spawn so the post-join merge
-        // and frees below never race a worker
-        size_t spawned = 0;
-        for (size_t i = 0; i < nthreads; ++i) {
-            workers[i].ctx = &ctx;
-            workers[i].scanner.scan_exts = &args->scan_exts;
-            arena_init(&workers[i].persist, 0);
-            arena_init(&workers[i].scratch, 0);
-            workers[i].report.arena = &workers[i].persist;
-
-            if (thread_create(&workers[i].thread, scan_worker, &workers[i]) != 0) {
-                break; // proceed with however many threads started
-            }
-            ++spawned;
-        }
-
-        if (spawned == 0) {
-            // no threads available: fall back to running inline (no join,
-            // since no thread handle exists)
-            scan_worker(&workers[0]);
-        } else {
-            for (size_t i = 0; i < spawned; ++i) {
-                thread_join(workers[i].thread);
-            }
-        }
-
-        for (size_t i = 0; i < nthreads; ++i) {
-            merge_worker_scanner(arena, scanner, &workers[i].scanner);
-            arena_free(&workers[i].scratch);
-            arena_free(&workers[i].persist);
+        for (uint8_t i = 0; i < spawned; ++i) {
+            thread_join(workers[i].thread);
         }
     }
 
-    // queued directory paths (including any left unprocessed by a failure) are released in
-    // one call regardless of how the scan ended
+    for (uint8_t i = 0; i < nthreads; ++i) {
+        merge_worker_scanner(arena, scanner, &workers[i].scanner);
+        arena_free(&workers[i].scratch);
+        arena_free(&workers[i].arena);
+    }
+
     arena_free(&ctx.arena);
 
     cond_destroy(&ctx.work_ready);
