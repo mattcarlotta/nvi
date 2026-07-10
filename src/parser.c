@@ -31,7 +31,6 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
 
 result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, parser_t *parser) {
     result_t result = RESULT_OK;
-    env_map_t *env_map = &parser->env_map;
 
     if (args->dry_run) {
         log_info(SINK_STDERR, "[INFO]");
@@ -72,7 +71,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                         lookup_key = arena_strndup(arena, raw_value, key_len);
                     }
 
-                    const char *env = resolve_env(env_map, lookup_key);
+                    const char *env = resolve_env(&parser->env_map, lookup_key);
 
                     if (env == NULL && fallback == NULL) {
                         result = operation_error(
@@ -117,7 +116,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
         }
         env_value[value.count] = '\0';
 
-        env_t *existing = get_env_from_map(env_map, token_key);
+        env_t *existing = get_env_from_map(&parser->env_map, token_key);
         if (existing != NULL) {
             if (args->dry_run) {
                 log_info(SINK_STDERR, "[INFO]");
@@ -133,8 +132,8 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             existing->value = env_value;
         } else {
             env_t new_env = {.key = token_key, .value = env_value};
-            DYN_ARR_APPEND(arena, env_map, new_env);
-            hashmap_append(arena, &env_map->index, token_key, strlen(token_key), env_map->count - 1);
+            DYN_ARR_APPEND(arena, &parser->env_map, new_env);
+            hashmap_append(arena, &parser->env_map.index, token_key, strlen(token_key), parser->env_map.count - 1);
         }
 
         if (args->dry_run) {
@@ -148,14 +147,14 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
         }
     }
 
-    if (env_map->count == 0) {
+    if (parser->env_map.count == 0) {
         result = operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
         goto done;
     }
 
     for (size_t i = 0; i < args->required.count; ++i) {
         const char *required_key = args->required.items[i];
-        const env_t *entry = get_env_from_map(env_map, required_key);
+        const env_t *entry = get_env_from_map(&parser->env_map, required_key);
         if (entry == NULL || entry->value[0] == '\0') {
             DYN_ARR_APPEND(arena, &parser->missing_envs, required_key);
         }
@@ -163,10 +162,10 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
 
     if (args->dry_run) {
         log_info(SINK_STDERR, "[INFO]");
-        log_f(SINK_STDERR, " The following %zu ENV%s were parsed and will be emitted to stdout... \n", env_map->count,
-              TO_PLURAL(env_map->count));
-        for (size_t i = 0; i < env_map->count; ++i) {
-            const env_t env = env_map->items[i];
+        log_f(SINK_STDERR, " The following %zu ENV%s were parsed and will be emitted to stdout... \n",
+              parser->env_map.count, TO_PLURAL(parser->env_map.count));
+        for (size_t i = 0; i < parser->env_map.count; ++i) {
+            const env_t env = parser->env_map.items[i];
             log_f(SINK_STDERR, "    \u2022 ");
             log_bold_info(SINK_STDERR, "%s=%s\n", env.key, env.value);
         }

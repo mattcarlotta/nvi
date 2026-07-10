@@ -85,4 +85,4 @@ void arena_reset(arena_t *arena);
 // Frees every chunk. The arena can be reused after another arena_init.
 void arena_free(arena_t *arena);
 
-#endif
+#endif // ARENA_H

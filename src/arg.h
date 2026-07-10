@@ -1,5 +1,6 @@
 #ifndef ARG_H
 #define ARG_H
+
 #include "accessors.h"
 #include "arena.h"
 #include "format.h"
@@ -63,4 +64,4 @@ typedef struct {
 
 result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args);
 
-#endif
+#endif // ARG_H

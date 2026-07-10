@@ -10,9 +10,9 @@ static const accessor_t javascript[] = {
 };
 
 static const accessor_t python[] = {
-    ACCESSOR("os.getenv(", quoted),      ACCESSOR("os.environ[", quoted),
-    ACCESSOR("os.environ.get(", quoted), ACCESSOR("os.environ.setdefault(", quoted),
-    ACCESSOR("getenv(", quoted),         ACCESSOR("environ[", quoted),
+    ACCESSOR("os.environ.setdefault(", quoted),
+    ACCESSOR("getenv(", quoted),
+    ACCESSOR("environ[", quoted),
     ACCESSOR("environ.get(", quoted),
 };
 
@@ -22,9 +22,10 @@ static const accessor_t go[] = {
 };
 
 static const accessor_t rust[] = {
-    ACCESSOR("std::env::var(", quoted), ACCESSOR("std::env::var_os(", quoted),
-    ACCESSOR("env::var(", quoted),      ACCESSOR("env::var_os(", quoted),
-    ACCESSOR("env!(", quoted),          ACCESSOR("option_env!(", quoted),
+    ACCESSOR("env::var(", quoted),
+    ACCESSOR("env::var_os(", quoted),
+    ACCESSOR("env!(", quoted),
+    ACCESSOR("option_env!(", quoted),
 };
 
 static const accessor_t ruby[] = {
@@ -33,12 +34,9 @@ static const accessor_t ruby[] = {
 };
 
 static const accessor_t zig[] = {
-    ACCESSOR("std.posix.getenv(", quoted),
-    ACCESSOR("posix.getenv(", quoted),
-    ACCESSOR("std.process.getEnvVarOwned(", quoted),
-    ACCESSOR("std.process.hasEnvVar(", quoted),
-    ACCESSOR("std.process.hasEnvVarConstant(", quoted),
-    ACCESSOR("std.process.parseEnvVarInt(", quoted),
+    ACCESSOR("getenv(", quoted),         ACCESSOR("getEnvVarOwned(", quoted),
+    ACCESSOR("hasEnvVar(", quoted),      ACCESSOR("hasEnvVarConstant(", quoted),
+    ACCESSOR("parseEnvVarInt(", quoted),
 };
 
 static const accessor_t java[] = {
@@ -62,14 +60,11 @@ static const accessor_t c[] = {
 };
 
 static const accessor_t cpp[] = {
-    ACCESSOR("std::getenv(", quoted),
     ACCESSOR("getenv(", quoted),
-    ACCESSOR("secure_getenv(", quoted),
 };
 
 static const accessor_t dotnet[] = {
     ACCESSOR("Environment.GetEnvironmentVariable(", quoted),
-    ACCESSOR("System.Environment.GetEnvironmentVariable(", quoted),
 };
 
 static const accessor_t visualbasic[] = {

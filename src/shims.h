@@ -20,4 +20,4 @@ static inline const char *nvi_strerror(int errnum) {
 #include <unistd.h>
 #endif
 
-#endif
+#endif // SHIMS_H

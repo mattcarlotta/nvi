@@ -1,11 +1,12 @@
 #ifndef HASHMAP_H
 #define HASHMAP_H
+
 #include "arena.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-// Linear probing hash map of borrowed string pointers to size_t values. Slot storage is
+// Linear probing hash map of borrowed string pointers to values. Slot storage is
 // arena-backed: growth allocates a fresh slot table from the arena and orphans the old one,
 // which is reclaimed when the owning arena is reset or freed.
 
@@ -133,4 +134,4 @@ static inline void hashmap_append(arena_t *arena, hashmap_t *map, const char *ke
     ++map->count;
 }
 
-#endif
+#endif // HASHMAP_H

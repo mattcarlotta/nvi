@@ -1,5 +1,6 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
+
 #include "arena.h"
 #include "arg.h"
 #include "file.h"
@@ -62,11 +63,8 @@ static inline const char *get_value_kind_name(value_kind_t kind) {
     return "unknown value kind";
 }
 
-// Tokens (keys, value copies, and both token lists) go into 'arena' (the main arena);
-// 'scratch' holds each file's contents and the in-progress value buffer and is safe to
-// reset between files.
 result_t run_tokenizer(arena_t *arena, const args_t *args, tokenizer_t *tokenizer);
 result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_t *file, tokenizer_t *tokenizer,
                          arena_t *scratch);
 
-#endif
+#endif // TOKENIZER_H

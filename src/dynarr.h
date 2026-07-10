@@ -1,5 +1,6 @@
 #ifndef DYN_ARR_H
 #define DYN_ARR_H
+
 #include "arena.h"
 #include <string.h>
 
@@ -42,4 +43,4 @@
         }                                                                                                              \
     } while (0)
 
-#endif
+#endif // DYN_ARR_H

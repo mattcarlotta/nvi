@@ -1,5 +1,6 @@
 #ifndef LIST_H
 #define LIST_H
+
 #include <stdbool.h>
 #include <string.h>
 
@@ -19,4 +20,4 @@ static inline bool list_contains(const list_t *list, const char *key) {
     return false;
 }
 
-#endif
+#endif // LIST_H

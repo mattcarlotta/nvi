@@ -50,4 +50,4 @@ const ext_entry *get_scan_extension(const char *ext);
 const file_ext_t *get_file_extension(const file_ext_map_t *map, const char *ext);
 void append_file_extension(arena_t *arena, file_ext_map_t *map, const ext_entry *entry);
 
-#endif
+#endif // ACCESSORS_H

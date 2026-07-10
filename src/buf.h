@@ -4,7 +4,6 @@
 #include "arena.h"
 #include <stddef.h>
 
-// Growable byte buffer backed by an arena; set 'arena' before the first append.
 typedef struct {
     char *items;
     size_t count;
@@ -12,4 +11,4 @@ typedef struct {
     arena_t *arena;
 } buf_t;
 
-#endif
+#endif // BUF_H

@@ -1,5 +1,6 @@
 #ifndef LOG_H
 #define LOG_H
+
 #include "buf.h"
 #include <stdio.h>
 
@@ -21,4 +22,4 @@ void log_error(sink_t s, const char *fmt, ...);
 
 void log_buf_flush(buf_t *buf);
 
-#endif
+#endif // LOG_H

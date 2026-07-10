@@ -61,6 +61,10 @@ static void report_flag_scan_extensions(const char *label, const file_ext_map_t 
 }
 
 static void report_flags(const args_t *args) {
+    if (!args->dry_run) {
+        return;
+    }
+
     log_info(SINK_STDERR, "\n[INFO]");
     log_f(SINK_STDERR, " The following flags have been set...");
     report_flag_items("command", args->command.items, args->command.count, " ");
@@ -388,9 +392,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
         ++args->i;
     }
 
-    if (args->dry_run) {
-        report_flags(args);
-    }
+    report_flags(args);
 
     if (args->scan_exts.count == 0 && args->files.count == 0) {
         return usage_error("The '--files' or '--scan' flag requires at least one argument");

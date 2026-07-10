@@ -1,5 +1,6 @@
 #ifndef SCANNER_H
 #define SCANNER_H
+
 #include "accessors.h"
 #include "arena.h"
 #include "arg.h"
@@ -22,4 +23,4 @@ typedef struct {
 result_t run_scanner(arena_t *arena, args_t *args, scanner_t *scanner);
 void merge_required_envs(arena_t *arena, args_t *args, const scanner_t *scanner);
 
-#endif
+#endif // SCANNER_H
