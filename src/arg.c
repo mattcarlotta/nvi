@@ -398,5 +398,13 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
         return usage_error("The '--files' or '--scan' flag requires at least one argument");
     }
 
+    if (args->ignored.count > 0 && args->required.count > 0) {
+        for (size_t i = 0; i < args->ignored.count; ++i) {
+            if (set_contains(&args->required, args->ignored.items[i])) {
+                return usage_error("The '%s' key cannot be both required and ignored.", args->ignored.items[i]);
+            }
+        }
+    }
+
     return result;
 }

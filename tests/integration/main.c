@@ -241,6 +241,9 @@ int main(void) {
     check("an unknown flag is a usage error", NVI_BIN, "--files build/it/a.env --nope", 2, NO_STDOUT,
           "Unrecognized flag");
 
+    check("a key that is both required and ignored is a usage error", NVI_BIN,
+          "--files build/it/required.env --required API_KEY --ignored API_KEY -- x", 2, NO_STDOUT, "cannot be both");
+
     // --- info commands ---
 
     check("help prints usage to stdout and exits 0", NVI_BIN, "--help", 0, NULL, 0, NULL);

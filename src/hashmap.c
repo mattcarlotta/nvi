@@ -51,38 +51,38 @@ static void hashmap_grow(arena_t *arena, hashmap_t *map, size_t need) {
     map->capacity = new_cap;
 }
 
-size_t hashmap_get(const hashmap_t *map, const char *key, size_t len) {
-    if (map->capacity == 0) {
-        return HASHMAP_NOT_FOUND;
-    }
-
-    uint64_t hash = fnv1a(key, len);
+static size_t hashmap_probe(const hashmap_t *map, const char *key, size_t len, uint64_t hash) {
     size_t mask = map->capacity - 1;
     size_t i = hash & mask;
 
     while (map->items[i].key != NULL) {
         if (map->items[i].hash == hash && map->items[i].len == len && memcmp(map->items[i].key, key, len) == 0) {
-            return map->items[i].value;
+            break;
         }
         i = (i + 1) & mask;
     }
 
-    return HASHMAP_NOT_FOUND;
+    return i;
+}
+
+size_t hashmap_get(const hashmap_t *map, const char *key, size_t len) {
+    if (map->capacity == 0) {
+        return HASHMAP_NOT_FOUND;
+    }
+
+    size_t i = hashmap_probe(map, key, len, fnv1a(key, len));
+    return map->items[i].key != NULL ? map->items[i].value : HASHMAP_NOT_FOUND;
 }
 
 void hashmap_append(arena_t *arena, hashmap_t *map, const char *key, size_t len, size_t value) {
     hashmap_grow(arena, map, 1);
 
     uint64_t hash = fnv1a(key, len);
-    size_t mask = map->capacity - 1;
-    size_t i = hash & mask;
+    size_t i = hashmap_probe(map, key, len, hash);
 
-    while (map->items[i].key != NULL) {
-        if (map->items[i].hash == hash && map->items[i].len == len && memcmp(map->items[i].key, key, len) == 0) {
-            map->items[i].value = value;
-            return;
-        }
-        i = (i + 1) & mask;
+    if (map->items[i].key != NULL) {
+        map->items[i].value = value;
+        return;
     }
 
     map->items[i].key = key;

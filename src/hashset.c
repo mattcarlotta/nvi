@@ -37,37 +37,37 @@ static void hashset_grow(arena_t *arena, hashset_t *set, size_t need) {
     set->capacity = new_cap;
 }
 
-bool hashset_contains(const hashset_t *set, const char *key, size_t len) {
-    if (set->capacity == 0) {
-        return false;
-    }
-
-    uint64_t hash = fnv1a(key, len);
+static size_t hashset_probe(const hashset_t *set, const char *key, size_t len, uint64_t hash) {
     size_t mask = set->capacity - 1;
     size_t i = hash & mask;
 
     while (set->items[i].key != NULL) {
         if (set->items[i].hash == hash && set->items[i].len == len && memcmp(set->items[i].key, key, len) == 0) {
-            return true;
+            break;
         }
         i = (i + 1) & mask;
     }
 
-    return false;
+    return i;
+}
+
+bool hashset_contains(const hashset_t *set, const char *key, size_t len) {
+    if (set->capacity == 0) {
+        return false;
+    }
+
+    size_t i = hashset_probe(set, key, len, fnv1a(key, len));
+    return set->items[i].key != NULL;
 }
 
 bool hashset_append(arena_t *arena, hashset_t *set, const char *key, size_t len) {
     hashset_grow(arena, set, 1);
 
     uint64_t hash = fnv1a(key, len);
-    size_t mask = set->capacity - 1;
-    size_t i = hash & mask;
+    size_t i = hashset_probe(set, key, len, hash);
 
-    while (set->items[i].key != NULL) {
-        if (set->items[i].hash == hash && set->items[i].len == len && memcmp(set->items[i].key, key, len) == 0) {
-            return false;
-        }
-        i = (i + 1) & mask;
+    if (set->items[i].key != NULL) {
+        return false;
     }
 
     set->items[i].key = key;
