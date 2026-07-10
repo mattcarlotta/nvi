@@ -54,7 +54,6 @@ static arena_chunk_t *arena_new_chunk(size_t capacity) {
     return chunk;
 }
 
-// Returns an aligned pointer into `chunk` for `size` bytes, or NULL if it doesn't fit
 static char *arena_chunk_bump(arena_chunk_t *chunk, size_t size) {
     uintptr_t base = (uintptr_t)chunk->data;
     uintptr_t aligned = ARENA_ALIGN_UP(base + chunk->offset);
@@ -185,8 +184,6 @@ void *arena_extend(arena_t *arena, void *ptr, size_t old_size, size_t new_size) 
         uintptr_t base = (uintptr_t)chunk->data;
         uintptr_t alloc_end = (uintptr_t)ptr + old_size;
 
-        // The last allocation always ends exactly at the current chunk's offset unless it
-        // lives in a spliced-in oversized chunk, in which case fall through to copy
         if (alloc_end == base + chunk->offset && new_size - old_size <= chunk->capacity - chunk->offset) {
             ARENA_UNPOISON((char *)alloc_end, new_size - old_size);
             chunk->offset += new_size - old_size;
@@ -199,6 +196,7 @@ void *arena_extend(arena_t *arena, void *ptr, size_t old_size, size_t new_size) 
     if (ptr != NULL) {
         memcpy(p, ptr, old_size);
     }
+
     return p;
 }
 

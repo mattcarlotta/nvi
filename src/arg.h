@@ -39,11 +39,6 @@ typedef enum {
 } flag_t;
 
 typedef struct {
-    const char *name;
-    flag_t value;
-} flag_entry_t;
-
-typedef struct {
     const char **items;
     size_t count;
 } command_t;

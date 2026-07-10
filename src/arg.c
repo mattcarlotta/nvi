@@ -14,6 +14,11 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef struct {
+    const char *name;
+    flag_t value;
+} flag_entry_t;
+
 static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
     log_f(SINK_STDERR, "\n    \u2022");
     log_info(SINK_STDERR, " %s: ", label);
@@ -159,11 +164,11 @@ static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
     if (!is_env_file(base)) {
-        return operation_error("The file flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
+        return operation_error("The 'files' flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
     }
 
     if (is_absolute_path(p)) {
-        return operation_error("The file flag '%s' must be relative to the current directory\n", p);
+        return operation_error("The 'files' flag '%s' must be relative to the current directory\n", p);
     }
 
     if (path_escapes_cwd(p)) {
@@ -231,7 +236,8 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
 
                 const format_t format = get_format(param);
                 if (format == FORMAT_UNKNOWN) {
-                    return usage_error("Invalid ENV format '%s' (expected: nul|powershell)", param);
+                    return usage_error(
+                        "The 'format' flag contains an invalid ENV format '%s' (expected: nul|powershell)", param);
                 }
 
                 args->format = format;
@@ -275,7 +281,8 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                 while (param) {
                     const ext_entry *entry = get_scan_extension(param);
                     if (entry == NULL) {
-                        return usage_error("The file extension '%s' is not a supported scan extension", param);
+                        return usage_error("The 'scan' flag contains the '%s' file extension that is not supported",
+                                           param);
                     }
 
                     append_file_extension(arena, &args->scan_exts, entry);

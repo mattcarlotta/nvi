@@ -5,10 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Linear probing hash map of borrowed string pointers to values. Slot storage is
-// arena-backed: growth allocates a fresh slot table from the arena and orphans the old one,
-// which is reclaimed when the owning arena is reset or freed.
-
+// Linear probing hash map of borrowed string pointers to values.
 #define HASHMAP_NOT_FOUND SIZE_MAX
 
 typedef struct {
@@ -20,7 +17,7 @@ typedef struct {
 
 typedef struct {
     hashmap_entry_t *items;
-    size_t capacity; // total number of slots (always a power of two)
+    size_t capacity;
     size_t count;
 } hashmap_t;
 

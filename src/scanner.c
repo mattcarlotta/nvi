@@ -193,15 +193,11 @@ static result_t scan_file(const args_t *args, scan_worker_t *worker, const char 
         copy_unique_env_key(&worker->arena, &worker->scanner, &env_key_matches.items[i]);
     }
 
-    // contents and matches die together; keys were copied into persist above
     arena_reset(&worker->scratch);
 
     return RESULT_OK;
 }
 
-// queue a directory for any worker to pick up; the shared ctx arena owns the copy and is
-// only touched under the lock. Popped paths are abandoned in the arena (no per-item free)
-// and reclaimed all at once when the scan completes.
 static void queue_dir(walk_ctx_t *ctx, const char *path) {
     mutex_lock(&ctx->lock);
     char *copy = arena_strdup(&ctx->arena, path);
@@ -270,8 +266,6 @@ static result_t process_dir(scan_worker_t *worker, const char *path, char *scrat
             continue;
         }
 
-        // FindFirstFile/FindNextFile already report the entry type, so no
-        // stat is needed on this platform
         entry_kind_t kind = (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? ENTRY_DIR : ENTRY_FILE;
 
         result = handle_entry(worker, path, fd.cFileName, scratch, kind);
@@ -355,7 +349,6 @@ static thread_ret_t THREAD_CALL scan_worker(void *arg) {
     return 0;
 }
 
-// unique keys are copied out of the worker's arena into the main arena so the worker arenas can be freed
 static void merge_worker_scanner(arena_t *main_arena, scanner_t *dst, scanner_t *src) {
     dst->dirs_scanned += src->dirs_scanned;
     dst->files_scanned += src->files_scanned;

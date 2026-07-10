@@ -6,10 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Linear probing hash set of borrowed string pointers. Slot storage is arena-backed:
-// growth allocates a fresh slot table from the arena and orphans the old one, which is
-// reclaimed when the owning arena is reset or freed.
-
+// Linear probing hash set of borrowed string pointers.
 typedef struct {
     const char *key;
     size_t len;
@@ -18,7 +15,7 @@ typedef struct {
 
 typedef struct {
     hashset_entry_t *items;
-    size_t capacity; // total number of items (always a power of two)
+    size_t capacity;
     size_t count;
 } hashset_t;
 

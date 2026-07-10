@@ -128,7 +128,6 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                 log_info(SINK_STDERR, "%s", env_value);
                 log_f(SINK_STDERR, "...\n\n");
             }
-            // the previous value is abandoned in the main arena
             existing->value = env_value;
         } else {
             env_t new_env = {.key = token_key, .value = env_value};

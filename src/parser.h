@@ -4,7 +4,6 @@
 #include "arena.h"
 #include "arg.h"
 #include "hashmap.h"
-#include "list.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +15,12 @@
 // commented -> intentionally skipped by the parser
 // literal -> a literal value (combines multi-line values as well)
 // interpolated -> extracting a value from a process ENV or ENV key from a previous .env file
+
+typedef struct {
+    const char **items;
+    size_t count;
+    size_t capacity;
+} list_t;
 
 typedef struct {
     const char *key;

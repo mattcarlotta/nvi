@@ -70,7 +70,7 @@ file_details_t open_file(arena_t *arena, const char *path) {
             }
 #endif
             log_error(SINK_STDERR, "[ERROR] Cannot read '%s' file: %s\n", path, strerror(errno));
-            file_details.contents = NULL; // abandoned in the arena, reclaimed at reset/free
+            file_details.contents = NULL;
             goto done;
         }
 
