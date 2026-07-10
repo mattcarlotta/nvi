@@ -46,17 +46,17 @@ git clone git@github.com:mattcarlotta/nvi.git && cd nvi
 clang nob.c
 ```
 
-Build for debugging:
+Build for debugging (not required):
 ```sh
 ./nob
 ```
 
-Build for release:
+Build for release (not required):
 ```sh
 ./nob release
 ```
 
-Before placing or installing a release binary, ensure the destination directory is recognized as a shell `$PATH` owned by `$USER` and not by `root`:
+Before placing or installing a release binary into a directory, ensure the destination directory is recognized as a shell `$PATH` owned by `$USER` and not by `root`:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
@@ -168,17 +168,17 @@ cd nvi
 cl nob.c
 ```
 
-Build for debugging:
+Build for debugging (not required):
 ```powershell
 ./nob.exe
 ```
 
-Build for release:
+Build for release (not required):
 ```powershell
 ./nob.exe release
 ```
 
-Before placing or installing a release binary, ensure the destination directory is recognized as a PowerShell `Path`:
+Before placing or installing a release binary in a directory, ensure the destination directory is recognized as a PowerShell `Path`:
 ```powershell
 $env:Path -split ';'
 ```
