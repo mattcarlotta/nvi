@@ -2,6 +2,7 @@
 #include "arg.h"
 #include "format.h"
 #include "macros.h"
+#include "nthread.h"
 #include "test_capture.h"
 #include "unity.h"
 #include <string.h>
@@ -109,11 +110,17 @@ static void test_parses_ignored_envs(void) {
 // -- threads --
 
 static void test_parses_threads_flag(void) {
-    const char *argv[] = {"nvi", "--scan", "c", "--threads", "2", "--", "echo", "hello"};
+    // cpu_count() is the parser's upper bound, so it's the largest portable value;
+    // a hardcoded "2" fails on single-core machines
+    char threads[4];
+    int max = cpu_count();
+    snprintf(threads, sizeof(threads), "%d", max);
+
+    const char *argv[] = {"nvi", "--scan", "c", "--threads", threads, "--", "echo", "hello"};
     args_t a = {0};
     result_t r = parse_args(&test_arena, ARR_LEN(argv), argv, &a);
     TEST_ASSERT_TRUE(r.ok);
-    TEST_ASSERT_EQUAL_size_t(2, a.scan_threads);
+    TEST_ASSERT_EQUAL_size_t((size_t)max, a.scan_threads);
 }
 
 static void test_errors_on_invalid_threads_flag(void) {

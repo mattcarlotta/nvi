@@ -5,8 +5,6 @@
 #include "arg.h"
 #include "hashmap.h"
 #include "tokenizer.h"
-#include <stdlib.h>
-#include <string.h>
 
 // The parser is strictly responsible for converting tokenized values from .env files
 // into KV pairs within a single env hash map.

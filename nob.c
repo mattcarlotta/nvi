@@ -80,6 +80,14 @@ static void compose_dev_cmd(Nob_Cmd *cmd) {
 #if defined(_WIN32) && defined(_MSC_VER)
     nob_cmd_append(cmd, "/Zi", "/Od", "/Fe:" OUT_BIN);
 #else
+#if defined(__APPLE__) || defined(__linux__)
+    // Match compose_test_cmd: sanitize dev builds so the integration suite
+    // (which runs the dev binary) exercises the arena poisoning; musl skips
+    // sanitizers (ASan targets glibc).
+    if (!use_musl()) {
+        nob_cmd_append(cmd, "-fsanitize=address,undefined", "-fno-omit-frame-pointer");
+    }
+#endif
     nob_cmd_append(cmd, "-g", "-O0", "-o", OUT_BIN);
 #endif
 }
