@@ -5,7 +5,7 @@
 
 static arena_t test_arena;
 
-void setUp(void) { arena_init(&test_arena, 0); }
+void setUp(void) { test_arena = (arena_t){0}; }
 void tearDown(void) { arena_free(&test_arena); }
 
 static void test_get_scan_extension_known(void) {

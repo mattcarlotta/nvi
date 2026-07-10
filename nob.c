@@ -197,6 +197,12 @@ static bool build_release(void) {
     add_common_flags(&cmd, "release");
 
 #if defined(_WIN32) && defined(_MSC_VER)
+    nob_cmd_append(&cmd, "/DNDEBUG");
+#else
+    nob_cmd_append(&cmd, "-DNDEBUG");
+#endif
+
+#if defined(_WIN32) && defined(_MSC_VER)
     nob_cmd_append(&cmd, "/O1", "/GL", "/Gy", "/Gw", "/Fe:" OUT_BIN);
 #elif defined(__APPLE__)
     nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",

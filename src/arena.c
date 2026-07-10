@@ -70,13 +70,6 @@ static char *arena_chunk_bump(arena_chunk_t *chunk, size_t size) {
     return (char *)aligned;
 }
 
-void arena_init(arena_t *arena, size_t first_chunk_size) {
-    arena->head = NULL;
-    arena->next_chunk_size = first_chunk_size != 0 ? first_chunk_size : ARENA_DEFAULT_CHUNK_SIZE;
-    arena->last_alloc = NULL;
-    arena->last_size = 0;
-}
-
 void *arena_alloc(arena_t *arena, size_t size) {
     if (arena->head != NULL) {
         char *p = arena_chunk_bump(arena->head, size);
@@ -91,8 +84,10 @@ void *arena_alloc(arena_t *arena, size_t size) {
         arena_oom();
     }
 
+    size_t chunk_size = arena->next_chunk_size != 0 ? arena->next_chunk_size : ARENA_DEFAULT_CHUNK_SIZE;
+
     // ARENA_ALIGNMENT of headroom guarantees the aligned request fits in a fresh chunk
-    if (size + ARENA_ALIGNMENT > arena->next_chunk_size) {
+    if (size + ARENA_ALIGNMENT > chunk_size) {
         // Oversized request: dedicated exactly-sized chunk spliced in behind the current
         // chunk so its remaining space stays usable and the doubling schedule is unaffected
         arena_chunk_t *chunk = arena_new_chunk(size + ARENA_ALIGNMENT);
@@ -109,12 +104,12 @@ void *arena_alloc(arena_t *arena, size_t size) {
         return p;
     }
 
-    arena_chunk_t *chunk = arena_new_chunk(arena->next_chunk_size);
+    arena_chunk_t *chunk = arena_new_chunk(chunk_size);
     chunk->next = arena->head;
     arena->head = chunk;
 
-    if (arena->next_chunk_size < ARENA_MAX_CHUNK_SIZE) {
-        size_t doubled = arena->next_chunk_size * 2;
+    if (chunk_size < ARENA_MAX_CHUNK_SIZE) {
+        size_t doubled = chunk_size * 2;
         arena->next_chunk_size = doubled < ARENA_MAX_CHUNK_SIZE ? doubled : ARENA_MAX_CHUNK_SIZE;
     }
 
@@ -230,7 +225,5 @@ void arena_free(arena_t *arena) {
         chunk = next;
     }
 
-    arena->head = NULL;
-    arena->last_alloc = NULL;
-    arena->last_size = 0;
+    *arena = (arena_t){0};
 }

@@ -585,10 +585,7 @@ result_t run_tokenizer(arena_t *main_arena, const args_t *args, tokenizer_t *tok
 
     report_tokenizer_start(args);
 
-    // scratch holds each file's raw contents and the in-progress value buffer; a per-file
-    // reset converges to the high-water mark with zero allocator traffic on later files
-    arena_t scratch;
-    arena_init(&scratch, 0);
+    arena_t scratch = {0};
 
     for (size_t fi = 0; fi < args->files.count; ++fi) {
         const char *path = args->files.items[fi];

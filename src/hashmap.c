@@ -1,5 +1,6 @@
 #include "hashmap.h"
 #include "hash.h"
+#include <assert.h>
 #include <string.h>
 
 #define HASHMAP_INIT_CAP 16
@@ -51,7 +52,13 @@ static void hashmap_grow(arena_t *arena, hashmap_t *map, size_t need) {
     map->capacity = new_cap;
 }
 
+// Probes for key. Returns the index of the matching entry if present,
+// otherwise the index of the empty slot where it would be inserted.
+// Requires a non-empty, power-of-two capacity (the '& mask' probe step
+// silently returns wrong indices otherwise).
 static size_t hashmap_probe(const hashmap_t *map, const char *key, size_t len, uint64_t hash) {
+    assert(map->capacity > 0 && (map->capacity & (map->capacity - 1)) == 0);
+
     size_t mask = map->capacity - 1;
     size_t i = hash & mask;
 

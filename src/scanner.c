@@ -402,7 +402,6 @@ result_t run_scanner(arena_t *main_arena, args_t *args, scanner_t *scanner) {
     report_scan_start(args);
 
     walk_ctx_t ctx = {.args = args, .result = RESULT_OK};
-    arena_init(&ctx.arena, 0);
     mutex_init(&ctx.lock);
     cond_init(&ctx.work_ready);
 
@@ -414,8 +413,6 @@ result_t run_scanner(arena_t *main_arena, args_t *args, scanner_t *scanner) {
     for (uint8_t i = 0; i < nthreads; ++i) {
         workers[i].ctx = &ctx;
         workers[i].scanner.scan_exts = &args->scan_exts;
-        arena_init(&workers[i].arena, 0);
-        arena_init(&workers[i].scratch, 0);
         workers[i].report.arena = &workers[i].arena;
     }
 

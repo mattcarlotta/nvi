@@ -1,5 +1,6 @@
 #include "hashset.h"
 #include "hash.h"
+#include <assert.h>
 #include <string.h>
 
 #define HASHSET_INIT_CAP 16
@@ -37,7 +38,13 @@ static void hashset_grow(arena_t *arena, hashset_t *set, size_t need) {
     set->capacity = new_cap;
 }
 
+// Probes for key. Returns the index of the matching entry if present,
+// otherwise the index of the empty slot where it would be inserted.
+// Requires a non-empty, power-of-two capacity (the '& mask' probe step
+// silently returns wrong indices otherwise).
 static size_t hashset_probe(const hashset_t *set, const char *key, size_t len, uint64_t hash) {
+    assert(set->capacity > 0 && (set->capacity & (set->capacity - 1)) == 0);
+
     size_t mask = set->capacity - 1;
     size_t i = hash & mask;
 

@@ -4,8 +4,11 @@
 // Chunked bump allocator. Allocations are O(1) pointer bumps out of malloc'd chunks and are
 // never freed individually; the entire arena is released (or rewound) at once.
 //
-// Growth: the first chunk defaults to ARENA_DEFAULT_CHUNK_SIZE (overridable per arena via
-// arena_init). Each subsequent chunk doubles, capped at ARENA_MAX_CHUNK_SIZE. A request
+// A zero-initialized arena is valid and empty: `arena_t a = {0};`. No memory is allocated
+// until the first arena_alloc. A custom first chunk size is set via designated initializer:
+// `arena_t a = {.next_chunk_size = 4096};` (0 means ARENA_DEFAULT_CHUNK_SIZE).
+//
+// Growth: each chunk after the first doubles, capped at ARENA_MAX_CHUNK_SIZE. A request
 // larger than the next chunk size gets its own exactly-sized chunk, spliced in behind the
 // current chunk so the current chunk's remaining space stays usable.
 //
@@ -32,15 +35,11 @@ struct arena_chunk {
 };
 
 struct arena {
-    arena_chunk_t *head; // current bump chunk (largest under the doubling schedule)
-    size_t next_chunk_size;
+    arena_chunk_t *head;    // current bump chunk (largest under the doubling schedule)
+    size_t next_chunk_size; // 0 means ARENA_DEFAULT_CHUNK_SIZE, resolved at first alloc
     char *last_alloc;
     size_t last_size;
 };
-
-// Initializes an arena. No memory is allocated until the first arena_alloc.
-// A first_chunk_size of 0 uses ARENA_DEFAULT_CHUNK_SIZE.
-void arena_init(arena_t *arena, size_t first_chunk_size);
 
 // Returns a pointer to `size` bytes aligned to ARENA_ALIGNMENT. Never returns NULL
 // (aborts on OOM). A size of 0 returns a valid unique pointer.
@@ -68,7 +67,7 @@ void *arena_extend(arena_t *arena, void *ptr, size_t old_size, size_t new_size);
 
 void arena_reset(arena_t *arena);
 
-// Frees every chunk. The arena can be reused after another arena_init.
+// Frees every chunk and returns the arena to the zero state, ready for reuse.
 void arena_free(arena_t *arena);
 
 #endif // ARENA_H

@@ -12,15 +12,12 @@ int main(int argc, const char **argv) {
     tty_init();
 
     const double start = monotonic_seconds();
-
-    arena_t arena;
-    arena_init(&arena, 0);
-
-    result_t result = RESULT_OK;
+    arena_t arena = {0};
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
     parser_t parser = {0};
+    result_t result = RESULT_OK;
 
     result = parse_args(&arena, argc, argv, &args);
     if (!result.ok) {
