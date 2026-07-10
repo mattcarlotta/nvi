@@ -63,8 +63,8 @@ static inline const char *get_value_kind_name(value_kind_t kind) {
     return "unknown value kind";
 }
 
-result_t run_tokenizer(arena_t *arena, const args_t *args, tokenizer_t *tokenizer);
-result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_t *file, tokenizer_t *tokenizer,
-                         arena_t *scratch);
+result_t run_tokenizer(arena_t *main_arena, const args_t *args, tokenizer_t *tokenizer);
+result_t generate_tokens(arena_t *main_arena, arena_t *scratch, const args_t *args, const file_details_t *file,
+                         tokenizer_t *tokenizer);
 
 #endif // TOKENIZER_H

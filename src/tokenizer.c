@@ -312,8 +312,8 @@ static result_t validate_and_append_token(arena_t *arena, tokenizer_t *tokenizer
     return RESULT_OK;
 }
 
-result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_t *file, tokenizer_t *tokenizer,
-                         arena_t *scratch) {
+result_t generate_tokens(arena_t *main_arena, arena_t *scratch, const args_t *args, const file_details_t *file,
+                         tokenizer_t *tokenizer) {
     tokenizer->file_name = file->path;
     tokenizer->file = file->contents;
     tokenizer->file_len = file->len;
@@ -364,7 +364,7 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
                 }
 
                 if (token.key != NULL) {
-                    result = validate_and_append_token(arena, tokenizer, &token, &value, quoted);
+                    result = validate_and_append_token(main_arena, tokenizer, &token, &value, quoted);
                     if (!result.ok) {
                         goto done;
                     }
@@ -415,7 +415,7 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
                     goto done;
                 }
 
-                token.key = arena_strndup(arena, value.items + start, end - start);
+                token.key = arena_strndup(main_arena, value.items + start, end - start);
 
                 value.count = 0;
                 // skip '='
@@ -442,8 +442,8 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
 
                 scan_until(scratch, tokenizer, &value, STOP_NL, STOP_NL_LEN);
 
-                commit_token(arena, COMMENTED_LINE, tokenizer, &token, &value);
-                append_token(arena, tokenizer, &token);
+                commit_token(main_arena, COMMENTED_LINE, tokenizer, &token, &value);
+                append_token(main_arena, tokenizer, &token);
                 value.count = 0;
                 break;
             case DOLLAR_SIGN: {
@@ -456,7 +456,7 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
 
                 // commit anything accumulated before the "${"
                 if (value.count != 0) {
-                    commit_token(arena, LITERAL_VALUE, tokenizer, &token, &value);
+                    commit_token(main_arena, LITERAL_VALUE, tokenizer, &token, &value);
                     value.count = 0;
                 }
 
@@ -478,7 +478,7 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
                     goto done;
                 }
 
-                commit_token(arena, INTERPOLATED_KEY, tokenizer, &token, &value);
+                commit_token(main_arena, INTERPOLATED_KEY, tokenizer, &token, &value);
                 value.count = 0;
                 break;
             }
@@ -499,7 +499,7 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
                 // the same token, so '$', '#', and '=' on continuation lines are
                 // handled normally by the main loop
                 if (value.count != 0) {
-                    commit_token(arena, LITERAL_VALUE, tokenizer, &token, &value);
+                    commit_token(main_arena, LITERAL_VALUE, tokenizer, &token, &value);
                 }
 
                 value.count = 0;
@@ -558,7 +558,7 @@ result_t generate_tokens(arena_t *arena, const args_t *args, const file_details_
 
     // flush a pending token if the file doesn't end with a newline
     if (token.key != NULL) {
-        result = validate_and_append_token(arena, tokenizer, &token, &value, quoted);
+        result = validate_and_append_token(main_arena, tokenizer, &token, &value, quoted);
     }
 
     if (tokenizer->tokens.count == prev_token_count) {
@@ -575,7 +575,7 @@ done:
     return result;
 }
 
-result_t run_tokenizer(arena_t *arena, const args_t *args, tokenizer_t *tokenizer) {
+result_t run_tokenizer(arena_t *main_arena, const args_t *args, tokenizer_t *tokenizer) {
     result_t result = RESULT_OK;
 
     if (args->files.count == 0) {
@@ -604,7 +604,7 @@ result_t run_tokenizer(arena_t *arena, const args_t *args, tokenizer_t *tokenize
             return operation_error("The '%s' file is empty; expected at least one KEY=VALUE assignment.\n", path);
         }
 
-        result = generate_tokens(arena, args, &file, tokenizer, &scratch);
+        result = generate_tokens(main_arena, &scratch, args, &file, tokenizer);
         tokenizer->file = NULL;
         arena_reset(&scratch);
 

@@ -18,7 +18,7 @@ static result_t tokenize(const char *src, tokenizer_t *out) {
     args_t args = {0};
     file_details_t file = {.contents = (char *)src, .path = "test.env", .len = strlen(src)};
     *out = (tokenizer_t){0};
-    return generate_tokens(&test_arena, &args, &file, out, &test_arena);
+    return generate_tokens(&test_arena, &test_arena, &args, &file, out);
 }
 
 static const value_token_t *val(const tokenizer_t *t, size_t tok, size_t v) {
@@ -399,7 +399,7 @@ static void call_tokenize_n(void *ctx) {
     args_t args = {0};
     file_details_t file = {.contents = (char *)c->src, .path = "test.env", .len = c->len};
     *c->out = (tokenizer_t){0};
-    c->result = generate_tokens(&test_arena, &args, &file, c->out, &test_arena);
+    c->result = generate_tokens(&test_arena, &test_arena, &args, &file, c->out);
 }
 
 static void test_errors_on_nul_inside_interpolation(void) {
