@@ -251,6 +251,28 @@ static bool run_fuzz_target(const fuzz_target_t *target, int argc, char **argv) 
         }
     }
 
+    // seed from the tracked per-target directory holding fuzzer findings and
+    // crafted regression inputs; unlike build/, these survive ./nob clean and
+    // are replayed by every future run (including ./nob fuzz all -runs=0)
+    const char *seeds_dir = nob_temp_sprintf("tests/fuzz/seeds/%s", target->name);
+    if (nob_file_exists(seeds_dir) == 1) {
+        Nob_File_Paths seeds = {0};
+        if (nob_read_entire_dir(seeds_dir, &seeds)) {
+            for (size_t i = 0; i < seeds.count; ++i) {
+                const char *name = seeds.items[i];
+                if (name[0] == '.') {
+                    continue;
+                }
+
+                const char *dest = nob_temp_sprintf("%s/%s", target->corpus, name);
+                if (nob_file_exists(dest) != 1) {
+                    nob_copy_file(nob_temp_sprintf("%s/%s", seeds_dir, name), dest);
+                }
+            }
+            nob_da_free(seeds);
+        }
+    }
+
     // Apple's clang ships asan/ubsan but not the libFuzzer runtime
     // (libclang_rt.fuzzer_osx.a), so on macOS prefer Homebrew LLVM's clang.
     // FUZZ_CC overrides compiler selection on any platform.
