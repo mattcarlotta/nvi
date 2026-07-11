@@ -189,6 +189,118 @@ static void remove_dir_recursively(const char *path) {
     nob_walk_dir(path, delete_entry, .post_order = true);
 }
 
+// Builds and runs the libFuzzer harness (POSIX + clang only; requires libFuzzer,
+// which musl-gcc and MSVC don't ship). Seeds the corpus from fixtures/*.env on
+// first run. Extra argv is forwarded to libFuzzer (eg. ./nob fuzz -runs=1000000
+// or a crash file to reproduce).
+static bool run_fuzz(int argc, char **argv) {
+#if defined(_WIN32) && defined(_MSC_VER)
+    (void)argc;
+    (void)argv;
+    nob_log(NOB_ERROR, "fuzzing requires clang + libFuzzer and is not supported under MSVC");
+    return false;
+#else
+    if (use_musl()) {
+        nob_log(NOB_ERROR, "fuzzing requires clang + libFuzzer; unset NVI_LIBC=musl");
+        return false;
+    }
+
+    if (!nob_mkdir_if_not_exists("build") || !nob_mkdir_if_not_exists("build/fuzz") ||
+        !nob_mkdir_if_not_exists("build/fuzz/corpus")) {
+        return false;
+    }
+
+    // seed the corpus from fixtures once (libFuzzer mutates from there)
+    Nob_File_Paths fixtures = {0};
+    if (nob_read_entire_dir("fixtures", &fixtures)) {
+        for (size_t i = 0; i < fixtures.count; ++i) {
+            const char *name = fixtures.items[i];
+            size_t len = strlen(name);
+            if (len < 4 || strcmp(name + len - 4, ".env") != 0) {
+                continue;
+            }
+
+            const char *dest = nob_temp_sprintf("build/fuzz/corpus/%s", name);
+            if (nob_file_exists(dest) != 1) {
+                nob_copy_file(nob_temp_sprintf("fixtures/%s", name), dest);
+            }
+        }
+        nob_da_free(fixtures);
+    }
+
+    // Apple's clang ships asan/ubsan but not the libFuzzer runtime
+    // (libclang_rt.fuzzer_osx.a), so on macOS prefer Homebrew LLVM's clang.
+    // FUZZ_CC overrides compiler selection on any platform.
+    const char *cc = getenv("FUZZ_CC");
+#ifdef __APPLE__
+    if (cc == NULL || cc[0] == '\0') {
+        static const char *llvm_clangs[] = {
+            "/opt/homebrew/opt/llvm/bin/clang", // arm64
+            "/usr/local/opt/llvm/bin/clang",    // intel
+        };
+
+        for (size_t i = 0; i < NOB_ARRAY_LEN(llvm_clangs); ++i) {
+            if (nob_file_exists(llvm_clangs[i]) == 1) {
+                cc = llvm_clangs[i];
+                break;
+            }
+        }
+
+        if (cc == NULL) {
+            nob_log(NOB_ERROR, "Apple clang does not ship the libFuzzer runtime; install Homebrew LLVM (brew "
+                               "install llvm) or point FUZZ_CC at a libFuzzer-capable clang");
+            return false;
+        }
+    }
+#endif
+    if (cc == NULL || cc[0] == '\0') {
+        cc = "clang";
+    }
+
+    const char *out = "build/fuzz/fuzz_parser";
+
+    // FUZZ_SAN overrides the sanitizer list (eg. FUZZ_SAN=fuzzer or
+    // FUZZ_SAN=fuzzer,address) to bisect platform-specific sanitizer problems
+    const char *san = getenv("FUZZ_SAN");
+    if (san == NULL || san[0] == '\0') {
+        san = "fuzzer,address,undefined";
+    }
+
+    Nob_Cmd cmd = {0};
+    nob_cmd_append(&cmd, cc, "-Isrc", "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g", "-O1",
+                   nob_temp_sprintf("-fsanitize=%s", san), "-fno-omit-frame-pointer", "-o", out);
+    nob_cmd_append(&cmd, "tests/fuzz/fuzz_parser.c");
+    if (!append_sources_except(&cmd, "main.c")) {
+        return false;
+    }
+
+    if (!nob_cmd_run(&cmd)) {
+        nob_log(NOB_ERROR, "failed to build the fuzz harness");
+        return false;
+    }
+
+    Nob_Cmd run = {0};
+    nob_cmd_append(&run, out, "build/fuzz/corpus",
+                   // libFuzzer's own per-input timeout; the harness watchdog fires
+                   // first (default 10s) and dumps the offending input
+                   "-timeout=15", "-max_len=65536", "-print_final_stats=1");
+
+    // seed libFuzzer's mutator with .env grammar tokens when the dictionary exists
+    if (nob_file_exists("tests/fuzz/env.dict") == 1) {
+        nob_cmd_append(&run, "-dict=tests/fuzz/env.dict");
+    }
+
+    for (int i = 0; i < argc; ++i) {
+        nob_cmd_append(&run, argv[i]);
+    }
+
+    nob_log(NOB_INFO, "fuzzing tokenizer->parser; heartbeat every 5s (FUZZ_HEARTBEAT_SECONDS), stall limit 10s "
+                      "(FUZZ_STALL_SECONDS); ctrl-c to stop");
+
+    return nob_cmd_run(&run);
+#endif
+}
+
 static bool build_dev(void) {
     Nob_Cmd cmd = {0};
     compose_dev_cmd(&cmd);
@@ -591,6 +703,10 @@ int main(int argc, char **argv) {
         }
     } else if (strcmp(subcmd, "integration") == 0) {
         if (!run_integration()) {
+            return 1;
+        }
+    } else if (strcmp(subcmd, "fuzz") == 0) {
+        if (!run_fuzz(argc, argv)) {
             return 1;
         }
     } else if (strcmp(subcmd, "generate") == 0) {

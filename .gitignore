@@ -38,3 +38,11 @@ compile_commands.json
 
 /nob
 nob.old
+
+# libFuzzer artifacts and harness stall dumps
+crash-*
+leak-*
+timeout-*
+oom-*
+slow-unit-*
+fuzz-stall-*.bin
