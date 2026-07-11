@@ -189,43 +189,66 @@ static void remove_dir_recursively(const char *path) {
     nob_walk_dir(path, delete_entry, .post_order = true);
 }
 
-// Builds and runs the libFuzzer harness (POSIX + clang only; requires libFuzzer,
-// which musl-gcc and MSVC don't ship). Seeds the corpus from fixtures/*.env on
-// first run. Extra argv is forwarded to libFuzzer (eg. ./nob fuzz -runs=1000000
-// or a crash file to reproduce).
-static bool run_fuzz(int argc, char **argv) {
-#if defined(_WIN32) && defined(_MSC_VER)
-    (void)argc;
-    (void)argv;
-    nob_log(NOB_ERROR, "fuzzing requires clang + libFuzzer and is not supported under MSVC");
-    return false;
-#else
-    if (use_musl()) {
-        nob_log(NOB_ERROR, "fuzzing requires clang + libFuzzer; unset NVI_LIBC=musl");
-        return false;
-    }
+// Builds and runs a libFuzzer harness (POSIX + clang only; requires libFuzzer,
+// which musl-gcc and MSVC don't ship). Usage: ./nob fuzz [parser|matcher] [args].
+// The target defaults to parser; remaining argv is forwarded to libFuzzer
+// (eg. ./nob fuzz parser -runs=1000000, or a crash file to reproduce).
+typedef struct {
+    const char *name;    // target selector on the command line
+    const char *harness; // harness source under tests/fuzz
+    const char *corpus;  // per-target corpus directory
+    const char *dict;    // optional libFuzzer dictionary (skipped when absent)
+    bool seed_fixtures;  // seed the corpus from fixtures/*.env on first run
+} fuzz_target_t;
 
+static const fuzz_target_t fuzz_targets[] = {
+    {
+        .name = "parser",
+        .harness = "tests/fuzz/fuzz_parser.c",
+        .corpus = "build/fuzz/corpus",
+        .dict = "tests/fuzz/env.dict",
+        .seed_fixtures = true,
+    },
+    {
+        .name = "matcher",
+        .harness = "tests/fuzz/fuzz_matcher.c",
+        .corpus = "build/fuzz/corpus-matcher",
+        .dict = "tests/fuzz/matcher.dict",
+        .seed_fixtures = false,
+    },
+    {
+        .name = "args",
+        .harness = "tests/fuzz/fuzz_args.c",
+        .corpus = "build/fuzz/corpus-args",
+        .dict = "tests/fuzz/args.dict",
+        .seed_fixtures = false,
+    },
+};
+
+static bool run_fuzz_target(const fuzz_target_t *target, int argc, char **argv) {
     if (!nob_mkdir_if_not_exists("build") || !nob_mkdir_if_not_exists("build/fuzz") ||
-        !nob_mkdir_if_not_exists("build/fuzz/corpus")) {
+        !nob_mkdir_if_not_exists(target->corpus)) {
         return false;
     }
 
     // seed the corpus from fixtures once (libFuzzer mutates from there)
-    Nob_File_Paths fixtures = {0};
-    if (nob_read_entire_dir("fixtures", &fixtures)) {
-        for (size_t i = 0; i < fixtures.count; ++i) {
-            const char *name = fixtures.items[i];
-            size_t len = strlen(name);
-            if (len < 4 || strcmp(name + len - 4, ".env") != 0) {
-                continue;
-            }
+    if (target->seed_fixtures) {
+        Nob_File_Paths fixtures = {0};
+        if (nob_read_entire_dir("fixtures", &fixtures)) {
+            for (size_t i = 0; i < fixtures.count; ++i) {
+                const char *name = fixtures.items[i];
+                size_t len = strlen(name);
+                if (len < 4 || strcmp(name + len - 4, ".env") != 0) {
+                    continue;
+                }
 
-            const char *dest = nob_temp_sprintf("build/fuzz/corpus/%s", name);
-            if (nob_file_exists(dest) != 1) {
-                nob_copy_file(nob_temp_sprintf("fixtures/%s", name), dest);
+                const char *dest = nob_temp_sprintf("%s/%s", target->corpus, name);
+                if (nob_file_exists(dest) != 1) {
+                    nob_copy_file(nob_temp_sprintf("fixtures/%s", name), dest);
+                }
             }
+            nob_da_free(fixtures);
         }
-        nob_da_free(fixtures);
     }
 
     // Apple's clang ships asan/ubsan but not the libFuzzer runtime
@@ -257,7 +280,7 @@ static bool run_fuzz(int argc, char **argv) {
         cc = "clang";
     }
 
-    const char *out = "build/fuzz/fuzz_parser";
+    const char *out = nob_temp_sprintf("build/fuzz/fuzz_%s", target->name);
 
     // FUZZ_SAN overrides the sanitizer list (eg. FUZZ_SAN=fuzzer or
     // FUZZ_SAN=fuzzer,address) to bisect platform-specific sanitizer problems
@@ -269,35 +292,104 @@ static bool run_fuzz(int argc, char **argv) {
     Nob_Cmd cmd = {0};
     nob_cmd_append(&cmd, cc, "-Isrc", "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g", "-O1",
                    nob_temp_sprintf("-fsanitize=%s", san), "-fno-omit-frame-pointer", "-o", out);
-    nob_cmd_append(&cmd, "tests/fuzz/fuzz_parser.c");
+    nob_cmd_append(&cmd, target->harness);
     if (!append_sources_except(&cmd, "main.c")) {
         return false;
     }
 
     if (!nob_cmd_run(&cmd)) {
-        nob_log(NOB_ERROR, "failed to build the fuzz harness");
+        nob_log(NOB_ERROR, "failed to build the %s fuzz harness", target->name);
         return false;
     }
 
     Nob_Cmd run = {0};
-    nob_cmd_append(&run, out, "build/fuzz/corpus",
+    nob_cmd_append(&run, out, target->corpus,
                    // libFuzzer's own per-input timeout; the harness watchdog fires
                    // first (default 10s) and dumps the offending input
                    "-timeout=15", "-max_len=65536", "-print_final_stats=1");
 
-    // seed libFuzzer's mutator with .env grammar tokens when the dictionary exists
-    if (nob_file_exists("tests/fuzz/env.dict") == 1) {
-        nob_cmd_append(&run, "-dict=tests/fuzz/env.dict");
+    // seed libFuzzer's mutator with grammar tokens when the dictionary exists
+    if (target->dict != NULL && nob_file_exists(target->dict) == 1) {
+        nob_cmd_append(&run, nob_temp_sprintf("-dict=%s", target->dict));
     }
 
     for (int i = 0; i < argc; ++i) {
         nob_cmd_append(&run, argv[i]);
     }
 
-    nob_log(NOB_INFO, "fuzzing tokenizer->parser; heartbeat every 5s (FUZZ_HEARTBEAT_SECONDS), stall limit 10s "
-                      "(FUZZ_STALL_SECONDS); ctrl-c to stop");
+    nob_log(NOB_INFO,
+            "fuzzing %s; heartbeat every 5s (FUZZ_HEARTBEAT_SECONDS), stall limit 10s "
+            "(FUZZ_STALL_SECONDS); ctrl-c to stop",
+            target->name);
 
     return nob_cmd_run(&run);
+}
+
+// Usage: ./nob fuzz [parser|matcher|args|all] [libFuzzer args]. The target
+// defaults to parser; 'all' runs every target sequentially with the same
+// forwarded args (eg. ./nob fuzz all -runs=0 replays every corpus in CI).
+static bool run_fuzz(int argc, char **argv) {
+#if defined(_WIN32) && defined(_MSC_VER)
+    (void)argc;
+    (void)argv;
+    nob_log(NOB_ERROR, "fuzzing requires clang + libFuzzer and is not supported under MSVC");
+    return false;
+#else
+    if (use_musl()) {
+        nob_log(NOB_ERROR, "fuzzing requires clang + libFuzzer; unset NVI_LIBC=musl");
+        return false;
+    }
+
+    // an optional leading target name selects the harness; default is parser
+    const fuzz_target_t *target = &fuzz_targets[0];
+    bool run_all = false;
+    if (argc > 0) {
+        if (strcmp(argv[0], "all") == 0) {
+            run_all = true;
+            nob_shift(argv, argc);
+        } else {
+            for (size_t i = 0; i < NOB_ARRAY_LEN(fuzz_targets); ++i) {
+                if (strcmp(argv[0], fuzz_targets[i].name) == 0) {
+                    target = &fuzz_targets[i];
+                    nob_shift(argv, argc);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!run_all) {
+        return run_fuzz_target(target, argc, argv);
+    }
+
+    // an unbounded 'all' would fuzz the first target forever and never reach
+    // the rest, so require a libFuzzer flag that guarantees termination
+    bool bounded = false;
+    for (int i = 0; i < argc; ++i) {
+        if (strncmp(argv[i], "-runs=", 6) == 0 || strncmp(argv[i], "-max_total_time=", 16) == 0) {
+            bounded = true;
+            break;
+        }
+    }
+
+    if (!bounded) {
+        nob_log(NOB_ERROR, "'fuzz all' requires a bound so every target gets a turn; add -runs=<N> (eg. -runs=0 to "
+                           "replay the corpora) or -max_total_time=<seconds>");
+        return false;
+    }
+
+    size_t passed = 0;
+    for (size_t i = 0; i < NOB_ARRAY_LEN(fuzz_targets); ++i) {
+        if (run_fuzz_target(&fuzz_targets[i], argc, argv)) {
+            ++passed;
+        } else {
+            nob_log(NOB_ERROR, "fuzz target '%s' failed", fuzz_targets[i].name);
+        }
+    }
+
+    nob_log(passed == NOB_ARRAY_LEN(fuzz_targets) ? NOB_INFO : NOB_ERROR, "fuzz targets: %zu/%zu passed", passed,
+            NOB_ARRAY_LEN(fuzz_targets));
+    return passed == NOB_ARRAY_LEN(fuzz_targets);
 #endif
 }
 
