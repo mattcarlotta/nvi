@@ -81,6 +81,9 @@ static void print_bytes(const char *label, const char *s, size_t len) {
     fputc('\n', stderr);
 }
 
+// sentinel address for ANY_STDOUT; comparing against it skips the stdout assertion
+static const char any_stdout;
+
 static void check_full(const char *name, const char *bin, const char *args, int exit_code,
                        const char *expected_stdout, size_t expected_stdout_len, const char *stderr_contains,
                        const char *stderr_excludes) {
@@ -94,8 +97,10 @@ static void check_full(const char *name, const char *bin, const char *args, int 
     (void)err_len;
 
     bool ok = rc == exit_code;
-    if (ok && expected_stdout != NULL) {
-        ok = out_len == expected_stdout_len && memcmp(out, expected_stdout, expected_stdout_len) == 0;
+    if (ok && expected_stdout != &any_stdout) {
+        // NULL means "assert stdout is empty" (expected_stdout_len is 0 by convention)
+        ok = out_len == expected_stdout_len &&
+             (expected_stdout_len == 0 || memcmp(out, expected_stdout, expected_stdout_len) == 0);
     }
     if (ok && stderr_contains != NULL) {
         ok = strstr(err, stderr_contains) != NULL;
@@ -113,8 +118,8 @@ static void check_full(const char *name, const char *bin, const char *args, int 
     printf("FAIL %zu - %s\n", total, name);
     fprintf(stderr, "  args: %s\n", args);
     fprintf(stderr, "  exit: expected %d, got %d\n", exit_code, rc);
-    if (expected_stdout != NULL) {
-        print_bytes("expected stdout", expected_stdout, expected_stdout_len);
+    if (expected_stdout != &any_stdout) {
+        print_bytes("expected stdout", expected_stdout ? expected_stdout : "", expected_stdout_len);
         print_bytes("actual stdout  ", out, out_len);
     }
     if (stderr_contains != NULL || stderr_excludes != NULL) {
@@ -134,7 +139,8 @@ static void check(const char *name, const char *bin, const char *args, int exit_
 }
 
 #define EXPECT(lit) (lit), sizeof(lit) - 1
-#define NO_STDOUT NULL, 0
+#define NO_STDOUT NULL, 0         // asserts stdout is exactly empty
+#define ANY_STDOUT &any_stdout, 0 // skips the stdout assertion (eg. help/version)
 
 static void setup_inputs(void) {
     make_dir("build");
@@ -184,7 +190,7 @@ int main(void) {
           "--files build/it/quote.env -F powershell -- echo hi", 0, EXPECT("$env:MSG = 'it''s'\n& 'echo' 'hi'\n"),
           NULL);
 
-    check("emits nothing to stdout without a command", NVI_BIN, "--files build/it/a.env -F nul", 0, EXPECT(""), NULL);
+    check("emits nothing to stdout without a command", NVI_BIN, "--files build/it/a.env -F nul", 0, NO_STDOUT, NULL);
 
     // --- input robustness ---
 
@@ -261,19 +267,19 @@ int main(void) {
 
     // --- info commands ---
 
-    check("help prints usage to stdout and exits 0", NVI_BIN, "--help", 0, NULL, 0, NULL);
-    check("version exits 0", NVI_BIN, "--version", 0, NULL, 0, NULL);
+    check("help prints usage to stdout and exits 0", NVI_BIN, "--help", 0, ANY_STDOUT, NULL);
+    check("version exits 0", NVI_BIN, "--version", 0, ANY_STDOUT, NULL);
 
     check("dry run keeps stdout empty and reports to stderr", NVI_BIN, "--files build/it/a.env --dry-run", 0,
-          EXPECT(""), "Dry run completed");
+          NO_STDOUT, "Dry run completed");
 
-    check_full("dry run masks values by default", NVI_BIN, "--files build/it/secret.env --dry-run", 0, EXPECT(""),
+    check_full("dry run masks values by default", NVI_BIN, "--files build/it/secret.env --dry-run", 0, NO_STDOUT,
                "*****", "s3cr3t");
 
     check_full("dry run with --reveal exposes values", NVI_BIN, "--files build/it/secret.env --dry-run --reveal", 0,
-               EXPECT(""), "s3cr3tvalue", "*****");
+               NO_STDOUT, "s3cr3tvalue", "*****");
 
-    check_full("dry run with -R exposes values", NVI_BIN, "--files build/it/secret.env --dry-run -R", 0, EXPECT(""),
+    check_full("dry run with -R exposes values", NVI_BIN, "--files build/it/secret.env --dry-run -R", 0, NO_STDOUT,
                "s3cr3tvalue", "*****");
 
     // --- scanner (runs relative to cwd, so hop into the scratch tree) ---
