@@ -20,6 +20,7 @@
 // help -> displays help info to stdout
 // ignored -> a list of ENV keys that will be ignored (mostly useful for scans)
 // required -> a list of ENV keys to mark as required and defined before a command is emitted
+// reveal -> exposes ENV values during a dry run
 // scan -> a list of file extensions to scan for in the CWD
 // threads -> maximum number of threads to use for scanning
 // version -> displays current binary info
@@ -32,6 +33,7 @@ typedef enum {
     HELP_FLAG,
     IGNORED_FLAG,
     REQUIRED_FLAG,
+    REVEAL_FLAG,
     SCAN_FLAG,
     THREADS_FLAG,
     UNKNOWN_FLAG,
@@ -48,6 +50,7 @@ typedef struct {
     int argc;
     const char **argv;
     bool dry_run;
+    bool reveal;
     uint8_t scan_threads;
     format_t format;
     set_t files;

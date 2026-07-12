@@ -93,7 +93,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                     if (args->dry_run) {
                         log_info(SINK_STDERR, "[INFO]");
                         log_f(SINK_STDERR, " Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);
-                        log_comment(SINK_STDERR, "%s\n\n", value_token->value);
+                        log_comment(SINK_STDERR, "%s\n\n", args->reveal ? value_token->value : "*****");
                     }
                     break;
                 }
@@ -151,7 +151,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             log_f(SINK_STDERR, "    \u2022 key: ");
             log_bold_info(SINK_STDERR, "%s \n", token_key);
             log_f(SINK_STDERR, "    \u2022 value: ");
-            log_info(SINK_STDERR, "%s", env_value);
+            log_info(SINK_STDERR, "%s", args->reveal ? env_value : "*****");
             log_f(SINK_STDERR, "\n\n");
         }
     }
@@ -176,7 +176,13 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
         for (size_t i = 0; i < parser->env_map.count; ++i) {
             const env_t env = parser->env_map.items[i];
             log_f(SINK_STDERR, "    \u2022 ");
-            log_bold_info(SINK_STDERR, "%s=%s\n", env.key, env.value);
+            log_bold_info(SINK_STDERR, "%s=", env.key);
+            if (args->reveal) {
+                log_bold_info(SINK_STDERR, "%s", env.value);
+            } else {
+                log_bold_info(SINK_STDERR, "*****");
+            }
+            log_f(SINK_STDERR, "\n");
         }
         log_f(SINK_STDERR, "\n");
         goto done;

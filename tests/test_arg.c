@@ -159,6 +159,30 @@ static void test_parses_dry_run_flag(void) {
     TEST_ASSERT_TRUE(a.dry_run);
 }
 
+static void test_reveal_defaults_to_false(void) {
+    const char *argv[] = {"nvi", "--files", ".env", "--dry-run"};
+    args_t a = {0};
+    result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_FALSE(a.reveal);
+}
+
+static void test_parses_reveal_flag(void) {
+    const char *argv[] = {"nvi", "--files", ".env", "--dry-run", "--reveal"};
+    args_t a = {0};
+    result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_TRUE(a.reveal);
+}
+
+static void test_parses_short_reveal_flag(void) {
+    const char *argv[] = {"nvi", "--files", ".env", "--dry-run", "-R"};
+    args_t a = {0};
+    result_t r = parse_args_silent(ARR_LEN(argv), argv, &a);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_TRUE(a.reveal);
+}
+
 static void test_delimiter_sets_command(void) {
     const char *argv[] = {"nvi", "--files", ".env", "--", "echo", "hi"};
     args_t a = {0};
@@ -210,6 +234,9 @@ int main(void) {
     RUN_TEST(test_parses_scan_extensions);
     RUN_TEST(test_errors_on_unsupported_scan_extension);
     RUN_TEST(test_parses_dry_run_flag);
+    RUN_TEST(test_reveal_defaults_to_false);
+    RUN_TEST(test_parses_reveal_flag);
+    RUN_TEST(test_parses_short_reveal_flag);
     RUN_TEST(test_delimiter_sets_command);
     RUN_TEST(test_errors_on_unknown_flag);
     RUN_TEST(test_help_short_circuits);
