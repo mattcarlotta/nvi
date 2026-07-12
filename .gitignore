@@ -38,3 +38,12 @@ compile_commands.json
 
 /nob
 nob.old
+
+# libFuzzer artifacts and harness stall dumps (repo root only;
+# tests/fuzz/seeds/* keeps committed reproducers)
+/crash-*
+/leak-*
+/timeout-*
+/oom-*
+/slow-unit-*
+/fuzz-stall-*.bin

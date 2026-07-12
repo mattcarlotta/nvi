@@ -14,6 +14,10 @@
 // literal -> a literal value (combines multi-line values as well)
 // interpolated -> extracting a value from a process ENV or ENV key from a previous .env file
 
+// Interpolation can multiply value length exponentially (a few KB of nested
+// ${KEY} references can expand into gigabytes), so assembled values are capped.
+#define MAX_ENV_VALUE_SIZE ((size_t)1024 * 1024)
+
 typedef struct {
     const char **items;
     size_t count;

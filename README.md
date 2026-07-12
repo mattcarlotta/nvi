@@ -540,6 +540,109 @@ Run all test suites:
 ./nob.exe test
 ```
 
+## Fuzzing
+
+This project uses [libFuzzer](https://llvm.org/docs/LibFuzzer.html) with AddressSanitizer and UndefinedBehaviorSanitizer to fuzz the three untrusted-input surfaces:
+
+| Target    | Harness                     | What it fuzzes                                                                                     |
+| --------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `parser`  | `tests/fuzz/fuzz_parser.c`  | Arbitrary bytes through `generate_tokens` and `run_parser` as the contents of a single `.env` file.  |
+| `matcher` | `tests/fuzz/fuzz_matcher.c` | Arbitrary bytes through `scan_file_content`; the first input byte selects the language accessor set. |
+| `args`    | `tests/fuzz/fuzz_args.c`    | NUL-delimited argv entries through `parse_args`.                                                     |
+
+Fuzzing is POSIX only (Linux, macOS) and requires a clang that ships the libFuzzer runtime.
+
+### Requirements
+
+Linux:
+
+- [Clang](https://clang.llvm.org/) (the distro package includes libFuzzer)
+
+macOS:
+
+- [Homebrew LLVM](https://formulae.brew.sh/formula/llvm):
+
+```sh
+brew install llvm
+```
+
+> [!NOTE]
+> Apple's Command Line Tools clang ships ASan and UBSan but not the libFuzzer runtime (`libclang_rt.fuzzer_osx.a`). `./nob fuzz` automatically prefers Homebrew LLVM's clang when present (`/opt/homebrew/opt/llvm` or `/usr/local/opt/llvm`); no `PATH` changes are needed. musl builds (`NVI_LIBC=musl`) and MSVC are not supported.
+
+### Running
+
+Build nob (if you haven't already):
+```sh
+clang -o nob nob.c
+```
+
+Build and run a fuzz target (ctrl-c to stop):
+```sh
+# defaults to the parser target
+./nob fuzz
+
+# or select one explicitly
+./nob fuzz parser
+./nob fuzz matcher
+./nob fuzz args
+```
+
+Each target keeps its own cumulative corpus under `build/fuzz/`; interesting inputs found in one run carry over to the next. The parser corpus is seeded from `fixtures/*.env` on first run. When a matching dictionary exists under `tests/fuzz/` (`env.dict`, `matcher.dict`, `args.dict`), it is passed to libFuzzer automatically to seed the mutator with grammar tokens.
+
+Extra arguments are forwarded to libFuzzer:
+
+```sh
+# bounded run (roughly 20s at ~50k exec/s)
+./nob fuzz parser -runs=1000000
+
+# reproduce a crash or stall artifact
+./nob fuzz parser crash-<hash>
+```
+
+### Running all targets
+
+`all` runs every target sequentially with the same forwarded arguments and reports a suite-style summary:
+
+```sh
+# regression only: replay every corpus without mutating (useful in CI)
+./nob fuzz all -runs=0
+
+# bounded soak of everything, 10 minutes per target
+./nob fuzz all -max_total_time=600
+```
+
+> [!NOTE]
+> `all` requires a `-runs=<N>` or `-max_total_time=<seconds>` bound; an unbounded run would fuzz the first target forever and never reach the rest. Omitting the bound is a usage error.
+
+### Progress output
+
+A watchdog thread (`tests/fuzz/fuzz_watchdog.h`, shared by all harnesses) prints a heartbeat so the fuzzer never looks hung:
+
+```
+[fuzz] alive: execs=256505 (34354/s) elapsed=8s current_input=654 bytes (0.0s)
+```
+
+If a single input runs past the stall limit, the watchdog writes it to `fuzz-stall-<pid>.bin` and aborts, turning a hang into a reproducible artifact. libFuzzer's own `-timeout=15` acts as a backstop.
+
+### Environment variables
+
+| Variable                 | Description                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `FUZZ_HEARTBEAT_SECONDS` | Seconds between heartbeat lines (default: `5`).                                     |
+| `FUZZ_STALL_SECONDS`     | Per-input runtime limit before abort + dump (default: `10`).                        |
+| `FUZZ_VERBOSE`           | If set, keeps the target's stdout/stderr output (silenced otherwise).               |
+| `FUZZ_CC`                | Overrides the compiler used to build the harness.                                   |
+| `FUZZ_SAN`               | Overrides the sanitizer list (default: `fuzzer,address,undefined`).                 |
+
+Example, reproducing a single artifact with full diagnostics:
+
+```sh
+FUZZ_VERBOSE=1 ./build/fuzz/fuzz_parser fuzz-stall-<pid>.bin
+```
+
+> [!NOTE]
+> Crash artifacts (`crash-*`, `timeout-*`, `oom-*`, and so on) and stall dumps (`fuzz-stall-*.bin`) are written to the repository root and are gitignored. If the fuzzer finds something, keep the artifact until it's fixed; it is the reproducer.
+
 ## Security model
 
 - It doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.

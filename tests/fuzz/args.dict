@@ -1,0 +1,35 @@
+# CLI flag tokens for the argv parser fuzzer (-dict).
+# \x00 is the argv separator used by the harness.
+
+"\x00"
+
+# flags, short and long
+"-d"
+"--dry-run"
+"-f"
+"--files"
+"-F"
+"--format"
+"-h"
+"--help"
+"-i"
+"--ignored"
+"-r"
+"--required"
+"-s"
+"--scan"
+"-t"
+"--threads"
+"-v"
+"--version"
+"--"
+
+# flag params
+"nul"
+"powershell"
+".env"
+"js"
+"yaml"
+"255"
+"0"
+

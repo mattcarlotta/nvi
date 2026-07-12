@@ -102,6 +102,16 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                     break;
                 }
             }
+
+            // every appended chunk is independently bounded, so checking after each value token
+            // catches runaway expansion before it can compound
+            if (value.count > MAX_ENV_VALUE_SIZE) {
+                result = operation_error(
+                    "The '%s' key's value exceeds %zu bytes after interpolation (%s:%zu:%zu); aborting.\n",
+                    token_key ? token_key : "(none)", (size_t)MAX_ENV_VALUE_SIZE, token->file, value_token->line,
+                    value_token->byte);
+                goto done;
+            }
         }
 
         // skip storing comments

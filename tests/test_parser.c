@@ -269,6 +269,50 @@ static void test_defined_empty_without_fallback_resolves_empty(void) {
     TEST_ASSERT_EQUAL_STRING("", lookup(&parser.env_map, "KEY"));
 }
 
+// interpolation expansion bomb: SEED holds ~600KB, BOMB references it twice
+// (~1.2MB), which must trip MAX_ENV_VALUE_SIZE instead of compounding
+static void test_errors_when_interpolation_exceeds_max_value_size(void) {
+    const size_t seed_len = (MAX_ENV_VALUE_SIZE / 2) + (64 * 1024);
+    char *seed = arena_alloc(&test_arena, seed_len + 1);
+    memset(seed, 'x', seed_len);
+    seed[seed_len] = '\0';
+
+    value_token_t seed_v;
+    value_token_t bomb_v[2];
+    token_t toks[] = {make_token("SEED", LITERAL_VALUE, seed, &seed_v), {0}};
+
+    bomb_v[0] = (value_token_t){.value = "SEED", .value_len = 4, .kind = INTERPOLATED_KEY, .line = 2, .byte = 1};
+    bomb_v[1] = bomb_v[0];
+    toks[1] = (token_t){.key = "BOMB", .file = "testp.env"};
+    toks[1].values.items = bomb_v;
+    toks[1].values.count = 2;
+    toks[1].values.capacity = 2;
+
+    token_list_t tl = {.items = toks, .count = 2, .capacity = 2};
+
+    args_t args = {0};
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
+    TEST_ASSERT_FALSE(r.ok);
+    TEST_ASSERT_EQUAL_INT(1, r.code);
+}
+
+static void test_value_at_max_value_size_passes(void) {
+    char *max = arena_alloc(&test_arena, MAX_ENV_VALUE_SIZE + 1);
+    memset(max, 'x', MAX_ENV_VALUE_SIZE);
+    max[MAX_ENV_VALUE_SIZE] = '\0';
+
+    value_token_t v;
+    token_t toks[] = {make_token("KEY", LITERAL_VALUE, max, &v)};
+    token_list_t tl = {.items = toks, .count = 1, .capacity = 1};
+
+    args_t args = {0};
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(MAX_ENV_VALUE_SIZE, strlen(lookup(&parser.env_map, "KEY")));
+}
+
 static void test_errors_on_undefined_interpolation(void) {
     clear_env("NVI_TEST_UNDEF");
     value_token_t v;
@@ -316,6 +360,8 @@ int main(void) {
     RUN_TEST(test_value_wins_over_fallback);
     RUN_TEST(test_defined_empty_without_fallback_resolves_empty);
     RUN_TEST(test_errors_on_undefined_interpolation);
+    RUN_TEST(test_errors_when_interpolation_exceeds_max_value_size);
+    RUN_TEST(test_value_at_max_value_size_passes);
     RUN_TEST(test_errors_when_required_env_is_empty);
     return UNITY_END();
 }

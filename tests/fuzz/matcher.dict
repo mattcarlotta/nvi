@@ -1,0 +1,43 @@
+# Accessor tokens for the scanner matcher fuzzer (-dict).
+
+# JavaScript / TypeScript
+"process.env."
+"process.env[\""
+"import.meta.env."
+
+# Python
+"os.getenv(\""
+"os.environ.get(\""
+
+# Go
+"os.Getenv(\""
+
+# Rust
+"env::var(\""
+
+# Ruby
+"ENV[\""
+
+# Java / Kotlin
+"System.getenv(\""
+
+# Perl
+"$ENV{"
+
+# C
+"getenv(\""
+
+# YAML / POSIX expansion
+"${"
+":-"
+":?"
+"}"
+
+# comment skimming state machines
+"//"
+"/*"
+"*/"
+"#"
+"\"\"\""
+"'''"
+
