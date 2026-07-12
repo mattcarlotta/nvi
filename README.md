@@ -275,7 +275,7 @@ Notes for Windows users:
 | `-h, --help` | Prints usage help to stdout and exits with 0. |
 | `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
 | `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
-| `-R, --reveal` | Reveals ENV values in a dry-run. |
+| `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden as `*****`. |
 | `-s, --scan <ext> ...` | Recursively scans `<ext>` files for environment-variable accessors. † |
 | `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
