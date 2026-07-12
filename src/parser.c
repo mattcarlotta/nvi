@@ -30,7 +30,6 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
 }
 
 result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, parser_t *parser) {
-    result_t result = RESULT_OK;
 
     if (args->dry_run) {
         log_info(SINK_STDERR, "[INFO]");
@@ -74,12 +73,11 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                     const char *env = resolve_env(&parser->env_map, lookup_key);
 
                     if (env == NULL && fallback == NULL) {
-                        result = operation_error(
+                        return operation_error(
                             "The '%s' key contains an interpolated key variable %.*s (%s:%zu:%zu) that is not "
                             "defined.\n",
                             token_key ? token_key : "(none)", (int)key_len, raw_value, token->file, value_token->line,
                             value_token->byte);
-                        goto done;
                     }
 
                     if (env != NULL && env[0] != '\0') {
@@ -106,11 +104,10 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             // every appended chunk is independently bounded, so checking after each value token
             // catches runaway expansion before it can compound
             if (value.count > MAX_ENV_VALUE_SIZE) {
-                result = operation_error(
+                return operation_error(
                     "The '%s' key's value exceeds %zu bytes after interpolation (%s:%zu:%zu); aborting.\n",
                     token_key ? token_key : "(none)", (size_t)MAX_ENV_VALUE_SIZE, token->file, value_token->line,
                     value_token->byte);
-                goto done;
             }
         }
 
@@ -157,8 +154,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
     }
 
     if (parser->env_map.count == 0) {
-        result = operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
-        goto done;
+        return operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n");
     }
 
     for (size_t i = 0; i < args->required.count; ++i) {
@@ -185,7 +181,8 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             log_f(SINK_STDERR, "\n");
         }
         log_f(SINK_STDERR, "\n");
-        goto done;
+
+        return RESULT_OK;
     }
 
     if (args->command.count > 0 && parser->missing_envs.count > 0) {
@@ -195,9 +192,8 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             log_error(SINK_STDERR, "\n   \u2022 %s", parser->missing_envs.items[i]);
         }
         log_error(SINK_STDERR, "\n");
-        result = OPERATION_FAILURE;
+        return OPERATION_FAILURE;
     }
 
-done:
-    return result;
+    return RESULT_OK;
 }

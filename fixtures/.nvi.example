@@ -1,3 +1,4 @@
 --files fixtures/example.env
+--scan h c
+--threads 4
 --dry-run
---reveal

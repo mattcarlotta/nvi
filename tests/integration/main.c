@@ -161,6 +161,7 @@ static void setup_inputs(void) {
     write_file(IT_DIR "/secret.env", EXPECT("SECRET=s3cr3tvalue\n"));
     write_file(IT_DIR "/config.nvi", EXPECT("# integration config\n--files build/it/a.env\n-F nul\n"));
     write_file(IT_DIR "/bad_config.nvi", EXPECT("--files build/it/a.env\n-- echo hi\n"));
+    write_file(IT_DIR "/empty_config.nvi", "", 0);
 
     write_file(IT_DIR "/bad_quote.env", EXPECT("ABC=\"123\n"));
     write_file(IT_DIR "/quoted.env", EXPECT("DQ=\"hello world\"\nSQ='keep ${LIT}'\nEMPTYQ=\"\"\n"));
@@ -299,6 +300,9 @@ int main(void) {
 
     check("a command delimiter inside a config file is a usage error", NVI_BIN, "@build/it/bad_config.nvi", 2,
           NO_STDOUT, "may not contain");
+
+    check("an empty config file is a loud error", NVI_BIN, "@build/it/empty_config.nvi -- x", 1, NO_STDOUT,
+          "is empty");
 
     // --- scanner (runs relative to cwd, so hop into the scratch tree) ---
 

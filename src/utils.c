@@ -62,18 +62,15 @@ bool ends_with(const char *name, const char *suffix) {
     return nlen >= slen && memcmp(name + nlen - slen, suffix, slen) == 0;
 }
 
-// Matches dotfile-style extension conventions for a file's base name. For an ext
-// of ".env": exactly ".env", a ".env.<suffix>" variant (".env.local"), or a
-// "<name>.env" suffix ("example.env"). Same rules apply to ".nvi" and friends.
 bool has_dotfile_ext(const char *base, const char *ext) {
     const size_t ext_len = strlen(ext);
 
-    // '.env.local' style: the ext as a prefix followed by a dot
+    // '.ext.suffix' where the ext is a prefix followed by a dot
     if (strncmp(base, ext, ext_len) == 0 && base[ext_len] == DOT) {
         return true;
     }
 
-    // exactly '.env' or an 'example.env' style suffix
+    // exactly '.ext' or an 'example.ext' style suffix
     return ends_with(base, ext);
 }
 

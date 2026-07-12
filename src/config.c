@@ -22,6 +22,7 @@ result_t tokenize_config_file(arena_t *arena, const file_details_t *file, config
             continue;
         }
 
+        // skip comments
         if (c == HASH) {
             while (i < file->len && file->contents[i] != LINE_DELIMITER) {
                 ++i;
@@ -88,7 +89,6 @@ result_t load_config_file(arena_t *arena, int argc, const char **argv, config_t 
         return usage_error("The '@' config file argument requires a path (eg. '@.nvi')");
     }
 
-    // .nvi, .nvi.staging, project.nvi
     if (!has_dotfile_ext(path_basename(config->path), ".nvi")) {
         return operation_error("The config file '%s' is an invalid .nvi file (missing '.nvi' extension)\n",
                                config->path);
@@ -113,8 +113,10 @@ result_t load_config_file(arena_t *arena, int argc, const char **argv, config_t 
         return result;
     }
 
-    // splice the tokens into argv where the '@<path>' argument sat; bounded by
-    // argc + CONFIG_MAX_TOKENS, so no overflow concerns
+    if (tokens.count == 0) {
+        return operation_error("The config file '%s' is empty (missing flags); aborting.\n", config->path);
+    }
+
     const size_t merged_count = (size_t)argc - 1 + tokens.count;
     const char **merged = arena_alloc(arena, merged_count * sizeof(const char *));
 

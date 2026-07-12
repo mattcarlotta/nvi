@@ -84,13 +84,20 @@ static void test_skips_comments_and_crlf(void) {
     TEST_ASSERT_EQUAL_STRING("--dry-run", c.config.argv[1]);
 }
 
-static void test_empty_file_expands_to_nothing(void) {
+static void test_errors_on_empty_config_file(void) {
     write_config_file("build/cf_empty.nvi", "");
     const char *argv[] = {"nvi", "@build/cf_empty.nvi", "--dry-run"};
     config_ctx_t c = load_silent(ARR_LEN(argv), argv);
-    TEST_ASSERT_TRUE(c.result.ok);
-    TEST_ASSERT_EQUAL_INT(2, c.config.argc);
-    TEST_ASSERT_EQUAL_STRING("--dry-run", c.config.argv[1]);
+    TEST_ASSERT_FALSE(c.result.ok);
+    TEST_ASSERT_EQUAL_INT(1, c.result.code);
+}
+
+static void test_errors_on_comment_only_config_file(void) {
+    write_config_file("build/cf_comment_only.nvi", "# nothing but comments\n# and blank lines\n\n");
+    const char *argv[] = {"nvi", "@build/cf_comment_only.nvi", "--dry-run"};
+    config_ctx_t c = load_silent(ARR_LEN(argv), argv);
+    TEST_ASSERT_FALSE(c.result.ok);
+    TEST_ASSERT_EQUAL_INT(1, c.result.code);
 }
 
 static void test_command_delimiter_survives_after_splice(void) {
@@ -212,7 +219,8 @@ int main(void) {
     RUN_TEST(test_at_after_delimiter_is_not_expanded);
     RUN_TEST(test_expands_tokens_at_splice_point);
     RUN_TEST(test_skips_comments_and_crlf);
-    RUN_TEST(test_empty_file_expands_to_nothing);
+    RUN_TEST(test_errors_on_empty_config_file);
+    RUN_TEST(test_errors_on_comment_only_config_file);
     RUN_TEST(test_command_delimiter_survives_after_splice);
     RUN_TEST(test_errors_on_missing_file);
     RUN_TEST(test_errors_on_empty_path);

@@ -323,37 +323,35 @@ The exit code of *your command* will be reported by the downstream consumer, not
 
 ## `.nvi` config file
 
-Instead of retyping project-default flags on every invocation, they can be committed to a `.nvi` config file and loaded with a clang/MSVC/rustc-style `@<path>` argument:
+You may use multiple `.nvi.<example>` config files to skip retyping project and/or environment specific flags over and over.
 
+Usage:
 ```sh
-nvi @.nvi -- npm run dev | <consumer>
+nvi @<path_to_config> -- <command> | <consumer>
 ```
 
-The file contains whitespace-delimited flag tokens; a `#` starts a comment to the end of the line:
-
+Example config:
 ```sh
-# nvi project config
+# .nvi.production
 --files .env .env.local
+--format nul
 --scan ts tsx mjs
 --ignored NODE_ENV CI
 --threads 4
 ```
 
-The tokens are spliced into the arguments exactly where the `@<path>` sat, so flags after it override or append to what the file set:
-
+However, you can still append or override flags after a config file (except for for flags that don't have parameters, like: `--dry-run`):
 ```sh
-# .nvi supplies the defaults; the CLI appends .env.production (parsed last, wins)
-# and overrides the format for this one invocation
-nvi @.nvi --files .env.production -F powershell -- cargo run | <consumer>
+# the .nvi.production config (above) supplies the defaults, but the flags
+# specified afterward append .env.production to files and override the format
+nvi @.nvi.production --files .env.production -F powershell -- <command> | <consumer>
 ```
 
 Rules:
-
-- At most one `@<path>` per invocation, and config files may not reference other config files (no nesting).
-- A `--` command is not allowed inside a config file; commands stay on the command line, where process execution remains visible in shell history and process listings.
-- The path follows the same rules as `--files` params: a `.nvi` name (exactly `.nvi`, a `.nvi.<environment>` variant like `.nvi.staging`, or a `<name>.nvi` suffix), relative to and inside the current directory.
-- An `@<path>` after the `--` delimiter is part of the command and is never expanded.
-- An empty or comment-only config file expands to nothing.
+- You may load a single `@<config>` file (referencing other configs is unsupported).
+- Flags and parameters must be defined on the same line.
+- A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the downstream consumer.
+- An empty or comment-only config file is an error (matching the empty `.env` file behavior).
 
 ## Scanning for ENV keys
 
