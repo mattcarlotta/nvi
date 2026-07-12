@@ -2,14 +2,14 @@
 
 A fast and minimal cross-platform CLI `.env` parser, environment-variable scanner and emitter.
 
-- 0 dependencies
+- 0 dependency
 - Language and framework agnostic (replaces language specfic env packages)
 - Sequentially parses one or more `.env` files
 - Supports `${KEY}` interpolations, `#` comments, `'` and `"` quotes, and `\` delimited multiline values
 - Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
 - Checks required environment-variables are defined before command execution
 - Supports ignoring environment-variables that may be set at run-time
-- Loads project-default flags from a [`.nvi` config file](#nvi-config-file)
+- Loads flags from a [`.nvi` config file](#nvi-config-file)
 
 ## Installation
 
@@ -276,11 +276,11 @@ Notes for Windows users:
 | `-h, --help` | Prints usage help to stdout and exits with 0. |
 | `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
 | `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
-| `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden as `*****`. |
-| `-s, --scan <ext> ...` | Recursively scans `<ext>` files for environment-variable accessors. † |
+| `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden (`*****`). |
+| `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#scanning-for-env-keys) files for environment-variable accessors. † |
 | `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
-| `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi`). |
+| `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi.development`). |
 | `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
@@ -323,16 +323,16 @@ The exit code of *your command* will be reported by the downstream consumer, not
 
 ## `.nvi` config file
 
-You may use multiple `.nvi.<example>` config files to skip retyping project and/or environment specific flags over and over.
+Just like `.env` files, you may use one or many `.nvi` config files to load project and/or environment specific flags.
 
 Usage:
 ```sh
-nvi @<path_to_config> -- <command> | <consumer>
+nvi @<path> -- <command> | <consumer>
 ```
 
 Example config:
 ```sh
-# .nvi.production
+# .nvi.local
 --files .env .env.local
 --format nul
 --scan ts tsx mjs
@@ -340,15 +340,15 @@ Example config:
 --threads 4
 ```
 
-However, you can still append or override flags after a config file (except for for flags that don't have parameters, like: `--dry-run`):
+You'll still have the option to append or override flags after a config file (except for flags that don't have parameters, like: `--dry-run`):
 ```sh
-# the .nvi.production config (above) supplies the defaults, but the flags
+# the .nvi.local config (above) supplies the defaults, but the flags
 # specified afterward append .env.production to files and override the format
-nvi @.nvi.production --files .env.production -F powershell -- <command> | <consumer>
+nvi @.nvi.local --files .env.production -F powershell -- <command> | <consumer>
 ```
 
 Rules:
-- You may load a single `@<config>` file (referencing other configs is unsupported).
+- Only loads a single `.nvi` file (referencing other `.nvi` configs is unsupported).
 - Flags and parameters must be defined on the same line.
 - A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the downstream consumer.
 - An empty or comment-only config file is an error (matching the empty `.env` file behavior).
@@ -357,7 +357,7 @@ Rules:
 
 `-s`, `--scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
-For example, every line below is recognized and yields the key `DATABASE_URL`:
+For example, every line below would be recognized and yields the key `DATABASE_URL`:
 
 ```
 process.env.DATABASE_URL          # JavaScript / TypeScript
