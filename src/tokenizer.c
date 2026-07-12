@@ -76,7 +76,11 @@ static void report_tokenizer_summary(const args_t *args, const tokenizer_t *toke
 
             log_f(SINK_STDERR, "\n      %s\u2500 ", sub_stem_sym);
             log_info(SINK_STDERR, "%s \u21A0 ", get_value_kind_name(v->kind));
-            log_f(SINK_STDERR, "%.*s", (int)v->value_len, v->value);
+            if (args->reveal) {
+                log_f(SINK_STDERR, "%.*s", (int)v->value_len, v->value);
+            } else {
+                log_f(SINK_STDERR, "*****");
+            }
             log_comment(SINK_STDERR, " [%zu:%zu]", v->line, v->byte);
         }
 

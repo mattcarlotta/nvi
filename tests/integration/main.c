@@ -81,8 +81,9 @@ static void print_bytes(const char *label, const char *s, size_t len) {
     fputc('\n', stderr);
 }
 
-static void check(const char *name, const char *bin, const char *args, int exit_code, const char *expected_stdout,
-                  size_t expected_stdout_len, const char *stderr_contains) {
+static void check_full(const char *name, const char *bin, const char *args, int exit_code,
+                       const char *expected_stdout, size_t expected_stdout_len, const char *stderr_contains,
+                       const char *stderr_excludes) {
     ++total;
     int rc = run_nvi(bin, args);
 
@@ -99,6 +100,9 @@ static void check(const char *name, const char *bin, const char *args, int exit_
     if (ok && stderr_contains != NULL) {
         ok = strstr(err, stderr_contains) != NULL;
     }
+    if (ok && stderr_excludes != NULL) {
+        ok = strstr(err, stderr_excludes) == NULL;
+    }
 
     if (ok) {
         printf("PASS %zu - %s\n", total, name);
@@ -113,10 +117,20 @@ static void check(const char *name, const char *bin, const char *args, int exit_
         print_bytes("expected stdout", expected_stdout, expected_stdout_len);
         print_bytes("actual stdout  ", out, out_len);
     }
-    if (stderr_contains != NULL) {
-        fprintf(stderr, "  stderr must contain: %s\n", stderr_contains);
+    if (stderr_contains != NULL || stderr_excludes != NULL) {
+        if (stderr_contains != NULL) {
+            fprintf(stderr, "  stderr must contain: %s\n", stderr_contains);
+        }
+        if (stderr_excludes != NULL) {
+            fprintf(stderr, "  stderr must not contain: %s\n", stderr_excludes);
+        }
         print_bytes("actual stderr  ", err, strlen(err));
     }
+}
+
+static void check(const char *name, const char *bin, const char *args, int exit_code, const char *expected_stdout,
+                  size_t expected_stdout_len, const char *stderr_contains) {
+    check_full(name, bin, args, exit_code, expected_stdout, expected_stdout_len, stderr_contains, NULL);
 }
 
 #define EXPECT(lit) (lit), sizeof(lit) - 1
@@ -139,6 +153,7 @@ static void setup_inputs(void) {
     write_file(IT_DIR "/bad_interp.env", EXPECT("BAD=${OPEN\n"));
     write_file(IT_DIR "/empty_key.env", EXPECT("=ABC\n"));
     write_file(IT_DIR "/required.env", EXPECT("API_KEY=abc\n"));
+    write_file(IT_DIR "/secret.env", EXPECT("SECRET=s3cr3tvalue\n"));
 
     write_file(IT_DIR "/bad_quote.env", EXPECT("ABC=\"123\n"));
     write_file(IT_DIR "/quoted.env", EXPECT("DQ=\"hello world\"\nSQ='keep ${LIT}'\nEMPTYQ=\"\"\n"));
@@ -251,6 +266,15 @@ int main(void) {
 
     check("dry run keeps stdout empty and reports to stderr", NVI_BIN, "--files build/it/a.env --dry-run", 0,
           EXPECT(""), "Dry run completed");
+
+    check_full("dry run masks values by default", NVI_BIN, "--files build/it/secret.env --dry-run", 0, EXPECT(""),
+               "*****", "s3cr3t");
+
+    check_full("dry run with --reveal exposes values", NVI_BIN, "--files build/it/secret.env --dry-run --reveal", 0,
+               EXPECT(""), "s3cr3tvalue", "*****");
+
+    check_full("dry run with -R exposes values", NVI_BIN, "--files build/it/secret.env --dry-run -R", 0, EXPECT(""),
+               "s3cr3tvalue", "*****");
 
     // --- scanner (runs relative to cwd, so hop into the scratch tree) ---
 

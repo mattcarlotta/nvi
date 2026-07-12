@@ -98,6 +98,7 @@ static const flag_entry_t flags[] = {
     FLAG("-i", "--ignored", IGNORED_FLAG),
     FLAG("-F", "--format", FORMAT_FLAG),
     FLAG("-r", "--required", REQUIRED_FLAG),
+    FLAG("-R", "--reveal", REVEAL_FLAG),
     FLAG("-s", "--scan", "scan", SCAN_FLAG),
     FLAG("-t", "--threads", THREADS_FLAG),
     FLAG("-v", "--version", "version", VERSION_FLAG),
@@ -185,6 +186,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
     args->argv = argv;
     args->format = get_default_format();
     args->dry_run = false;
+    args->reveal = false;
     args->scan_threads = 1;
 
     result_t result = RESULT_OK;
@@ -271,6 +273,10 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
 
                 break;
             }
+            case REVEAL_FLAG: {
+                args->reveal = true;
+                break;
+            }
             case SCAN_FLAG: {
                 const char *param;
                 result = get_next_value(args, "scan", &param);
@@ -321,6 +327,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     "  -i, --ignored <keys>         ignores ENV keys that scan may find and add to the required ENV "
                     "key list\n"
                     "  -r, --required <keys>        ensures ENV keys are defined before the <command> is emitted\n"
+                    "  -R, --reveal                 reveals ENV values in a dry run\n"
                     "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
                     "\u2020\n"
                     "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
