@@ -65,7 +65,7 @@ bool ends_with(const char *name, const char *suffix) {
 bool has_dotfile_ext(const char *base, const char *ext) {
     const size_t ext_len = strlen(ext);
 
-    // '.ext.suffix' where the ext is a prefix followed by a dot
+    // '.ext.example' where the ext is a prefix followed by a dot
     if (strncmp(base, ext, ext_len) == 0 && base[ext_len] == DOT) {
         return true;
     }
