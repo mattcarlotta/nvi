@@ -20,7 +20,7 @@
 // help -> displays help info to stdout
 // ignored -> a list of ENV keys that will be ignored (mostly useful for scans)
 // required -> a list of ENV keys to mark as required and defined before a command is emitted
-// reveal -> exposes ENVs during a dry run
+// reveal -> exposes ENV values during a dry run
 // scan -> a list of file extensions to scan for in the CWD
 // threads -> maximum number of threads to use for scanning
 // version -> displays current binary info

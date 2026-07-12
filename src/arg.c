@@ -36,6 +36,12 @@ static void report_flag_items(const char *label, const char **items, size_t coun
     }
 }
 
+static void report_flag_reveal(bool reveal) {
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " reveal ENVs: ");
+    log_f(SINK_STDERR, "%s", reveal ? "true" : "false");
+}
+
 static void report_flag_threads(const uint8_t threads) {
     log_f(SINK_STDERR, "\n    \u2022");
     log_info(SINK_STDERR, " scan threads: ");
@@ -76,6 +82,7 @@ static void report_flags(const args_t *args) {
     report_flag_items("files", args->files.items, args->files.count, ", ");
     report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
     report_flag_items("required ENVs", args->required.items, args->required.count, ", ");
+    report_flag_reveal(args->reveal);
     report_flag_scan_extensions("scan extensions", &args->scan_exts, ", ");
     report_flag_threads(args->scan_threads);
     report_flag_format(args->format);
