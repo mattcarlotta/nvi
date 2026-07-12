@@ -131,12 +131,16 @@ static void *fuzz_watchdog_main(void *unused) {
                 abort();
             }
 
-            fuzz_heartbeat_printf("[fuzz] alive: execs=%llu (%.0f/s) elapsed=%.0fs current_input=%zu bytes (%.1fs)\n",
-                                  (unsigned long long)execs, rate, elapsed_s, atomic_load(&fuzz_input_len), input_s);
-        } else {
-            fuzz_heartbeat_printf("[fuzz] alive: execs=%llu (%.0f/s) elapsed=%.0fs idle\n", (unsigned long long)execs,
-                                  rate, elapsed_s);
+            if (input_s >= 0.5) {
+                fuzz_heartbeat_printf(
+                    "[fuzz] alive: execs=%llu (%.0f/s) elapsed=%.0fs SLOW input: %zu bytes running %.1fs\n",
+                    (unsigned long long)execs, rate, elapsed_s, atomic_load(&fuzz_input_len), input_s);
+                continue;
+            }
         }
+
+        fuzz_heartbeat_printf("[fuzz] alive: execs=%llu (%.0f/s) elapsed=%.0fs\n", (unsigned long long)execs, rate,
+                              elapsed_s);
     }
 
     return NULL;
