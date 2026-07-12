@@ -17,6 +17,8 @@ static const char *blacklist[] = {
 
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
+bool is_token_sep(const char c) { return c == SPACE || c == TAB || c == LINE_DELIMITER || c == CARRIAGE_RETURN; }
+
 bool is_path_sep(const char c) { return c == FORWARD_SLASH || c == BACK_SLASH; }
 
 bool is_absolute_path(const char *p) { return is_path_sep(p[0]) || (isalpha((unsigned char)p[0]) && p[1] == COLON); }
@@ -58,6 +60,21 @@ bool ends_with(const char *name, const char *suffix) {
     size_t nlen = strlen(name);
     size_t slen = strlen(suffix);
     return nlen >= slen && memcmp(name + nlen - slen, suffix, slen) == 0;
+}
+
+// Matches dotfile-style extension conventions for a file's base name. For an ext
+// of ".env": exactly ".env", a ".env.<suffix>" variant (".env.local"), or a
+// "<name>.env" suffix ("example.env"). Same rules apply to ".nvi" and friends.
+bool has_dotfile_ext(const char *base, const char *ext) {
+    const size_t ext_len = strlen(ext);
+
+    // '.env.local' style: the ext as a prefix followed by a dot
+    if (strncmp(base, ext, ext_len) == 0 && base[ext_len] == DOT) {
+        return true;
+    }
+
+    // exactly '.env' or an 'example.env' style suffix
+    return ends_with(base, ext);
 }
 
 bool is_blacklisted(const char *name) {

@@ -19,6 +19,16 @@ typedef struct {
     flag_t value;
 } flag_entry_t;
 
+static void report_flag_config(const char *config_path) {
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " config file: ");
+    if (config_path == NULL) {
+        log_comment(SINK_STDERR, "(none)");
+    } else {
+        log_f(SINK_STDERR, "%s", config_path);
+    }
+}
+
 static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
     log_f(SINK_STDERR, "\n    \u2022");
     log_info(SINK_STDERR, " %s: ", label);
@@ -78,6 +88,7 @@ static void report_flags(const args_t *args) {
 
     log_info(SINK_STDERR, "\n[INFO]");
     log_f(SINK_STDERR, " The following flags have been set...");
+    report_flag_config(args->config_path);
     report_flag_items("command", args->command.items, args->command.count, " ");
     report_flag_items("files", args->files.items, args->files.count, ", ");
     report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
@@ -147,31 +158,11 @@ static result_t get_next_value(args_t *args, const char *flag, const char **para
     return RESULT_OK;
 }
 
-static bool is_env_file(const char *base) {
-    // .env
-    if (strcmp(base, ".env") == 0) {
-        return true;
-    }
-
-    // .env.local
-    if (strncmp(base, ".env.", 5) == 0) {
-        return true;
-    }
-
-    const size_t base_len = strlen(base);
-
-    // example.env
-    if (base_len >= 4 && strcmp(base + base_len - 4, ".env") == 0) {
-        return true;
-    }
-
-    return false;
-}
-
 static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
-    if (!is_env_file(base)) {
+    // .env, .env.local, example.env
+    if (!has_dotfile_ext(base, ".env")) {
         return operation_error("The 'files' flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
     }
 
@@ -186,11 +177,12 @@ static inline result_t validate_file_name(const char *p) {
     return RESULT_OK;
 }
 
-result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
+result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
     // skip program name
     args->i = 1;
-    args->argc = argc;
-    args->argv = argv;
+    args->argc = config->argc;
+    args->argv = config->argv;
+    args->config_path = config->path;
     args->format = get_default_format();
     args->dry_run = false;
     args->reveal = false;
@@ -323,7 +315,9 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
             }
             case HELP_FLAG: {
                 fputs(
-                    "Usage: nvi [flags] -- <command>\n"
+                    "Usage:\n"
+                    "   nvi [flags] -- <command>\n"
+                    "   nvi @<config> -- <command>\n"
                     "\n"
                     "Flags:\n"
                     "  -d, --dry-run                prints flags, scan results, file tokens and parsed ENVs to stderr\n"
@@ -340,6 +334,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
                     "your CPU core count) \u2020\u2020\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
+                    "  @<config>                    loads flags from a .nvi config file\n"
                     "\n"
                     " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
                     "ENV keys are added to the required ENV list\n"

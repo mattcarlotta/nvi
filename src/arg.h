@@ -3,6 +3,7 @@
 
 #include "accessors.h"
 #include "arena.h"
+#include "config.h"
 #include "format.h"
 #include "result.h"
 #include "set.h"
@@ -49,6 +50,7 @@ typedef struct {
     int i;
     int argc;
     const char **argv;
+    const char *config_path;
     bool dry_run;
     bool reveal;
     uint8_t scan_threads;
@@ -60,6 +62,6 @@ typedef struct {
     command_t command;
 } args_t;
 
-result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args);
+result_t parse_args(arena_t *arena, config_t *config_t, args_t *args);
 
 #endif // ARG_H

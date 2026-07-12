@@ -1,4 +1,3 @@
-
 #include "set.h"
 #include "dynarr.h"
 #include <stdbool.h>

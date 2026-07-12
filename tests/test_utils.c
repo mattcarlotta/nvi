@@ -63,6 +63,19 @@ static void test_ends_with(void) {
     TEST_ASSERT_TRUE(ends_with("anything", ""));
 }
 
+// --- has_dotfile_ext: '.env', '.env.<suffix>', '<name>.env' ---
+
+static void test_has_dotfile_ext(void) {
+    TEST_ASSERT_TRUE(has_dotfile_ext(".env", ".env"));
+    TEST_ASSERT_TRUE(has_dotfile_ext(".env.local", ".env"));
+    TEST_ASSERT_TRUE(has_dotfile_ext("example.env", ".env"));
+    TEST_ASSERT_TRUE(has_dotfile_ext(".nvi.staging", ".nvi"));
+    TEST_ASSERT_FALSE(has_dotfile_ext(".envrc", ".env"));
+    TEST_ASSERT_FALSE(has_dotfile_ext("env", ".env"));
+    TEST_ASSERT_FALSE(has_dotfile_ext("nvi.conf", ".nvi"));
+    TEST_ASSERT_FALSE(has_dotfile_ext("", ".env"));
+}
+
 // --- is_blacklisted: exact dir names and known suffixes ---
 
 static void test_is_blacklisted(void) {
@@ -107,6 +120,7 @@ int main(void) {
     RUN_TEST(test_is_valid_key_accepts_well_formed_keys);
     RUN_TEST(test_is_valid_key_rejects_empty_leading_digit_and_punctuation);
     RUN_TEST(test_ends_with);
+    RUN_TEST(test_has_dotfile_ext);
     RUN_TEST(test_is_blacklisted);
     RUN_TEST(test_index_of_scalar);
     RUN_TEST(test_str_to_u8);

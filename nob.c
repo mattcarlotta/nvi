@@ -190,7 +190,7 @@ static void remove_dir_recursively(const char *path) {
 }
 
 // Builds and runs a libFuzzer harness (POSIX + clang only; requires libFuzzer,
-// which musl-gcc and MSVC don't ship). Usage: ./nob fuzz [parser|matcher] [args].
+// which musl-gcc and MSVC don't ship). Usage: ./nob fuzz [parser|matcher|args|config].
 // The target defaults to parser; remaining argv is forwarded to libFuzzer
 // (eg. ./nob fuzz parser -runs=1000000, or a crash file to reproduce).
 typedef struct {
@@ -221,6 +221,13 @@ static const fuzz_target_t fuzz_targets[] = {
         .harness = "tests/fuzz/fuzz_args.c",
         .corpus = "build/fuzz/corpus-args",
         .dict = "tests/fuzz/args.dict",
+        .seed_fixtures = false,
+    },
+    {
+        .name = "config",
+        .harness = "tests/fuzz/fuzz_config.c",
+        .corpus = "build/fuzz/corpus-config",
+        .dict = "tests/fuzz/config.dict",
         .seed_fixtures = false,
     },
 };
@@ -347,7 +354,7 @@ static bool run_fuzz_target(const fuzz_target_t *target, int argc, char **argv) 
     return nob_cmd_run(&run);
 }
 
-// Usage: ./nob fuzz [parser|matcher|args|all] [libFuzzer args]. The target
+// Usage: ./nob fuzz [parser|matcher|args|config|all] [libFuzzer args]. The target
 // defaults to parser; 'all' runs every target sequentially with the same
 // forwarded args (eg. ./nob fuzz all -runs=0 replays every corpus in CI).
 static bool run_fuzz(int argc, char **argv) {

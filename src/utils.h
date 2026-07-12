@@ -6,6 +6,8 @@
 #include <stdio.h>
 
 bool ends_with(const char *name, const char *suffix);
+bool is_token_sep(const char c);
+bool has_dotfile_ext(const char *base, const char *ext);
 bool is_path_sep(const char c);
 bool is_absolute_path(const char *p);
 const char *path_basename(const char *fp);

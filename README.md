@@ -9,6 +9,7 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 - Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
 - Checks required environment-variables are defined before command execution
 - Supports ignoring environment-variables that may be set at run-time
+- Loads project-default flags from a [`.nvi` config file](#nvi-config-file)
 
 ## Installation
 
@@ -279,6 +280,7 @@ Notes for Windows users:
 | `-s, --scan <ext> ...` | Recursively scans `<ext>` files for environment-variable accessors. † |
 | `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
+| `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi`). |
 | `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
@@ -318,6 +320,40 @@ nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 - `2` - Usage errors: flags missing required params, invalid flags/params, or a missing `--` command
 
 The exit code of *your command* will be reported by the downstream consumer, not by `nvi`.
+
+## `.nvi` config file
+
+Instead of retyping project-default flags on every invocation, they can be committed to a `.nvi` config file and loaded with a clang/MSVC/rustc-style `@<path>` argument:
+
+```sh
+nvi @.nvi -- npm run dev | <consumer>
+```
+
+The file contains whitespace-delimited flag tokens; a `#` starts a comment to the end of the line:
+
+```sh
+# nvi project config
+--files .env .env.local
+--scan ts tsx mjs
+--ignored NODE_ENV CI
+--threads 4
+```
+
+The tokens are spliced into the arguments exactly where the `@<path>` sat, so flags after it override or append to what the file set:
+
+```sh
+# .nvi supplies the defaults; the CLI appends .env.production (parsed last, wins)
+# and overrides the format for this one invocation
+nvi @.nvi --files .env.production -F powershell -- cargo run | <consumer>
+```
+
+Rules:
+
+- At most one `@<path>` per invocation, and config files may not reference other config files (no nesting).
+- A `--` command is not allowed inside a config file; commands stay on the command line, where process execution remains visible in shell history and process listings.
+- The path follows the same rules as `--files` params: a `.nvi` name (exactly `.nvi`, a `.nvi.<environment>` variant like `.nvi.staging`, or a `<name>.nvi` suffix), relative to and inside the current directory.
+- An `@<path>` after the `--` delimiter is part of the command and is never expanded.
+- An empty or comment-only config file expands to nothing.
 
 ## Scanning for ENV keys
 
@@ -543,13 +579,14 @@ Run all test suites:
 
 ## Fuzzing
 
-This project uses [libFuzzer](https://llvm.org/docs/LibFuzzer.html) with AddressSanitizer and UndefinedBehaviorSanitizer to fuzz the three untrusted-input surfaces:
+This project uses [libFuzzer](https://llvm.org/docs/LibFuzzer.html) with AddressSanitizer and UndefinedBehaviorSanitizer to fuzz the four untrusted-input surfaces:
 
 | Target    | Harness                     | What it fuzzes                                                                                     |
 | --------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
 | `parser`  | `tests/fuzz/fuzz_parser.c`  | Arbitrary bytes through `generate_tokens` and `run_parser` as the contents of a single `.env` file.  |
 | `matcher` | `tests/fuzz/fuzz_matcher.c` | Arbitrary bytes through `scan_file_content`; the first input byte selects the language accessor set. |
 | `args`    | `tests/fuzz/fuzz_args.c`    | NUL-delimited argv entries through `parse_args`.                                                     |
+| `config`  | `tests/fuzz/fuzz_config.c`  | Arbitrary bytes through `tokenize_config_file` as the contents of a `.nvi` config file.               |
 
 Fuzzing is POSIX only (Linux, macOS) and requires a clang that ships the libFuzzer runtime.
 
@@ -586,9 +623,10 @@ Build and run a fuzz target (ctrl-c to stop):
 ./nob fuzz parser
 ./nob fuzz matcher
 ./nob fuzz args
+./nob fuzz config
 ```
 
-Each target keeps its own cumulative corpus under `build/fuzz/`; interesting inputs found in one run carry over to the next. The parser corpus is seeded from `fixtures/*.env` on first run. When a matching dictionary exists under `tests/fuzz/` (`env.dict`, `matcher.dict`, `args.dict`), it is passed to libFuzzer automatically to seed the mutator with grammar tokens.
+Each target keeps its own cumulative corpus under `build/fuzz/`; interesting inputs found in one run carry over to the next. The parser corpus is seeded from `fixtures/*.env` on first run. When a matching dictionary exists under `tests/fuzz/` (`env.dict`, `matcher.dict`, `args.dict`, `config.dict`), it is passed to libFuzzer automatically to seed the mutator with grammar tokens.
 
 Extra arguments are forwarded to libFuzzer:
 
