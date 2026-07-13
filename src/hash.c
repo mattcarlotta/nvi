@@ -1,6 +1,6 @@
 #include "hash.h"
 
-#define FNV_OFFSET 1469598103934665603ULL
+#define FNV_OFFSET 14695981039346656037ULL
 #define FNV_PRIME 1099511628211ULL
 
 // This is FNV-1a (Fowler-Noll-Vo), a non-cryptographic hash function.

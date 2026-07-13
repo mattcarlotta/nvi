@@ -2,13 +2,14 @@
 
 A fast and minimal cross-platform CLI `.env` parser, environment-variable scanner and emitter.
 
-- 0 dependencies
-- Language and framework agnostic (replaces language specfic env packages)
+- 0 dependency
+- Language and framework agnostic (replaces language specific env packages)
 - Sequentially parses one or more `.env` files
 - Supports `${KEY}` interpolations, `#` comments, `'` and `"` quotes, and `\` delimited multiline values
 - Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
 - Checks required environment-variables are defined before command execution
 - Supports ignoring environment-variables that may be set at run-time
+- Loads flags from a [`.nvi` config file](#nvi-config-file)
 
 ## Installation
 
@@ -34,8 +35,8 @@ Building source code:
 ### POSIX (Linux, macOS, WSL)
 
 Requirements:
-- [Clang](https://clang.llvm.org/)
-- [LLD](https://lld.llvm.org/) on Linux (release builds link with `-fuse-ld=lld`; usually packaged as `lld`)
+- [Clang](https://clang.llvm.org/) (default), or [GCC](https://gcc.gnu.org/) via `NVI_CC=gcc`
+- [LLD](https://lld.llvm.org/) on Linux when building with clang (release builds link with `-fuse-ld=lld`; usually packaged as `lld`; not needed for gcc builds)
 
 Clone repo and build `nob`:
 ```sh
@@ -86,6 +87,9 @@ Lastly, build and install the release binary into the destination `<DIR>`:
 > [!NOTE]
 > To build a fully static, portable Linux binary with musl instead of clang+glibc, install `musl-tools` and run `NVI_LIBC=musl ./nob <release|install>`.
 
+> [!NOTE]
+> To build with GCC instead of clang, run `NVI_CC=gcc ./nob <cmd>` (any GCC 11+ works; a versioned name like `NVI_CC=gcc-14` is also fine). `NVI_LIBC=musl` takes precedence over `NVI_CC`. GCC release builds use a conservative flag set (no `-flto`/lld pipeline), so clang remains the recommended compiler for the smallest release binaries. Fuzzing always requires clang.
+
 To verify system installation, run:
 ```sh
 which nvi
@@ -94,7 +98,7 @@ which nvi
 nvi version
 # nvi <version> (<build_type>)
 # commit <commit>
-# clang <version>
+# clang|gcc <version>
 # <architecture>
 ```
 
@@ -275,15 +279,16 @@ Notes for Windows users:
 | `-h, --help` | Prints usage help to stdout and exits with 0. |
 | `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
 | `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
-| `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden as `*****`. |
-| `-s, --scan <ext> ...` | Recursively scans `<ext>` files for environment-variable accessors. † |
-| `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
+| `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden (`*****`). |
+| `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#supported-file-extensions-to-the-right-of-the-language) files for environment-variable accessors. † |
+| `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU thread count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
+| `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi.development`). |
 | `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
 
-> †† using more threads than available CPU cores and/or the OS's IO limitations will degrade scanning performance
+> †† using more threads than your hardware or software can handle will degrade scanning performance
 
 Unrecognized flags or arguments are usage errors.
 
@@ -319,11 +324,43 @@ nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 
 The exit code of *your command* will be reported by the downstream consumer, not by `nvi`.
 
+## `.nvi` config file
+
+Just like `.env` files, you may use one or many `.nvi` config files to load project and/or environment specific flags.
+
+Usage:
+```sh
+nvi @<path> -- <command> | <consumer>
+```
+
+Example config:
+```sh
+# .nvi.local
+--files .env .env.local
+--format nul
+--scan ts tsx mjs
+--ignored NODE_ENV CI
+--threads 4
+```
+
+You'll still have the option to append or override flags after a config file (except for flags that don't have parameters, like: `--dry-run`):
+```sh
+# the .nvi.local config (above) supplies the defaults, but the flags
+# specified afterward append .env.production to files and override the format
+nvi @.nvi.local --files .env.production -F powershell -- <command> | <consumer>
+```
+
+Rules:
+- Only loads a single `.nvi` file (referencing other `.nvi` configs is unsupported).
+- Flags and parameters must be defined on the same line.
+- A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the downstream consumer.
+- An empty or comment-only config file is an error (matching the empty `.env` file behavior).
+
 ## Scanning for ENV keys
 
 `-s`, `--scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
-For example, every line below is recognized and yields the key `DATABASE_URL`:
+For example, every line below would be recognized and yields the key `DATABASE_URL`:
 
 ```
 process.env.DATABASE_URL          # JavaScript / TypeScript
@@ -414,10 +451,37 @@ nvi --scan mjs --files .env -- node index.mjs | <consumer>
 nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 ```
 
-> [!CAUTION]
-> There's an OS bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
-> For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8 ..., up to the max CPU core count (16 threads).
-> More is not always better; too many threads may degrade scanning performance significantly (to the point where it's close to using a single thread).
+> [!IMPORTANT]
+> There may be a hardware or software bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
+> For example, if a CPU has 8 cores/16 threads, start with 4 threads, then 6, then 8... up to the max CPU thread count (16 threads).
+> More is not always better! See Threaded Scan Results below...
+
+<details>
+<summary>Threaded Scan Results</summary>
+Warm cached and scanning the same large codebase...
+
+MacBook Pro M4 Max running Mac OS Tahoe 26.5.2:
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+|:---|---:|---:|---:|---:|
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 584.0 ± 2.5 | 580.7 | 589.9 | 2.49 ± 0.26 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 4 --dry-run` | 234.2 ± 24.1 | 215.7 | 298.7 | 1.00 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 6 --dry-run` | 259.5 ± 13.1 | 241.0 | 328.4 | 1.11 ± 0.13 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 338.2 ± 7.1 | 318.9 | 352.7 | 1.44 ± 0.15 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 736.4 ± 26.7 | 655.1 | 774.5 | 3.14 ± 0.34 |
+
+Custom Desktop AMD 5950x running Linux Mint 21.2:
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+|:---|---:|---:|---:|---:|
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 323.4 ± 7.0 | 310.3 | 341.9 | 8.78 ± 0.76 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 4 --dry-run` | 101.3 ± 4.6 | 84.7 | 112.0 | 2.75 ± 0.26 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 6 --dry-run` | 72.6 ± 3.3 | 66.0 | 78.7 | 1.97 ± 0.19 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 60.4 ± 3.4 | 51.0 | 65.9 | 1.64 ± 0.17 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 44.5 ± 5.0 | 33.1 | 52.8 | 1.21 ± 0.17 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 32 --dry-run` | 36.9 ± 3.1 | 26.4 | 40.7 | 1.00 |
+
+The test numbers above **ARE NOT** meant to be a measurement nor a comparison for how fast the scanner can run on a given system, but instead to showcase how a system can have file IO limitations past a certain number of threads.
+For the MacBook Pro, more threads degraded scanning performance, whereas the desktop improved asymptotically (diminishing returns).
+</details>
 
 Notes:
 
@@ -543,13 +607,14 @@ Run all test suites:
 
 ## Fuzzing
 
-This project uses [libFuzzer](https://llvm.org/docs/LibFuzzer.html) with AddressSanitizer and UndefinedBehaviorSanitizer to fuzz the three untrusted-input surfaces:
+This project uses [libFuzzer](https://llvm.org/docs/LibFuzzer.html) with AddressSanitizer and UndefinedBehaviorSanitizer to fuzz the four untrusted-input surfaces:
 
 | Target    | Harness                     | What it fuzzes                                                                                     |
 | --------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
 | `parser`  | `tests/fuzz/fuzz_parser.c`  | Arbitrary bytes through `generate_tokens` and `run_parser` as the contents of a single `.env` file.  |
 | `matcher` | `tests/fuzz/fuzz_matcher.c` | Arbitrary bytes through `scan_file_content`; the first input byte selects the language accessor set. |
 | `args`    | `tests/fuzz/fuzz_args.c`    | NUL-delimited argv entries through `parse_args`.                                                     |
+| `config`  | `tests/fuzz/fuzz_config.c`  | Arbitrary bytes through `tokenize_config_file` as the contents of a `.nvi` config file.               |
 
 Fuzzing is POSIX only (Linux, macOS) and requires a clang that ships the libFuzzer runtime.
 
@@ -586,9 +651,10 @@ Build and run a fuzz target (ctrl-c to stop):
 ./nob fuzz parser
 ./nob fuzz matcher
 ./nob fuzz args
+./nob fuzz config
 ```
 
-Each target keeps its own cumulative corpus under `build/fuzz/`; interesting inputs found in one run carry over to the next. The parser corpus is seeded from `fixtures/*.env` on first run. When a matching dictionary exists under `tests/fuzz/` (`env.dict`, `matcher.dict`, `args.dict`), it is passed to libFuzzer automatically to seed the mutator with grammar tokens.
+Each target keeps its own cumulative corpus under `build/fuzz/`; interesting inputs found in one run carry over to the next. The parser corpus is seeded from `fixtures/*.env` on first run. When a matching dictionary exists under `tests/fuzz/` (`env.dict`, `matcher.dict`, `args.dict`, `config.dict`), it is passed to libFuzzer automatically to seed the mutator with grammar tokens.
 
 Extra arguments are forwarded to libFuzzer:
 
@@ -646,9 +712,10 @@ FUZZ_VERBOSE=1 ./build/fuzz/fuzz_parser fuzz-stall-<pid>.bin
 
 ## Security model
 
-- It doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
-- It doesn't use any [regular expressions](https://pubs.opengroup.org/onlinepubs/7908799/xsh/regex.h.html) and never will for as long as I live!
-- It will only parse the `.env` files you provide and write parsed ENVs to stdout.
+- Doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
+- Doesn't use any [regular expressions](https://man7.org/linux/man-pages/man3/regcomp.3.html)!
+- Only parses the `.env` files you provide and write parsed ENVs to stdout.
+- Limits parsed and scanned files to 10MB, a single interpolated value to 1MB, and the total parsed ENV output to 8MB, so a malicious or corrupted `.env` file errors instead of exhausting memory (downstream handles `ARG_MAX`).
 - Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 

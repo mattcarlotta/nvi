@@ -1,5 +1,6 @@
 #include "arena.h"
 #include "arg.h"
+#include "config.h"
 #include "emitter.h"
 #include "parser.h"
 #include "result.h"
@@ -13,13 +14,19 @@ int main(int argc, const char **argv) {
 
     const double start = monotonic_seconds();
     arena_t arena = {0};
+    config_t config = {0};
     args_t args = {0};
     scanner_t scanner = {0};
     tokenizer_t tokenizer = {0};
     parser_t parser = {0};
     result_t result = RESULT_OK;
 
-    result = parse_args(&arena, argc, argv, &args);
+    result = load_config_file(&arena, argc, argv, &config);
+    if (!result.ok) {
+        goto done;
+    }
+
+    result = parse_args(&arena, &config, &args);
     if (!result.ok) {
         goto done;
     }

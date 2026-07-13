@@ -1,0 +1,5 @@
+# nvi example config
+--files fixtures/example.env
+--scan h c
+--threads 1
+--dry-run

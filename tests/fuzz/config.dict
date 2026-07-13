@@ -1,0 +1,43 @@
+# '.nvi' config file tokens for the config tokenizer fuzzer (-dict).
+
+# flags, short and long
+"-d"
+"--dry-run"
+"-f"
+"--files"
+"-F"
+"--format"
+"-i"
+"--ignored"
+"-r"
+"--required"
+"-R"
+"--reveal"
+"-s"
+"--scan"
+"-t"
+"--threads"
+
+# rejected tokens: command delimiter and nested config
+"--"
+"@"
+"@.nvi"
+
+# comments and separators
+"#"
+"# comment"
+"\x0a"
+"\x0d\x0a"
+"\x09"
+" "
+
+# flag params
+".env"
+".env.local"
+".nvi"
+"nul"
+"powershell"
+"ts"
+"yaml"
+"4"
+"255"

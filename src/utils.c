@@ -17,6 +17,8 @@ static const char *blacklist[] = {
 
 static const char *blacklist_suffixes[] = {".dSYM", ".egg-info", ".framework"};
 
+bool is_token_sep(const char c) { return c == SPACE || c == TAB || c == LINE_DELIMITER || c == CARRIAGE_RETURN; }
+
 bool is_path_sep(const char c) { return c == FORWARD_SLASH || c == BACK_SLASH; }
 
 bool is_absolute_path(const char *p) { return is_path_sep(p[0]) || (isalpha((unsigned char)p[0]) && p[1] == COLON); }
@@ -58,6 +60,18 @@ bool ends_with(const char *name, const char *suffix) {
     size_t nlen = strlen(name);
     size_t slen = strlen(suffix);
     return nlen >= slen && memcmp(name + nlen - slen, suffix, slen) == 0;
+}
+
+bool has_dotfile_ext(const char *base, const char *ext) {
+    const size_t ext_len = strlen(ext);
+
+    // '.ext.example' where the ext is a prefix followed by a dot
+    if (strncmp(base, ext, ext_len) == 0 && base[ext_len] == DOT) {
+        return true;
+    }
+
+    // exactly '.ext' or an 'example.ext' style suffix
+    return ends_with(base, ext);
 }
 
 bool is_blacklisted(const char *name) {

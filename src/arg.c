@@ -19,6 +19,16 @@ typedef struct {
     flag_t value;
 } flag_entry_t;
 
+static void report_flag_config(const char *config_path) {
+    log_f(SINK_STDERR, "\n    \u2022");
+    log_info(SINK_STDERR, " config file: ");
+    if (config_path == NULL) {
+        log_comment(SINK_STDERR, "(none)");
+    } else {
+        log_f(SINK_STDERR, "%s", config_path);
+    }
+}
+
 static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
     log_f(SINK_STDERR, "\n    \u2022");
     log_info(SINK_STDERR, " %s: ", label);
@@ -78,6 +88,7 @@ static void report_flags(const args_t *args) {
 
     log_info(SINK_STDERR, "\n[INFO]");
     log_f(SINK_STDERR, " The following flags have been set...");
+    report_flag_config(args->config_path);
     report_flag_items("command", args->command.items, args->command.count, " ");
     report_flag_items("files", args->files.items, args->files.count, ", ");
     report_flag_items("ignored ENVs", args->ignored.items, args->ignored.count, ", ");
@@ -147,31 +158,11 @@ static result_t get_next_value(args_t *args, const char *flag, const char **para
     return RESULT_OK;
 }
 
-static bool is_env_file(const char *base) {
-    // .env
-    if (strcmp(base, ".env") == 0) {
-        return true;
-    }
-
-    // .env.local
-    if (strncmp(base, ".env.", 5) == 0) {
-        return true;
-    }
-
-    const size_t base_len = strlen(base);
-
-    // example.env
-    if (base_len >= 4 && strcmp(base + base_len - 4, ".env") == 0) {
-        return true;
-    }
-
-    return false;
-}
-
 static inline result_t validate_file_name(const char *p) {
     const char *base = path_basename(p);
 
-    if (!is_env_file(base)) {
+    // .env, .env.local, example.env
+    if (!has_dotfile_ext(base, ".env")) {
         return operation_error("The 'files' flag '%s' is an invalid .env file (missing '.env' extension)\n", p);
     }
 
@@ -186,11 +177,12 @@ static inline result_t validate_file_name(const char *p) {
     return RESULT_OK;
 }
 
-result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
+result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
     // skip program name
     args->i = 1;
-    args->argc = argc;
-    args->argv = argv;
+    args->argc = config->argc;
+    args->argv = config->argv;
+    args->config_path = config->path;
     args->format = get_default_format();
     args->dry_run = false;
     args->reveal = false;
@@ -224,7 +216,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     result = validate_file_name(param);
                     if (!result.ok) {
                         return result;
@@ -259,7 +251,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     set_add(arena, &args->ignored, param);
                     param = get_next_param(args);
                 }
@@ -273,7 +265,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     set_add(arena, &args->required, param);
                     param = get_next_param(args);
                 }
@@ -291,7 +283,7 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     const file_ext_t *entry = get_scan_extension(param);
                     if (entry == NULL) {
                         return usage_error("The 'scan' flag contains the '%s' file extension that is not supported",
@@ -311,11 +303,11 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     return result;
                 }
 
-                const int MAX_CPU_CORES = cpu_count();
+                const int MAX_THREADS = thread_count();
                 int threads = str_to_u8(param);
-                if (threads < 1 || threads > MAX_CPU_CORES) {
+                if (threads < 1 || threads > MAX_THREADS) {
                     return usage_error("The 'threads' flag only supports up to %d thread%s, instead found %s",
-                                       MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
+                                       MAX_THREADS, TO_PLURAL(MAX_THREADS), param);
                 }
 
                 args->scan_threads = (uint8_t)threads;
@@ -323,7 +315,9 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
             }
             case HELP_FLAG: {
                 fputs(
-                    "Usage: nvi [flags] -- <command>\n"
+                    "Usage:\n"
+                    "   nvi [flags] -- <command>\n"
+                    "   nvi @<config> -- <command>\n"
                     "\n"
                     "Flags:\n"
                     "  -d, --dry-run                prints flags, scan results, file tokens and parsed ENVs to stderr\n"
@@ -338,13 +332,14 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
                     "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
                     "\u2020\n"
                     "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
-                    "your CPU core count) \u2020\u2020\n"
+                    "your CPU thread count) \u2020\u2020\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
+                    "  @<config>                    loads flags from a .nvi config file\n"
                     "\n"
                     " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
                     "ENV keys are added to the required ENV list\n"
-                    " \u2020\u2020 using more threads than available CPU cores and/or the OS's IO limitations "
-                    "will degrade scanning performance\n"
+                    " \u2020\u2020 using more threads than your hardware or software can handle will degrade scanning "
+                    "performance\n"
                     "\n"
                     "Supported scan file extensions (to the right -> of the language):\n"
                     " \u2022 C -> c, h\n"
@@ -394,8 +389,10 @@ result_t parse_args(arena_t *arena, int argc, const char **argv, args_t *args) {
             case VERSION_FLAG: {
                 fprintf(stdout, "nvi %s (%s)\n", NVI_VERSION, NVI_BUILD);
                 fprintf(stdout, "commit %s\n", NVI_COMMIT);
-#ifdef __clang__
+#if defined(__clang__)
                 fprintf(stdout, "clang %d.%d.%d\n", __clang_major__, __clang_minor__, __clang_patchlevel__);
+#elif defined(__GNUC__)
+                fprintf(stdout, "gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #endif
                 fprintf(stdout, "%s\n", NVI_TARGET);
 

@@ -11,6 +11,7 @@
 
 #include "arena.h"
 #include "arg.h"
+#include "config.h"
 #include "fuzz_watchdog.h"
 
 #include <stdint.h>
@@ -57,7 +58,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         cursor += strlen(cursor) + 1;
     }
 
-    parse_args(&arena, argc, argv, &args);
+    config_t config = {.argc = argc, .argv = argv};
+    parse_args(&arena, &config, &args);
 
     arena_free(&arena);
 

@@ -23,6 +23,28 @@ static bool use_musl(void) {
 #endif
 }
 
+// POSIX compiler selection: NVI_LIBC=musl wins (musl-gcc), then NVI_CC
+// (eg. NVI_CC=gcc or NVI_CC=gcc-14), then clang. Fuzzing has its own
+// override (FUZZ_CC) since it additionally requires the libFuzzer runtime.
+static const char *posix_cc(void) {
+    if (use_musl()) {
+        return "musl-gcc";
+    }
+
+    const char *cc = getenv("NVI_CC");
+    if (cc != NULL && cc[0] != '\0') {
+        return cc;
+    }
+
+    return "clang";
+}
+
+// name sniff for release flag selection: compilers with "clang" in the name
+// get the clang+lld release pipeline; anything else (gcc, musl-gcc) gets the
+// conservative recipe, since -fuse-ld=lld and -Wl,--icf support vary by gcc
+// version and linker
+static bool posix_cc_is_clang(void) { return strstr(posix_cc(), "clang") != NULL; }
+
 static const char *git_commit(void) {
     static const char *cached = NULL;
     if (cached != NULL) {
@@ -67,7 +89,7 @@ static void add_common_flags(Nob_Cmd *cmd, const char *build_label) {
     nob_cmd_append(cmd, "cl", "/nologo", "/Isrc", commit_def, build_def, "/W4", "/std:c17", "/utf-8",
                    "/Zc:preprocessor");
 #elif defined(__APPLE__) || defined(__linux__)
-    nob_cmd_append(cmd, use_musl() ? "musl-gcc" : "clang", "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall",
+    nob_cmd_append(cmd, posix_cc(), "-Isrc", commit_def, build_def, "-Wformat-security", "-Wall",
                    "-Wextra", "-Wpedantic", "-std=gnu17", "-pthread");
 #else
 #error "unsupported platform (expected Windows/MSVC, macOS, or Linux)"
@@ -190,7 +212,7 @@ static void remove_dir_recursively(const char *path) {
 }
 
 // Builds and runs a libFuzzer harness (POSIX + clang only; requires libFuzzer,
-// which musl-gcc and MSVC don't ship). Usage: ./nob fuzz [parser|matcher] [args].
+// which musl-gcc and MSVC don't ship). Usage: ./nob fuzz [parser|matcher|args|config].
 // The target defaults to parser; remaining argv is forwarded to libFuzzer
 // (eg. ./nob fuzz parser -runs=1000000, or a crash file to reproduce).
 typedef struct {
@@ -221,6 +243,13 @@ static const fuzz_target_t fuzz_targets[] = {
         .harness = "tests/fuzz/fuzz_args.c",
         .corpus = "build/fuzz/corpus-args",
         .dict = "tests/fuzz/args.dict",
+        .seed_fixtures = false,
+    },
+    {
+        .name = "config",
+        .harness = "tests/fuzz/fuzz_config.c",
+        .corpus = "build/fuzz/corpus-config",
+        .dict = "tests/fuzz/config.dict",
         .seed_fixtures = false,
     },
 };
@@ -347,7 +376,7 @@ static bool run_fuzz_target(const fuzz_target_t *target, int argc, char **argv) 
     return nob_cmd_run(&run);
 }
 
-// Usage: ./nob fuzz [parser|matcher|args|all] [libFuzzer args]. The target
+// Usage: ./nob fuzz [parser|matcher|args|config|all] [libFuzzer args]. The target
 // defaults to parser; 'all' runs every target sequentially with the same
 // forwarded args (eg. ./nob fuzz all -runs=0 replays every corpus in CI).
 static bool run_fuzz(int argc, char **argv) {
@@ -442,11 +471,20 @@ static bool build_release(void) {
     nob_cmd_append(&cmd, "-Oz", "-flto", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
                    "-Wl,-dead_strip_dylibs", "-Wl,-dead_strip", "-Wl,-x", "-o", OUT_BIN);
 #elif defined(__linux__)
-    if (use_musl()) {
-        // fully static musl build; gcc has no -flto parity with the clang+lld
-        // pipeline here, so keep the plain verified size flags
-        nob_cmd_append(&cmd, "-Oz", "-fno-ident", "-fno-unwind-tables", "-fno-asynchronous-unwind-tables",
-                       "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-s", "-static", "-o", OUT_BIN);
+    if (!posix_cc_is_clang()) {
+        // gcc-family recipe (musl-gcc or NVI_CC=gcc): gcc has no -flto parity
+        // with the clang+lld pipeline here, and -fuse-ld=lld/--icf support
+        // varies by gcc version, so keep the plain verified size flags.
+        // musl keeps its verified -Oz (needs gcc >= 12) and links fully
+        // static; NVI_CC=gcc falls back to -Os so distro compilers as old as
+        // gcc 11 still build (gcc only learned -Oz in 12)
+        nob_cmd_append(&cmd, use_musl() ? "-Oz" : "-Os", "-fno-ident", "-fno-unwind-tables",
+                       "-fno-asynchronous-unwind-tables", "-ffunction-sections", "-fdata-sections",
+                       "-Wl,--gc-sections", "-s");
+        if (use_musl()) {
+            nob_cmd_append(&cmd, "-static");
+        }
+        nob_cmd_append(&cmd, "-o", OUT_BIN);
     } else {
         const char *mps = getenv("NVI_MAX_PAGE_SIZE");
         // Page sizing breakdown:
@@ -546,7 +584,7 @@ static bool build_integration_runner(const char *out_path) {
     nob_cmd_append(&cmd, "cl", "/nologo", "/W4", "/std:c17", "/utf-8", "/Zi", "/Od",
                    nob_temp_sprintf("/Fe:%s", out_path));
 #else
-    nob_cmd_append(&cmd, "clang", "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g", "-O0",
+    nob_cmd_append(&cmd, posix_cc(), "-Wformat-security", "-Wall", "-Wextra", "-Wpedantic", "-std=gnu17", "-g", "-O0",
                    "-o", out_path);
 #endif
 

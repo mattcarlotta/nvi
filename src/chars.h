@@ -5,6 +5,7 @@
 
 enum {
     NULL_CHAR = 0,
+    AT_SIGN = '@',
     LINE_DELIMITER = '\n',
     CARRIAGE_RETURN = '\r',
     COLON = ':',

@@ -82,11 +82,11 @@ static void print_bytes(const char *label, const char *s, size_t len) {
 }
 
 // sentinel address for ANY_STDOUT; comparing against it skips the stdout assertion
-static const char any_stdout;
+// (explicitly initialized: MSVC C4132 requires const objects to be initialized)
+static const char any_stdout = '\0';
 
-static void check_full(const char *name, const char *bin, const char *args, int exit_code,
-                       const char *expected_stdout, size_t expected_stdout_len, const char *stderr_contains,
-                       const char *stderr_excludes) {
+static void check_full(const char *name, const char *bin, const char *args, int exit_code, const char *expected_stdout,
+                       size_t expected_stdout_len, const char *stderr_contains, const char *stderr_excludes) {
     ++total;
     int rc = run_nvi(bin, args);
 
@@ -160,6 +160,9 @@ static void setup_inputs(void) {
     write_file(IT_DIR "/empty_key.env", EXPECT("=ABC\n"));
     write_file(IT_DIR "/required.env", EXPECT("API_KEY=abc\n"));
     write_file(IT_DIR "/secret.env", EXPECT("SECRET=s3cr3tvalue\n"));
+    write_file(IT_DIR "/config.nvi", EXPECT("# integration config\n--files build/it/a.env\n-F nul\n"));
+    write_file(IT_DIR "/bad_config.nvi", EXPECT("--files build/it/a.env\n-- echo hi\n"));
+    write_file(IT_DIR "/empty_config.nvi", "", 0);
 
     write_file(IT_DIR "/bad_quote.env", EXPECT("ABC=\"123\n"));
     write_file(IT_DIR "/quoted.env", EXPECT("DQ=\"hello world\"\nSQ='keep ${LIT}'\nEMPTYQ=\"\"\n"));
@@ -270,8 +273,8 @@ int main(void) {
     check("help prints usage to stdout and exits 0", NVI_BIN, "--help", 0, ANY_STDOUT, NULL);
     check("version exits 0", NVI_BIN, "--version", 0, ANY_STDOUT, NULL);
 
-    check("dry run keeps stdout empty and reports to stderr", NVI_BIN, "--files build/it/a.env --dry-run", 0,
-          NO_STDOUT, "Dry run completed");
+    check("dry run keeps stdout empty and reports to stderr", NVI_BIN, "--files build/it/a.env --dry-run", 0, NO_STDOUT,
+          "Dry run completed");
 
     check_full("dry run masks values by default", NVI_BIN, "--files build/it/secret.env --dry-run", 0, NO_STDOUT,
                "*****", "s3cr3t");
@@ -281,6 +284,28 @@ int main(void) {
 
     check_full("dry run with -R exposes values", NVI_BIN, "--files build/it/secret.env --dry-run -R", 0, NO_STDOUT,
                "s3cr3tvalue", "*****");
+
+    // --- config file ---
+
+    check("a config file supplies flags", NVI_BIN, "@build/it/config.nvi -- echo hi", 0,
+          EXPECT("MESSAGE=hello\0GREETING=hello world\0echo\0hi\0"), NULL);
+
+    check("cli flags after a config file take precedence", NVI_BIN, "@build/it/config.nvi --files build/it/b.env -- x",
+          0, EXPECT("MESSAGE=goodbye\0GREETING=hello world\0x\0"), NULL);
+
+    check("a missing config file is a loud error", NVI_BIN, "@build/it/missing.nvi -- x", 1, NO_STDOUT,
+          "Unable to open");
+
+    check("a config file without the .nvi extension is a loud error", NVI_BIN, "@build/it/a.env -- x", 1, NO_STDOUT,
+          "invalid .nvi");
+
+    check("a command delimiter inside a config file is a usage error", NVI_BIN, "@build/it/bad_config.nvi", 2,
+          NO_STDOUT, "may not contain");
+
+    check("an empty config file is a loud error", NVI_BIN, "@build/it/empty_config.nvi -- x", 1, NO_STDOUT, "is empty");
+
+    check("the example config file loads end to end", NVI_BIN, "@fixtures/.nvi.example", 0, NO_STDOUT,
+          "fixtures/.nvi.example");
 
     // --- scanner (runs relative to cwd, so hop into the scratch tree) ---
 

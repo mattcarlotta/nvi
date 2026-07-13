@@ -30,7 +30,6 @@ static const char *resolve_env(env_map_t *env_map, const char *key) {
 }
 
 result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *tokens, parser_t *parser) {
-    result_t result = RESULT_OK;
 
     if (args->dry_run) {
         log_info(SINK_STDERR, "[INFO]");
@@ -38,6 +37,10 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
     }
 
     buf_t value = {.arena = arena};
+
+    // running total of the KEY=value bytes that would be emitted; bounded so
+    // per-key interpolation amplification can't compound into an OOM abort
+    size_t total_output = 0;
 
     for (size_t ti = 0; ti < tokens->count; ++ti) {
         const token_t *token = &tokens->items[ti];
@@ -74,12 +77,11 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                     const char *env = resolve_env(&parser->env_map, lookup_key);
 
                     if (env == NULL && fallback == NULL) {
-                        result = operation_error(
+                        return operation_error(
                             "The '%s' key contains an interpolated key variable %.*s (%s:%zu:%zu) that is not "
                             "defined.\n",
                             token_key ? token_key : "(none)", (int)key_len, raw_value, token->file, value_token->line,
                             value_token->byte);
-                        goto done;
                     }
 
                     if (env != NULL && env[0] != '\0') {
@@ -106,11 +108,10 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             // every appended chunk is independently bounded, so checking after each value token
             // catches runaway expansion before it can compound
             if (value.count > MAX_ENV_VALUE_SIZE) {
-                result = operation_error(
+                return operation_error(
                     "The '%s' key's value exceeds %zu bytes after interpolation (%s:%zu:%zu); aborting.\n",
                     token_key ? token_key : "(none)", (size_t)MAX_ENV_VALUE_SIZE, token->file, value_token->line,
                     value_token->byte);
-                goto done;
             }
         }
 
@@ -133,16 +134,26 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                 log_f(SINK_STDERR, " Token #%zu updated ", ti + 1);
                 log_bold_info(SINK_STDERR, "%s", token_key);
                 log_f(SINK_STDERR, " key's value from ");
-                log_info(SINK_STDERR, "%s", existing->value);
+                log_info(SINK_STDERR, "%s", args->reveal ? existing->value : "*****");
                 log_f(SINK_STDERR, " to ");
-                log_info(SINK_STDERR, "%s", env_value);
+                log_info(SINK_STDERR, "%s", args->reveal ? env_value : "*****");
                 log_f(SINK_STDERR, "...\n\n");
             }
+            total_output -= strlen(existing->value);
+            total_output += value.count;
             existing->value = env_value;
         } else {
             env_t new_env = {.key = token_key, .value = env_value};
             DYN_ARR_APPEND(arena, &parser->env_map, new_env);
             hashmap_append(arena, &parser->env_map.index, token_key, strlen(token_key), parser->env_map.count - 1);
+
+            // KEY=value plus a delimiter, mirroring the emitted layout
+            total_output += strlen(token_key) + value.count + 2;
+        }
+
+        if (total_output > MAX_PARSED_OUTPUT) {
+            return operation_error("The total parsed ENV output exceeds %zu bytes after the '%s' key (%s); aborting.\n",
+                                   (size_t)MAX_PARSED_OUTPUT, token_key, token->file);
         }
 
         if (args->dry_run) {
@@ -157,8 +168,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
     }
 
     if (parser->env_map.count == 0) {
-        result = operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n\n");
-        goto done;
+        return operation_error("After parsing .env tokens, there aren't any ENVs to emit; aborting.\n");
     }
 
     for (size_t i = 0; i < args->required.count; ++i) {
@@ -185,7 +195,8 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             log_f(SINK_STDERR, "\n");
         }
         log_f(SINK_STDERR, "\n");
-        goto done;
+
+        return RESULT_OK;
     }
 
     if (args->command.count > 0 && parser->missing_envs.count > 0) {
@@ -195,9 +206,8 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
             log_error(SINK_STDERR, "\n   \u2022 %s", parser->missing_envs.items[i]);
         }
         log_error(SINK_STDERR, "\n");
-        result = OPERATION_FAILURE;
+        return OPERATION_FAILURE;
     }
 
-done:
-    return result;
+    return RESULT_OK;
 }
