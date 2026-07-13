@@ -451,9 +451,9 @@ nvi --scan mjs --files .env -- node index.mjs | <consumer>
 nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 ```
 
-> [!NOTE]
-> There's may be a bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
-> For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8 ..., up to the max CPU core count (16 threads).
+> [!IMPORTANT]
+> There may be a bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
+> For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8... up to the max CPU core count (16 threads).
 > More is not always better! See Threaded Scan Results below...
 
 <details>
