@@ -45,7 +45,7 @@ static inline void cond_broadcast(cond_t *c) { WakeAllConditionVariable(c); }
 
 static inline void cond_destroy(cond_t *c) { (void)c; }
 
-static inline size_t cpu_count(void) {
+static inline size_t thread_count(void) {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return si.dwNumberOfProcessors > 0 ? (size_t)si.dwNumberOfProcessors : 1;
@@ -86,7 +86,7 @@ static inline void cond_broadcast(cond_t *c) { pthread_cond_broadcast(c); }
 
 static inline void cond_destroy(cond_t *c) { pthread_cond_destroy(c); }
 
-static inline size_t cpu_count(void) {
+static inline size_t thread_count(void) {
     long n = sysconf(_SC_NPROCESSORS_ONLN);
     return n > 0 ? (size_t)n : 1;
 }

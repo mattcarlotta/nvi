@@ -303,11 +303,11 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     return result;
                 }
 
-                const int MAX_CPU_CORES = cpu_count();
+                const int MAX_THREADS = thread_count();
                 int threads = str_to_u8(param);
-                if (threads < 1 || threads > MAX_CPU_CORES) {
+                if (threads < 1 || threads > MAX_THREADS) {
                     return usage_error("The 'threads' flag only supports up to %d thread%s, instead found %s",
-                                       MAX_CPU_CORES, TO_PLURAL(MAX_CPU_CORES), param);
+                                       MAX_THREADS, TO_PLURAL(MAX_THREADS), param);
                 }
 
                 args->scan_threads = (uint8_t)threads;
@@ -332,14 +332,14 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
                     "\u2020\n"
                     "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
-                    "your CPU core count) \u2020\u2020\n"
+                    "your CPU thread count) \u2020\u2020\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
                     "  @<config>                    loads flags from a .nvi config file\n"
                     "\n"
                     " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
                     "ENV keys are added to the required ENV list\n"
-                    " \u2020\u2020 using more threads than available CPU cores and/or the OS's IO limitations "
-                    "will degrade scanning performance\n"
+                    " \u2020\u2020 using more threads than your hardware or software can handle will degrade scanning "
+                    "performance\n"
                     "\n"
                     "Supported scan file extensions (to the right -> of the language):\n"
                     " \u2022 C -> c, h\n"

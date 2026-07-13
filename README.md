@@ -281,14 +281,14 @@ Notes for Windows users:
 | `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
 | `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden (`*****`). |
 | `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#supported-file-extensions-to-the-right-of-the-language) files for environment-variable accessors. † |
-| `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
+| `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU thread count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
 | `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi.development`). |
 | `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
 
-> †† using more threads than available CPU cores and/or the OS's file IO limitations will degrade scanning performance
+> †† using more threads than your hardware or software can handle will degrade scanning performance
 
 Unrecognized flags or arguments are usage errors.
 
@@ -452,8 +452,8 @@ nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 ```
 
 > [!IMPORTANT]
-> There may be a bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
-> For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8... up to the max CPU core count (16 threads).
+> There may be a hardware or software bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
+> For example, if a CPU has 8 cores/16 threads, start with 4 threads, then 6, then 8... up to the max CPU thread count (16 threads).
 > More is not always better! See Threaded Scan Results below...
 
 <details>
@@ -472,14 +472,15 @@ MacBook Pro M4 Max running Mac OS Tahoe 26.5.2:
 Custom Desktop AMD 5950x running Linux Mint 21.2:
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 323.4 ± 7.0 | 310.3 | 341.9 | 8.78 ± 0.76 |
-| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 4 --dry-run` | 101.3 ± 4.6 | 84.7 | 112.0 | 2.75 ± 0.26 |
-| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 6 --dry-run` | 72.6 ± 3.3 | 66.0 | 78.7 | 1.97 ± 0.19 |
-| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 60.4 ± 3.4 | 51.0 | 65.9 | 1.64 ± 0.17 |
-| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 44.5 ± 5.0 | 33.1 | 52.8 | 1.21 ± 0.17 |
-| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 32 --dry-run` | 36.9 ± 3.1 | 26.4 | 40.7 | 1.00 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 323.4 ± 7.0 | 310.3 | 341.9 | 8.78 ± 0.76 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 4 --dry-run` | 101.3 ± 4.6 | 84.7 | 112.0 | 2.75 ± 0.26 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 6 --dry-run` | 72.6 ± 3.3 | 66.0 | 78.7 | 1.97 ± 0.19 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 60.4 ± 3.4 | 51.0 | 65.9 | 1.64 ± 0.17 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 44.5 ± 5.0 | 33.1 | 52.8 | 1.21 ± 0.17 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 32 --dry-run` | 36.9 ± 3.1 | 26.4 | 40.7 | 1.00 |
 
-The test numbers above **ARE NOT** meant to be a measurement nor a comparison for how fast the scanner can run on a given system, but instead to showcase how a system can have file IO limitations past a certain number of threads. For the MacBook Pro, more threads degraded the scanning performance, whereas for the custom desktop it was logarithmically better.
+The test numbers above **ARE NOT** meant to be a measurement nor a comparison for how fast the scanner can run on a given system, but instead to showcase how a system can have file IO limitations past a certain number of threads.
+For the MacBook Pro, more threads degraded scanning performance, whereas the desktop improved asymptotically (diminishing returns).
 </details>
 
 Notes:

@@ -120,10 +120,10 @@ static void test_parses_ignored_envs(void) {
 // -- threads --
 
 static void test_parses_threads_flag(void) {
-    // cpu_count() is the parser's upper bound, so it's the largest portable value;
+    // thread_count() is the parser's upper bound, so it's the largest portable value;
     // a hardcoded "2" fails on single-core machines
     char threads[4];
-    int max = cpu_count();
+    int max = thread_count();
     snprintf(threads, sizeof(threads), "%d", max);
 
     const char *argv[] = {"nvi", "--scan", "c", "--threads", threads, "--", "echo", "hello"};
