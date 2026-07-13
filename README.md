@@ -288,7 +288,7 @@ Notes for Windows users:
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
 
-> †† using more threads than available CPU cores and/or the OS's IO limitations will degrade scanning performance
+> †† using more threads than available CPU cores and/or the OS's file IO limitations will degrade scanning performance
 
 Unrecognized flags or arguments are usage errors.
 
@@ -454,7 +454,24 @@ nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 > [!CAUTION]
 > There's an OS bottleneck with how many threads can be used at one time to scan files. A general rule of thumb is to start with 4 threads (if available) and then increase by 2.
 > For example, if a CPU has 16 cores, start with 4 threads, then 6, then 8 ..., up to the max CPU core count (16 threads).
-> More is not always better; too many threads may degrade scanning performance significantly (to the point where it's close to using a single thread).
+> More is not always better! See Threaded Scan Results below...
+
+<details>
+<summary>Threaded Scan Results</summary>
+
+Warm cached and scanning a large codebase:
+
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+|:---|---:|---:|---:|---:|
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 584.0 ± 2.5 | 580.7 | 589.9 | 2.49 ± 0.26 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 4 --dry-run` | 234.2 ± 24.1 | 215.7 | 298.7 | 1.00 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 6 --dry-run` | 259.5 ± 13.1 | 241.0 | 328.4 | 1.11 ± 0.13 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 338.2 ± 7.1 | 318.9 | 352.7 | 1.44 ± 0.15 |
+| `nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 736.4 ± 26.7 | 655.1 | 774.5 | 3.14 ± 0.34 |
+
+The tests numbers above **ARE NOT** a measurement for how fast a scanner can run, but instead to showcase how a system (in this case, a MacBook Pro M4 Max running Mac OS Tahoe 26.5.2), has file IO limitations.
+More threads degraded the scanning performance over 50 runs.
+</details>
 
 Notes:
 
