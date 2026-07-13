@@ -479,7 +479,7 @@ Custom Desktop AMD 5950x running Linux Mint 21.2:
 | `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 44.5 ± 5.0 | 33.1 | 52.8 | 1.21 ± 0.17 |
 | `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 32 --dry-run` | 36.9 ± 3.1 | 26.4 | 40.7 | 1.00 |
 
-The test numbers above **ARE NOT** a measurement nor a comparison for how fast a scanner can run, but instead to showcase how a system (in this case, the MacBook Pro M4 running Mac OS Tahoe 26.5.2), has file IO limitations past a certain number of threads. For the MacBook, more threads reducec the scanning performance, whereas for the custom desktop it was (marginally) better.
+The test numbers above **ARE NOT** a measurement nor a comparison for how fast a scanner can run, but instead to showcase how a system has file IO limitations past a certain number of threads. For the MacBook, more threads reduced the scanning performance, whereas for the custom desktop it was (logarithmically) better.
 </details>
 
 Notes:
