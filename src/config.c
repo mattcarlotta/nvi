@@ -31,6 +31,7 @@ result_t tokenize_config_file(arena_t *arena, const file_details_t *file, config
         }
 
         const size_t start = i;
+        // skip over non-delimiter characters
         while (i < file->len && !is_token_sep(file->contents[i])) {
             ++i;
         }
@@ -62,6 +63,7 @@ result_t load_config_file(arena_t *arena, int argc, const char **argv, config_t 
     config->argv = argv;
 
     int config_index = 0;
+    // determines if argv contains an argument to load a config file
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--") == 0) {
             break;
@@ -121,12 +123,17 @@ result_t load_config_file(arena_t *arena, int argc, const char **argv, config_t 
     const char **merged = arena_alloc(arena, merged_count * sizeof(const char *));
 
     size_t n = 0;
+    // copy everything before @<config>
     for (int i = 0; i < config_index; ++i) {
         merged[n++] = argv[i];
     }
+
+    // merge in tokens from config
     for (size_t t = 0; t < tokens.count; ++t) {
         merged[n++] = tokens.items[t];
     }
+
+    // copy everything after @<config>
     for (int i = config_index + 1; i < argc; ++i) {
         merged[n++] = argv[i];
     }

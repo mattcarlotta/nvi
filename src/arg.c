@@ -216,7 +216,7 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     result = validate_file_name(param);
                     if (!result.ok) {
                         return result;
@@ -251,7 +251,7 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     set_add(arena, &args->ignored, param);
                     param = get_next_param(args);
                 }
@@ -265,7 +265,7 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     set_add(arena, &args->required, param);
                     param = get_next_param(args);
                 }
@@ -283,7 +283,7 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     return result;
                 }
 
-                while (param) {
+                while (param != NULL) {
                     const file_ext_t *entry = get_scan_extension(param);
                     if (entry == NULL) {
                         return usage_error("The 'scan' flag contains the '%s' file extension that is not supported",
