@@ -458,9 +458,9 @@ nvi --scan mjs --ignored NODE_ENV --files .env -- npm run dev | <consumer>
 
 <details>
 <summary>Threaded Scan Results</summary>
+Warm cached and scanning the same large codebase...
 
-Warm cached and scanning a large codebase:
-
+MacBook Pro M4 Max running Mac OS Tahoe 26.5.2:
 | Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
 | `nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 584.0 ± 2.5 | 580.7 | 589.9 | 2.49 ± 0.26 |
@@ -469,8 +469,17 @@ Warm cached and scanning a large codebase:
 | `nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 338.2 ± 7.1 | 318.9 | 352.7 | 1.44 ± 0.15 |
 | `nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 736.4 ± 26.7 | 655.1 | 774.5 | 3.14 ± 0.34 |
 
-The tests numbers above **ARE NOT** a measurement for how fast a scanner can run, but instead to showcase how a system (in this case, a MacBook Pro M4 Max running Mac OS Tahoe 26.5.2), has file IO limitations.
-More threads degraded the scanning performance over 50 runs.
+Custom Desktop AMD 5950x running Linux Mint 21.2:
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
+|:---|---:|---:|---:|---:|
+| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 1 --dry-run` | 323.4 ± 7.0 | 310.3 | 341.9 | 8.78 ± 0.76 |
+| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 4 --dry-run` | 101.3 ± 4.6 | 84.7 | 112.0 | 2.75 ± 0.26 |
+| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 6 --dry-run` | 72.6 ± 3.3 | 66.0 | 78.7 | 1.97 ± 0.19 |
+| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 8 --dry-run` | 60.4 ± 3.4 | 51.0 | 65.9 | 1.64 ± 0.17 |
+| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 16 --dry-run` | 44.5 ± 5.0 | 33.1 | 52.8 | 1.21 ± 0.17 |
+| `../nvi-bin/nvi --scan ts tsx mjs cjs js jsx rs --threads 32 --dry-run` | 36.9 ± 3.1 | 26.4 | 40.7 | 1.00 |
+
+The test numbers above **ARE NOT** a measurement nor a comparison for how fast a scanner can run, but instead to showcase how a system (in this case, the MacBook Pro M4 running Mac OS Tahoe 26.5.2), has file IO limitations past a certain number of threads. For the MacBook, more threads reducec the scanning performance, whereas for the custom desktop it was (marginally) better.
 </details>
 
 Notes:
