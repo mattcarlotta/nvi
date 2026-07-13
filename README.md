@@ -280,7 +280,7 @@ Notes for Windows users:
 | `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
 | `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
 | `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden (`*****`). |
-| `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#scanning-for-env-keys) files for environment-variable accessors. † |
+| `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#supported-file-extensions-to-the-right-of-the-language) files for environment-variable accessors. † |
 | `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU core count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
 | `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi.development`). |
