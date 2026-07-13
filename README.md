@@ -61,6 +61,10 @@ Before placing or installing a release binary into a directory, ensure the desti
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
+or if using GNU Linux...
+```sh
+echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -c "%U:%G" "{}" 2>/dev/null)"' | nl
+```
 
 If there aren't any `$USER` own bin directories, then create a local bin directory:
 ```sh
@@ -69,7 +73,14 @@ mkdir -p $HOME/.local/bin
 
 Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
 ```sh
-PATH+=("$HOME/.local/bin")
+# dedupe paths
+typeset -U path PATH
+
+# zsh
+path+=("$HOME/.local/bin")
+
+# bash
+export PATH="$PATH:$HOME/.local/bin"
 ```
 
 Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
