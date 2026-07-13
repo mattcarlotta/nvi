@@ -15,13 +15,19 @@ on:
 
 jobs:
   test:
-    name: Test (${{ matrix.os }})
+    name: Test (${{ matrix.os }}, ${{ matrix.cc }})
     strategy:
       fail-fast: false
       matrix:
         # TODO: Use ubuntu-latest if GA supports an aliased latest arm version
         os: [ubuntu-24.04, macos-latest, windows-latest]
+        cc: [clang]
+        include:
+          - os: ubuntu-24.04
+            cc: gcc
     runs-on: ${{ matrix.os }}
+    env:
+      NVI_CC: ${{ matrix.cc }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -31,14 +37,14 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install lld
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.cc == 'clang'
         run: |
           sudo apt-get update
           sudo apt-get install -y lld
 
       - name: Build nob (POSIX)
         if: runner.os != 'Windows'
-        run: clang -o nob nob.c
+        run: ${{ matrix.cc }} -o nob nob.c
 
       - name: Build nob (Windows)
         if: runner.os == 'Windows'

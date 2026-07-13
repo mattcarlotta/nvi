@@ -389,8 +389,10 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
             case VERSION_FLAG: {
                 fprintf(stdout, "nvi %s (%s)\n", NVI_VERSION, NVI_BUILD);
                 fprintf(stdout, "commit %s\n", NVI_COMMIT);
-#ifdef __clang__
+#if defined(__clang__)
                 fprintf(stdout, "clang %d.%d.%d\n", __clang_major__, __clang_minor__, __clang_patchlevel__);
+#elif defined(__GNUC__)
+                fprintf(stdout, "gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #endif
                 fprintf(stdout, "%s\n", NVI_TARGET);
 

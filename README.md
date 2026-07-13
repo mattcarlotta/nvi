@@ -35,8 +35,8 @@ Building source code:
 ### POSIX (Linux, macOS, WSL)
 
 Requirements:
-- [Clang](https://clang.llvm.org/)
-- [LLD](https://lld.llvm.org/) on Linux (release builds link with `-fuse-ld=lld`; usually packaged as `lld`)
+- [Clang](https://clang.llvm.org/) (default), or [GCC](https://gcc.gnu.org/) via `NVI_CC=gcc`
+- [LLD](https://lld.llvm.org/) on Linux when building with clang (release builds link with `-fuse-ld=lld`; usually packaged as `lld`; not needed for gcc builds)
 
 Clone repo and build `nob`:
 ```sh
@@ -87,6 +87,9 @@ Lastly, build and install the release binary into the destination `<DIR>`:
 > [!NOTE]
 > To build a fully static, portable Linux binary with musl instead of clang+glibc, install `musl-tools` and run `NVI_LIBC=musl ./nob <release|install>`.
 
+> [!NOTE]
+> To build with GCC instead of clang, run `NVI_CC=gcc ./nob <cmd>` (any GCC 11+ works; a versioned name like `NVI_CC=gcc-14` is also fine). `NVI_LIBC=musl` takes precedence over `NVI_CC`. GCC release builds use a conservative flag set (no `-flto`/lld pipeline), so clang remains the recommended compiler for the smallest release binaries. Fuzzing always requires clang.
+
 To verify system installation, run:
 ```sh
 which nvi
@@ -95,7 +98,7 @@ which nvi
 nvi version
 # nvi <version> (<build_type>)
 # commit <commit>
-# clang <version>
+# clang|gcc <version>
 # <architecture>
 ```
 
