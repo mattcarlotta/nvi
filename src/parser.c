@@ -38,6 +38,10 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
 
     buf_t value = {.arena = arena};
 
+    // running total of the KEY=value bytes that would be emitted; bounded so
+    // per-key interpolation amplification can't compound into an OOM abort
+    size_t total_output = 0;
+
     for (size_t ti = 0; ti < tokens->count; ++ti) {
         const token_t *token = &tokens->items[ti];
         const char *token_key = token->key;
@@ -135,11 +139,21 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                 log_info(SINK_STDERR, "%s", env_value);
                 log_f(SINK_STDERR, "...\n\n");
             }
+            total_output -= strlen(existing->value);
+            total_output += value.count;
             existing->value = env_value;
         } else {
             env_t new_env = {.key = token_key, .value = env_value};
             DYN_ARR_APPEND(arena, &parser->env_map, new_env);
             hashmap_append(arena, &parser->env_map.index, token_key, strlen(token_key), parser->env_map.count - 1);
+
+            // KEY=value plus a delimiter, mirroring the emitted layout
+            total_output += strlen(token_key) + value.count + 2;
+        }
+
+        if (total_output > MAX_PARSED_OUTPUT) {
+            return operation_error("The total parsed ENV output exceeds %zu bytes after the '%s' key (%s); aborting.\n",
+                                   (size_t)MAX_PARSED_OUTPUT, token_key, token->file);
         }
 
         if (args->dry_run) {

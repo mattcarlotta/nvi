@@ -1,5 +1,6 @@
 #include "arena.h"
 #include "arg.h"
+#include "macros.h"
 #include "parser.h"
 #include "test_capture.h"
 #include "tokenizer.h"
@@ -313,6 +314,56 @@ static void test_value_at_max_value_size_passes(void) {
     TEST_ASSERT_EQUAL_size_t(MAX_ENV_VALUE_SIZE, strlen(lookup(&parser.env_map, "KEY")));
 }
 
+// cross-key expansion bomb: SEED holds 1MB and eight ~9-byte ${SEED} lines
+// each expand to 1MB, which must trip MAX_PARSED_OUTPUT instead of compounding
+// toward an OOM abort
+static void test_errors_when_total_output_exceeds_max(void) {
+    char *seed = arena_alloc(&test_arena, MAX_ENV_VALUE_SIZE + 1);
+    memset(seed, 'x', MAX_ENV_VALUE_SIZE);
+    seed[MAX_ENV_VALUE_SIZE] = '\0';
+
+    static const char *keys[] = {"K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8"};
+    value_token_t vs[1 + ARR_LEN(keys)];
+    token_t toks[1 + ARR_LEN(keys)];
+
+    toks[0] = make_token("SEED", LITERAL_VALUE, seed, &vs[0]);
+    for (size_t i = 0; i < ARR_LEN(keys); ++i) {
+        toks[1 + i] = make_token(keys[i], INTERPOLATED_KEY, "SEED", &vs[1 + i]);
+    }
+
+    token_list_t tl = {.items = toks, .count = ARR_LEN(toks), .capacity = ARR_LEN(toks)};
+
+    args_t args = {0};
+    parser_t parser = {0};
+    result_t r = parser_silent(&args, &tl, &parser);
+    TEST_ASSERT_FALSE(r.ok);
+    TEST_ASSERT_EQUAL_INT(1, r.code);
+}
+
+// nine 1MB definitions of the same key total ~9MB of raw values, but each
+// update replaces the previous value in place, so the running total must stay
+// at ~1MB and pass
+static void test_duplicate_updates_do_not_compound_total(void) {
+    char *big = arena_alloc(&test_arena, MAX_ENV_VALUE_SIZE + 1);
+    memset(big, 'x', MAX_ENV_VALUE_SIZE);
+    big[MAX_ENV_VALUE_SIZE] = '\0';
+
+    value_token_t vs[9];
+    token_t toks[9];
+    for (size_t i = 0; i < ARR_LEN(toks); ++i) {
+        toks[i] = make_token("BIG", LITERAL_VALUE, big, &vs[i]);
+    }
+
+    token_list_t tl = {.items = toks, .count = ARR_LEN(toks), .capacity = ARR_LEN(toks)};
+
+    args_t args = {0};
+    parser_t parser = {0};
+    result_t r = run_parser(&test_arena, &args, &tl, &parser);
+    TEST_ASSERT_TRUE(r.ok);
+    TEST_ASSERT_EQUAL_size_t(1, parser.env_map.count);
+    TEST_ASSERT_EQUAL_size_t(MAX_ENV_VALUE_SIZE, strlen(lookup(&parser.env_map, "BIG")));
+}
+
 static void test_errors_on_undefined_interpolation(void) {
     clear_env("NVI_TEST_UNDEF");
     value_token_t v;
@@ -362,6 +413,8 @@ int main(void) {
     RUN_TEST(test_errors_on_undefined_interpolation);
     RUN_TEST(test_errors_when_interpolation_exceeds_max_value_size);
     RUN_TEST(test_value_at_max_value_size_passes);
+    RUN_TEST(test_errors_when_total_output_exceeds_max);
+    RUN_TEST(test_duplicate_updates_do_not_compound_total);
     RUN_TEST(test_errors_when_required_env_is_empty);
     return UNITY_END();
 }

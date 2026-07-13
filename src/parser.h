@@ -18,6 +18,14 @@
 // ${KEY} references can expand into gigabytes), so assembled values are capped.
 #define MAX_ENV_VALUE_SIZE ((size_t)1024 * 1024)
 
+// Interpolation also amplifies across keys: each ~9-byte ${KEY} line can expand
+// to a value up to MAX_ENV_VALUE_SIZE, so a 10MB file (MAX_FILE_SIZE) could
+// otherwise attempt ~1TB of total output and die on OOM instead of exiting
+// cleanly. 8MB comfortably exceeds any real environment (Linux caps a single
+// exec'd env string at 128KB and the whole argv+env block near 2MB) while
+// bounding the blowup.
+#define MAX_PARSED_OUTPUT ((size_t)8 * 1024 * 1024)
+
 typedef struct {
     const char **items;
     size_t count;

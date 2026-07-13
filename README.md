@@ -712,9 +712,10 @@ FUZZ_VERBOSE=1 ./build/fuzz/fuzz_parser fuzz-stall-<pid>.bin
 
 ## Security model
 
-- It doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
-- It doesn't use any [regular expressions](https://pubs.opengroup.org/onlinepubs/7908799/xsh/regex.h.html) and never will for as long as I live!
-- It will only parse the `.env` files you provide and write parsed ENVs to stdout.
+- Doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
+- Doesn't use any [regular expressions](https://man7.org/linux/man-pages/man3/regcomp.3.html)!
+- Only parses the `.env` files you provide and write parsed ENVs to stdout.
+- Limits parsed and scanned files to 10MB, a single interpolated value to 1MB, and the total parsed ENV output to 8MB, so a malicious or corrupted `.env` file errors instead of exhausting memory (downstream handles `ARG_MAX`).
 - Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
