@@ -11,6 +11,8 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 - Supports ignoring environment-variables that may be set at run-time
 - Loads flags from a [`.nvi` config file](#nvi-config-file)
 
+![animated gif of using nvi commands](nvi.gif)
+
 ## Installation
 
 For the best compatibility [build and install from source](#build-and-install-from-source).
