@@ -320,7 +320,7 @@ Notes for Windows users:
 | `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#supported-file-extensions) files for environment-variable accessors. † |
 | `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU thread count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
-| `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi.development`). |
+| `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@development.nvi`). |
 | `--` <command> | An end-of-options delimiter followed by a `<command>` (eg. `npm run dev`). |
 
 > † without a `--` command, scan will only report what it finds and exit (must include **--dry-run**); with a `--` command, scan sets the found ENV keys to the required ENVs list.
@@ -372,7 +372,7 @@ nvi @<path> -- <command> | <consumer>
 
 Example config:
 ```sh
-# .nvi.local
+# local.nvi
 --files .env .env.local
 --format nul
 --scan ts tsx mjs
@@ -382,13 +382,13 @@ Example config:
 
 You'll still have the option to append or override flags after a config file (except for flags that don't have parameters, like: `--dry-run`):
 ```sh
-# the .nvi.local config (above) supplies the defaults, but the flags
+# the local.nvi config (above) supplies the defaults, but the flags
 # specified afterward append .env.production to files and override the format
-nvi @.nvi.local --files .env.production -F powershell -- <command> | <consumer>
+nvi @local.nvi --files .env.production -F powershell -- <command> | <consumer>
 ```
 
 Rules:
-- Only loads a single `.nvi` file (referencing other `.nvi` configs is unsupported).
+- Only can load a single `.nvi` file (referencing other `.nvi` configs is unsupported).
 - Flags and parameters must be defined on the same line.
 - A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the consumer.
 - An empty or comment-only config file is an error (matching the empty `.env` file behavior).
