@@ -330,10 +330,10 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     "key list\n"
                     "  -r, --required <keys>        ensures ENV keys are defined before the <command> is emitted\n"
                     "  -R, --reveal                 reveals ENV values in a dry run\n"
-                    "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
-                    "*\n"
+                    "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options "
+                    "below)*\n"
                     "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
-                    "your CPU thread count) **\n"
+                    "your CPU thread count)**\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
                     "  @<config>                    loads flags from a .nvi config file\n"
                     "\n"
@@ -342,7 +342,7 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     " ** using more threads than your hardware or software can handle will degrade scanning "
                     "performance\n"
                     "\n"
-                    "Supported scan file extensions (to the right -> of the language):\n"
+                    "Supported scan file extensions:\n"
                     " - C: c, h\n"
                     " - Clojure: clj, cljs, cljc\n"
                     " - Crystal: cr\n"
@@ -415,6 +415,10 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
 
     if (args->scan_exts.count == 0 && args->files.count == 0) {
         return usage_error("The '--files' or '--scan' flag requires at least one argument");
+    }
+
+    if (args->scan_exts.count > 1 && args->files.count == 0 && !args->dry_run) {
+        return usage_error("Running a scan must either include the '--files' flag or the '--dry-run' flag");
     }
 
     if (args->ignored.count > 0 && args->required.count > 0) {

@@ -21,9 +21,6 @@ void tty_init(void);
 // ─
 #define TREE_RUNG (use_unicode ? "─" : "-")
 
-// ↠
-#define VALUE_ARROW (use_unicode ? "↠" : "->")
-
 #define RED "\x1b[31m"
 // #define GREEN "\x1b[32m"
 #define YELLOW "\x1b[33m"

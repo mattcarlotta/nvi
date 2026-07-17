@@ -75,7 +75,7 @@ static void report_tokenizer_summary(const args_t *args, const tokenizer_t *toke
             const char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
 
             log_f(SINK_STDERR, "\n      %s%s ", sub_stem_sym, TREE_RUNG);
-            log_info(SINK_STDERR, "%s %s ", get_value_kind_name(v->kind), VALUE_ARROW);
+            log_info(SINK_STDERR, "%s: ", get_value_kind_name(v->kind));
             if (args->reveal) {
                 log_f(SINK_STDERR, "%.*s", (int)v->value_len, v->value);
             } else {
