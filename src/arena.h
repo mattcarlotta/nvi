@@ -27,12 +27,23 @@
 typedef struct arena_chunk arena_chunk_t;
 typedef struct arena arena_t;
 
+#if defined(_MSC_VER)
+// C4200: flexible array members are standard C99, but MSVC still flags them
+// as a "nonstandard extension" under /W4
+#pragma warning(push)
+#pragma warning(disable : 4200)
+#endif
+
 struct arena_chunk {
     arena_chunk_t *next;
     size_t capacity;
     size_t offset;
     char data[];
 };
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 struct arena {
     arena_chunk_t *head;    // current bump chunk (largest under the doubling schedule)

@@ -11,6 +11,7 @@
 #include "macros.h"
 #include "matcher.h"
 #include "nthread.h"
+#include "tty.h"
 #include "utils.h"
 #include <errno.h>
 #include <stdio.h>
@@ -98,7 +99,7 @@ static void report_file_scan_results(const args_t *args, buf_t *buf, const char 
 
     for (size_t i = 0; i < matches->count; ++i) {
         const env_key_match_t *m = &matches->items[i];
-        log_f(SINK_BUF(buf), "    \u2022 ");
+        log_f(SINK_BUF(buf), "    %s ", BULLET);
         log_bold_info(SINK_BUF(buf), "%.*s", (int)m->key_len, m->key);
         log_comment(SINK_BUF(buf), " [%zu:%zu]\n", m->line, m->byte);
     }
@@ -129,12 +130,12 @@ static void report_required_keys(const args_t *args) {
 
     if (args->required.count > 0) {
         for (size_t i = 0; i < args->required.count; ++i) {
-            log_f(SINK_STDERR, "    \u2022 ");
+            log_f(SINK_STDERR, "    %s ", BULLET);
             log_bold_info(SINK_STDERR, "%s", args->required.items[i]);
             log_f(SINK_STDERR, "\n");
         }
     } else {
-        log_f(SINK_STDERR, "    \u2022 ");
+        log_f(SINK_STDERR, "    %s ", BULLET);
         log_comment(SINK_STDERR, "(none)\n");
     }
 

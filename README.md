@@ -4,9 +4,9 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 
 - 0 dependency
 - Language and framework agnostic (replaces language specific env packages)
-- Sequentially parses one or more `.env` files
+- Sequentially verifies and parses one or more `.env` files
 - Supports `${KEY}` interpolations, `#` comments, `'` and `"` quotes, and `\` delimited multiline values
-- Scans project files for environment-variable references across many [languages](#supported-file-extensions-to-the-right-of-the-language) and marks them as required
+- Scans project files for environment-variable references across many [languages](#supported-file-extensions) and marks them as required
 - Checks required environment-variables are defined before command execution
 - Supports ignoring environment-variables that may be set at run-time
 - Loads flags from a [`.nvi` config file](#nvi-config-file)
@@ -129,6 +129,8 @@ winget install Microsoft.VisualStudio.2022.BuildTools --source winget
 
 > [!NOTE]
 > It should open a GUI installer, where you need to select and install the `Desktop development with C++` workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
+> If it closes without the workload installed: Relaunch the `Visual Studio Installer` from the Windows Menu, click on the installed version and click `Modify`,
+> then select the `Desktop development with C++` workload, then `Modify` again.
 
 2. Install LLVM/Clang:
 ```powershell
@@ -142,7 +144,7 @@ winget install LLVM.LLVM --source winget
 
 4. Close and reopen PowerShell
 
-5. Launch a developer shell:
+5. Launch a developer shell (or open `Developer PowerShell for VS 2022` from the Windows Menu):
 ```powershell
 & "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
 ```
@@ -155,24 +157,9 @@ winget install LLVM.LLVM --source winget
 cd Documents
 ```
 
-7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account):
+7. Clone repo (assumes `git` is installed, if not then install via: `winget install --id Git.Git -e --source winget`):
 ```powershell
 git clone git@github.com:mattcarlotta/nvi.git
-```
-Optionally download it:
-```powershell
-Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi/archive/refs/heads/main.zip" -OutFile "nvi.zip"
-```
-Then extract it:
-```powershell
-Expand-Archive -Path "nvi.zip" -DestinationPath "nvi"
-```
-Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
-```powershell
-git init
-git remote add origin https://github.com/mattcarlotta/nvi.git
-git fetch origin
-git reset origin
 ```
 
 8. Change directory to `nvi`:
@@ -180,7 +167,15 @@ git reset origin
 cd nvi
 ```
 
-9. Build `nob.c`:
+9. Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
+```powershell
+git init
+git remote add origin https://github.com/mattcarlotta/nvi.git
+git fetch origin
+git reset origin
+```
+
+10. Build `nob.c`:
 ```powershell
 cl nob.c
 ```
@@ -221,25 +216,53 @@ nvi version
 
 ### Run in POSIX (Linux, macOS, WSL)
 
-The POSIX build defaults to `--format nul`, emitting: `KEY=value\0` assignments followed by shell commands. Then `xargs -0` splits
-the emitted ENVs and hands them off to `env`, which sets the ENVs to the shell, and then the command runs.
+The POSIX build defaults to `--format nul`, emitting NUL-delimited `KEY=value\0` assignments followed by the command tokens.
+A consumer splits that output and launches the command with those ENVs applied (your shell's environment remains unmodified).
 
-```sh
-nvi [flags|command] -- [command] | xargs -0 env
+For day-to-day use, you'll need to add an `nvix` function to your shell profile.
+
+For zsh (`~/.zshrc`) shells, the recommended consumer is to just split nvi's output natively:
+```zsh
+nvix() {
+  local out
+  out="$(nvi "$@")" || return $?
+  [[ -n "$out" ]] || return 0
+  env ${(0)out}
+}
 ```
-For day-to-day use, you may want to add a function to your shell profile (eg. `~/.zshrc`, `~/.bashrc`):
 
+For bash 4.4+ (`~/.bashrc`) shells, the recommended consumer is to split nvi's output into an array with `mapfile`:
+```bash
+nvix() {
+  local args=()
+  mapfile -d '' -t args < <(nvi "$@")
+  wait "$!" || return $?
+  ((${#args[@]})) || return 0
+  env "${args[@]}"
+}
+```
+
+For older bash (macOS ships bash 3.2 as `/bin/bash`) and other POSIX shells, the recommended consumer is to pipe to `xargs`:
 ```sh
 nvix() { nvi "$@" | xargs -0 -r env; }
 ```
+
+>[!NOTE]
+> The zsh and bash 4.4+ functions build the same `KEY=value ... command` vector `xargs` would (zsh variables can hold NUL bytes; bash array *elements* sit
+> between the NULs), but run `env` as a direct child of your shell. That makes `ctrl+c` on a long-running command behave exactly like running it directly,
+> avoiding the dangling partial line (`^C%` in zsh) the `xargs` pipeline leaves when SIGINT returns the prompt before the command finishes shutting down.
+> In the bash function, `wait "$!"` recovers nvi's exit code from the process substitution and must not be dropped: without it a failed parse looks successful.
+
 Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
 source <profile_url>
 ```
+
 To verify it's available, run:
 ```sh
-which nvix
+type nvix
 ```
+
 ### Run in PowerShell (Windows)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
@@ -250,14 +273,15 @@ nvi [flags|command] -- [command] | Out-String | Invoke-Expression
 ```
 
 For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`:
-
 ```powershell
 notepad $PROFILE
 ```
+
 Then add this function and save:
 ```powershell
 function nvix { nvi @args | Out-String | Invoke-Expression }
 ```
+
 Close and reopen PowerShell, then run:
 ```powershell
 Get-Command nvix
@@ -288,12 +312,12 @@ Notes for Windows users:
 | --- | --- |
 | `-d, --dry-run` | Prints results to stderr and exits with 0. |
 | `-f, --files <file> ...`| Parses one or more `.env` files in sequential order. |
-| `-F, --format <format>` | Formats ENVs for the downstream consumer (formats: `nul` or `powershell`). |
+| `-F, --format <format>` | Formats ENVs for the consumer (formats: `nul` or `powershell`). |
 | `-h, --help` | Prints usage help to stdout and exits with 0. |
 | `-i, --ignored <KEY> ...` | Ignores a list of keys that a `scan` may add to the required ENV list. |
 | `-r, --required <KEY> ...` | Requires a list of keys that must be defined after parsing. |
 | `-R, --reveal` | Reveals ENV values in a dry-run; otherwise, they'll be hidden (`*****`). |
-| `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#supported-file-extensions-to-the-right-of-the-language) files for environment-variable accessors. † |
+| `-s, --scan <ext> ...` | Recursively scans [`<ext>`](#supported-file-extensions) files for environment-variable accessors. † |
 | `-t, --threads <1-255>` | Number of threads to use when scanning files (max: CPU thread count). †† |
 | `-v, --version` |  Prints version info to stdout and exits with 0. |
 | `@<config>` | Loads flags from a [`.nvi` config file](#nvi-config-file) (eg. `@.nvi.development`). |
@@ -331,11 +355,11 @@ nvi --files .env -- sh -c 'echo "$MESSAGE"' | <consumer>
 
 ### Exit codes
 
-- `0` - Success: emits ENVs for a downstream consumer or prints information and exits (help, scan, version)
+- `0` - Success: emits ENVs for a consumer or prints information and exits (help, scan, version)
 - `1` - Operational failures: out of memory, file unreadable, parser errors, or required keys are undefined
 - `2` - Usage errors: flags missing required params, invalid flags/params, or a missing `--` command
 
-The exit code of *your command* will be reported by the downstream consumer, not by `nvi`.
+The exit code of *your command* will be reported by the consumer, not by `nvi`.
 
 ## `.nvi` config file
 
@@ -366,12 +390,12 @@ nvi @.nvi.local --files .env.production -F powershell -- <command> | <consumer>
 Rules:
 - Only loads a single `.nvi` file (referencing other `.nvi` configs is unsupported).
 - Flags and parameters must be defined on the same line.
-- A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the downstream consumer.
+- A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the consumer.
 - An empty or comment-only config file is an error (matching the empty `.env` file behavior).
 
 ## Scanning for ENV keys
 
-`-s`, `--scan` followed by one or many file `ext`, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
+`-s`, `--scan` followed by one or many file `ext`s, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
 For example, every line below would be recognized and yields the key `DATABASE_URL`:
 
@@ -407,46 +431,46 @@ const e = process.env;
 e.DATABASE_URL;
 ```
 
-### Supported file extensions (to the right of the language)
-- C -> `c`, `h`
-- Clojure -> `clj`, `cljs`, `cljc`
-- Crystal -> `cr`
-- C++ -> `cc`, `cpp`, `cxx`, `hh`, `hpp`, `hxx`
-- C# -> `cs`
-- D -> `d`
-- Dart -> `dart`
-- Elixir -> `ex`, `exs`
-- Erlang -> `erl`, `hrl`
-- Fortran -> `f`, `f90`, `f95`, `f03`, `f08`, `for`
-- F# -> `fs`, `fsi`, `fsx`
-- Go -> `go`
-- Gradle -> `gradle`
-- Groovy -> `groovy`
-- Haskell -> `hs`, `lhs`
-- Java -> `java`
-- JavaScript/TypeScript -> `cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`
-- Julia -> `jl`
-- Kotlin -> `kt`, `kts`
-- Lua -> `lua`
-- Nim -> `nim`
-- Nushell -> `nu`
-- Objective-C -> `m`, `mm`
-- OCaml -> `ml`, `mli`
-- Pascal/Delphi -> `dpr`, `pas`, `pp`
-- Perl -> `pl`, `pm`, `t`
-- PHP -> `php`
-- PowerShell -> `ps1`, `psm1`, `psd1`
-- Python -> `py`, `pyi`, `pyw`
-- R -> `r`
-- Ruby -> `gemspec`, `rb`, `rake`
-- Rust -> `rs`
-- Scala -> `sc`, `scala`
-- Swift -> `swift`
-- Tcl -> `tcl`
-- V -> `v`
-- Visual Basic -> `vb`
-- YAML -> `yaml`, `yml` †
-- Zig -> `zig`
+### Supported file extensions
+- C: `c`, `h`
+- Clojure: `clj`, `cljs`, `cljc`
+- Crystal: `cr`
+- C++: `cc`, `cpp`, `cxx`, `hh`, `hpp`, `hxx`
+- C#: `cs`
+- D: `d`
+- Dart: `dart`
+- Elixir: `ex`, `exs`
+- Erlang: `erl`, `hrl`
+- Fortran: `f`, `f90`, `f95`, `f03`, `f08`, `for`
+- F#: `fs`, `fsi`, `fsx`
+- Go: `go`
+- Gradle: `gradle`
+- Groovy: `groovy`
+- Haskell: `hs`, `lhs`
+- Java: `java`
+- JavaScript/TypeScript: `cjs`, `cts`, `js`, `jsx`, `mjs`, `mts`, `ts`, `tsx`
+- Julia: `jl`
+- Kotlin: `kt`, `kts`
+- Lua: `lua`
+- Nim: `nim`
+- Nushell: `nu`
+- Objective-C: `m`, `mm`
+- OCaml: `ml`, `mli`
+- Pascal/Delphi: `dpr`, `pas`, `pp`
+- Perl: `pl`, `pm`, `t`
+- PHP: `php`
+- PowerShell: `ps1`, `psm1`, `psd1`
+- Python: `py`, `pyi`, `pyw`
+- R: `r`
+- Ruby: `gemspec`, `rb`, `rake`
+- Rust: `rs`
+- Scala: `sc`, `scala`
+- Swift: `swift`
+- Tcl: `tcl`
+- V: `v`
+- Visual Basic: `vb`
+- YAML: `yaml`, `yml` †
+- Zig: `zig`
 
 > † YAML has no language-level accessor, so the scanner matches POSIX-style parameter expansion: `${KEY}` plus the operator forms `${KEY:-default}`, `${KEY:?err}`, etc.
 > A bare `$KEY`, `$${KEY}`, and `${{ ... }}` expressions are ignored.
@@ -728,8 +752,8 @@ FUZZ_VERBOSE=1 ./build/fuzz/fuzz_parser fuzz-stall-<pid>.bin
 - Doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
 - Doesn't use any [regular expressions](https://man7.org/linux/man-pages/man3/regcomp.3.html)!
 - Only parses the `.env` files you provide and write parsed ENVs to stdout.
-- Limits parsed and scanned files to 10MB, a single interpolated value to 1MB, and the total parsed ENV output to 8MB, so a malicious or corrupted `.env` file errors instead of exhausting memory (downstream handles `ARG_MAX`).
-- Process execution happens entirely in the downstream consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
+- Limits parsed and scanned files to 10MB, a single interpolated value to 1MB, and the total parsed ENV output to 8MB, so a malicious or corrupted `.env` file errors instead of exhausting memory (consumer handles `ARG_MAX`).
+- Process execution happens entirely in the consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](CONTRIBUTING.MD)

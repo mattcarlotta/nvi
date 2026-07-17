@@ -10,8 +10,17 @@
 #if defined(_WIN32) && defined(_MSC_VER)
 #include <fcntl.h>
 #include <io.h>
+#include <share.h>
 
-static int open_file_rdo(const char *path) { return _open(path, _O_RDONLY | _O_BINARY); }
+// _sopen_s is the non-deprecated _open (silences C4996): same flags plus an
+// explicit share mode; _SH_DENYNO matches POSIX open's no-locking behavior
+static int open_file_rdo(const char *path) {
+    int fd = -1;
+    if (_sopen_s(&fd, path, _O_RDONLY | _O_BINARY, _SH_DENYNO, 0) != 0) {
+        return -1;
+    }
+    return fd;
+}
 
 static long read_file(int fd, void *buf, size_t count) { return _read(fd, buf, (unsigned int)count); }
 

@@ -62,20 +62,20 @@ static void report_tokenizer_summary(const args_t *args, const tokenizer_t *toke
 
         log_info(SINK_STDERR, "\n[INFO]");
         log_f(SINK_STDERR, " Token #%zu\n", ti + 1);
-        log_f(SINK_STDERR, "    \u2022 file: ");
+        log_f(SINK_STDERR, "    %s file: ", BULLET);
         log_fi(SINK_STDERR, "%s", token->file);
         log_f(SINK_STDERR, "\n");
-        log_f(SINK_STDERR, "    \u2022 key: ");
+        log_f(SINK_STDERR, "    %s key: ", BULLET);
         log_bold_info(SINK_STDERR, "%s \n", token->key ? token->key : "(none)");
-        log_f(SINK_STDERR, "    \u2022 value%s:", TO_PLURAL(token->values.count));
+        log_f(SINK_STDERR, "    %s value%s:", BULLET, TO_PLURAL(token->values.count));
 
         for (size_t vi = 0; vi < token->values.count; ++vi) {
             const value_token_t *v = &token->values.items[vi];
             bool is_last_value_token = vi == token->values.count - 1;
             const char *sub_stem_sym = is_last_value_token ? TREE_END : TREE_BRANCH;
 
-            log_f(SINK_STDERR, "\n      %s\u2500 ", sub_stem_sym);
-            log_info(SINK_STDERR, "%s \u21A0 ", get_value_kind_name(v->kind));
+            log_f(SINK_STDERR, "\n      %s%s ", sub_stem_sym, TREE_RUNG);
+            log_info(SINK_STDERR, "%s: ", get_value_kind_name(v->kind));
             if (args->reveal) {
                 log_f(SINK_STDERR, "%.*s", (int)v->value_len, v->value);
             } else {

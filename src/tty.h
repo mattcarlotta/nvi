@@ -2,19 +2,24 @@
 #define TTY_H
 
 extern int use_color;
+extern int use_unicode;
 void tty_init(void);
 
-// \u250C
-// #define TREE_BEGIN "┌"
+// Diagnostic glyphs degrade to ASCII when the console can't render UTF-8
+// (legacy Windows conhost; see tty_init). Each macro is a string expression,
+// so they compose via %s but cannot be concatenated into string literals.
 
-// \u2502
-// #define TREE_STEM "│"
+// •
+#define BULLET (use_unicode ? "•" : "*")
 
-// \u251C
-#define TREE_BRANCH "├"
+// ├
+#define TREE_BRANCH (use_unicode ? "├" : "|")
 
-// \u2514
-#define TREE_END "└"
+// └
+#define TREE_END (use_unicode ? "└" : "`")
+
+// ─
+#define TREE_RUNG (use_unicode ? "─" : "-")
 
 #define RED "\x1b[31m"
 // #define GREEN "\x1b[32m"
