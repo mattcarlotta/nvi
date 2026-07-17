@@ -129,6 +129,8 @@ winget install Microsoft.VisualStudio.2022.BuildTools --source winget
 
 > [!NOTE]
 > It should open a GUI installer, where you need to select and install the `Desktop development with C++` workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
+> If it closes without the workload installed: Relaunch the `Visual Studio Installer` from the Windows Menu, click on the installed version and click `Modify`,
+> then select the `Desktop development with C++` workload, then `Modify` again.
 
 2. Install LLVM/Clang:
 ```powershell
@@ -142,7 +144,7 @@ winget install LLVM.LLVM --source winget
 
 4. Close and reopen PowerShell
 
-5. Launch a developer shell:
+5. Launch a developer shell (or open `Developer PowerShell for VS 2022` from the Windows Menu):
 ```powershell
 & "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
 ```
@@ -155,24 +157,9 @@ winget install LLVM.LLVM --source winget
 cd Documents
 ```
 
-7. Clone repo (assumes `git` is installed and you have registered your SSH key to your Github account):
+7. Clone repo (assumes `git` is installed, if not then install via: `winget install --id Git.Git -e --source winget`):
 ```powershell
 git clone git@github.com:mattcarlotta/nvi.git
-```
-Optionally download it:
-```powershell
-Invoke-WebRequest -Uri "https://github.com/mattcarlotta/nvi/archive/refs/heads/main.zip" -OutFile "nvi.zip"
-```
-Then extract it:
-```powershell
-Expand-Archive -Path "nvi.zip" -DestinationPath "nvi"
-```
-Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
-```powershell
-git init
-git remote add origin https://github.com/mattcarlotta/nvi.git
-git fetch origin
-git reset origin
 ```
 
 8. Change directory to `nvi`:
@@ -180,7 +167,15 @@ git reset origin
 cd nvi
 ```
 
-9. Build `nob.c`:
+9. Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
+```powershell
+git init
+git remote add origin https://github.com/mattcarlotta/nvi.git
+git fetch origin
+git reset origin
+```
+
+10. Build `nob.c`:
 ```powershell
 cl nob.c
 ```
