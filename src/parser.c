@@ -7,6 +7,7 @@
 #include "macros.h"
 #include "result.h"
 #include "tokenizer.h"
+#include "tty.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -94,7 +95,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
                 case COMMENTED_LINE: {
                     if (args->dry_run) {
                         log_info(SINK_STDERR, "[INFO]");
-                        log_f(SINK_STDERR, " Skipping a parsed comment in Token #%zu...\n    \u2022 ", ti + 1);
+                        log_f(SINK_STDERR, " Skipping a parsed comment in Token #%zu...\n    %s ", ti + 1, BULLET);
                         log_comment(SINK_STDERR, "%s\n\n", args->reveal ? value_token->value : "*****");
                     }
                     break;
@@ -159,9 +160,9 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
         if (args->dry_run) {
             log_info(SINK_STDERR, "[INFO]");
             log_f(SINK_STDERR, " Successfully parsed Token #%zu...\n", ti + 1);
-            log_f(SINK_STDERR, "    \u2022 key: ");
+            log_f(SINK_STDERR, "    %s key: ", BULLET);
             log_bold_info(SINK_STDERR, "%s \n", token_key);
-            log_f(SINK_STDERR, "    \u2022 value: ");
+            log_f(SINK_STDERR, "    %s value: ", BULLET);
             log_info(SINK_STDERR, "%s", args->reveal ? env_value : "*****");
             log_f(SINK_STDERR, "\n\n");
         }
@@ -185,7 +186,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
               parser->env_map.count, TO_PLURAL(parser->env_map.count));
         for (size_t i = 0; i < parser->env_map.count; ++i) {
             const env_t env = parser->env_map.items[i];
-            log_f(SINK_STDERR, "    \u2022 ");
+            log_f(SINK_STDERR, "    %s ", BULLET);
             log_bold_info(SINK_STDERR, "%s=", env.key);
             if (args->reveal) {
                 log_bold_info(SINK_STDERR, "%s", env.value);
@@ -203,7 +204,7 @@ result_t run_parser(arena_t *arena, const args_t *args, const token_list_t *toke
         log_error(SINK_STDERR,
                   "[ERROR] The following ENV keys were marked as required, but are undefined or empty after parsing:");
         for (size_t i = 0; i < parser->missing_envs.count; ++i) {
-            log_error(SINK_STDERR, "\n   \u2022 %s", parser->missing_envs.items[i]);
+            log_error(SINK_STDERR, "\n   %s %s", BULLET, parser->missing_envs.items[i]);
         }
         log_error(SINK_STDERR, "\n");
         return OPERATION_FAILURE;

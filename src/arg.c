@@ -7,6 +7,7 @@
 #include "macros.h"
 #include "nthread.h"
 #include "result.h"
+#include "tty.h"
 #include "utils.h"
 #include "version.h"
 #include <ctype.h>
@@ -20,7 +21,7 @@ typedef struct {
 } flag_entry_t;
 
 static void report_flag_config(const char *config_path) {
-    log_f(SINK_STDERR, "\n    \u2022");
+    log_f(SINK_STDERR, "\n    %s", BULLET);
     log_info(SINK_STDERR, " config file: ");
     if (config_path == NULL) {
         log_comment(SINK_STDERR, "(none)");
@@ -30,7 +31,7 @@ static void report_flag_config(const char *config_path) {
 }
 
 static void report_flag_items(const char *label, const char **items, size_t count, const char *sep) {
-    log_f(SINK_STDERR, "\n    \u2022");
+    log_f(SINK_STDERR, "\n    %s", BULLET);
     log_info(SINK_STDERR, " %s: ", label);
 
     if (count == 0) {
@@ -47,25 +48,25 @@ static void report_flag_items(const char *label, const char **items, size_t coun
 }
 
 static void report_flag_reveal(bool reveal) {
-    log_f(SINK_STDERR, "\n    \u2022");
+    log_f(SINK_STDERR, "\n    %s", BULLET);
     log_info(SINK_STDERR, " reveal ENVs: ");
     log_f(SINK_STDERR, "%s", reveal ? "true" : "false");
 }
 
 static void report_flag_threads(const uint8_t threads) {
-    log_f(SINK_STDERR, "\n    \u2022");
+    log_f(SINK_STDERR, "\n    %s", BULLET);
     log_info(SINK_STDERR, " scan threads: ");
     log_f(SINK_STDERR, "%d", threads);
 }
 
 static void report_flag_format(const format_t format) {
-    log_f(SINK_STDERR, "\n    \u2022");
+    log_f(SINK_STDERR, "\n    %s", BULLET);
     log_info(SINK_STDERR, " format: ");
     log_f(SINK_STDERR, "%s\n\n", get_format_name(format));
 }
 
 static void report_flag_scan_extensions(const char *label, const file_ext_map_t *map, const char *sep) {
-    log_f(SINK_STDERR, "\n    \u2022");
+    log_f(SINK_STDERR, "\n    %s", BULLET);
     log_info(SINK_STDERR, " %s: ", label);
 
     if (map->count == 0) {
@@ -330,57 +331,57 @@ result_t parse_args(arena_t *arena, config_t *config, args_t *args) {
                     "  -r, --required <keys>        ensures ENV keys are defined before the <command> is emitted\n"
                     "  -R, --reveal                 reveals ENV values in a dry run\n"
                     "  -s, --scan <ext>             recursively scans for ENV variables in <ext> (see options below) "
-                    "\u2020\n"
+                    "*\n"
                     "  -t, --threads <1-255>        number of threads to use when scanning for ENV variables (max: "
-                    "your CPU thread count) \u2020\u2020\n"
+                    "your CPU thread count) **\n"
                     "  -v, --version, version       prints the version and exits with 0\n"
                     "  @<config>                    loads flags from a .nvi config file\n"
                     "\n"
-                    " \u2020 without a <command>, scan reports what it finds and exits; with a <command>, the found "
+                    " * without a <command>, scan reports what it finds and exits; with a <command>, the found "
                     "ENV keys are added to the required ENV list\n"
-                    " \u2020\u2020 using more threads than your hardware or software can handle will degrade scanning "
+                    " ** using more threads than your hardware or software can handle will degrade scanning "
                     "performance\n"
                     "\n"
                     "Supported scan file extensions (to the right -> of the language):\n"
-                    " \u2022 C -> c, h\n"
-                    " \u2022 Clojure -> clj, cljs, cljc\n"
-                    " \u2022 Crystal -> cr\n"
-                    " \u2022 C++ -> cc, cpp, cxx, hh, hpp, hxx\n"
-                    " \u2022 C# -> cs\n"
-                    " \u2022 D -> d\n"
-                    " \u2022 Dart -> dart\n"
-                    " \u2022 Elixir -> ex, exs\n"
-                    " \u2022 Erlang -> erl, hrl\n"
-                    " \u2022 Fortran -> f, f90, f95, f03, f08, for\n"
-                    " \u2022 F# -> fs, fsi, fsx\n"
-                    " \u2022 Go -> go\n"
-                    " \u2022 Gradle -> gradle\n"
-                    " \u2022 Groovy -> groovy\n"
-                    " \u2022 Haskell -> hs, lhs\n"
-                    " \u2022 Java -> java\n"
-                    " \u2022 JavaScript/TypeScript -> cjs, cts, js, jsx, mjs, mts, ts, tsx\n"
-                    " \u2022 Julia -> jl\n"
-                    " \u2022 Kotlin -> kt, kts\n"
-                    " \u2022 Lua -> lua\n"
-                    " \u2022 Nim -> nim\n"
-                    " \u2022 Nushell -> nu\n"
-                    " \u2022 Objective-C -> m, mm\n"
-                    " \u2022 OCaml -> ml, mli\n"
-                    " \u2022 Pascal/Delphi -> dpr, pas, pp\n"
-                    " \u2022 Perl -> pl, pm, t\n"
-                    " \u2022 PHP -> php\n"
-                    " \u2022 PowerShell -> ps1, psm1, psd1\n"
-                    " \u2022 Python -> py, pyi, pyw\n"
-                    " \u2022 R -> r\n"
-                    " \u2022 Ruby -> gemspec, rb, rake\n"
-                    " \u2022 Rust -> rs\n"
-                    " \u2022 Scala -> sc, scala\n"
-                    " \u2022 Swift -> swift\n"
-                    " \u2022 Tcl -> tcl\n"
-                    " \u2022 V -> v\n"
-                    " \u2022 Visual Basic -> vb\n"
-                    " \u2022 YAML -> yaml, yml\n"
-                    " \u2022 Zig -> zig\n"
+                    " - C: c, h\n"
+                    " - Clojure: clj, cljs, cljc\n"
+                    " - Crystal: cr\n"
+                    " - C++: cc, cpp, cxx, hh, hpp, hxx\n"
+                    " - C#: cs\n"
+                    " - D: d\n"
+                    " - Dart: dart\n"
+                    " - Elixir: ex, exs\n"
+                    " - Erlang: erl, hrl\n"
+                    " - Fortran: f, f90, f95, f03, f08, for\n"
+                    " - F#: fs, fsi, fsx\n"
+                    " - Go: go\n"
+                    " - Gradle: gradle\n"
+                    " - Groovy: groovy\n"
+                    " - Haskell: hs, lhs\n"
+                    " - Java: java\n"
+                    " - JavaScript/TypeScript: cjs, cts, js, jsx, mjs, mts, ts, tsx\n"
+                    " - Julia: jl\n"
+                    " - Kotlin: kt, kts\n"
+                    " - Lua: lua\n"
+                    " - Nim: nim\n"
+                    " - Nushell: nu\n"
+                    " - Objective-C: m, mm\n"
+                    " - OCaml: ml, mli\n"
+                    " - Pascal/Delphi: dpr, pas, pp\n"
+                    " - Perl: pl, pm, t\n"
+                    " - PHP: php\n"
+                    " - PowerShell: ps1, psm1, psd1\n"
+                    " - Python: py, pyi, pyw\n"
+                    " - R: r\n"
+                    " - Ruby: gemspec, rb, rake\n"
+                    " - Rust: rs\n"
+                    " - Scala: sc, scala\n"
+                    " - Swift: swift\n"
+                    " - Tcl: tcl\n"
+                    " - V: v\n"
+                    " - Visual Basic: vb\n"
+                    " - YAML: yaml, yml\n"
+                    " - Zig: zig\n"
                     "\n",
                     stdout);
 
