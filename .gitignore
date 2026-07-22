@@ -30,6 +30,9 @@ compile_commands.json
 *.idb
 *.pdb
 
+# Mac OS bs
+*.DS_Store
+
 # Build output / dependency files
 *.d
 

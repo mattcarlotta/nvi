@@ -160,6 +160,7 @@ static void setup_inputs(void) {
     write_file(IT_DIR "/empty_key.env", EXPECT("=ABC\n"));
     write_file(IT_DIR "/required.env", EXPECT("API_KEY=abc\n"));
     write_file(IT_DIR "/secret.env", EXPECT("SECRET=s3cr3tvalue\n"));
+    write_file(IT_DIR "/secret_quote.env", EXPECT("SECRET=\"s3cr3tpartial\n"));
     write_file(IT_DIR "/config.nvi", EXPECT("# integration config\n--files build/it/a.env\n-F nul\n"));
     write_file(IT_DIR "/bad_config.nvi", EXPECT("--files build/it/a.env\n-- echo hi\n"));
     write_file(IT_DIR "/empty_config.nvi", "", 0);
@@ -278,6 +279,12 @@ int main(void) {
 
     check_full("dry run masks values by default", NVI_BIN, "--files build/it/secret.env --dry-run", 0, NO_STDOUT,
                "*****", "s3cr3t");
+
+    check_full("a tokenizer error masks partial values by default", NVI_BIN,
+               "--files build/it/secret_quote.env -- x", 1, NO_STDOUT, "unterminated quoted", "s3c");
+
+    check_full("a tokenizer error reveals partial values with -R", NVI_BIN,
+               "--files build/it/secret_quote.env -R -- x", 1, NO_STDOUT, "s3cr3tpartial", NULL);
 
     check_full("dry run with --reveal exposes values", NVI_BIN, "--files build/it/secret.env --dry-run --reveal", 0,
                NO_STDOUT, "s3cr3tvalue", "*****");

@@ -92,7 +92,16 @@ static void report_tokenizer_summary(const args_t *args, const tokenizer_t *toke
     log_f(SINK_STDERR, "\n\n");
 }
 
-static size_t report_token_line(const token_t *token) {
+static void report_value(const char *s, size_t len, bool reveal) {
+    if (reveal) {
+        fwrite(s, 1, len, stderr);
+        return;
+    }
+
+    fput_repeat(stderr, '*', len);
+}
+
+static size_t report_token_line(const token_t *token, bool reveal) {
     const char *key = token->key ? token->key : "(none)";
     log_f(SINK_STDERR, "   %s=", key);
 
@@ -100,7 +109,7 @@ static size_t report_token_line(const token_t *token) {
     for (size_t k = 0; k < token->values.count; ++k) {
         const value_token_t *v = &token->values.items[k];
         if (v->kind == LITERAL_VALUE) {
-            fwrite(v->value, 1, v->value_len, stderr);
+            report_value(v->value, v->value_len, reveal);
             prefix_len += v->value_len;
         }
     }
@@ -132,8 +141,10 @@ static result_t report_quote_error(const tokenizer_t *tokenizer, const token_t *
     report_token_error(tokenizer);
     log_error(SINK_STDERR, "The %s key has an unterminated quoted value.\n", token->key ? token->key : "(none)");
 
-    size_t prefix_len = report_token_line(token);
-    log_f(SINK_STDERR, "%c%.*s\n", quote, (int)value->count, value->items);
+    size_t prefix_len = report_token_line(token, tokenizer->reveal);
+    fputc(quote, stderr);
+    report_value(value->items, value->count, tokenizer->reveal);
+    fputc('\n', stderr);
     report_token_error_at(prefix_len, value->count, "(missing a closing quote %c)", quote);
 
     return OPERATION_FAILURE;
@@ -156,7 +167,12 @@ static result_t report_missing_key_error(const tokenizer_t *tokenizer) {
     const char *rest = tokenizer->file + tokenizer->i;
     size_t rest_len = line_end - tokenizer->i;
 
-    log_f(SINK_STDERR, "   %.*s\n", (int)rest_len, rest);
+    log_f(SINK_STDERR, "   ");
+    if (rest_len > 0) {
+        fputc(rest[0], stderr);
+        report_value(rest + 1, rest_len - 1, tokenizer->reveal);
+    }
+    fputc('\n', stderr);
     report_token_error_at(0, rest_len > 1 ? rest_len - 1 : 0, "(missing key)");
 
     return OPERATION_FAILURE;
@@ -177,7 +193,7 @@ static result_t report_unterminated_interpolation_error(const tokenizer_t *token
     report_token_error(tokenizer);
     log_error(SINK_STDERR, "The %s key has an unterminated value interpolation.\n", token->key ? token->key : "(none)");
 
-    size_t prefix_len = report_token_line(token);
+    size_t prefix_len = report_token_line(token, tokenizer->reveal);
     log_f(SINK_STDERR, "${%.*s\n", (int)value->count, value->items);
     report_token_error_at(prefix_len + 1, value->count, "(missing a closing brace '}')");
 
@@ -188,7 +204,7 @@ static result_t report_empty_interpolation_error(const tokenizer_t *tokenizer, c
     report_token_error(tokenizer);
     log_error(SINK_STDERR, "The %s key has an undefined key interpolation.\n", token->key ? token->key : "(none)");
 
-    size_t prefix_len = report_token_line(token);
+    size_t prefix_len = report_token_line(token, tokenizer->reveal);
     log_f(SINK_STDERR, "${}\n");
     report_token_error_at(prefix_len + 1, 1, "(unresolvable interpolation key)");
 
@@ -210,7 +226,14 @@ static result_t report_trailing_chars_error(const tokenizer_t *tokenizer, const 
     size_t caret_col = tokenizer->i - line_start;
     size_t rest_len = line_end - tokenizer->i;
 
-    log_f(SINK_STDERR, "   %.*s\n", (int)(line_end - line_start), tokenizer->file + line_start);
+    const char *line = tokenizer->file + line_start;
+    size_t line_len = line_end - line_start;
+    size_t assign_op = index_of_scalar(line, line_len, 0, ASSIGN_OP);
+    size_t visible_len = assign_op < line_len ? assign_op + 1 : 0;
+
+    log_f(SINK_STDERR, "   %.*s", (int)visible_len, line);
+    report_value(line + visible_len, line_len - visible_len, tokenizer->reveal);
+    fputc('\n', stderr);
     report_token_error_at(caret_col, rest_len > 1 ? rest_len - 1 : 0, "(only whitespace may follow a closing quote)");
 
     return OPERATION_FAILURE;
@@ -324,6 +347,7 @@ result_t generate_tokens(arena_t *main_arena, arena_t *scratch, const args_t *ar
     tokenizer->i = 0;
     tokenizer->byte = 1;
     tokenizer->line = 1;
+    tokenizer->reveal = args->reveal;
 
     // skip a UTF-8 BOM so it doesn't become part of the first key
     if (tokenizer->file_len >= 3 && memcmp(tokenizer->file, "\xEF\xBB\xBF", 3) == 0) {

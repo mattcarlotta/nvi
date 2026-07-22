@@ -5,6 +5,7 @@
 #include "arg.h"
 #include "file.h"
 #include "result.h"
+#include <stdbool.h>
 #include <stddef.h>
 
 // The tokenizer is responsible for converting .env files into value tokens the parser can
@@ -47,6 +48,7 @@ typedef struct {
     const char *file;
     size_t file_len;
     const char *file_name;
+    bool reveal;
     token_list_t tokens;
 } tokenizer_t;
 
