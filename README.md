@@ -17,7 +17,7 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 
 Pick one of the following installation options:
 
-- [Install script](#install-script) (quickest; fetches a precompiled binary and wires it up your shell)
+- [Install script](#install-script) (quickest; fetches a precompiled binary and wires it up to your shell)
 - [Precompiled binary](https://github.com/mattcarlotta/nvi/releases/) (manual; extract it and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell))
 - [Build and install from source](#build-and-install-from-source) (best compatibility)
 
