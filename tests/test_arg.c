@@ -234,7 +234,7 @@ static void test_help_short_circuits(void) {
     config_t config = as_config(ARR_LEN(argv), argv);
     arg_ctx_t ctx = {.config = &config, .a = &a};
     char sink[1];
-    capture_fd(stdout, sink, sizeof(sink), call_parse_args, &ctx);
+    capture_fd(stderr, sink, sizeof(sink), call_parse_args, &ctx);
     TEST_ASSERT_FALSE(ctx.result.ok);
 }
 
@@ -244,7 +244,7 @@ static void test_version_short_circuits(void) {
     config_t config = as_config(ARR_LEN(argv), argv);
     arg_ctx_t ctx = {.config = &config, .a = &a};
     char sink[1];
-    capture_fd(stdout, sink, sizeof(sink), call_parse_args, &ctx);
+    capture_fd(stderr, sink, sizeof(sink), call_parse_args, &ctx);
     TEST_ASSERT_FALSE(ctx.result.ok);
 }
 

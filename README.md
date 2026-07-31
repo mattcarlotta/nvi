@@ -15,15 +15,129 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 
 ## Installation
 
-For the best compatibility [build and install from source](#build-and-install-from-source).
+Pick one of the following installation options:
 
-Otherwise, download a precompiled binary from [releases](https://github.com/mattcarlotta/nvi/releases/).
+- [Install script](#install-script) (quickest; fetches a precompiled binary and wires it up your shell)
+- [Precompiled binary](https://github.com/mattcarlotta/nvi/releases/) (manual; extract it and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell))
+- [Build and install from source](#build-and-install-from-source) (best compatibility)
 
-Then extract the precompiled binary and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell).
-
-If you're not sure if the destination directory is recognized by your shell, use the corresponding links below and skip to the instructions about path recognition:
+If you're not sure if a destination directory is recognized by your shell, use the corresponding links below and skip to the instructions about path recognition:
 - [POSIX](#posix-linux-macos-wsl)
 - [PowerShell](#powershell-windows)
+
+## Install script
+
+The script downloads the release matching your platform and installs the binary, and reports whether the destination is recognized by your shell.
+
+Prebuilt targets:
+
+| Platform | Asset |
+| --- | --- |
+| Linux x86_64 (glibc) | `nvi-linux-x86_64.tar.gz` |
+| Linux x86_64 (musl) | `nvi-linux-x86_64-musl.tar.gz` |
+| Linux aarch64 | `nvi-linux-aarch64.tar.gz` |
+| macOS aarch64 | `nvi-macos-aarch64.tar.gz` |
+| Windows x86_64 | `nvi-windows-x86_64.zip` |
+
+> [!NOTE]
+> There are no prebuilt macOS x86_64 or Linux musl aarch64 binaries. On those platforms, the script exits with an error and you'll need to [build and install from source](#build-and-install-from-source).
+
+### Install script (POSIX)
+
+Either run the install script with defaults or download the script and pass flag options.
+
+#### Run scripts with defaults (POSIX)
+
+By default, the binary is installed to `$HOME/.local/bin`, the directory is appended to your user `$PATH`, and a `nvix` function is appended to your shell `$PROFILE`:
+```sh
+curl -fsSL https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.sh | sh
+```
+#### Download the script and run with flags (POSIX)
+
+Download script:
+```sh
+curl -fsSL https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.sh -o install.sh
+```
+
+Flag Options:
+| Flag | Env | Default | Description |
+| --- | --- | --- | --- |
+| `-v, --version <tag>` | `NVI_VERSION` | `latest` | Release tag to install (eg. `v0.1.2`). |
+| `-d, --dir <path>` | `NVI_INSTALL_DIR` | `$HOME/.local/bin` | Install destination. |
+| `--libc <gnu\|musl>` | `NVI_LIBC` | auto-detected | Linux libc flavor. |
+| `--no-profile` | | | Print the profile block instead of appending it. |
+| `--uninstall` | | | Remove the binary and the profile block. |
+| `-h, --help` | | | Print usage and exit. |
+
+Run with custom flag options:
+```sh
+sh install.sh [flags]
+```
+
+#### Finish installation (POSIX)
+
+Once the script has completed, you must source (reload) your current shell for the changes to go into effect:
+```sh
+source <PROFILE>
+```
+
+#### Uninstall nvi using installation script (POSIX)
+
+```sh
+sh install.sh --uninstall
+```
+
+### Install script (PowerShell)
+
+Requires Windows 10 or newer, on Windows PowerShell 5.1 or PowerShell 7+.
+
+#### Run scripts with defaults (PowerShell)
+
+By default, the binary is installed to `$env:LOCALAPPDATA\Programs\nvi\bin`, the directory is appended to your user `Path`, and a `nvix` function is appended to your `$PROFILE`:
+```powershell
+irm https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.ps1 | iex
+```
+
+> [!NOTE]
+> Windows PowerShell 5.1 and PowerShell 7+ use different `$PROFILE` paths (`Documents\WindowsPowerShell\` and `Documents\PowerShell\`). The block is written to the profile of whichever host you run the script from, so run it from the shell you actually use.
+
+#### Download the script and run with flags (PowerShell)
+
+Download script:
+```powershell
+irm https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.ps1 -OutFile install.ps1
+```
+
+Parameters:
+| Parameter | Env | Default | Description |
+| --- | --- | --- | --- |
+| `-Version <tag>` | `NVI_VERSION` | `latest` | Release tag to install (eg. `v0.1.2`). |
+| `-InstallDir <path>` | `NVI_INSTALL_DIR` | `$env:LOCALAPPDATA\Programs\nvi\bin` | Install destination. |
+| `-NoPathUpdate` | | | Skip the user `Path` update. |
+| `-NoProfileUpdate` | | | Print the profile block instead of appending it. |
+| `-Uninstall` | | | Remove the binary, its `Path` entry, and the profile block. |
+
+
+Run with custom parameters:
+```powershell
+.\install.ps1 [parameters]
+```
+
+> [!NOTE]
+> Running a downloaded `.ps1` may be blocked by the execution policy. Either unblock the single file with `Unblock-File .\install.ps1`, or allow scripts for the current session only with `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`. The `irm | iex` form isn't affected, since nothing is executed from disk.
+
+#### Finish installation (PowerShell)
+
+To use `nvix` reload your profile:
+```powershell
+. $PROFILE
+```
+
+#### Uninstall nvi using installation script (PowerShell)
+
+```powershell
+.\install.ps1 -Uninstall
+```
 
 ## Build and install from source
 
@@ -75,14 +189,12 @@ mkdir -p $HOME/.local/bin
 
 Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
 ```sh
-# dedupe paths
+# zsh (~/.zshrc)
 typeset -U path PATH
+path=("$HOME/.local/bin" $path)
 
-# zsh
-path+=("$HOME/.local/bin")
-
-# bash
-export PATH="$PATH:$HOME/.local/bin"
+# bash (~/.bashrc, or ~/.bash_profile on macOS)
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
@@ -93,7 +205,7 @@ source <PROFILE>
 Lastly, build and install the release binary into the destination `<DIR>`:
 ```sh
 # install in a directory that is recognized by the shell $PATH
-# for example, if you followed the instruction sabove, then: ./nob install $HOME/.local/bin
+# for example, if you followed the instructions above, then: ./nob install $HOME/.local/bin
 ./nob install <DIR>
 ```
 
@@ -244,7 +356,11 @@ nvix() {
 
 For older bash (macOS ships bash 3.2 as `/bin/bash`) and other POSIX shells, the recommended consumer is to pipe to `xargs`:
 ```sh
+# GNU xargs (Linux, WSL)
 nvix() { nvi "$@" | xargs -0 -r env; }
+
+# BSD xargs (macOS)
+nvix() { nvi "$@" | xargs -0 env; }
 ```
 
 >[!NOTE]
@@ -344,7 +460,7 @@ nvi --files .env .env.local -- npm start | <consumer>
 nvi --files .env --required API_KEY DATABASE_URL -- cargo run | <consumer>
 
 # saves a dry run log of what was scanned, tokenized, and parsed
-nvi --files .env --scan ts --dry-run >2 nvi.log; less nvi.log
+nvi --files .env --scan ts --dry-run 2> nvi.log; less nvi.log
 
 # require every env key referenced in py source files to be present
 nvi --files .env --scan py -- python main.py  | <consumer>
@@ -388,16 +504,16 @@ nvi @local.nvi --files .env.production -F powershell -- <command> | <consumer>
 ```
 
 Rules:
-- Only can load a single `.nvi` file (referencing other `.nvi` configs is unsupported).
+- Supports loading a single `.nvi` file (referencing other `.nvi` configs is unsupported).
 - Flags and parameters must be defined on the same line.
 - A `--` command is not allowed inside a config file; commands stay within the command line, where it'll be handled by the consumer.
-- An empty or comment-only config file is an error (matching the empty `.env` file behavior).
+- An empty or comment-only config file is an error.
 
 ## Scanning for ENV keys
 
 `-s`, `--scan` followed by one or many file `ext`s, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
-For example, every line below would be recognized and yields the key `DATABASE_URL`:
+For example, every line below would be recognized and yield the key `DATABASE_URL`:
 
 ```
 process.env.DATABASE_URL          # JavaScript / TypeScript
@@ -410,21 +526,23 @@ ENV["DATABASE_URL"]               # Ruby
 System.getenv("DATABASE_URL")     # Java / Kotlin
 $ENV{DATABASE_URL}                # Perl
 ```
+
 > [!IMPORTANT]
 > An environment-variable will be detected by *how it's accessed* and not by how it's spelled (indepedent of its casing, prefix, or suffix). That said, ideally, ENVs should be UPPER_CASE_SNAKE_CASE.
 
-> [!CAUTION]
-> The following will not be detected by the scanner...
+The following will NOT be detected by the scanner...
 
 - Dynamic keys:
 ```js
 const key = "DATABASE_URL";
 process.env[key];
 ```
+
 - Destructured variables:
 ```js
 const { DATABASE_URL } = process.env;
 ```
+
 - Aliased accessors:
 ```js
 const e = process.env;
@@ -561,20 +679,20 @@ SINGLE_QUOTES='abc${NOT_AN_INTERPOLATED_KEY}'
 # double quoted values after a key WILL interpolate ${KEY}
 GOODBYE="I will never say ${GREETING} ever again"
 
-# single or double qoutes within a value after a key are not stripped
+# single or double qoutes after a key and within a value are not stripped
 # and are treated as literal characters
 MESSAGE=she said "hello world" in death
 RESPONSE=then he said 'goodbye my love' in life
 
-# an explicitly empty quoted value after a key is allowed, but a
-# bare 'KEY=' without a value is an error
+# an explicitly empty quoted value after a key is allowed, but a bare 'KEY='
+# without a value is an error
 EMPTY_OK=""
 
 # a POSIX shell-style export prefix is stripped
 export EXPORTED=value
 
-# a POSIX shell-style default ':-' value after a key is supported
-# for an interpolated ${KEY} (it's used when the KEY is unset or empty)
+# a default POSIX shell-style ':-' value after a key is supported for an
+# interpolated ${KEY} when the KEY is unset or empty
 RETRIES=${MAX_RETRIES:-3}
 
 # backslash-newline continues a multiline value
@@ -751,9 +869,9 @@ FUZZ_VERBOSE=1 ./build/fuzz/fuzz_parser fuzz-stall-<pid>.bin
 
 - Doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
 - Doesn't use any [regular expressions](https://man7.org/linux/man-pages/man3/regcomp.3.html)!
-- Only parses the `.env` files you provide and write parsed ENVs to stdout.
+- Only parses the `.env` files you provide and writes ENVs to stdout.
 - Limits parsed and scanned files to 10MB, a single interpolated value to 1MB, and the total parsed ENV output to 8MB, so a malicious or corrupted `.env` file errors instead of exhausting memory (consumer handles `ARG_MAX`).
-- Process execution happens entirely in the consumer you choose (`xargs`/`env` or PowerShell), with the command tokens you've typed.
+- Process execution happens entirely in the consumer you choose ([env](https://man7.org/linux/man-pages/man1/env.1.html) or PowerShell) with the command tokens you've typed.
 - For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
 
 ### [Contributing](CONTRIBUTING.MD)
