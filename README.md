@@ -331,7 +331,7 @@ nvi version
 The POSIX build defaults to `--format nul`, emitting NUL-delimited `KEY=value\0` assignments followed by the command tokens.
 A consumer splits that output and launches the command with those ENVs applied (your shell's environment remains unmodified).
 
-For day-to-day use, you'll need to add an `nvix` function to your shell profile.
+If it doesn't already exist, then you'll need to add an `nvix` function to your shell profile.
 
 For zsh (`~/.zshrc`) shells, the recommended consumer is to just split nvi's output natively:
 ```zsh
@@ -371,7 +371,7 @@ nvix() { nvi "$@" | xargs -0 env; }
 
 Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
 ```sh
-source <profile_url>
+source <PROFILE>
 ```
 
 To verify it's available, run:
@@ -650,7 +650,7 @@ Notes:
 Here are some examples of how ENVs can be defined in an `.env` file:
 
 ```dotenv
-# comments start with a hash (inline comments not supported)
+# comments start with a hash (inline comments are not supported)
 
 # a literal value
 MESSAGE=hello
@@ -841,7 +841,7 @@ Extra arguments are forwarded to libFuzzer:
 A watchdog thread (`tests/fuzz/fuzz_watchdog.h`, shared by all harnesses) prints a heartbeat so the fuzzer never looks hung:
 
 ```
-[fuzz] alive: execs=256505 (34354/s) elapsed=8s current_input=654 bytes (0.0s)
+[fuzz] alive: execs=256505 (34354/s) elapsed=8s current_input=654 bytes
 ```
 
 If a single input runs past the stall limit, the watchdog writes it to `fuzz-stall-<pid>.bin` and aborts, turning a hang into a reproducible artifact. libFuzzer's own `-timeout=15` acts as a backstop.
