@@ -13,53 +13,62 @@ A fast and minimal cross-platform CLI `.env` parser, environment-variable scanne
 
 ![animated gif of using nvi commands](nvi.gif)
 
+## Table of contents
+
+- [Installation](#installation)
+  - [Building and installing from source](docs/BUILD.md)
+  - [POSIX (Linux, macOS, WSL) installation script](#posix-installation-script)
+  - [PowerShell (Windows) installation script](#powershell-installation-script)
+  - [Verifying your PATH](#verifying-your-path)
+    - [POSIX](#posix-path)
+    - [PowerShell](#powershell-path)
+- [Running](#running)
+  - [POSIX](#run-on-posix-linux-macos-wsl)
+  - [PowerShell](#run-on-powershell-windows)
+- [Flags](#flags)
+- [Usage examples](#usage-examples)
+  - [Exit codes](#exit-codes)
+- [`.nvi` config file](#nvi-config-file)
+- [Scanning for ENV keys](#scanning-for-env-keys)
+  - [Supported file extensions](#supported-file-extensions)
+  - [Scan usage examples](#scan-usage-examples)
+- [`.env` file syntax](#env-file-syntax)
+- [Development](#development)
+- [Security](#security)
+- [Contributing](CONTRIBUTING.md)
+- [License](LICENSE.md)
+
 ## Installation
 
 Pick one of the following installation options:
 
-- [Install script](#install-script) (quickest; fetches a precompiled binary and wires it up to your shell)
-- [Precompiled binary](https://github.com/mattcarlotta/nvi/releases/) (manual; extract it and place it within a directory recognized by `$PATH` (POSIX) or `Path` (PowerShell))
-- [Build and install from source](#build-and-install-from-source) (best compatibility)
-
-If you're not sure if a destination directory is recognized by your shell, use the corresponding links below and skip to the instructions about path recognition:
-- [POSIX](#posix-linux-macos-wsl)
-- [PowerShell](#powershell-windows)
-
-## Install script
-
-The script downloads the release matching your platform and installs the binary, and reports whether the destination is recognized by your shell.
-
-Prebuilt targets:
-
-| Platform | Asset |
-| --- | --- |
-| Linux x86_64 (glibc) | `nvi-linux-x86_64.tar.gz` |
-| Linux x86_64 (musl) | `nvi-linux-x86_64-musl.tar.gz` |
-| Linux aarch64 | `nvi-linux-aarch64.tar.gz` |
-| macOS aarch64 | `nvi-macos-aarch64.tar.gz` |
-| Windows x86_64 | `nvi-windows-x86_64.zip` |
+- **[Build and install from source](docs/BUILD.md)** (best compatibility)
+- **Installation scripts** (quickest; fetches a precompiled binary and wires it up to your shell): [POSIX](#posix-installation-script) or [PowerShell](#powershell-installation-script)
+- **[Precompiled binary](https://github.com/mattcarlotta/nvi/releases/)** (manual; extract it and place it within a directory [recognized by your shell](#verifying-your-path))
 
 > [!NOTE]
-> There are no prebuilt macOS x86_64 or Linux musl aarch64 binaries. On those platforms, the script exits with an error and you'll need to [build and install from source](#build-and-install-from-source).
+> There are no prebuilt macOS x86_64 or Linux musl aarch64 binaries. On those platforms, the install script exits with an error and you'll need to [build and install from source](docs/BUILD.md).
 
-### Install script (POSIX)
+### POSIX installation script
 
-Either run the install script with defaults or download the script and pass flag options.
-
-#### Run scripts with defaults (POSIX)
-
-By default, the binary is installed to `$HOME/.local/bin`, the directory is appended to your user `$PATH`, and a `nvix` function is appended to your shell `$PROFILE`:
+By default, the binary will be installed to `$HOME/.local/bin`, the directory will be appended to your user `$PATH`, and a `nvix` function will be appended to your shell `$PROFILE`:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.sh | sh
 ```
-#### Download the script and run with flags (POSIX)
 
-Download script:
+Once the script has completed, you must source (reload) your current shell for the changes to go into effect:
+```sh
+source <PROFILE>
+```
+
+<details>
+<summary>Custom script installations</summary>
+
+Download the script:
 ```sh
 curl -fsSL https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.sh -o install.sh
 ```
 
-Flag Options:
 | Flag | Env | Default | Description |
 | --- | --- | --- | --- |
 | `-v, --version <tag>` | `NVI_VERSION` | `latest` | Release tag to install (eg. `v0.1.2`). |
@@ -74,41 +83,38 @@ Run with custom flag options:
 sh install.sh [flags]
 ```
 
-#### Finish installation (POSIX)
-
-Once the script has completed, you must source (reload) your current shell for the changes to go into effect:
-```sh
-source <PROFILE>
-```
-
-#### Uninstall nvi using installation script (POSIX)
-
+Uninstall:
 ```sh
 sh install.sh --uninstall
 ```
 
-### Install script (PowerShell)
+</details>
+
+### PowerShell installation script
 
 Requires Windows 10 or newer, on Windows PowerShell 5.1 or PowerShell 7+.
 
-#### Run scripts with defaults (PowerShell)
-
-By default, the binary is installed to `$env:LOCALAPPDATA\Programs\nvi\bin`, the directory is appended to your user `Path`, and a `nvix` function is appended to your `$PROFILE`:
+By default, the binary will be installed to `$env:LOCALAPPDATA\Programs\nvi\bin`, the directory will be appended to your user `Path`, and a `nvix` function will be appended to your `$PROFILE`:
 ```powershell
 irm https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.ps1 | iex
+```
+
+Once the script has completed, you must source (reload) your current shell for the changes to go into effect:
+```powershell
+. $PROFILE
 ```
 
 > [!NOTE]
 > Windows PowerShell 5.1 and PowerShell 7+ use different `$PROFILE` paths (`Documents\WindowsPowerShell\` and `Documents\PowerShell\`). The block is written to the profile of whichever host you run the script from, so run it from the shell you actually use.
 
-#### Download the script and run with flags (PowerShell)
+<details>
+<summary>Custom script installations</summary>
 
-Download script:
+Download the script:
 ```powershell
 irm https://raw.githubusercontent.com/mattcarlotta/nvi/main/install.ps1 -OutFile install.ps1
 ```
 
-Parameters:
 | Parameter | Env | Default | Description |
 | --- | --- | --- | --- |
 | `-Version <tag>` | `NVI_VERSION` | `latest` | Release tag to install (eg. `v0.1.2`). |
@@ -117,223 +123,83 @@ Parameters:
 | `-NoProfileUpdate` | | | Print the profile block instead of appending it. |
 | `-Uninstall` | | | Remove the binary, its `Path` entry, and the profile block. |
 
-
 Run with custom parameters:
 ```powershell
 .\install.ps1 [parameters]
 ```
 
-> [!NOTE]
-> Running a downloaded `.ps1` may be blocked by the execution policy. Either unblock the single file with `Unblock-File .\install.ps1`, or allow scripts for the current session only with `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`. The `irm | iex` form isn't affected, since nothing is executed from disk.
-
-#### Finish installation (PowerShell)
-
-To use `nvix` reload your profile:
-```powershell
-. $PROFILE
-```
-
-#### Uninstall nvi using installation script (PowerShell)
-
+Uninstall:
 ```powershell
 .\install.ps1 -Uninstall
 ```
 
-## Build and install from source
+> [!NOTE]
+> Running a downloaded `.ps1` may be blocked by the execution policy. Either unblock the single file with `Unblock-File .\install.ps1`, or allow scripts for the current session only with `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`. The `irm | iex` form isn't affected, since nothing is executed from disk.
 
-Optional requirements:
-- [Clangd](https://clangd.llvm.org/)
-- [Clang Format](https://clang.llvm.org/docs/ClangFormat.html)
+</details>
 
-Building source code:
-- [nob.h](https://github.com/tsoding/nob.h)
+### Verifying your PATH
 
-### POSIX (Linux, macOS, WSL)
+Before placing or installing a binary into a directory, you must ensure the destination is recognized by your shell.
 
-Requirements:
-- [Clang](https://clang.llvm.org/) (default), or [GCC](https://gcc.gnu.org/) via `NVI_CC=gcc`
-- [LLD](https://lld.llvm.org/) on Linux when building with clang (release builds link with `-fuse-ld=lld`; usually packaged as `lld`; not needed for gcc builds)
+#### POSIX PATH
 
-Clone repo and build `nob`:
-```sh
-cd ~/Downloads
+First, list the `$PATH` directories along with their owner, and pick one owned by `$USER` and not by `root`:
 
-git clone git@github.com:mattcarlotta/nvi.git && cd nvi
-
-clang nob.c
-```
-
-Build for debugging (not required):
-```sh
-./nob
-```
-
-Build for release (not required):
-```sh
-./nob release
-```
-
-Before placing or installing a release binary into a directory, ensure the destination directory is recognized as a shell `$PATH` owned by `$USER` and not by `root`:
+macOS:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -f "%Su:%Sg" "{}" 2>/dev/null)"' | nl
 ```
-or if using GNU Linux...
+
+GNU Linux:
 ```sh
 echo $PATH | tr ':' '\n' | xargs -I{} sh -c 'printf "%-50s %s\n" "{}" "$(stat -c "%U:%G" "{}" 2>/dev/null)"' | nl
 ```
 
-If there aren't any `$USER` own bin directories, then create a local bin directory:
+If there aren't any `$USER` owned bin directories, create a local one:
 ```sh
 mkdir -p $HOME/.local/bin
 ```
 
-Then edit and update your shell profile's (eg. `~/.bashrc` or `~/.zshrc`) `$PATH` to include the following:
+Then update your shell profile's `$PATH`.
+
+zsh (`~/.zshrc`):
 ```sh
-# zsh (~/.zshrc)
 typeset -U path PATH
 path=("$HOME/.local/bin" $path)
+```
 
-# bash (~/.bashrc, or ~/.bash_profile on macOS)
+bash (`~/.bashrc` or `~/.bash_profile` on macOS):
+```sh
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
+Then source (reload) the profile:
 ```sh
 source <PROFILE>
 ```
 
-Lastly, build and install the release binary into the destination `<DIR>`:
-```sh
-# install in a directory that is recognized by the shell $PATH
-# for example, if you followed the instructions above, then: ./nob install $HOME/.local/bin
-./nob install <DIR>
-```
+#### PowerShell Path
 
-> [!NOTE]
-> To build a fully static, portable Linux binary with musl instead of clang+glibc, install `musl-tools` and run `NVI_LIBC=musl ./nob <release|install>`.
-
-> [!NOTE]
-> To build with GCC instead of clang, run `NVI_CC=gcc ./nob <cmd>` (any GCC 11+ works; a versioned name like `NVI_CC=gcc-14` is also fine). `NVI_LIBC=musl` takes precedence over `NVI_CC`. GCC release builds use a conservative flag set (no `-flto`/lld pipeline), so clang remains the recommended compiler for the smallest release binaries. Fuzzing always requires clang.
-
-To verify system installation, run:
-```sh
-which nvi
-# <DIR>
-
-nvi version
-# nvi <version> (<build_type>)
-# commit <commit>
-# clang|gcc <version>
-# <architecture>
-```
-
-### PowerShell (Windows)
-
-Requirements:
-- [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/)
-- [Clang for MSVC](https://clang.llvm.org/get_started.html#buildWindows)
-
-Follow these steps:
-1. Install MSVC Build Tools:
-```powershell
-winget install Microsoft.VisualStudio.2022.BuildTools --source winget
-```
-
-> [!NOTE]
-> It should open a GUI installer, where you need to select and install the `Desktop development with C++` workload. This gives you the MSVC linker, Windows SDK, and CRT libraries.
-> If it closes without the workload installed: Relaunch the `Visual Studio Installer` from the Windows Menu, click on the installed version and click `Modify`,
-> then select the `Desktop development with C++` workload, then `Modify` again.
-
-2. Install LLVM/Clang:
-```powershell
-winget install LLVM.LLVM --source winget
-```
-
-3. Add clang to `Path`:
-```powershell
-[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\LLVM\bin", "User")
-```
-
-4. Close and reopen PowerShell
-
-5. Launch a developer shell (or open `Developer PowerShell for VS 2022` from the Windows Menu):
-```powershell
-& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
-```
-
-> [!CAUTION]
-> Spawning a VS Dev Shell without the `-Arch` and `-HostArch` flags may result in a 32bit (instead of 64bit) shell environment.
-
-6. Change directory to `Documents`:
-```powershell
-cd Documents
-```
-
-7. Clone repo (assumes `git` is installed, if not then install via: `winget install --id Git.Git -e --source winget`):
-```powershell
-git clone git@github.com:mattcarlotta/nvi.git
-```
-
-8. Change directory to `nvi`:
-```powershell
-cd nvi
-```
-
-9. Then set up git tracking (the git commit will be used within the output for `nvi version`; otherwise, it'll just report the commit as "unknown"):
-```powershell
-git init
-git remote add origin https://github.com/mattcarlotta/nvi.git
-git fetch origin
-git reset origin
-```
-
-10. Build `nob.c`:
-```powershell
-cl nob.c
-```
-
-Build for debugging (not required):
-```powershell
-./nob.exe
-```
-
-Build for release (not required):
-```powershell
-./nob.exe release
-```
-
-Before placing or installing a release binary in a directory, ensure the destination directory is recognized as a PowerShell `Path`:
+First, list the current `Path` entries:
 ```powershell
 $env:Path -split ';'
 ```
 
-If not, then add the destination directory `<DIR>` to the PowerShell `Path` (swap `<DIR>` below for the destination; eg, `C:\tools\bin`):
+If the destination `<DIR>` isn't listed, add it (eg. `C:\tools\bin`), then close and reopen PowerShell:
 ```powershell
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";<DIR>", "User")
 ```
 
-Build and install a release binary to the destination directory (change `<DIR>` to the destination directory):
-```powershell
-./nob.exe install <DIR>
-```
-
-To verify system installation, close and reopen PowerShell, then run:
-```powershell
-Get-Command nvi
-
-nvi version
-```
-
 ## Running
 
-### Run in POSIX (Linux, macOS, WSL)
+### Run on POSIX (Linux, macOS, WSL)
 
 The POSIX build defaults to `--format nul`, emitting NUL-delimited `KEY=value\0` assignments followed by the command tokens.
-A consumer splits that output and launches the command with those ENVs applied (your shell's environment remains unmodified).
 
-If it doesn't already exist, then you'll need to add an `nvix` function to your shell profile.
+If it doesn't already exist, then you'll need to add a `nvix` function to your shell profile.
 
-For zsh (`~/.zshrc`) shells, the recommended consumer is to just split nvi's output natively:
+For zsh (`~/.zshrc`):
 ```zsh
 nvix() {
   local out
@@ -343,7 +209,7 @@ nvix() {
 }
 ```
 
-For bash 4.4+ (`~/.bashrc`) shells, the recommended consumer is to split nvi's output into an array with `mapfile`:
+For bash 4.4+ (`~/.bashrc`):
 ```bash
 nvix() {
   local args=()
@@ -354,7 +220,13 @@ nvix() {
 }
 ```
 
-For older bash (macOS ships bash 3.2 as `/bin/bash`) and other POSIX shells, the recommended consumer is to pipe to `xargs`:
+> [!IMPORTANT]
+> In the bash function, `wait "$!"` recovers nvi's exit code from the process substitution and must not be dropped: without it a failed parse looks successful.
+
+<details>
+<summary>For 3.2 bash (macOS) and other POSIX shells</summary>
+
+For bash versions 3.2 and below, you'll need to pipe to `xargs`:
 ```sh
 # GNU xargs (Linux, WSL)
 nvix() { nvi "$@" | xargs -0 -r env; }
@@ -363,13 +235,11 @@ nvix() { nvi "$@" | xargs -0 -r env; }
 nvix() { nvi "$@" | xargs -0 env; }
 ```
 
->[!NOTE]
-> The zsh and bash 4.4+ functions build the same `KEY=value ... command` vector `xargs` would (zsh variables can hold NUL bytes; bash array *elements* sit
-> between the NULs), but run `env` as a direct child of your shell. That makes `ctrl+c` on a long-running command behave exactly like running it directly,
-> avoiding the dangling partial line (`^C%` in zsh) the `xargs` pipeline leaves when SIGINT returns the prompt before the command finishes shutting down.
-> In the bash function, `wait "$!"` recovers nvi's exit code from the process substitution and must not be dropped: without it a failed parse looks successful.
+The zsh and bash 4.4+ functions build the same `KEY=value ... command` vector `xargs` would (zsh variables can hold NUL bytes; bash array *elements* sit between the NULs), but run `env` as a direct child of your shell. That makes `ctrl+c` on a long-running command behave exactly like running it directly, avoiding the dangling partial line (`^C%` in zsh) the `xargs` pipeline leaves when SIGINT returns the prompt before the command finishes shutting down.
 
-Then source (reload) the profile (eg. `~/.bashrc` or `~/.zshrc`):
+</details>
+
+Then source (reload) the profile (eg. `~/.zshrc`, `~/.bashrc`, or `~/.bash_profile`):
 ```sh
 source <PROFILE>
 ```
@@ -379,13 +249,12 @@ To verify it's available, run:
 type nvix
 ```
 
-### Run in PowerShell (Windows)
+### Run on PowerShell (Windows)
 
 The Windows build defaults to `--format powershell`, emitting `$env:` assignments followed by a call-operator invocation.
-PowerShell evaluates the emitted script: `Out-String` joins nvi's output back into a single string and `Invoke-Expression` executes it.
 
 ```powershell
-nvi [flags|command] -- [command] | Out-String | Invoke-Expression
+nvi [flags] -- [command] | Out-String | Invoke-Expression
 ```
 
 For day-to-day use, you may want to add a function to your PowerShell `$PROFILE`:
@@ -424,7 +293,7 @@ Notes for Windows users:
 
 ## Flags
 
-| Flag Usage | Description |
+| Flag | Description |
 | --- | --- |
 | `-d, --dry-run` | Prints results to stderr and exits with 0. |
 | `-f, --files <file> ...`| Parses one or more `.env` files in sequential order. |
@@ -511,7 +380,7 @@ Rules:
 
 ## Scanning for ENV keys
 
-`-s`, `--scan` followed by one or many file `ext`s, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
+Providing a `-s` or `--scan` flag followed by one or many file `ext`s, walks a project's file tree from the current directory and, for each file matching the given extensions, looks for the environment-variable accessors of that file's language.
 
 For example, every line below would be recognized and yield the key `DATABASE_URL`:
 
@@ -593,7 +462,14 @@ e.DATABASE_URL;
 > † YAML has no language-level accessor, so the scanner matches POSIX-style parameter expansion: `${KEY}` plus the operator forms `${KEY:-default}`, `${KEY:?err}`, etc.
 > A bare `$KEY`, `$${KEY}`, and `${{ ... }}` expressions are ignored.
 
-#### Scan Usage Examples
+Notes:
+
+- Extensions must be written as `ext` and not `.ext` or `*.ext`.
+- Extensions with no known accessor patterns are usage errors.
+- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored.
+- Symlinked directories are not followed.
+
+### Scan usage examples
 
 ```sh
 # scans for matching ENVs within .mjs and .ts files using 4 threads, reports findings, then exits
@@ -637,13 +513,6 @@ Custom Desktop AMD 5950x running Linux Mint 21.2:
 The test numbers above **ARE NOT** meant to be a measurement nor a comparison for how fast the scanner can run on a given system, but instead to showcase how a system can have file IO limitations past a certain number of threads.
 For the MacBook Pro, more threads degraded scanning performance, whereas the desktop improved asymptotically (diminishing returns).
 </details>
-
-Notes:
-
-- Extensions must be written as `ext` and not `.ext` or `*.ext`.
-- Extensions with no known accessor patterns are usage errors.
-- Dot-directories (eg. `.git`, `.next`, `.venv`, and so on) and common dependency/cache/build-output directories (eg. `node_modules`, `__pycache__`, `zig-out`, and so on) are ignored.
-- Symlinked directories are not followed.
 
 ## `.env` file syntax
 
@@ -699,9 +568,6 @@ RETRIES=${MAX_RETRIES:-3}
 # an interpolation ${KEY} will still work on any same line
 SSH_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 MIIEpAIBAAKCAQEA2x5s8K9vN3pQ7mK8vL2d5pJ9mX6kL8qR3wT9uV5sZ2aB4cD\
-oqRosTouVoaV1EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoP\
-owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
-3EthzxeIRx7pPoqR9sTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 -----END RSA PRIVATE KEY-----
 # when there's no backslash and just a new-line or EOF, then that
 # indicates the end of a multiline value
@@ -711,168 +577,15 @@ owKBAQDZ2sX7pPoqRisTiuVcwXjyZiBvcDj0FlgHgiJjlLjmNjoPoqRosTouVoaV\
 - Interpolated keys resolve first from the shell environment and then from any keys parsed from earlier `.env` files specified by `--files`.
 - An undefined key interpolation without a `:-` fallback, a bare `KEY=` with no value, or a `--required` key that is undefined/empty after parsing are parser errors.
 
-## Testing
+## Development
 
-This project uses [Unity](https://github.com/ThrowTheSwitch/Unity) in combination with [nob.h](https://github.com/tsoding/nob.h)
+- [Building from source](docs/BUILD.md)
+- [Testing and fuzzing](docs/DEVELOPMENT.md)
 
-### POSIX
+## Security
 
-Build nob (if you haven't already):
-```sh
-clang -o nob nob.c
-```
+nvi doesn't use [exec](https://man7.org/linux/man-pages/man3/exec.3p.html) nor [regular expressions](https://man7.org/linux/man-pages/man3/regcomp.3.html). It also doesn't spawn processes nor invoke a shell.
+It's purpose is to parse the `.env` files you provide, enforce size limits on what it parses, and write ENVs to stdout. Execution happens entirely in the consumer you choose.
 
-Run all unit tests:
-```sh
-./nob unit
-```
+See [SECURITY.md](SECURITY.md) for more information.
 
-Run all integration tests:
-```sh
-./nob integration
-
-```
-
-Run all test suites:
-```sh
-./nob test
-```
-
-### PowerShell
-
-Build nob (if you haven't already):
-```powershell
-cl nob nob.c
-```
-
-Run all unit tests:
-```powershell
-./nob.exe unit
-```
-
-Run all integration tests:
-```powershell
-./nob.exe integration
-```
-
-Run all test suites:
-```powershell
-./nob.exe test
-```
-
-## Fuzzing
-
-This project uses [libFuzzer](https://llvm.org/docs/LibFuzzer.html) with AddressSanitizer and UndefinedBehaviorSanitizer to fuzz the four untrusted-input surfaces:
-
-| Target    | Harness                     | What it fuzzes                                                                                     |
-| --------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
-| `parser`  | `tests/fuzz/fuzz_parser.c`  | Arbitrary bytes through `generate_tokens` and `run_parser` as the contents of a single `.env` file.  |
-| `matcher` | `tests/fuzz/fuzz_matcher.c` | Arbitrary bytes through `scan_file_content`; the first input byte selects the language accessor set. |
-| `args`    | `tests/fuzz/fuzz_args.c`    | NUL-delimited argv entries through `parse_args`.                                                     |
-| `config`  | `tests/fuzz/fuzz_config.c`  | Arbitrary bytes through `tokenize_config_file` as the contents of a `.nvi` config file.               |
-
-Fuzzing is POSIX only (Linux, macOS) and requires a clang that ships the libFuzzer runtime.
-
-### Requirements
-
-Linux:
-
-- [Clang](https://clang.llvm.org/) (the distro package includes libFuzzer)
-
-macOS:
-
-- [Homebrew LLVM](https://formulae.brew.sh/formula/llvm):
-
-```sh
-brew install llvm
-```
-
-> [!NOTE]
-> Apple's Command Line Tools clang ships ASan and UBSan but not the libFuzzer runtime (`libclang_rt.fuzzer_osx.a`). `./nob fuzz` automatically prefers Homebrew LLVM's clang when present (`/opt/homebrew/opt/llvm` or `/usr/local/opt/llvm`); no `PATH` changes are needed. musl builds (`NVI_LIBC=musl`) and MSVC are not supported.
-
-### Running
-
-Build nob (if you haven't already):
-```sh
-clang -o nob nob.c
-```
-
-Build and run a fuzz target (ctrl-c to stop):
-```sh
-# defaults to the parser target
-./nob fuzz
-
-# or select one explicitly
-./nob fuzz parser
-./nob fuzz matcher
-./nob fuzz args
-./nob fuzz config
-```
-
-Each target keeps its own cumulative corpus under `build/fuzz/`; interesting inputs found in one run carry over to the next. The parser corpus is seeded from `fixtures/*.env` on first run. When a matching dictionary exists under `tests/fuzz/` (`env.dict`, `matcher.dict`, `args.dict`, `config.dict`), it is passed to libFuzzer automatically to seed the mutator with grammar tokens.
-
-Extra arguments are forwarded to libFuzzer:
-
-```sh
-# bounded run (roughly 20s at ~50k exec/s)
-./nob fuzz parser -runs=1000000
-
-# reproduce a crash or stall artifact
-./nob fuzz parser crash-<hash>
-```
-
-### Running all targets
-
-`all` runs every target sequentially with the same forwarded arguments and reports a suite-style summary:
-
-```sh
-# regression only: replay every corpus without mutating (useful in CI)
-./nob fuzz all -runs=0
-
-# bounded soak of everything, 10 minutes per target
-./nob fuzz all -max_total_time=600
-```
-
-> [!NOTE]
-> `all` requires a `-runs=<N>` or `-max_total_time=<seconds>` bound; an unbounded run would fuzz the first target forever and never reach the rest. Omitting the bound is a usage error.
-
-### Progress output
-
-A watchdog thread (`tests/fuzz/fuzz_watchdog.h`, shared by all harnesses) prints a heartbeat so the fuzzer never looks hung:
-
-```
-[fuzz] alive: execs=256505 (34354/s) elapsed=8s current_input=654 bytes
-```
-
-If a single input runs past the stall limit, the watchdog writes it to `fuzz-stall-<pid>.bin` and aborts, turning a hang into a reproducible artifact. libFuzzer's own `-timeout=15` acts as a backstop.
-
-### Environment variables
-
-| Variable                 | Description                                                                         |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| `FUZZ_HEARTBEAT_SECONDS` | Seconds between heartbeat lines (default: `5`).                                     |
-| `FUZZ_STALL_SECONDS`     | Per-input runtime limit before abort + dump (default: `10`).                        |
-| `FUZZ_VERBOSE`           | If set, keeps the target's stdout/stderr output (silenced otherwise).               |
-| `FUZZ_CC`                | Overrides the compiler used to build the harness.                                   |
-| `FUZZ_SAN`               | Overrides the sanitizer list (default: `fuzzer,address,undefined`).                 |
-
-Example, reproducing a single artifact with full diagnostics:
-
-```sh
-FUZZ_VERBOSE=1 ./build/fuzz/fuzz_parser fuzz-stall-<pid>.bin
-```
-
-> [!NOTE]
-> Crash artifacts (`crash-*`, `timeout-*`, `oom-*`, and so on) and stall dumps (`fuzz-stall-*.bin`) are written to the repository root and are gitignored. If the fuzzer finds something, keep the artifact until it's fixed; it is the reproducer.
-
-## Security model
-
-- Doesn't perform file execution operations (like [exec](https://man7.org/linux/man-pages/man3/exec.3p.html)), nor process spawning nor shell invocation.
-- Doesn't use any [regular expressions](https://man7.org/linux/man-pages/man3/regcomp.3.html)!
-- Only parses the `.env` files you provide and writes ENVs to stdout.
-- Limits parsed and scanned files to 10MB, a single interpolated value to 1MB, and the total parsed ENV output to 8MB, so a malicious or corrupted `.env` file errors instead of exhausting memory (consumer handles `ARG_MAX`).
-- Process execution happens entirely in the consumer you choose ([env](https://man7.org/linux/man-pages/man1/env.1.html) or PowerShell) with the command tokens you've typed.
-- For PowerShell, values are emitted inside single-quoted strings (the only escape being `''`), so values cannot break out of string context into executable position.
-
-### [Contributing](CONTRIBUTING.MD)
-### [License](LICENSE.md)
